@@ -1,11 +1,157 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { motion } from "framer-motion";
+import { URLInput } from "@/components/URLInput";
+import { Sparkles, Shield, Target, Zap } from "lucide-react";
 
 const Index = () => {
+  const navigate = useNavigate();
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleSubmit = async (url: string) => {
+    setIsLoading(true);
+    // Simulate scanning delay
+    await new Promise((resolve) => setTimeout(resolve, 2000));
+    // Navigate to results with the URL
+    navigate("/results", { state: { url } });
+  };
+
+  const features = [
+    {
+      icon: Target,
+      title: "10 Rubric Dimensions",
+      description: "Comprehensive scoring across the AVS value system framework",
+    },
+    {
+      icon: Shield,
+      title: "Evidence-Backed",
+      description: "Every score is grounded in publicly observable information",
+    },
+    {
+      icon: Zap,
+      title: "Instant Analysis",
+      description: "Get actionable insights in under 2 minutes",
+    },
+  ];
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background">
-      <div className="text-center">
-        <h1 className="mb-4 text-4xl font-bold">Welcome to Your Blank App</h1>
-        <p className="text-xl text-muted-foreground">Start building your amazing project here!</p>
+    <div className="min-h-screen bg-background relative overflow-hidden">
+      {/* Background effects */}
+      <div className="absolute inset-0 bg-gradient-to-b from-primary/5 via-transparent to-accent/5 pointer-events-none" />
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[800px] bg-primary/10 rounded-full blur-3xl opacity-20 pointer-events-none" />
+
+      <div className="relative z-10 container mx-auto px-4 py-16 md:py-24">
+        {/* Hero */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="text-center max-w-4xl mx-auto mb-12"
+        >
+          {/* Badge */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.1 }}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 mb-6"
+          >
+            <Sparkles className="w-4 h-4 text-primary" />
+            <span className="text-sm text-primary font-medium">
+              AVS Rubric Agent v2.1
+            </span>
+          </motion.div>
+
+          <h1 className="text-4xl md:text-6xl font-bold mb-6 leading-tight">
+            Score Your{" "}
+            <span className="gradient-text">Value System</span>
+            <br />
+            in Minutes
+          </h1>
+
+          <p className="text-xl text-muted-foreground max-w-2xl mx-auto mb-12">
+            Enter your company URL and get an instant, evidence-backed assessment
+            of your pricing and value delivery maturity against the AVS Rubric.
+          </p>
+
+          {/* URL Input */}
+          <div className="flex justify-center mb-16">
+            <URLInput onSubmit={handleSubmit} isLoading={isLoading} />
+          </div>
+
+          {/* Loading state */}
+          {isLoading && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="text-center"
+            >
+              <div className="inline-flex items-center gap-3 px-4 py-2 rounded-lg bg-secondary/50">
+                <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+                <span className="text-sm text-muted-foreground">
+                  Scanning website and extracting business context...
+                </span>
+              </div>
+            </motion.div>
+          )}
+        </motion.div>
+
+        {/* Features */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+          className="grid md:grid-cols-3 gap-6 max-w-4xl mx-auto"
+        >
+          {features.map((feature, i) => (
+            <motion.div
+              key={feature.title}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.4 + i * 0.1 }}
+              className="p-6 rounded-xl bg-card/50 border border-border/50 backdrop-blur-sm"
+            >
+              <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center mb-4">
+                <feature.icon className="w-5 h-5 text-primary" />
+              </div>
+              <h3 className="font-semibold mb-2">{feature.title}</h3>
+              <p className="text-sm text-muted-foreground">
+                {feature.description}
+              </p>
+            </motion.div>
+          ))}
+        </motion.div>
+
+        {/* Rubric dimensions preview */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.6 }}
+          className="mt-20 text-center"
+        >
+          <h2 className="text-lg font-semibold mb-4 text-muted-foreground">
+            Scored across 10 dimensions
+          </h2>
+          <div className="flex flex-wrap justify-center gap-2 max-w-3xl mx-auto">
+            {[
+              "90-day north star",
+              "ICP and job clarity",
+              "Buyer and budget alignment",
+              "Value units",
+              "Cost driver mapping",
+              "Pools and packaging",
+              "Overages and risk allocation",
+              "Safety rails and trust surfaces",
+              "Rating agility and governance",
+              "Measurement and cadence",
+            ].map((dim) => (
+              <span
+                key={dim}
+                className="px-3 py-1.5 text-xs rounded-full bg-secondary/50 text-muted-foreground border border-border/50"
+              >
+                {dim}
+              </span>
+            ))}
+          </div>
+        </motion.div>
       </div>
     </div>
   );
