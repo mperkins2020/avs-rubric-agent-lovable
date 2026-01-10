@@ -1,19 +1,42 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { URLInput } from "@/components/URLInput";
-import { Sparkles, Shield, Target, Zap } from "lucide-react";
+import { Sparkles, Shield, Target, Zap, AlertCircle } from "lucide-react";
+import { useScan } from "@/hooks/useScan";
+import { toast } from "sonner";
 
 const Index = () => {
   const navigate = useNavigate();
-  const [isLoading, setIsLoading] = useState(false);
+  const { status, statusMessage, error, startScan, companyProfile, rubricScore, observability, pages, chatMessages } = useScan();
+
+  const isLoading = status === 'scraping' || status === 'analyzing';
+
+  // Navigate to results when scan completes
+  useEffect(() => {
+    if (status === 'complete' && companyProfile && rubricScore && observability) {
+      navigate("/results", { 
+        state: { 
+          companyProfile,
+          rubricScore,
+          observability,
+          pages,
+        } 
+      });
+    }
+  }, [status, companyProfile, rubricScore, observability, pages, navigate]);
+
+  // Show error toast
+  useEffect(() => {
+    if (status === 'error' && error) {
+      toast.error("Scan Failed", {
+        description: error,
+      });
+    }
+  }, [status, error]);
 
   const handleSubmit = async (url: string) => {
-    setIsLoading(true);
-    // Simulate scanning delay
-    await new Promise((resolve) => setTimeout(resolve, 2000));
-    // Navigate to results with the URL
-    navigate("/results", { state: { url } });
+    await startScan(url);
   };
 
   const features = [
@@ -87,7 +110,23 @@ const Index = () => {
               <div className="inline-flex items-center gap-3 px-4 py-2 rounded-lg bg-secondary/50">
                 <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
                 <span className="text-sm text-muted-foreground">
-                  Scanning website and extracting business context...
+                  {statusMessage || 'Processing...'}
+                </span>
+              </div>
+            </motion.div>
+          )}
+
+          {/* Error state */}
+          {status === 'error' && error && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="text-center mt-4"
+            >
+              <div className="inline-flex items-center gap-3 px-4 py-2 rounded-lg bg-destructive/10 border border-destructive/20">
+                <AlertCircle className="w-4 h-4 text-destructive" />
+                <span className="text-sm text-destructive">
+                  {error}
                 </span>
               </div>
             </motion.div>
