@@ -1,7 +1,7 @@
-import { useState, useCallback } from "react";
-import { useLocation, Link } from "react-router-dom";
+import { useState, useCallback, useEffect } from "react";
+import { useLocation, Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ArrowLeft, Sparkles } from "lucide-react";
+import { ArrowLeft, Sparkles, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { TotalScoreCard } from "@/components/TotalScoreCard";
 import { CompanyProfileCard } from "@/components/CompanyProfileCard";
@@ -10,27 +10,31 @@ import { DimensionCard } from "@/components/DimensionCard";
 import { StrengthsWeaknesses } from "@/components/StrengthsWeaknesses";
 import { ChatPanel } from "@/components/ChatPanel";
 import { EmailCaptureModal } from "@/components/EmailCaptureModal";
-import { mockScanResult, mockChatMessages } from "@/data/mockData";
-import type { ChatMessage } from "@/types/rubric";
+import { scraperApi, type ScrapedPage } from "@/lib/api/scraper";
+import type { ChatMessage, CompanyProfile, RubricScore, ObservabilityData } from "@/types/rubric";
+
+interface LocationState {
+  companyProfile: CompanyProfile;
+  rubricScore: RubricScore;
+  observability: ObservabilityData;
+  pages: ScrapedPage[];
+}
 
 export default function Results() {
   const location = useLocation();
-  const url = (location.state as { url?: string })?.url || "https://example.com";
+  const navigate = useNavigate();
+  const state = location.state as LocationState | null;
   
   const [showEmailModal, setShowEmailModal] = useState(false);
-  const [chatMessages, setChatMessages] = useState<ChatMessage[]>(mockChatMessages);
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [isChatLoading, setIsChatLoading] = useState(false);
 
-  // Use mock data - in production this would come from an API
-  const scanResult = {
-    ...mockScanResult,
-    url,
-    companyProfile: {
-      ...mockScanResult.companyProfile!,
-      companyName: new URL(url).hostname.replace("www.", "").split(".")[0].charAt(0).toUpperCase() + 
-                   new URL(url).hostname.replace("www.", "").split(".")[0].slice(1),
-    },
-  };
+  // Redirect to home if no state
+  useEffect(() => {
+    if (!state) {
+      navigate("/", { replace: true });
+    }
+  }, [state, navigate]);
 
   const handleDimensionClick = useCallback((dimension: string) => {
     const element = document.getElementById(
@@ -42,6 +46,8 @@ export default function Results() {
   }, []);
 
   const handleSendMessage = useCallback(async (content: string) => {
+    if (!state) return;
+
     // Add user message
     const userMessage: ChatMessage = {
       id: `msg_${Date.now()}`,
@@ -50,74 +56,56 @@ export default function Results() {
       timestamp: new Date(),
     };
     setChatMessages((prev) => [...prev, userMessage]);
-
     setIsChatLoading(true);
 
-    // Simulate AI response
-    await new Promise((resolve) => setTimeout(resolve, 1500));
+    try {
+      const history = chatMessages.map(m => ({
+        role: m.role,
+        content: m.content,
+      }));
 
-    const assistantMessage: ChatMessage = {
-      id: `msg_${Date.now() + 1}`,
-      role: "assistant",
-      content: getAIResponse(content),
-      citations: [
-        { url: `${url}/pricing`, quote: "Enterprise plans include dedicated support" },
-      ],
-      timestamp: new Date(),
-    };
+      const result = await scraperApi.chat(content, history, {
+        pages: state.pages,
+        companyName: state.companyProfile.companyName,
+        rubricScore: {
+          totalScore: state.rubricScore.totalScore,
+          maxScore: state.rubricScore.maxScore,
+          band: state.rubricScore.band,
+        },
+      });
 
-    setChatMessages((prev) => [...prev, assistantMessage]);
-    setIsChatLoading(false);
-  }, [url]);
+      const assistantMessage: ChatMessage = {
+        id: `msg_${Date.now() + 1}`,
+        role: "assistant",
+        content: result.success ? result.response || "No response generated." : `Error: ${result.error}`,
+        timestamp: new Date(),
+      };
 
-  const getAIResponse = (question: string): string => {
-    const lowerQ = question.toLowerCase();
-    
-    if (lowerQ.includes("safety") || lowerQ.includes("rails")) {
-      return `Based on our scan, here's why Safety Rails scored a 1:
-
-• **What we found:** Admin dashboard mentions usage limits and alert notifications
-• **What's missing:** No visible budget caps or real-time spend controls documented
-• **Why it matters:** Enterprise buyers need confidence they won't face surprise bills
-
-**What would a 2 look like?**
-- Documented budget caps with configurable thresholds
-- Real-time alerts when approaching limits (e.g., 80%, 95%)
-- Automatic pause or throttle options
-- Public trust center with spend control documentation
-
-**What's unclear publicly:** Whether these features exist but aren't documented, or if they're planned for future releases.`;
+      setChatMessages((prev) => [...prev, assistantMessage]);
+    } catch (err) {
+      console.error("Chat error:", err);
+      const errorMessage: ChatMessage = {
+        id: `msg_${Date.now() + 1}`,
+        role: "assistant",
+        content: "Sorry, there was an error processing your message. Please try again.",
+        timestamp: new Date(),
+      };
+      setChatMessages((prev) => [...prev, errorMessage]);
+    } finally {
+      setIsChatLoading(false);
     }
-    
-    if (lowerQ.includes("90 days") || lowerQ.includes("fix")) {
-      return `Based on your rubric profile, I'd prioritize:
+  }, [chatMessages, state]);
 
-1. **Safety Rails & Trust Surfaces** (currently scored 1)
-   - Implement documented budget caps
-   - Create a public trust center page
-   
-2. **Overages & Risk Allocation** (currently scored 0)
-   - Publish clear overage pricing
-   - Document risk allocation in customer agreements
-
-These two improvements would likely move your total score from 12 to 15-16, shifting you from "Emerging" toward "Established" band.
-
-*If you'd like help designing specific experiments for these improvements, AVS Brain can help you pick safe experiments tied to your 90-day goal.*`;
-    }
-    
-    return `I'm analyzing your question based on the scan results for ${scanResult.companyProfile?.companyName}.
-
-Based on the public information we gathered:
-• We scanned ${scanResult.observability?.pagesUsed.length} pages from your website
-• Overall confidence in our assessment is ${scanResult.observability?.confidenceScore}%
-• The most uncertain areas are ${scanResult.observability?.mostUncertainDimensions.map(d => d.dimension).join(" and ")}
-
-Would you like me to explain a specific dimension score or suggest improvements?`;
-  };
-
-  if (!scanResult.companyProfile || !scanResult.rubricScore || !scanResult.observability) {
-    return <div>Loading...</div>;
+  // Loading state while redirecting
+  if (!state) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
   }
+
+  const { companyProfile, rubricScore, observability } = state;
 
   return (
     <div className="min-h-screen bg-background">
@@ -133,7 +121,7 @@ Would you like me to explain a specific dimension score or suggest improvements?
             </Link>
             <div className="h-4 w-px bg-border" />
             <span className="text-sm text-muted-foreground truncate max-w-[200px] md:max-w-none">
-              {url}
+              {companyProfile.companyName}
             </span>
           </div>
           <Button 
@@ -152,18 +140,18 @@ Would you like me to explain a specific dimension score or suggest improvements?
           <div className="space-y-6">
             {/* Total Score */}
             <TotalScoreCard
-              totalScore={scanResult.rubricScore.totalScore}
-              maxScore={scanResult.rubricScore.maxScore}
-              band={scanResult.rubricScore.band}
-              companyName={scanResult.companyProfile.companyName}
+              totalScore={rubricScore.totalScore}
+              maxScore={rubricScore.maxScore}
+              band={rubricScore.band}
+              companyName={companyProfile.companyName}
             />
 
             {/* Company Profile */}
-            <CompanyProfileCard profile={scanResult.companyProfile} />
+            <CompanyProfileCard profile={companyProfile} />
 
             {/* Observability Strip */}
             <ObservabilityStrip
-              data={scanResult.observability}
+              data={observability}
               onDimensionClick={handleDimensionClick}
             />
 
@@ -175,10 +163,10 @@ Would you like me to explain a specific dimension score or suggest improvements?
             >
               <h2 className="text-xl font-bold mb-4">Analysis Summary</h2>
               <StrengthsWeaknesses
-                strengths={scanResult.rubricScore.strengths}
-                weaknesses={scanResult.rubricScore.weaknesses}
-                trustBreakpoints={scanResult.rubricScore.trustBreakpoints}
-                recommendedFocus={scanResult.rubricScore.recommendedFocus}
+                strengths={rubricScore.strengths}
+                weaknesses={rubricScore.weaknesses}
+                trustBreakpoints={rubricScore.trustBreakpoints}
+                recommendedFocus={rubricScore.recommendedFocus}
               />
             </motion.div>
 
@@ -190,7 +178,7 @@ Would you like me to explain a specific dimension score or suggest improvements?
             >
               <h2 className="text-xl font-bold mb-4">Dimension Scores</h2>
               <div className="space-y-3">
-                {scanResult.rubricScore.dimensionScores.map((dimension, i) => (
+                {rubricScore.dimensionScores.map((dimension, i) => (
                   <DimensionCard key={dimension.dimension} dimension={dimension} index={i} />
                 ))}
               </div>
@@ -212,7 +200,7 @@ Would you like me to explain a specific dimension score or suggest improvements?
       <EmailCaptureModal
         isOpen={showEmailModal}
         onClose={() => setShowEmailModal(false)}
-        companyName={scanResult.companyProfile.companyName}
+        companyName={companyProfile.companyName}
       />
     </div>
   );
