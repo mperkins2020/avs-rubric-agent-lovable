@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect } from "react";
 import { useLocation, Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ArrowLeft, Sparkles, Loader2 } from "lucide-react";
+import { ArrowLeft, Sparkles, Loader2, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { TotalScoreCard } from "@/components/TotalScoreCard";
 import { CompanyProfileCard } from "@/components/CompanyProfileCard";
@@ -11,6 +11,7 @@ import { StrengthsWeaknesses } from "@/components/StrengthsWeaknesses";
 import { ChatPanel } from "@/components/ChatPanel";
 import { EmailCaptureModal } from "@/components/EmailCaptureModal";
 import { scraperApi, type ScrapedPage } from "@/lib/api/scraper";
+import { exportToPDF } from "@/lib/pdfExport";
 import type { ChatMessage, CompanyProfile, RubricScore, ObservabilityData } from "@/types/rubric";
 
 interface LocationState {
@@ -124,13 +125,22 @@ export default function Results() {
               {companyProfile.companyName}
             </span>
           </div>
-          <Button 
-            onClick={() => setShowEmailModal(true)}
-            className="bg-gradient-primary"
-          >
-            <Sparkles className="w-4 h-4 mr-2" />
-            Get Full Plan
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button 
+              variant="outline"
+              onClick={() => exportToPDF({ companyProfile, rubricScore, observability })}
+            >
+              <Download className="w-4 h-4 mr-2" />
+              Export PDF
+            </Button>
+            <Button 
+              onClick={() => setShowEmailModal(true)}
+              className="bg-gradient-primary"
+            >
+              <Sparkles className="w-4 h-4 mr-2" />
+              Get Full Plan
+            </Button>
+          </div>
         </div>
       </header>
 
