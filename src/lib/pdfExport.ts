@@ -53,7 +53,15 @@ export function exportToPDF({ companyProfile, rubricScore, observability }: Expo
   doc.setFontSize(24);
   doc.setTextColor(...COLORS.primary);
   doc.text("AI Pricing Rubric Report", pageWidth / 2, yPos, { align: "center" });
-  yPos += 10;
+  yPos += 12;
+
+  // Evidence-based assessment statement
+  doc.setFontSize(9);
+  doc.setTextColor(...COLORS.muted);
+  const disclaimerText = "This is an evidence-based assessment of your product's external value-system legibility, based on publicly available information at the time of analysis.";
+  const disclaimerLines = doc.splitTextToSize(disclaimerText, pageWidth - 40);
+  doc.text(disclaimerLines, pageWidth / 2, yPos, { align: "center" });
+  yPos += disclaimerLines.length * 4 + 8;
 
   // Company name
   doc.setFontSize(16);
