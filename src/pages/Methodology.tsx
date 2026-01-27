@@ -47,13 +47,9 @@ const Methodology = () => {
           <h1 className="text-4xl font-bold mb-6">About AVS Rubric Agent: The Methodology</h1>
 
           <div className="prose prose-lg dark:prose-invert max-w-none">
-            <p className="text-xl text-muted-foreground mb-8">
-              A structured, evidence-backed rubric that analyzes a company's public information and signals you provide. In return, you get a real-time report highlighting external legibility and predictability gaps with explicit confidence and uncertainty labels.
-            </p>
+            <p className="text-xl text-muted-foreground mb-8">A structured, evidence-backed rubric that evaluates public signals and your inputs, then generates a real-time report flagging legibility and predictability gaps with clear confidence and uncertainty labels.</p>
 
-            <p className="text-muted-foreground mb-8">
-              The agent doesn't compete with your funnels, experiments, or analytics. It evaluates something those systems don't measure well: whether the market can confidently infer how your AI-native product will behave before committing.
-            </p>
+            <p className="text-muted-foreground mb-8">It doesn’t replace funnels, experiments, or analytics. It measures what they miss: whether the market can confidently predict how your AI-native product will behave before committing.</p>
 
             {/* Intellectual Core Section */}
             <div className="my-12 p-8 rounded-2xl bg-primary/5 border border-primary/20">
