@@ -3,10 +3,8 @@ import { ArrowLeft, Layers, MessageSquare, Heart } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import ValueTempoLogo from "@/assets/ValueTempo_Logo.png";
-
 const Methodology = () => {
-  return (
-    <div className="min-h-screen bg-background relative overflow-hidden">
+  return <div className="min-h-screen bg-background relative overflow-hidden">
       {/* Background effects */}
       <div className="absolute inset-0 bg-gradient-to-b from-primary/5 via-transparent to-accent/5 pointer-events-none" />
 
@@ -15,7 +13,7 @@ const Methodology = () => {
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Link to="/">
-              <img src={ValueTempoLogo} alt="ValueTempo" className="h-8" />
+              <img alt="ValueTempo" className="h-8" src="/lovable-uploads/05acbf98-b629-4a57-bf8d-5a8ffb90eb87.png" />
             </Link>
             <Link to="/">
               <Button variant="outline" size="sm" className="gap-2">
@@ -27,21 +25,20 @@ const Methodology = () => {
             <Link to="/methodology" className="text-sm font-medium text-primary">
               Methodology
             </Link>
-            <Link to="/faq/product-growth" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-              FAQ: Product & Growth
-            </Link>
-            <Link to="/faq/cfo-revops" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-              FAQ: CFO & RevOps
-            </Link>
+            <Link to="/faq/product-growth" className="text-sm text-muted-foreground hover:text-foreground transition-colors">FAQ: Growth</Link>
+            <Link to="/faq/cfo-revops" className="text-sm text-muted-foreground hover:text-foreground transition-colors">FAQ: RevOps</Link>
           </nav>
         </div>
       </header>
 
       <div className="relative z-10 container mx-auto px-4 py-12 max-w-4xl">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-        >
+        <motion.div initial={{
+        opacity: 0,
+        y: 20
+      }} animate={{
+        opacity: 1,
+        y: 0
+      }}>
           <Link to="/" className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground mb-8">
             <ArrowLeft className="w-4 h-4" />
             Back to Home
@@ -149,8 +146,6 @@ const Methodology = () => {
           </div>
         </motion.div>
       </div>
-    </div>
-  );
+    </div>;
 };
-
 export default Methodology;
