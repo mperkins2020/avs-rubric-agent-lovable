@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, forwardRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,11 +10,8 @@ interface EmailCaptureModalProps {
   companyName: string;
 }
 
-export function EmailCaptureModal({
-  isOpen,
-  onClose,
-  companyName,
-}: EmailCaptureModalProps) {
+export const EmailCaptureModal = forwardRef<HTMLDivElement, EmailCaptureModalProps>(
+  function EmailCaptureModal({ isOpen, onClose, companyName }, ref) {
   const [email, setEmail] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
@@ -140,4 +137,4 @@ export function EmailCaptureModal({
       )}
     </AnimatePresence>
   );
-}
+});

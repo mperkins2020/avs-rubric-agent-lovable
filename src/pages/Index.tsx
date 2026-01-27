@@ -76,6 +76,9 @@ const Index = () => {
               <Sparkles className="w-4 h-4" />
               AVS Rubric Agent
             </Button>
+            <span className="px-2 py-0.5 text-xs font-semibold rounded-full bg-primary/10 text-primary border border-primary/20">
+              Beta
+            </span>
           </div>
           <nav className="hidden md:flex items-center gap-6">
             <Link to="/methodology" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
