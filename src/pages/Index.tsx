@@ -70,7 +70,7 @@ const Index = () => {
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Link to="/">
-              <img alt="ValueTempo" className="h-8" src="/lovable-uploads/fb447e3c-e816-4dcf-a229-5f8143ff8f71.png" />
+              <img alt="ValueTempo" className="h-8" src="/lovable-uploads/87678626-e604-46ee-90b6-9ab9b6380322.png" />
             </Link>
             <Button variant="outline" size="sm" className="gap-2">
               <Sparkles className="w-4 h-4" />
