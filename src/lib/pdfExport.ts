@@ -52,15 +52,15 @@ export function exportToPDF({ companyProfile, rubricScore, observability }: Expo
   // Title
   doc.setFontSize(24);
   doc.setTextColor(...COLORS.primary);
-  doc.text("AI Pricing Rubric Report", pageWidth / 2, yPos, { align: "center" });
+  doc.text("AVS Rubric Report", pageWidth / 2, yPos, { align: "center" });
   yPos += 12;
 
-  // Evidence-based assessment statement
+  // Evidence-based assessment statement (left-aligned)
   doc.setFontSize(9);
   doc.setTextColor(...COLORS.muted);
   const disclaimerText = "This is an evidence-based assessment of your product's external value-system legibility, based on publicly available information at the time of analysis.";
   const disclaimerLines = doc.splitTextToSize(disclaimerText, pageWidth - 40);
-  doc.text(disclaimerLines, pageWidth / 2, yPos, { align: "center" });
+  doc.text(disclaimerLines, 20, yPos);
   yPos += disclaimerLines.length * 4 + 8;
 
   // Company name
@@ -84,7 +84,8 @@ export function exportToPDF({ companyProfile, rubricScore, observability }: Expo
   doc.roundedRect(20, yPos, pageWidth - 40, 30, 3, 3, "F");
   doc.setTextColor(255, 255, 255);
   doc.setFontSize(20);
-  doc.text(`${rubricScore.totalScore}/${rubricScore.maxScore}`, pageWidth / 2, yPos + 12, { align: "center" });
+  const scorePercentage = Math.round((rubricScore.totalScore / rubricScore.maxScore) * 100);
+  doc.text(`${rubricScore.totalScore}/${rubricScore.maxScore} (${scorePercentage}%)`, pageWidth / 2, yPos + 12, { align: "center" });
   doc.setFontSize(12);
   doc.text(`${rubricScore.band} Stage`, pageWidth / 2, yPos + 22, { align: "center" });
   yPos += 40;
@@ -145,8 +146,8 @@ export function exportToPDF({ companyProfile, rubricScore, observability }: Expo
   const dimensionTableData = rubricScore.dimensionScores.map((dim) => [
     dim.dimension,
     dim.notObservable ? "N/O" : `${dim.score}/2`,
-    `${dim.confidence}%`,
-    dim.rationale.substring(0, 80) + (dim.rationale.length > 80 ? "..." : ""),
+    `${Math.round(dim.confidence * 100)}%`,
+    dim.rationale,
   ]);
 
   autoTable(doc, {
@@ -285,7 +286,7 @@ export function exportToPDF({ companyProfile, rubricScore, observability }: Expo
     doc.setFontSize(8);
     doc.setTextColor(...COLORS.muted);
     doc.text(
-      `Page ${i} of ${pageCount} • AI Pricing Rubric Report`,
+      `Page ${i} of ${pageCount} • AVS Rubric Report`,
       pageWidth / 2,
       doc.internal.pageSize.getHeight() - 10,
       { align: "center" }
@@ -294,5 +295,5 @@ export function exportToPDF({ companyProfile, rubricScore, observability }: Expo
 
   // Save the PDF
   const sanitizedName = companyProfile.companyName.replace(/[^a-z0-9]/gi, "_").toLowerCase();
-  doc.save(`${sanitizedName}_pricing_rubric_report.pdf`);
+  doc.save(`${sanitizedName}_avs_rubric_report.pdf`);
 }
