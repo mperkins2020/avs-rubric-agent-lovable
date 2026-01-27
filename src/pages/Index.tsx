@@ -1,10 +1,12 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { URLInput } from "@/components/URLInput";
 import { Sparkles, Shield, Target, Zap, AlertCircle } from "lucide-react";
 import { useScan } from "@/hooks/useScan";
 import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
+import ValueTempoLogo from "@/assets/ValueTempo_Logo.png";
 
 const Index = () => {
   const navigate = useNavigate();
@@ -63,6 +65,32 @@ const Index = () => {
       <div className="absolute inset-0 bg-gradient-to-b from-primary/5 via-transparent to-accent/5 pointer-events-none" />
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[800px] bg-primary/10 rounded-full blur-3xl opacity-20 pointer-events-none" />
 
+      {/* Header */}
+      <header className="relative z-10 border-b border-border/50 bg-background/80 backdrop-blur-sm">
+        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <Link to="/">
+              <img src={ValueTempoLogo} alt="ValueTempo" className="h-8" />
+            </Link>
+            <Button variant="outline" size="sm" className="gap-2">
+              <Sparkles className="w-4 h-4" />
+              AVS Rubric Agent
+            </Button>
+          </div>
+          <nav className="hidden md:flex items-center gap-6">
+            <Link to="/methodology" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+              Methodology
+            </Link>
+            <Link to="/faq/product-growth" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+              FAQ: Product & Growth
+            </Link>
+            <Link to="/faq/cfo-revops" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+              FAQ: CFO & RevOps
+            </Link>
+          </nav>
+        </div>
+      </header>
+
       <div className="relative z-10 container mx-auto px-4 py-16 md:py-24">
         {/* Hero */}
         <motion.div
@@ -70,18 +98,6 @@ const Index = () => {
           animate={{ opacity: 1, y: 0 }}
           className="text-center max-w-4xl mx-auto mb-12"
         >
-          {/* Badge */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.1 }}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 mb-6"
-          >
-            <Sparkles className="w-4 h-4 text-primary" />
-            <span className="text-sm text-primary font-medium">
-              AVS Rubric Agent v2.1
-            </span>
-          </motion.div>
 
           <h1 className="text-4xl md:text-6xl font-bold mb-6 leading-tight">
             Score Your{" "}
