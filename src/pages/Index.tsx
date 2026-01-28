@@ -84,12 +84,8 @@ const Index = () => {
             <Link to="/methodology" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
               Methodology
             </Link>
-            <Link to="/faq/product-growth" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-              FAQ: Product & Growth
-            </Link>
-            <Link to="/faq/cfo-revops" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-              FAQ: CFO & RevOps
-            </Link>
+            <Link to="/faq/product-growth" className="text-sm text-muted-foreground hover:text-foreground transition-colors">FAQ: Growth</Link>
+            <Link to="/faq/cfo-revops" className="text-sm text-muted-foreground hover:text-foreground transition-colors">FAQ: RevOps</Link>
           </nav>
         </div>
       </header>
