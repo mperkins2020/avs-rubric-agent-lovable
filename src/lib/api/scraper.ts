@@ -39,6 +39,10 @@ export const scraperApi = {
    */
   async scrapeWebsite(url: string, options?: { maxPages?: number }): Promise<ScrapeResult> {
     try {
+      // Create an AbortController for timeout handling
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 120000); // 2 minute timeout
+
       const { data, error } = await supabase.functions.invoke('scrape-website', {
         body: { 
           url, 
@@ -47,14 +51,30 @@ export const scraperApi = {
         },
       });
 
+      clearTimeout(timeoutId);
+
       if (error) {
         console.error('Scrape error:', error);
+        // Check for specific error types
+        if (error.message?.includes('FunctionsFetchError') || error.message?.includes('Failed to fetch')) {
+          return { 
+            success: false, 
+            error: 'Request timed out. The website may be too large or slow to respond. Please try again or try a different URL.' 
+          };
+        }
         return { success: false, error: error.message };
       }
 
       return data as ScrapeResult;
     } catch (err) {
       console.error('Scrape exception:', err);
+      // Handle abort/timeout errors
+      if (err instanceof Error && err.name === 'AbortError') {
+        return { 
+          success: false, 
+          error: 'Request timed out. The website may be too large or slow to respond. Please try again.' 
+        };
+      }
       return { 
         success: false, 
         error: err instanceof Error ? err.message : 'Failed to scrape website' 
