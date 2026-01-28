@@ -106,7 +106,7 @@ Return a JSON object matching this schema:
   }
 }`;
 
-async function callLovableAI(systemPrompt: string, userContent: string): Promise<string> {
+async function callLovableAI(systemPrompt: string, userContent: string): Promise<object> {
   const apiKey = Deno.env.get('LOVABLE_API_KEY');
   
   if (!apiKey) {
@@ -137,7 +137,27 @@ async function callLovableAI(systemPrompt: string, userContent: string): Promise
   }
 
   const data = await response.json();
-  return data.choices[0].message.content;
+  
+  if (!data.choices || !data.choices[0] || !data.choices[0].message) {
+    console.error('Invalid AI response structure:', JSON.stringify(data));
+    throw new Error('Invalid AI response structure');
+  }
+  
+  const content = data.choices[0].message.content;
+  
+  if (!content || content.trim() === '') {
+    console.error('Empty AI response content');
+    throw new Error('AI returned empty response');
+  }
+  
+  console.log('AI response length:', content.length);
+  
+  try {
+    return JSON.parse(content);
+  } catch (parseError) {
+    console.error('Failed to parse AI response:', content.substring(0, 500));
+    throw new Error('Failed to parse AI response as JSON');
+  }
 }
 
 Deno.serve(async (req) => {
@@ -172,8 +192,7 @@ Deno.serve(async (req) => {
     // Step 1: Extract company profile
     console.log('Extracting company profile...');
     const profileContent = `Analyze this website content from ${url}:\n\n${truncatedContent}`;
-    const profileResponse = await callLovableAI(COMPANY_PROFILE_PROMPT, profileContent);
-    const companyProfile = JSON.parse(profileResponse);
+    const companyProfile = await callLovableAI(COMPANY_PROFILE_PROMPT, profileContent) as Record<string, unknown>;
     console.log('Company profile extracted:', companyProfile.companyName);
 
     // Step 2: Score against rubric
@@ -188,13 +207,20 @@ Pricing Model Guess: ${companyProfile.pricingModelGuess}
 Website Content:
 ${truncatedContent}`;
 
-    const scoringResponse = await callLovableAI(RUBRIC_SCORING_PROMPT, scoringContent);
-    const rubricData = JSON.parse(scoringResponse);
+    const rubricData = await callLovableAI(RUBRIC_SCORING_PROMPT, scoringContent) as Record<string, unknown>;
     console.log('Rubric scoring complete');
 
     // Calculate totals
-    const dimensionScores = rubricData.dimensionScores || [];
-    const totalScore = dimensionScores.reduce((sum: number, d: { score: number }) => sum + d.score, 0);
+    const dimensionScores = (rubricData.dimensionScores || []) as Array<{ 
+      dimension: string; 
+      score: number; 
+      confidence: number; 
+      notObservable: boolean;
+      rationale: string;
+      observed: string[];
+      uncertaintyReasons: string[];
+    }>;
+    const totalScore = dimensionScores.reduce((sum, d) => sum + d.score, 0);
     const maxScore = dimensionScores.length * 2;
 
     // Determine band
@@ -206,17 +232,19 @@ ${truncatedContent}`;
     else band = 'Advanced';
 
     // Calculate observability
-    const avgConfidence = dimensionScores.reduce((sum: number, d: { confidence: number }) => sum + d.confidence, 0) / dimensionScores.length;
+    const avgConfidence = dimensionScores.length > 0 
+      ? dimensionScores.reduce((sum, d) => sum + d.confidence, 0) / dimensionScores.length 
+      : 0;
     let observabilityLevel: 'Strong' | 'Partial' | 'Sparse';
     if (avgConfidence >= 0.7) observabilityLevel = 'Strong';
     else if (avgConfidence >= 0.4) observabilityLevel = 'Partial';
     else observabilityLevel = 'Sparse';
 
     const mostUncertain = dimensionScores
-      .filter((d: { notObservable: boolean }) => !d.notObservable)
-      .sort((a: { confidence: number }, b: { confidence: number }) => a.confidence - b.confidence)
+      .filter(d => !d.notObservable)
+      .sort((a, b) => a.confidence - b.confidence)
       .slice(0, 3)
-      .map((d: { dimension: string; confidence: number; notObservable: boolean }) => ({
+      .map(d => ({
         dimension: d.dimension,
         confidence: d.confidence,
         notObservable: d.notObservable,
