@@ -3,6 +3,9 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { X, Sparkles, Check, Loader2 } from "lucide-react";
+import { z } from "zod";
+
+const emailSchema = z.string().trim().email({ message: "Please enter a valid email address" }).max(255);
 
 interface EmailCaptureModalProps {
   isOpen: boolean;
@@ -13,12 +16,20 @@ interface EmailCaptureModalProps {
 export const EmailCaptureModal = forwardRef<HTMLDivElement, EmailCaptureModalProps>(
   function EmailCaptureModal({ isOpen, onClose, companyName }, ref) {
   const [email, setEmail] = useState("");
+  const [emailError, setEmailError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email.trim()) return;
+    setEmailError("");
+
+    // Validate email with zod
+    const result = emailSchema.safeParse(email);
+    if (!result.success) {
+      setEmailError(result.error.errors[0]?.message || "Invalid email");
+      return;
+    }
 
     setIsSubmitting(true);
     // Simulate API call
@@ -92,14 +103,22 @@ export const EmailCaptureModal = forwardRef<HTMLDivElement, EmailCaptureModalPro
 
                   {/* Form */}
                   <form onSubmit={handleSubmit} className="space-y-4">
-                    <Input
-                      type="email"
-                      placeholder="Enter your work email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      className="bg-secondary/50"
-                      required
-                    />
+                    <div>
+                      <Input
+                        type="email"
+                        placeholder="Enter your work email"
+                        value={email}
+                        onChange={(e) => {
+                          setEmail(e.target.value);
+                          setEmailError("");
+                        }}
+                        className={`bg-secondary/50 ${emailError ? 'border-destructive' : ''}`}
+                        required
+                      />
+                      {emailError && (
+                        <p className="text-xs text-destructive mt-1">{emailError}</p>
+                      )}
+                    </div>
                     <Button
                       type="submit"
                       className="w-full bg-gradient-primary"
