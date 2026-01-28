@@ -107,10 +107,8 @@ const Index = () => {
             in Minutes
           </h1>
 
-          <p className="text-xl text-muted-foreground max-w-2xl mx-auto mb-12">
-            Enter your company URL and get an instant, evidence-backed assessment
-            of your pricing and value delivery maturity against the AVS Rubric.
-          </p>
+          <p className="text-xl text-muted-foreground max-w-2xl mx-auto mb-12">Enter your company URL to get an instant, evidence-backed assessment of your pricing and value delivery maturity against 
+the AVS Rubric.</p>
 
           {/* URL Input */}
           <div className="flex justify-center mb-16">
