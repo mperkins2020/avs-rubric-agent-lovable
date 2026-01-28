@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect } from "react";
 import { useLocation, Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ArrowLeft, Sparkles, Loader2, Download } from "lucide-react";
+import { Sparkles, Loader2, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { TotalScoreCard } from "@/components/TotalScoreCard";
 import { CompanyProfileCard } from "@/components/CompanyProfileCard";
@@ -115,30 +115,44 @@ export default function Results() {
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Link to="/">
-              <Button variant="ghost" size="sm">
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                New Scan
-              </Button>
+              <img alt="ValueTempo" className="h-8" src="/lovable-uploads/87678626-e604-46ee-90b6-9ab9b6380322.png" />
             </Link>
-            <div className="h-4 w-px bg-border" />
-            <span className="text-sm text-muted-foreground truncate max-w-[200px] md:max-w-none">
+            <Button variant="outline" size="sm" className="gap-2">
+              <Sparkles className="w-4 h-4" />
+              AVS Rubric Agent
+            </Button>
+            <span className="px-2 py-0.5 text-xs font-semibold rounded-full bg-primary/10 text-primary border border-primary/20">
+              Beta
+            </span>
+            <div className="h-4 w-px bg-border hidden md:block" />
+            <span className="text-sm text-muted-foreground truncate max-w-[200px] md:max-w-none hidden md:block">
               {companyProfile.companyName}
             </span>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-4">
+            <nav className="hidden md:flex items-center gap-6">
+              <Link to="/methodology" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                Methodology
+              </Link>
+              <Link to="/faq/product-growth" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                FAQ: Growth
+              </Link>
+            </nav>
             <Button 
               variant="outline"
+              size="sm"
               onClick={() => exportToPDF({ companyProfile, rubricScore, observability })}
             >
               <Download className="w-4 h-4 mr-2" />
-              Export PDF
+              PDF
             </Button>
             <Button 
               onClick={() => setShowEmailModal(true)}
+              size="sm"
               className="bg-gradient-primary"
             >
               <Sparkles className="w-4 h-4 mr-2" />
-              Get Full Plan
+              Full Plan
             </Button>
           </div>
         </div>
