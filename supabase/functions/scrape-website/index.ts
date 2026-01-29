@@ -99,9 +99,29 @@ Deno.serve(async (req) => {
 
     console.log('Main page scraped successfully');
 
-    // Step 2: If subpages are requested, use map to find relevant pages
+    // Step 2: If subpages are requested, find and scrape relevant pages
     if (includeSubpages && maxPages > 1) {
       console.log('Mapping website for subpages...');
+      
+      // Parse base URL for constructing fallback URLs
+      const urlObj = new URL(formattedUrl);
+      const baseUrl = `${urlObj.protocol}//${urlObj.host}`;
+      
+      // Common high-value page paths to try as fallbacks
+      const commonPaths = [
+        '/pricing',
+        '/about',
+        '/features',
+        '/product',
+        '/solutions',
+        '/platform',
+        '/enterprise',
+        '/security',
+        '/integrations',
+        '/customers',
+        '/use-cases',
+        '/how-it-works',
+      ];
       
       const mapResponse = await fetch('https://api.firecrawl.dev/v1/map', {
         method: 'POST',
@@ -117,78 +137,107 @@ Deno.serve(async (req) => {
       });
 
       const mapData = await mapResponse.json();
+      let allLinks: string[] = [];
 
       if (mapResponse.ok && mapData.success && mapData.links) {
-        console.log(`Found ${mapData.links.length} links`);
+        console.log(`Found ${mapData.links.length} links from map`);
+        allLinks = mapData.links;
+      }
+      
+      // Add fallback URLs that might not be in the sitemap
+      const fallbackUrls = commonPaths.map(path => baseUrl + path);
+      console.log('Adding fallback URLs for common pages');
+      
+      // Combine mapped links with fallbacks (fallbacks first for priority)
+      const combinedLinks = [...new Set([...fallbackUrls, ...allLinks])];
+      console.log(`Total combined links: ${combinedLinks.length}`);
 
-        // Filter for high-value pages (pricing, about, features, etc.)
-        const priorityPatterns = [
-          /pricing/i,
-          /about/i,
-          /feature/i,
-          /product/i,
-          /solution/i,
-          /security/i,
-          /trust/i,
-          /compliance/i,
-          /enterprise/i,
-          /platform/i,
-          /integrat/i,
-          /how-it-works/i,
-          /use-case/i,
-          /customer/i,
-          /case-stud/i,
-          /resource/i,
-          /docs/i,
-          /api/i,
-        ];
+      // Filter for high-value pages
+      const priorityPatterns = [
+        /\/pricing\b/i,
+        /\/about\b/i,
+        /\/features?\b/i,
+        /\/products?\b/i,
+        /\/solutions?\b/i,
+        /\/security\b/i,
+        /\/trust\b/i,
+        /\/compliance\b/i,
+        /\/enterprise\b/i,
+        /\/platform\b/i,
+        /\/integrations?\b/i,
+        /\/how-it-works\b/i,
+        /\/use-cases?\b/i,
+        /\/customers?\b/i,
+        /\/case-stud/i,
+        /\/resources?\b/i,
+        /\/why-/i,
+        /\/compare/i,
+        /\/vs-/i,
+      ];
 
-        const priorityLinks = mapData.links
-          .filter((link: string) => {
-            // Exclude common non-content pages
-            if (/\.(pdf|zip|png|jpg|jpeg|gif|svg|css|js)$/i.test(link)) return false;
-            if (/\/(blog|news|press|careers|jobs|legal|terms|privacy|cookie)/i.test(link)) return false;
-            if (link === formattedUrl) return false;
-            return priorityPatterns.some(pattern => pattern.test(link));
-          })
-          .slice(0, maxPages - 1);
+      // Exclusion patterns
+      const exclusionPatterns = [
+        /\.(pdf|zip|png|jpg|jpeg|gif|svg|css|js|woff|woff2|ttf|eot)$/i,
+        /\/(blog|news|press|careers|jobs|legal|terms|privacy|cookie|changelog|updates|releases)\//i,
+        /\/(blog|news|press|careers|jobs|legal|terms|privacy|cookie|changelog|updates|releases)$/i,
+      ];
 
-        console.log(`Selected ${priorityLinks.length} priority pages to scrape`);
+      const priorityLinks = combinedLinks
+        .filter((link: string) => {
+          if (exclusionPatterns.some(pattern => pattern.test(link))) return false;
+          if (link === formattedUrl || link === formattedUrl + '/') return false;
+          return priorityPatterns.some(pattern => pattern.test(link));
+        })
+        .slice(0, maxPages - 1);
 
-        // Scrape each priority page
-        for (const pageUrl of priorityLinks) {
-          try {
-            console.log('Scraping:', pageUrl);
-            const pageResponse = await fetch('https://api.firecrawl.dev/v1/scrape', {
-              method: 'POST',
-              headers: {
-                'Authorization': `Bearer ${apiKey}`,
-                'Content-Type': 'application/json',
+      console.log(`Selected ${priorityLinks.length} priority pages to scrape`);
+      console.log('Priority links:', priorityLinks);
+
+      // Scrape each priority page (in parallel for speed)
+      const scrapePromises = priorityLinks.map(async (pageUrl: string) => {
+        try {
+          console.log('Scraping:', pageUrl);
+          const pageResponse = await fetch('https://api.firecrawl.dev/v1/scrape', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${apiKey}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              url: pageUrl,
+              formats: ['markdown'],
+              onlyMainContent: true,
+            }),
+          });
+
+          const pageData = await pageResponse.json();
+
+          if (pageResponse.ok && pageData.success && pageData.data) {
+            console.log('Successfully scraped:', pageUrl);
+            return {
+              url: pageUrl,
+              title: pageData.data.metadata?.title || pageUrl,
+              markdown: pageData.data.markdown || '',
+              metadata: {
+                description: pageData.data.metadata?.description,
               },
-              body: JSON.stringify({
-                url: pageUrl,
-                formats: ['markdown'],
-                onlyMainContent: true,
-              }),
-            });
-
-            const pageData = await pageResponse.json();
-
-            if (pageResponse.ok && pageData.success && pageData.data) {
-              pages.push({
-                url: pageUrl,
-                title: pageData.data.metadata?.title || pageUrl,
-                markdown: pageData.data.markdown || '',
-                metadata: {
-                  description: pageData.data.metadata?.description,
-                },
-              });
-              console.log('Successfully scraped:', pageUrl);
-            }
-          } catch (pageError) {
-            console.error(`Failed to scrape ${pageUrl}:`, pageError);
-            // Continue with other pages
+            };
+          } else {
+            console.log('Failed to scrape (page may not exist):', pageUrl);
+            return null;
           }
+        } catch (pageError) {
+          console.error(`Failed to scrape ${pageUrl}:`, pageError);
+          return null;
+        }
+      });
+
+      const scrapedPages = await Promise.all(scrapePromises);
+      
+      // Add successfully scraped pages
+      for (const page of scrapedPages) {
+        if (page) {
+          pages.push(page);
         }
       }
     }
