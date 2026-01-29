@@ -191,6 +191,15 @@ const Index = () => {
           </div>
         </motion.div>
       </div>
+
+      {/* Footer */}
+      <footer className="relative z-10 border-t border-border/50 py-6">
+        <div className="container mx-auto px-4 text-center">
+          <p className="text-sm text-muted-foreground">
+            © 2026 ValueTempo. All rights reserved.
+          </p>
+        </div>
+      </footer>
     </div>;
 };
 export default Index;
