@@ -1,10 +1,30 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronDown, AlertCircle, Info } from "lucide-react";
+import { ChevronDown, AlertCircle, Info, HelpCircle } from "lucide-react";
 import { GlassCard } from "@/components/ui/GlassCard";
 import { ScoreBadge } from "@/components/ScoreBadge";
 import { cn } from "@/lib/utils";
 import type { DimensionScore } from "@/types/rubric";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+
+// Dimension explanations mapping
+const dimensionDescriptions: Record<string, string> = {
+  "90-day north star": "The primary, short-term goal or metric the product aims to achieve within the first 90 days of adoption. Measures clarity of immediate value delivery.",
+  "ICP and job clarity": "How well the Ideal Customer Profile is defined and whether the product clearly addresses the specific job or tasks the target user needs to accomplish.",
+  "Buyer and budget alignment": "Whether the product's value proposition resonates with the buyer's needs and aligns with their allocated budget and purchasing authority.",
+  "Value units": "The specific, measurable units of value that the product delivers to the customer—what exactly they're paying for.",
+  "Cost driver mapping": "How well the key cost drivers are identified and mapped to the product's value and pricing structure.",
+  "Pools and packaging": "How the product's features and benefits are bundled or packaged for different customer segments or pricing tiers.",
+  "Overages and risk allocation": "How usage beyond planned limits is handled and how risks associated with the product's adoption or performance are allocated between parties.",
+  "Safety rails and trust surfaces": "Safeguards and mechanisms in place to ensure user safety, data security, and build trust in the product.",
+  "Rating agility and governance": "The ability to adapt pricing or value metrics quickly while maintaining proper governance and oversight.",
+  "Measurement and cadence": "Clear metrics for success and a regular schedule for reviewing performance and making adjustments.",
+};
 
 interface DimensionCardProps {
   dimension: DimensionScore;
@@ -46,9 +66,22 @@ export function DimensionCard({ dimension, index }: DimensionCardProps) {
               <span className="font-mono text-xs text-muted-foreground w-6">
                 {String(index + 1).padStart(2, "0")}
               </span>
-              <h3 className="font-medium text-foreground">
-                {dimension.dimension}
-              </h3>
+              <div className="flex items-center gap-1.5">
+                <h3 className="font-medium text-foreground">
+                  {dimension.dimension}
+                </h3>
+                <TooltipProvider delayDuration={200}>
+                  <Tooltip>
+                    <TooltipTrigger asChild onClick={(e) => e.stopPropagation()}>
+                      <HelpCircle className="w-3.5 h-3.5 text-muted-foreground hover:text-foreground transition-colors cursor-help" />
+                    </TooltipTrigger>
+                    <TooltipContent side="top" className="max-w-xs text-sm">
+                      {dimensionDescriptions[dimension.dimension.toLowerCase()] || 
+                        "Assessment criteria for this dimension."}
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
             </div>
             <div className="flex items-center gap-3">
               <span className={cn("text-xs", getConfidenceColor())}>
