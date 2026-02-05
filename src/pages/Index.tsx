@@ -50,7 +50,7 @@ const Index = () => {
   const features = [{
     icon: Target,
     title: "10 Rubric Dimensions",
-    description: "Comprehensive scoring across the AVS value system framework"
+    description: "Comprehensive scoring across your value system"
   }, {
     icon: Shield,
     title: "Evidence-Backed",
