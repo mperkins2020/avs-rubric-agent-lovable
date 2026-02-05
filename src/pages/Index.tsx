@@ -185,7 +185,7 @@ const Index = () => {
             Scored across 10 dimensions
           </h2>
           <div className="flex flex-wrap justify-center gap-2 max-w-3xl mx-auto">
-            {["90-day north star", "ICP and job clarity", "Buyer and budget alignment", "Value units", "Cost driver mapping", "Pools and packaging", "Overages and risk allocation", "Safety rails and trust surfaces", "Rating agility and governance", "Measurement and cadence"].map(dim => <span key={dim} className="px-3 py-1.5 text-xs rounded-full bg-secondary/50 text-muted-foreground border border-border/50">
+            {["product north star", "ICP and job clarity", "Buyer and budget alignment", "Value units", "Cost driver mapping", "Pools and packaging", "Overages and risk allocation", "Safety rails and trust surfaces", "Rating agility and governance", "Measurement and cadence"].map(dim => <span key={dim} className="px-3 py-1.5 text-xs rounded-full bg-secondary/50 text-muted-foreground border border-border/50">
                 {dim}
               </span>)}
           </div>
