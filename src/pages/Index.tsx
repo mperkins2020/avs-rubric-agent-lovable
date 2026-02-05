@@ -102,7 +102,7 @@ const Index = () => {
 
           <h1 className="text-4xl md:text-6xl font-bold mb-6 leading-tight">
             Score Your{" "}
-            <span className="gradient-text">Value System</span>
+            <span className="gradient-text">Pricing Readiness</span>
             <br />
             in Minutes
           </h1>
