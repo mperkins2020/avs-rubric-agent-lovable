@@ -121,32 +121,7 @@ Example: If the assessment surfaces workflow cutover risk, the action is not "re
           <h1 className="text-4xl font-bold mb-6">FAQs for Product & Growth Leaders</h1>
 
           {/* Belief Formation Stack */}
-          <div className="mb-12 p-8 rounded-2xl bg-primary/5 border border-primary/20">
-            <div className="space-y-2 mb-6">
-              <p className="text-lg font-semibold">Belief is formed before usage.</p>
-              <p className="text-lg font-semibold">Trust is tested during usage.</p>
-              <p className="text-muted-foreground">This system focuses on the first moment, where most revenue friction begins.</p>
-            </div>
-
-            <h3 className="font-semibold mb-4">The Belief Formation Stack</h3>
-            <div className="grid gap-3">
-              <div className="flex items-center gap-3 p-3 rounded-lg bg-background/50">
-                <Layers className="w-5 h-5 text-primary" />
-                <span><strong>1. Structure</strong> – pricing, limits, workflows, trust surfaces</span>
-              </div>
-              <div className="flex items-center gap-3 p-3 rounded-lg bg-background/50">
-                <MessageSquare className="w-5 h-5 text-primary" />
-                <span><strong>2. Messaging</strong> – what you say about it</span>
-              </div>
-              <div className="flex items-center gap-3 p-3 rounded-lg bg-background/50">
-                <Heart className="w-5 h-5 text-primary" />
-                <span><strong>3. Sentiment</strong> – how people react after experience</span>
-              </div>
-            </div>
-            <p className="mt-4 text-sm text-muted-foreground">
-              The AVS Rubric Agent focuses on Layer 1, which is usually the least measured.
-            </p>
-          </div>
+          
 
           {/* FAQ List */}
           <div className="space-y-8">
