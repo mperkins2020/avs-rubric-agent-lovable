@@ -48,15 +48,112 @@ For each of the 10 dimensions below, provide:
 - uncertaintyReasons: Array of reasons for uncertainty
 
 THE 10 DIMENSIONS:
+
 1. "Product north star" - One measurable 90-day outcome for value and predictability.
+
 2. "ICP and job clarity" - Clear target user and job, anchored in workflows.
+
 3. "Buyer and budget alignment" - Plans map to buyer, budget cycles, and approvals.
+
+   ## Data fields for Buyer and budget alignment (use these exact field names in analysis)
+
+   **segments[]**
+   - segments[].name: indie | team | enterprise
+   - segments[].priority_weight: float 0..1
+   - segments[].economic_buyer_role: string
+   - segments[].budget_owner: string
+   - segments[].payment_requirements: list of card | invoice | po | annual_commit | prepaid_credits
+   - segments[].approval_blockers_top3: list of security | legal | it | procurement | privacy | finance_controls
+
+   **tiers[]**
+   - tiers[].name: string
+   - tiers[].target_segment: indie | team | enterprise
+   - tiers[].billing_options: list of monthly | annual | usage | hybrid
+   - tiers[].payment_methods: list of card | invoice | po
+   - tiers[].features: list of rbac | admin | usage_dashboard | caps | alerts | sso | scim | audit_logs | soc2 | dpa | sla
+
+   **policies**
+   - policies.overage_behavior: hard_stop | soft_limit | auto_topup | rollover
+   - policies.renewal_cancellation: explicit | unclear
+
+   **facts[] (evidence ledger)**
+   Each computed or user-provided fact must be tracked with:
+   - field_path: string, ex: tiers[Team].payment_methods
+   - value: any
+   - source_type: public_url | doc | contract | user_input | assumption
+   - reliability: float 0..1
+   - evidence_ref: URL or attachment ID
+   - timestamp: ISO string
+
+   ## Evidence collection rules (before scoring)
+   1) Extract public signals from pricing pages, docs, trust centers, terms, and store them as facts[] tied to the specific field_path.
+   2) If a required field is missing from public evidence, leave it blank and lower confidence. Do not guess unless explicitly marked as source_type=assumption with reliability=0.30.
+   3) If user supplies insider info, write it as source_type=user_input with reliability=0.65.
+
+   ## Scoring (deterministic)
+   Compute subtests per segment. Each subtest returns pass: 0|1.
+
+   **Helper: tier selection**
+   For each segment s, define segment_tiers = tiers[] where tiers[].target_segment == s.name.
+   If none exist, subtests that depend on tiers fail for that segment.
+
+   **Subtests (0 or 1 each, per segment):**
+
+   S1 Buyer clarity: Pass if segments[].economic_buyer_role exists for this segment.
+
+   S2 Budget and billing fit: Pass if there exists at least one tier in segment_tiers where tiers[].payment_methods intersects segments[].payment_requirements is non-empty.
+
+   S3 Approval readiness:
+   - For team segment: pass if there exists a tier in segment_tiers where (rbac OR admin) IN tiers[].features AND (usage_dashboard OR caps OR alerts) IN tiers[].features
+   - For enterprise segment: pass if there exists a tier in segment_tiers where (invoice OR po) IN tiers[].payment_methods AND sso IN tiers[].features AND dpa IN tiers[].features AND (audit_logs OR soc2) IN tiers[].features
+   - For indie segment: pass if there exists a tier in segment_tiers where card IN tiers[].payment_methods AND at least one spend visibility control exists (usage_dashboard OR alerts OR caps)
+
+   S4 Commercial terms legibility: Pass if policies.overage_behavior is present AND policies.renewal_cancellation == explicit
+
+   S5 Upgrade and expansion path: Pass if the following progression exists in tiers[]: at least one tier targeting indie, at least one tier targeting team, at least one tier targeting enterprise, AND the enterprise tier satisfies S3 enterprise requirements.
+
+   **Segment score mapping (0–2):**
+   For each segment, segment_points = sum(S1..S5):
+   - 0–1 points: segment score = 0
+   - 2–3 points: segment score = 1
+   - 4–5 points: segment score = 2
+
+   **Dimension aggregation (0–2):**
+   - If segments[].priority_weight is present and sums to 1: compute weighted average of segment scores.
+   - If missing: assume equal weights across provided segments, and lower confidence.
+
+   **Gates (hard enforcement caps):**
+   - If an enterprise segment is present and S3 enterprise fails: cap final dimension score at 1.
+   - If policies.overage_behavior is missing: cap final dimension score at 1.
+
+   ## Confidence (separate from score)
+   Compute confidence per subtest as:
+   - subtest_confidence = max(facts[].reliability among facts used by that subtest)
+   - If no facts used: subtest_confidence = 0
+
+   Per segment:
+   - segment_confidence = average(subtest_confidence for S1..S5)
+
+   Dimension confidence:
+   - Identify highest-priority segment: max segments[].priority_weight (or enterprise if weights missing).
+   - dimension_confidence = min(confidence(highest-priority segment), average(segment_confidence across segments))
+
+   Confidence labels: High >= 0.75, Medium 0.45–0.74, Low < 0.45
+
+   Conflict rule: If two facts with reliability >= 0.65 disagree for the same field_path, flag a conflict and cap confidence at Medium until resolved.
+
 4. "Value unit" - Billable unit tracks value, is predictable and auditable.
+
 5. "Cost driver mapping" - Usage and cost drivers are explicit and forecastable.
+
 6. "Pools and packaging" - Tiers separate exploration from production by segment.
+
 7. "Overages and risk allocation" - Limit behavior is explicit, risk is fairly shared.
+
 8. "Safety rails and trust surfaces" - Controls prevent surprises, show usage, enable limits.
+
 9. "Rating agility and governance" - Versioned pricing changes with approvals and traceability.
+
 10. "Measurement and cadence" - Regular reviews drive evidence-based pricing and rails changes.
 
 Also provide:
