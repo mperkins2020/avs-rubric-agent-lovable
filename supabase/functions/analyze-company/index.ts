@@ -48,16 +48,16 @@ For each of the 10 dimensions below, provide:
 - uncertaintyReasons: Array of reasons for uncertainty
 
 THE 10 DIMENSIONS:
-1. "90-day north star" - Is there a clear near-term value goal customers can achieve?
-2. "ICP and job clarity" - Is the ideal customer profile and job-to-be-done clear?
-3. "Buyer and budget alignment" - Is it clear who pays and from what budget?
-4. "Value units" - Are the units of value clear and measurable?
-5. "Cost driver mapping" - Is there transparency about what drives costs?
-6. "Pools and packaging" - Are there clear packages/tiers with defined pools?
-7. "Overages and risk allocation" - Is overage pricing and risk handling clear?
-8. "Safety rails and trust surfaces" - Are there controls, limits, and trust features?
-9. "Rating agility and governance" - Can pricing adapt? Is there governance?
-10. "Measurement and cadence" - How is value measured and reviewed?
+1. "Product north star" - One measurable 90-day outcome for value and predictability.
+2. "ICP and job clarity" - Clear target user and job, anchored in workflows.
+3. "Buyer and budget alignment" - Plans map to buyer, budget cycles, and approvals.
+4. "Value unit" - Billable unit tracks value, is predictable and auditable.
+5. "Cost driver mapping" - Usage and cost drivers are explicit and forecastable.
+6. "Pools and packaging" - Tiers separate exploration from production by segment.
+7. "Overages and risk allocation" - Limit behavior is explicit, risk is fairly shared.
+8. "Safety rails and trust surfaces" - Controls prevent surprises, show usage, enable limits.
+9. "Rating agility and governance" - Versioned pricing changes with approvals and traceability.
+10. "Measurement and cadence" - Regular reviews drive evidence-based pricing and rails changes.
 
 Also provide:
 - strengths: Top 3 areas where they excel with evidence
