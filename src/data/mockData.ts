@@ -30,7 +30,7 @@ export const mockRubricScore: RubricScore = {
   band: "Emerging",
   dimensionScores: [
     {
-      dimension: "90-day north star",
+      dimension: "Product north star",
       score: 1,
       confidence: 0.6,
       notObservable: false,
@@ -64,7 +64,7 @@ export const mockRubricScore: RubricScore = {
       ],
     },
     {
-      dimension: "Value units",
+      dimension: "Value unit",
       score: 2,
       confidence: 0.8,
       notObservable: false,
@@ -159,7 +159,7 @@ export const mockRubricScore: RubricScore = {
       ],
     },
     {
-      dimension: "Value units",
+      dimension: "Value unit",
       whyItIsStrong: "Workflow runs are well-defined and directly tied to customer value delivery",
       whatItEnables: "Transparent pricing that scales with actual usage and customer success",
       evidence: [

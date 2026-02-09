@@ -99,10 +99,10 @@ export interface ChatMessage {
 }
 
 export const RUBRIC_DIMENSIONS = [
-  '90-day north star',
+  'Product north star',
   'ICP and job clarity',
   'Buyer and budget alignment',
-  'Value units',
+  'Value unit',
   'Cost driver mapping',
   'Pools and packaging',
   'Overages and risk allocation',

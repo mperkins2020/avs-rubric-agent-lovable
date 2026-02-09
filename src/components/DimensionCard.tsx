@@ -14,16 +14,16 @@ import {
 
 // Dimension explanations mapping
 const dimensionDescriptions: Record<string, string> = {
-  "90-day north star": "The primary, short-term goal or metric the product aims to achieve within the first 90 days of adoption. Measures clarity of immediate value delivery.",
-  "ICP and job clarity": "How well the Ideal Customer Profile is defined and whether the product clearly addresses the specific job or tasks the target user needs to accomplish.",
-  "Buyer and budget alignment": "Whether the product's value proposition resonates with the buyer's needs and aligns with their allocated budget and purchasing authority.",
-  "Value units": "The specific, measurable units of value that the product delivers to the customer—what exactly they're paying for.",
-  "Cost driver mapping": "How well the key cost drivers are identified and mapped to the product's value and pricing structure.",
-  "Pools and packaging": "How the product's features and benefits are bundled or packaged for different customer segments or pricing tiers.",
-  "Overages and risk allocation": "How usage beyond planned limits is handled and how risks associated with the product's adoption or performance are allocated between parties.",
-  "Safety rails and trust surfaces": "Safeguards and mechanisms in place to ensure user safety, data security, and build trust in the product.",
-  "Rating agility and governance": "The ability to adapt pricing or value metrics quickly while maintaining proper governance and oversight.",
-  "Measurement and cadence": "Clear metrics for success and a regular schedule for reviewing performance and making adjustments.",
+  "Product north star": "One measurable 90-day outcome for value and predictability.",
+  "ICP and job clarity": "Clear target user and job, anchored in workflows.",
+  "Buyer and budget alignment": "Plans map to buyer, budget cycles, and approvals.",
+  "Value unit": "Billable unit tracks value, is predictable and auditable.",
+  "Cost driver mapping": "Usage and cost drivers are explicit and forecastable.",
+  "Pools and packaging": "Tiers separate exploration from production by segment.",
+  "Overages and risk allocation": "Limit behavior is explicit, risk is fairly shared.",
+  "Safety rails and trust surfaces": "Controls prevent surprises, show usage, enable limits.",
+  "Rating agility and governance": "Versioned pricing changes with approvals and traceability.",
+  "Measurement and cadence": "Regular reviews drive evidence-based pricing and rails changes.",
 };
 
 interface DimensionCardProps {
