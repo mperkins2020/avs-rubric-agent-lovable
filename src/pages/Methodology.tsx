@@ -131,16 +131,16 @@ const Methodology = () => {
             <h2 className="text-2xl font-bold mt-12 mb-6">The 10 Dimensions</h2>
             <div className="space-y-6">
               {[
-                { name: "Product north star", definition: "One measurable outcome tied to value delivery and economic predictability, not a vague growth goal." },
-                { name: "ICP and job clarity", definition: "Can a buyer quickly infer who it is for and the specific job-to-be-done, with concrete workflows and constraints." },
-                { name: "Buyer and budget alignment", definition: "Is the economic buyer obvious, and do plans map cleanly to how that buyer budgets, approves, and renews." },
-                { name: "Value units", definition: "Is the billable unit understandable and defensible as a proxy for value, with clear definitions users can predict and audit." },
-                { name: "Cost driver mapping", definition: "Is it clear what actions and workload characteristics drive usage and cost, including what makes spend spike and how to forecast it." },
-                { name: "Pools and packaging", definition: "Do tiers or pools separate exploration vs production behavior and match segment needs, instead of forcing one blunt plan." },
-                { name: "Overages and risk allocation", definition: "Is 'what happens at the limit' explicit (hard stop, soft limit, top-up, rollover), and is risk shared in a way customers perceive as fair." },
-                { name: "Safety rails and trust surfaces", definition: "Are there visible controls that prevent surprise: budgets, caps, alerts, estimates, admin controls, usage dashboards, and clear failure behavior." },
-                { name: "Rating agility and governance", definition: "Can pricing and limits evolve safely with versioning, communication, approvals, and a clear governance trail, not ad hoc changes." },
-                { name: "Measurement and cadence", definition: "Is there an explicit operating cadence to review unit economics and customer outcomes, then adjust units, packaging, and rails based on evidence." }
+                { name: "Product north star", definition: "One measurable 90-day outcome for value and predictability." },
+                { name: "ICP and job clarity", definition: "Clear target user and job, anchored in workflows." },
+                { name: "Buyer and budget alignment", definition: "Plans map to buyer, budget cycles, and approvals." },
+                { name: "Value unit", definition: "Billable unit tracks value, is predictable and auditable." },
+                { name: "Cost driver mapping", definition: "Usage and cost drivers are explicit and forecastable." },
+                { name: "Pools and packaging", definition: "Tiers separate exploration from production by segment." },
+                { name: "Overages and risk allocation", definition: "Limit behavior is explicit, risk is fairly shared." },
+                { name: "Safety rails and trust surfaces", definition: "Controls prevent surprises, show usage, enable limits." },
+                { name: "Rating agility and governance", definition: "Versioned pricing changes with approvals and traceability." },
+                { name: "Measurement and cadence", definition: "Regular reviews drive evidence-based pricing and rails changes." }
               ].map((dim, index) => (
                 <div key={dim.name} className="p-4 rounded-lg bg-secondary/30 border border-border/50">
                   <h4 className="font-semibold mb-2 text-foreground">
