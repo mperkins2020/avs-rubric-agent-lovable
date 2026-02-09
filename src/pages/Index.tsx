@@ -15,16 +15,16 @@ import {
 } from "@/components/ui/tooltip";
 
 const dimensionDefinitions: Record<string, string> = {
-  "Product north star": "One measurable outcome tied to value delivery and economic predictability, not a vague growth goal.",
-  "ICP and job clarity": "Can a buyer quickly infer who it is for and the specific job-to-be-done, with concrete workflows and constraints.",
-  "Buyer and budget alignment": "Is the economic buyer obvious, and do plans map cleanly to how that buyer budgets, approves, and renews.",
-  "Value units": "Is the billable unit understandable and defensible as a proxy for value, with clear definitions users can predict and audit.",
-  "Cost driver mapping": "Is it clear what actions and workload characteristics drive usage and cost, including what makes spend spike and how to forecast it.",
-  "Pools and packaging": "Do tiers or pools separate exploration vs production behavior and match segment needs, instead of forcing one blunt plan.",
-  "Overages and risk allocation": "Is 'what happens at the limit' explicit (hard stop, soft limit, top-up, rollover), and is risk shared in a way customers perceive as fair.",
-  "Safety rails and trust surfaces": "Are there visible controls that prevent surprise: budgets, caps, alerts, estimates, admin controls, usage dashboards, and clear failure behavior.",
-  "Rating agility and governance": "Can pricing and limits evolve safely with versioning, communication, approvals, and a clear governance trail, not ad hoc changes.",
-  "Measurement and cadence": "Is there an explicit operating cadence to review unit economics and customer outcomes, then adjust units, packaging, and rails based on evidence."
+  "Product north star": "One measurable 90-day outcome for value and predictability.",
+  "ICP and job clarity": "Clear target user and job, anchored in workflows.",
+  "Buyer and budget alignment": "Plans map to buyer, budget cycles, and approvals.",
+  "Value unit": "Billable unit tracks value, is predictable and auditable.",
+  "Cost driver mapping": "Usage and cost drivers are explicit and forecastable.",
+  "Pools and packaging": "Tiers separate exploration from production by segment.",
+  "Overages and risk allocation": "Limit behavior is explicit, risk is fairly shared.",
+  "Safety rails and trust surfaces": "Controls prevent surprises, show usage, enable limits.",
+  "Rating agility and governance": "Versioned pricing changes with approvals and traceability.",
+  "Measurement and cadence": "Regular reviews drive evidence-based pricing and rails changes."
 };
 const Index = () => {
   const navigate = useNavigate();
