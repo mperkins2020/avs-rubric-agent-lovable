@@ -160,8 +160,7 @@ export default function Results() {
       </header>
 
       <main className="container mx-auto px-4 py-8">
-        <div className="grid lg:grid-cols-[1fr_380px] gap-8">
-          {/* Main Content */}
+        <div className="max-w-4xl mx-auto">
           <div className="space-y-6">
             {/* Total Score */}
             <TotalScoreCard
@@ -209,17 +208,15 @@ export default function Results() {
               </div>
             </motion.div>
 
-            {/* Feedback Form */}
-            <FeedbackForm companyName={companyProfile.companyName} />
-          </div>
-
-          {/* Sidebar - Chat */}
-          <div className="lg:sticky lg:top-24 lg:self-start">
+            {/* Challenge Chat */}
             <ChatPanel
               messages={chatMessages}
               onSendMessage={handleSendMessage}
               isLoading={isChatLoading}
             />
+
+            {/* Feedback Form */}
+            <FeedbackForm companyName={companyProfile.companyName} />
           </div>
         </div>
       </main>
