@@ -10,6 +10,7 @@ import { DimensionCard } from "@/components/DimensionCard";
 import { StrengthsWeaknesses } from "@/components/StrengthsWeaknesses";
 import { ChatPanel } from "@/components/ChatPanel";
 import { EmailCaptureModal } from "@/components/EmailCaptureModal";
+import { FeedbackForm } from "@/components/FeedbackForm";
 import { scraperApi, type ScrapedPage } from "@/lib/api/scraper";
 import { exportToPDF } from "@/lib/pdfExport";
 import type { ChatMessage, CompanyProfile, RubricScore, ObservabilityData } from "@/types/rubric";
@@ -207,6 +208,9 @@ export default function Results() {
                 ))}
               </div>
             </motion.div>
+
+            {/* Feedback Form */}
+            <FeedbackForm companyName={companyProfile.companyName} />
           </div>
 
           {/* Sidebar - Chat */}
