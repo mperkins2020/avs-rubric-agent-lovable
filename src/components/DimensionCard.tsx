@@ -76,7 +76,7 @@ export function DimensionCard({ dimension, index }: DimensionCardProps) {
                       <HelpCircle className="w-3.5 h-3.5 text-muted-foreground hover:text-foreground transition-colors cursor-help" />
                     </TooltipTrigger>
                     <TooltipContent side="top" className="max-w-xs text-sm">
-                      {dimensionDescriptions[dimension.dimension.toLowerCase()] || 
+                      {dimensionDescriptions[dimension.dimension] || 
                         "Assessment criteria for this dimension."}
                     </TooltipContent>
                   </Tooltip>
