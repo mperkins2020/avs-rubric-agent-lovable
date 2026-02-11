@@ -123,7 +123,7 @@ const Index = () => {
             Score Your{" "}
             <span className="gradient-text">Pricing Readiness</span>
             <br />
-            in Minutes
+            in Seconds
           </h1>
 
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto mb-12">
