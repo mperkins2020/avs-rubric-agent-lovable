@@ -142,7 +142,131 @@ THE 10 DIMENSIONS:
 
    Conflict rule: If two facts with reliability >= 0.65 disagree for the same field_path, flag a conflict and cap confidence at Medium until resolved.
 
-4. "Value unit" - Billable unit tracks value, is predictable and auditable.
+4. "Value unit" - Billable unit is clear, value-linked, predictable, auditable.
+
+   ## Data fields for Value unit (use these exact field names in analysis)
+
+   **value_units[]**
+   - value_units[].name: string, example: "minute", "credit", "task"
+   - value_units[].is_primary: boolean
+   - value_units[].definition: string, plain-language, include what counts and what does not
+   - value_units[].metering_formula: string, how raw usage becomes billable units
+   - value_units[].granularity: per_event | per_second | per_minute | per_1000_tokens | per_gb | per_task
+   - value_units[].rounding_rule: none | round_up | round_down | nearest
+   - value_units[].minimum_charge: none | per_request | per_session | per_day
+   - value_units[].attribution_level: user | org | workspace | project | api_key
+   - value_units[].value_anchor: output | workflow_step | success_event | time | compute | seat
+   - value_units[].estimation_surface: none | calculator | preflight_estimate | in_product_estimate
+   - value_units[].audit_surface: none | dashboard_total | dashboard_breakdown | export_logs
+   - value_units[].breakdown_level: none | by_project | by_user | by_workflow | by_model | by_endpoint
+   - value_units[].known_surprise_triggers: list of strings, optional, example: "retries", "streaming reconnects"
+
+   **tiers[] (extend existing tiers objects)**
+   - tiers[].name: string
+   - tiers[].target_segment: indie | team | enterprise
+   - tiers[].billing_options: list of monthly | annual | usage | hybrid
+   - tiers[].payment_methods: list of card | invoice | po
+   - tiers[].features: list of rbac | admin | usage_dashboard | caps | alerts | sso | scim | audit_logs | soc2 | dpa | sla
+   - tiers[].included_units: number or null
+   - tiers[].unit_price: number or null
+   - tiers[].overage_unit_price: number or null
+   - tiers[].unit_name: string or null, must match a value_units[].name
+
+   **facts[] (evidence ledger, required)**
+   Each fact must be written into facts[] with:
+   - field_path: string, example: value_units[credits].rounding_rule
+   - value: any
+   - source_type: public_url | doc | contract | user_input | assumption
+   - reliability: float 0..1
+   - evidence_ref: URL or attachment ID
+   - timestamp: ISO string
+
+   ## Evidence collection rules (before scoring)
+   1) Extract unit language from pricing pages, docs, API docs, terms, and UI screenshots, store as facts[].
+   2) Do not infer the metering formula. If unknown, leave blank and prompt the user.
+   3) If multiple units exist, require value_units[].is_primary=true for the unit that drives billing for the main tier.
+
+   ## Scoring (deterministic)
+   Score the primary unit. If multiple primary units are claimed, score each and take the minimum.
+
+   **Primary selection**
+   - primary_units = value_units[] where value_units[].is_primary == true
+   - If len(primary_units) == 0: primary = unknown
+   - If len(primary_units) > 1: score each, final = min
+
+   #### Subtests (0 or 1 each)
+
+   **V1 Unit definition clarity**
+   Pass if value_units[].name and value_units[].definition exist AND the definition includes at least one explicit inclusion and one explicit exclusion example.
+   Proxy rule: definition length >= 12 words AND contains one of: "includes", "does not include", "counts", "doesn't count".
+
+   **V2 Metering determinism**
+   Pass if value_units[].metering_formula, granularity, rounding_rule, and attribution_level are all present.
+
+   **V3 Price linkage legibility**
+   Pass if at least one tier references the unit with:
+   - tiers[].unit_name matches primary unit name
+   AND
+   - (tiers[].unit_price OR tiers[].overage_unit_price is present)
+   AND
+   - tiers[].included_units is present for any tier that claims an allowance.
+
+   **V4 Value anchoring**
+   Pass if value_units[].value_anchor is present AND it is not purely technical without a value proxy.
+   Deterministic rule:
+   - Fail if value_anchor == compute AND no definition mentions a customer output or workflow step.
+   - Pass otherwise.
+
+   **V5 Predictability surface**
+   Pass if value_units[].estimation_surface != none.
+   If estimation is calculator or preflight_estimate, treat as stronger evidence for confidence.
+
+   **V6 Auditability**
+   Pass if value_units[].audit_surface is dashboard_breakdown OR export_logs.
+   Also require breakdown_level != none.
+
+   #### Points to score mapping (0-2)
+   points = sum(V1..V6)
+   - 0-2 points: score = 0
+   - 3-4 points: score = 1
+   - 5-6 points: score = 2
+
+   #### Gates (hard enforcement caps)
+   - If V1 fails: cap score at 1.
+   - If V2 fails: cap score at 1.
+   - If V6 fails: cap score at 1.
+   Rationale: you cannot claim a production-grade value unit without auditability and deterministic metering.
+
+   ## Confidence (separate from score)
+   Compute confidence per subtest:
+   - subtest_confidence = max(facts[].reliability among facts used by that subtest)
+   - If no facts used: 0
+
+   Dimension confidence:
+   - dimension_confidence = average(subtest_confidence for V1..V6)
+
+   Confidence labels: High >= 0.75, Medium 0.45-0.74, Low < 0.45
+
+   Conflict rule: If two facts with reliability >= 0.65 disagree for the same field_path, flag conflict and cap confidence at Medium until resolved.
+
+   ## Missing-insider prompts (ask only when confidence is not High, max 5 questions)
+   1) What is your primary billable unit name and definition, include what counts and what does not.
+      -> value_units[].name, value_units[].definition, value_units[].is_primary=true
+   2) What is the exact metering formula, granularity, rounding, minimum charge, and attribution level.
+      -> value_units[].metering_formula, granularity, rounding_rule, minimum_charge, attribution_level
+   3) How is unit usage estimated before a customer runs work: none, calculator, preflight estimate, in-product estimate.
+      -> value_units[].estimation_surface
+   4) How can customers audit usage: dashboard totals, breakdowns, exports, and what breakdown level.
+      -> value_units[].audit_surface, breakdown_level
+   5) For each tier, what unit name is billed, included units, unit price, overage unit price.
+      -> tiers[].unit_name, included_units, unit_price, overage_unit_price
+
+   ## Rerun behavior (must be explicit in output)
+   When the user provides missing inputs:
+   1) Persist inputs into value_units[] and tiers[].
+   2) Add corresponding facts[] entries with source_type=user_input, add evidence_ref if provided.
+   3) Recompute V1-V6, score, gates, and confidence.
+   4) In the report, include: score before vs after, confidence before vs after, new evidence added (by subtest), remaining unknowns (by subtest), conflicts detected and resolution needed.
 
 5. "Cost driver mapping" - Usage and cost drivers are explicit and forecastable.
 
