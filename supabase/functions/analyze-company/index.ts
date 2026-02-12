@@ -417,7 +417,167 @@ THE 10 DIMENSIONS:
 
 6. "Pools and packaging" - Tiers separate exploration from production by segment.
 
-7. "Overages and risk allocation" - Limit behavior is explicit, risk is fairly shared.
+7. "Overages and risk allocation" - Limit behavior is explicit, risk is fairly shared, surprises are prevented.
+
+   ## Data fields for Overages and risk allocation (use these exact field names in analysis)
+
+   **policies (extend existing policies object)**
+   - policies.overage_behavior: hard_stop | soft_limit | auto_topup | rollover
+   - policies.overage_charge_timing: real_time | end_of_period | threshold_event
+   - policies.overage_disclosure_surface: list of pricing_page | docs | in_product | contract
+   - policies.grace_buffer: none | small_buffer | explicit_units (if explicit_units, store detail in facts)
+   - policies.spike_protection: none | anomaly_detect | daily_cap | rate_limit_on_spike
+   - policies.dispute_refund_process: none | documented | documented_with_sla
+   - policies.rollover_rules: none | limited_period | unlimited
+   - policies.enterprise_true_up: none | monthly_true_up | quarterly_true_up
+
+   **tiers[] (extend existing tiers objects)**
+   - tiers[].name: string
+   - tiers[].target_segment: indie | team | enterprise
+   - tiers[].billing_options: list of monthly | annual | usage | hybrid
+   - tiers[].payment_methods: list of card | invoice | po
+   - tiers[].included_units: number or null
+   - tiers[].unit_name: string or null, must match value_units[].name
+   - tiers[].overage_enabled: boolean
+   - tiers[].overage_unit_price: number or null
+   - tiers[].cap_policy: none | hard_cap | soft_cap | admin_cap
+   - tiers[].alert_policy: none | user | admin | both
+   - tiers[].topup_available: boolean
+   - tiers[].topup_increment: number or null
+   - tiers[].auto_upgrade_on_exceed: boolean
+
+   **forecasting_surfaces (reuse existing object)**
+   - forecasting_surfaces.estimation_surface: none | calculator | preflight_estimate | in_product_estimate
+   - forecasting_surfaces.cost_visibility_surface: none | dashboard_total | dashboard_breakdown | export_logs
+   - forecasting_surfaces.alerts: none | usage_alerts | cost_alerts | budget_caps
+
+   **facts[] (evidence ledger, required)**
+   Each fact must be written into facts[] with:
+   - field_path: string, example: policies.overage_behavior
+   - value: any
+   - source_type: public_url | doc | contract | user_input | assumption
+   - reliability: float 0..1
+   - evidence_ref: URL or attachment ID
+   - timestamp: ISO string
+
+   ## Evidence collection rules (before scoring)
+   1) Extract overage behavior and limit handling from pricing pages, plan tables, docs, terms, trust center, and in-product screenshots, store as facts[].
+   2) If overage pricing is not explicit, do not infer it. Leave tiers[].overage_unit_price blank and prompt the user.
+   3) If behavior differs by tier, store per-tier facts and reflect them in tiers[] fields, do not collapse into a single narrative.
+
+   ## Scoring (deterministic)
+   Score per segment, then aggregate across segments.
+
+   **Segment tiers**
+   For each segment s in segments[], define:
+   - segment_tiers = tiers[] where tiers[].target_segment == s.name
+   If segment_tiers is empty, that segment score is 0 with Low confidence.
+
+   #### Subtests (0 or 1 each, per segment)
+
+   **R1 Explicit limit behavior**
+   Pass if:
+   - policies.overage_behavior is present
+   AND
+   - for at least one tier in segment_tiers where tiers[].overage_enabled == true, at least one disclosure surface exists:
+     - policies.overage_disclosure_surface contains pricing_page OR docs OR in_product OR contract
+
+   **R2 Overage economics clarity**
+   Pass if for each tier in segment_tiers where tiers[].overage_enabled == true:
+   - tiers[].unit_name is present
+   AND
+   - tiers[].overage_unit_price is present
+   AND
+   - primary value unit metering determinism exists (reuse Value unit V2 fields via facts, minimum requirement):
+     - value_units[].granularity and value_units[].rounding_rule are known for the billed unit
+
+   **R3 Customer control surfaces**
+   Pass if for at least one tier in segment_tiers where tiers[].overage_enabled == true:
+   - (tiers[].cap_policy != none OR forecasting_surfaces.alerts != none)
+   AND
+   - tiers[].alert_policy != none OR forecasting_surfaces.alerts != none
+   Deterministic intent: at least one cap mechanism plus at least one alert mechanism.
+
+   **R4 Fairness and tail protection**
+   Pass if at least two of the following are true:
+   - policies.grace_buffer != none
+   - policies.spike_protection != none
+   - policies.dispute_refund_process != none
+
+   **R5 Enterprise risk allocation readiness**
+   Evaluate only if the segment is enterprise.
+   Pass if there exists a tier in segment_tiers where:
+   - (invoice OR po) IN tiers[].payment_methods
+   AND
+   - policies.enterprise_true_up != none
+   AND
+   - policies.overage_behavior is present
+   AND
+   - tiers[].overage_enabled == true implies tiers[].overage_unit_price is present
+
+   If enterprise segment does not exist, mark R5 as not applicable and exclude from points.
+
+   **R6 No-surprise operability**
+   Pass if:
+   - forecasting_surfaces.estimation_surface != none
+   AND
+   - forecasting_surfaces.cost_visibility_surface != none
+   AND
+   - (tiers[].alert_policy != none OR forecasting_surfaces.alerts != none)
+
+   #### Points to score mapping (0-2, per segment)
+   Let points = sum(applicable subtests).
+   If enterprise segment: max points = 6. Otherwise: max points = 5 (R5 excluded).
+
+   Map points to segment score:
+   - 0-2 points: segment score = 0
+   - 3-4 points: segment score = 1
+   - 5-6 points: segment score = 2
+
+   #### Dimension aggregation (0-2)
+   - If segments[].priority_weight exists and sums to 1: compute weighted average of segment scores.
+   - If missing: equal-weight across provided segments, and lower confidence.
+
+   #### Gates (hard enforcement caps)
+   - If policies.overage_behavior is missing: final dimension score = 0.
+   - If any tier has overage_enabled == true and both tiers[].cap_policy == none AND tiers[].alert_policy == none AND forecasting_surfaces.alerts == none: cap final score at 1.
+   - If policies.overage_behavior == auto_topup and any tier has topup_available == true but tiers[].topup_increment is missing: cap final score at 1.
+   - If an enterprise segment exists and R5 fails: cap final score at 1.
+
+   ## Confidence (separate from score)
+   Compute confidence per subtest:
+   - subtest_confidence = max(facts[].reliability among facts used by that subtest)
+   - If no facts used: 0
+
+   Per segment:
+   - segment_confidence = average(subtest_confidence for applicable subtests)
+
+   Dimension confidence:
+   - Identify highest-priority segment: max segments[].priority_weight (or enterprise if weights missing).
+   - dimension_confidence = min(confidence(highest-priority segment), average(segment_confidence across segments))
+
+   Confidence labels: High >= 0.75, Medium 0.45-0.74, Low < 0.45
+
+   Conflict rule: If two facts with reliability >= 0.65 disagree for the same field_path, flag conflict and cap confidence at Medium until resolved.
+
+   ## Missing-insider prompts (ask only when confidence is not High, max 5 questions)
+   1) For each tier, is overage enabled, what unit is billed, and what is the overage unit price.
+      -> tiers[].overage_enabled, tiers[].unit_name, tiers[].overage_unit_price
+   2) What happens at the limit, hard stop, soft limit, auto top-up, rollover, and when are charges applied.
+      -> policies.overage_behavior, policies.overage_charge_timing
+   3) What controls exist, caps, alerts, admin controls, and which tier includes them.
+      -> tiers[].cap_policy, tiers[].alert_policy, forecasting_surfaces.alerts
+   4) What tail protections exist, grace buffer, spike protection, dispute or refund process.
+      -> policies.grace_buffer, policies.spike_protection, policies.dispute_refund_process
+   5) If enterprise is a target, do you support invoice or PO, true-ups, and what is the true-up cadence.
+      -> tiers[].payment_methods, policies.enterprise_true_up
+
+   ## Rerun behavior (must be explicit in output)
+   When the user provides missing inputs:
+   1) Persist inputs into policies, tiers[], and forecasting_surfaces.
+   2) Add corresponding facts[] entries with source_type=user_input, add evidence_ref if provided.
+   3) Recompute R1-R6, segment scores, gates, final score, and confidence.
+   4) In the report, include: score before vs after, confidence before vs after, new evidence added (by subtest), remaining unknowns (by subtest), conflicts detected and resolution needed.
 
 8. "Safety rails and trust surfaces" - Controls prevent surprises, show usage, enable limits.
 
