@@ -94,7 +94,7 @@ export function ChatPanel({ messages, onSendMessage, isLoading = false }: ChatPa
   ];
 
   return (
-    <GlassCard className="flex flex-col h-full">
+    <GlassCard className="flex flex-col overflow-hidden">
       {/* Header */}
       <div
         className="flex items-center justify-between p-4 border-b border-border/50 cursor-pointer"
@@ -113,9 +113,9 @@ export function ChatPanel({ messages, onSendMessage, isLoading = false }: ChatPa
         </div>
         <Button variant="ghost" size="icon">
           {isExpanded ? (
-            <ChevronDown className="w-4 h-4" />
-          ) : (
             <ChevronUp className="w-4 h-4" />
+          ) : (
+            <ChevronDown className="w-4 h-4" />
           )}
         </Button>
       </div>
