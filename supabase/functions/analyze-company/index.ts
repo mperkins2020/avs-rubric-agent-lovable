@@ -268,7 +268,152 @@ THE 10 DIMENSIONS:
    3) Recompute V1-V6, score, gates, and confidence.
    4) In the report, include: score before vs after, confidence before vs after, new evidence added (by subtest), remaining unknowns (by subtest), conflicts detected and resolution needed.
 
-5. "Cost driver mapping" - Usage and cost drivers are explicit and forecastable.
+5. "Cost driver mapping" - Usage and cost drivers are explicit, forecastable, and controllable.
+
+   ## Data fields for Cost driver mapping (use these exact field names in analysis)
+
+   **cost_model**
+   - cost_model.currency: string, example: "USD"
+   - cost_model.time_window: per_request | per_minute | per_hour | per_day | per_month
+   - cost_model.cost_components: list of llm | asr | tts | vision | embedding | gpu_inference | gpu_training | storage | bandwidth | third_party_api | human_ops
+   - cost_model.providers: list of strings, example: ["OpenAI", "Anthropic", "AWS", "GCP"]
+   - cost_model.unit_costs[]: list of objects:
+     - cost_model.unit_costs[].component: one of cost_model.cost_components
+     - cost_model.unit_costs[].unit: per_1k_tokens | per_minute | per_second | per_gb | per_image | per_call | per_hour_gpu
+     - cost_model.unit_costs[].price: number
+     - cost_model.unit_costs[].notes: string
+
+   **cost_drivers[]**
+   - cost_drivers[].name: string, example: "input_tokens", "output_tokens", "audio_minutes", "concurrency"
+   - cost_drivers[].component: one of cost_model.cost_components
+   - cost_drivers[].driver_unit: tokens | minutes | seconds | images | gb | calls | gpu_hours | seats
+   - cost_drivers[].variable_or_fixed: variable | fixed | hybrid
+   - cost_drivers[].driver_formula: string, how driver quantity is computed from product behavior
+   - cost_drivers[].controllability: high | medium | low
+   - cost_drivers[].customer_visible: boolean
+   - cost_drivers[].spike_triggers[]: list of strings, example: ["retries", "long_context", "stream_reconnects"]
+   - cost_drivers[].mitigations[]: list of strings, example: ["cache", "batch", "truncate", "model_route"]
+
+   **workflows[]**
+   - workflows[].name: string
+   - workflows[].primary_value_unit_name: string, must match value_units[].name
+   - workflows[].driver_contributions[]: list of objects:
+     - workflows[].driver_contributions[].driver_name: string, must match cost_drivers[].name
+     - workflows[].driver_contributions[].p50_per_value_unit: number or null
+     - workflows[].driver_contributions[].p95_per_value_unit: number or null
+     - workflows[].driver_contributions[].notes: string
+
+   **cost_estimates[]**
+   - cost_estimates[].workflow_name: string, must match workflows[].name
+   - cost_estimates[].cost_per_value_unit_p50: number or null
+   - cost_estimates[].cost_per_value_unit_p95: number or null
+   - cost_estimates[].assumptions: string
+   - cost_estimates[].last_updated: ISO string
+
+   **forecasting_surfaces**
+   - forecasting_surfaces.estimation_surface: none | calculator | preflight_estimate | in_product_estimate
+   - forecasting_surfaces.cost_visibility_surface: none | dashboard_total | dashboard_breakdown | export_logs
+   - forecasting_surfaces.breakdown_level: none | by_project | by_user | by_workflow | by_model | by_endpoint
+   - forecasting_surfaces.alerts: none | usage_alerts | cost_alerts | budget_caps
+
+   **facts[] (evidence ledger, required)**
+   Each fact must be written into facts[] with:
+   - field_path: string, example: cost_drivers[input_tokens].driver_formula
+   - value: any
+   - source_type: public_url | doc | contract | user_input | assumption
+   - reliability: float 0..1
+   - evidence_ref: URL or attachment ID
+   - timestamp: ISO string
+
+   ## Evidence collection rules (before scoring)
+   1) Extract cost driver hints from docs: rate limits, model choices, token policies, pricing pages, usage docs, status pages, architecture posts, then store as facts[].
+   2) Do not guess unit costs or cost per value unit. If unknown, prompt for insider inputs.
+   3) If the product uses multiple providers or models, capture at least the primary production path in workflows[].
+
+   ## Scoring (deterministic)
+   Score the most important workflow by segment priority if known, otherwise the first workflow in workflows[].
+   If no workflows exist, score defaults to 0 with Low confidence.
+
+   #### Subtests (0 or 1 each)
+
+   **C1 Driver inventory completeness**
+   Pass if:
+   - cost_drivers[] contains at least 3 drivers
+   AND
+   - at least 1 driver maps to an inference-related component (llm | asr | tts | vision | embedding | gpu_inference)
+   AND
+   - each driver has component, driver_unit, and variable_or_fixed.
+
+   **C2 Deterministic driver formulas**
+   Pass if at least 2 drivers have non-empty driver_formula that links product behavior to driver quantity.
+
+   **C3 Driver to workflow linkage**
+   Pass if for the scored workflow:
+   - workflows[].primary_value_unit_name matches an existing value_units[].name
+   AND
+   - workflows[].driver_contributions[] includes at least 2 drivers.
+
+   **C4 Cost per value unit estimate**
+   Pass if for the scored workflow:
+   - cost_estimates[].cost_per_value_unit_p50 is present
+   AND
+   - cost_estimates[].cost_per_value_unit_p95 is present.
+
+   **C5 Spike and tail mapping**
+   Pass if:
+   - at least 2 top drivers include spike_triggers[] (non-empty)
+   AND
+   - at least 2 top drivers include mitigations[] (non-empty).
+
+   **C6 Forecasting and visibility surfaces**
+   Pass if:
+   - forecasting_surfaces.estimation_surface != none
+   AND
+   - forecasting_surfaces.cost_visibility_surface != none
+   AND
+   - forecasting_surfaces.alerts != none.
+
+   #### Points to score mapping (0-2)
+   points = sum(C1..C6)
+   - 0-2 points: score = 0
+   - 3-4 points: score = 1
+   - 5-6 points: score = 2
+
+   #### Gates (hard enforcement caps)
+   - If C3 fails: cap score at 1. You cannot claim driver mapping without linking to a workflow and value unit.
+   - If C4 fails: cap score at 1. If you cannot estimate cost per value unit, predictability is not real.
+   - If C6 fails: cap score at 1. Forecasting without visibility and alerts is not operational.
+
+   ## Confidence (separate from score)
+   Compute confidence per subtest:
+   - subtest_confidence = max(facts[].reliability among facts used by that subtest)
+   - If no facts used: 0
+
+   Dimension confidence:
+   - dimension_confidence = average(subtest_confidence for C1..C6)
+
+   Confidence labels: High >= 0.75, Medium 0.45-0.74, Low < 0.45
+
+   Conflict rule: If two facts with reliability >= 0.65 disagree for the same field_path, flag conflict and cap confidence at Medium until resolved.
+
+   ## Missing-insider prompts (ask only when confidence is not High, max 5 questions)
+   1) List your top 3 to 5 cost drivers, component, unit, and whether variable or fixed.
+      -> cost_drivers[]
+   2) For each top driver, what formula determines quantity, and what spikes it.
+      -> cost_drivers[].driver_formula, spike_triggers[]
+   3) Name your 1 to 3 primary workflows, the primary value unit used, and p50 and p95 driver usage per value unit.
+      -> workflows[], workflows[].driver_contributions[]
+   4) Provide your estimated cost per value unit at p50 and p95 for the primary workflow, include assumptions.
+      -> cost_estimates[]
+   5) What forecasting and visibility surfaces exist today: estimator, dashboards, breakdown level, alerts or caps.
+      -> forecasting_surfaces.*
+
+   ## Rerun behavior (must be explicit in output)
+   When the user provides missing inputs:
+   1) Persist inputs into cost_model, cost_drivers[], workflows[], cost_estimates[], forecasting_surfaces.
+   2) Add corresponding facts[] entries with source_type=user_input, add evidence_ref if provided.
+   3) Recompute C1-C6, score, gates, and confidence.
+   4) In the report, include: score before vs after, confidence before vs after, new evidence added (by subtest), remaining unknowns (by subtest), conflicts detected and resolution needed.
 
 6. "Pools and packaging" - Tiers separate exploration from production by segment.
 
