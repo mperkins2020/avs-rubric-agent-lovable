@@ -652,6 +652,7 @@ async function callLovableAI(systemPrompt: string, userContent: string): Promise
         { role: 'user', content: userContent },
       ],
       temperature: 0.3,
+      max_tokens: 16384,
       response_format: { type: 'json_object' },
     }),
   });
@@ -669,7 +670,7 @@ async function callLovableAI(systemPrompt: string, userContent: string): Promise
     throw new Error('Invalid AI response structure');
   }
   
-  const content = data.choices[0].message.content;
+  let content = data.choices[0].message.content;
   
   if (!content || content.trim() === '') {
     console.error('Empty AI response content');
@@ -678,10 +679,17 @@ async function callLovableAI(systemPrompt: string, userContent: string): Promise
   
   console.log('AI response length:', content.length);
   
+  // Strip markdown code fences if present
+  content = content.trim();
+  if (content.startsWith('```')) {
+    content = content.replace(/^```(?:json)?\s*\n?/, '').replace(/\n?```\s*$/, '');
+  }
+  
   try {
     return JSON.parse(content);
   } catch (parseError) {
     console.error('Failed to parse AI response:', content.substring(0, 500));
+    console.error('Response tail:', content.substring(content.length - 200));
     throw new Error('Failed to parse AI response as JSON');
   }
 }
