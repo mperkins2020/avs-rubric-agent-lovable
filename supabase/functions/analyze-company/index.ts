@@ -579,7 +579,164 @@ THE 10 DIMENSIONS:
    3) Recompute R1-R6, segment scores, gates, final score, and confidence.
    4) In the report, include: score before vs after, confidence before vs after, new evidence added (by subtest), remaining unknowns (by subtest), conflicts detected and resolution needed.
 
-8. "Safety rails and trust surfaces" - Controls prevent surprises, show usage, enable limits.
+8. "Safety rails and trust surfaces" - Controls prevent surprises, expose usage, and bound risk.
+
+   ## Data fields for Safety rails and trust surfaces (use these exact field names in analysis)
+
+   **safety_rails[]**
+   - safety_rails[].name: string, example: "Budget caps"
+   - safety_rails[].rail_type: budget_cap | usage_cap | rate_limit | concurrency_limit | approval_gate | anomaly_detect | circuit_breaker | kill_switch | retry_limit | context_limit | model_route_guard
+   - safety_rails[].trigger: string, what condition activates it
+   - safety_rails[].action: string, what happens when triggered
+   - safety_rails[].scope: user | org | workspace | project | api_key | endpoint | workflow
+   - safety_rails[].configurable_by: user | admin | both
+   - safety_rails[].default_state: on | off
+   - safety_rails[].tier_coverage: list of tier names (must match tiers[].name)
+
+   **trust_surfaces[]**
+   - trust_surfaces[].surface_type: usage_dashboard | cost_dashboard | estimate_surface | alerting | admin_controls | audit_export | policy_docs | limit_behavior_docs | changelog | status_page | postmortems
+   - trust_surfaces[].availability: public | in_product | both
+   - trust_surfaces[].breakdown_level: none | by_project | by_user | by_workflow | by_model | by_endpoint
+   - trust_surfaces[].exportable: boolean
+   - trust_surfaces[].tier_coverage: list of tier names (must match tiers[].name)
+   - trust_surfaces[].evidence_url: string or null
+
+   **tiers[] (reuse existing tiers objects)**
+   - tiers[].name: string
+   - tiers[].target_segment: indie | team | enterprise
+   - tiers[].features: list of rbac | admin | usage_dashboard | caps | alerts | sso | scim | audit_logs | soc2 | dpa | sla
+   - tiers[].cap_policy: none | hard_cap | soft_cap | admin_cap
+   - tiers[].alert_policy: none | user | admin | both
+   - tiers[].overage_enabled: boolean
+
+   **forecasting_surfaces (reuse existing object)**
+   - forecasting_surfaces.estimation_surface: none | calculator | preflight_estimate | in_product_estimate
+   - forecasting_surfaces.cost_visibility_surface: none | dashboard_total | dashboard_breakdown | export_logs
+   - forecasting_surfaces.breakdown_level: none | by_project | by_user | by_workflow | by_model | by_endpoint
+   - forecasting_surfaces.alerts: none | usage_alerts | cost_alerts | budget_caps
+
+   **policies (reuse existing policies fields)**
+   - policies.overage_behavior: hard_stop | soft_limit | auto_topup | rollover
+
+   **facts[] (evidence ledger, required)**
+   Each fact must be written into facts[] with:
+   - field_path: string, example: safety_rails[Budget caps].default_state
+   - value: any
+   - source_type: public_url | doc | contract | user_input | assumption
+   - reliability: float 0..1
+   - evidence_ref: URL or attachment ID
+   - timestamp: ISO string
+
+   ## Evidence collection rules (before scoring)
+   1) Extract rails and surfaces from pricing pages, docs, trust center, status page, changelog, and in-product screenshots, store as facts[].
+   2) A rail only counts if it has a trigger and action, not just a marketing claim.
+   3) If a surface exists only in-product, mark availability=in_product and lower confidence unless a screenshot or user evidence is provided.
+
+   ## Scoring (deterministic)
+   Score per segment, then aggregate across segments.
+
+   **Segment tiers**
+   For each segment s in segments[]:
+   - segment_tiers = tiers[] where tiers[].target_segment == s.name
+   If empty, segment score = 0 with Low confidence.
+
+   #### Subtests (0 or 1 each, per segment)
+
+   **T1 Budget and usage caps**
+   Pass if there exists a tier in segment_tiers where:
+   - tiers[].cap_policy != none
+   OR
+   - any safety_rails[].rail_type in {budget_cap, usage_cap} with that tier in tier_coverage
+   Additional requirement:
+   - if segment is team or enterprise, cap must be admin_cap OR a rail has configurable_by in {admin, both}.
+
+   **T2 Alerts and notifications**
+   Pass if there exists a tier in segment_tiers where:
+   - tiers[].alert_policy != none
+   OR
+   - forecasting_surfaces.alerts != none
+   OR
+   - any trust_surfaces[].surface_type == alerting with that tier in tier_coverage
+
+   **T3 Estimation before spend**
+   Pass if:
+   - forecasting_surfaces.estimation_surface != none
+   OR
+   - any trust_surfaces[].surface_type == estimate_surface with that tier in tier_coverage
+
+   **T4 Auditability and breakdown**
+   Pass if:
+   - forecasting_surfaces.cost_visibility_surface in {dashboard_breakdown, export_logs}
+   AND
+   - forecasting_surfaces.breakdown_level != none
+   OR
+   - any trust_surfaces[].surface_type in {usage_dashboard, cost_dashboard, audit_export} where breakdown_level != none and tier is covered
+
+   **T5 Admin and access controls**
+   Pass if for team and enterprise segments, there exists a tier in segment_tiers where:
+   - (rbac OR admin) IN tiers[].features
+   AND
+   - at least one of: audit_logs IN tiers[].features OR trust_surfaces[].surface_type == audit_export is covered
+   For indie segment, pass if:
+   - at least one of: usage_dashboard OR alerts OR caps is present in tier features.
+
+   **T6 Safe failure behavior and bounded risk**
+   Pass if there exists evidence for both:
+   - documented limit behavior: a trust_surfaces[] entry with surface_type == limit_behavior_docs and availability not public only without evidence_url
+   AND
+   - at least one risk limiter rail exists: any safety_rails[].rail_type in {rate_limit, concurrency_limit, retry_limit, circuit_breaker, kill_switch, approval_gate} covered by at least one tier in segment_tiers
+   If tiers[].overage_enabled == true for any tier in segment_tiers, require:
+   - policies.overage_behavior is present.
+
+   #### Points to score mapping (0-2, per segment)
+   points = sum(T1..T6)
+   - 0-2 points: segment score = 0
+   - 3-4 points: segment score = 1
+   - 5-6 points: segment score = 2
+
+   #### Dimension aggregation (0-2)
+   - If segments[].priority_weight exists and sums to 1: compute weighted average of segment scores.
+   - If missing: equal-weight across provided segments, and lower confidence.
+
+   #### Gates (hard enforcement caps)
+   - If T4 fails for the highest-priority segment: cap final dimension score at 1.
+   - If T2 fails for the highest-priority segment: cap final dimension score at 1.
+   - If any tier has overage_enabled == true and both caps and alerts are absent for that tier (no cap_policy and no alert_policy and forecasting_surfaces.alerts == none): cap final score at 1.
+
+   ## Confidence (separate from score)
+   Compute confidence per subtest:
+   - subtest_confidence = max(facts[].reliability among facts used by that subtest)
+   - If no facts used: 0
+
+   Per segment:
+   - segment_confidence = average(subtest_confidence for T1..T6)
+
+   Dimension confidence:
+   - Identify highest-priority segment: max segments[].priority_weight (or enterprise if weights missing).
+   - dimension_confidence = min(confidence(highest-priority segment), average(segment_confidence across segments))
+
+   Confidence labels: High >= 0.75, Medium 0.45-0.74, Low < 0.45
+
+   Conflict rule: If two facts with reliability >= 0.65 disagree for the same field_path, flag conflict and cap confidence at Medium until resolved.
+
+   ## Missing-insider prompts (ask only when confidence is not High, max 5 questions)
+   1) Which caps exist by tier, who can set them, and what happens when hit.
+      -> tiers[].cap_policy, safety_rails[] (budget_cap or usage_cap)
+   2) Which alerts exist by tier, thresholds, channels, and who receives them.
+      -> tiers[].alert_policy, forecasting_surfaces.alerts, trust_surfaces[] (alerting)
+   3) Do users get estimates before running, calculator, preflight, or in-product estimate.
+      -> forecasting_surfaces.estimation_surface, trust_surfaces[] (estimate_surface)
+   4) What audit surfaces exist, dashboards, breakdowns, exports, and the breakdown level.
+      -> forecasting_surfaces.cost_visibility_surface, forecasting_surfaces.breakdown_level, trust_surfaces[] (audit_export)
+   5) What are your bounded-risk rails, rate limits, retries, circuit breaker, kill switch, approvals, and where documented.
+      -> safety_rails[], trust_surfaces[] (limit_behavior_docs)
+
+   ## Rerun behavior (must be explicit in output)
+   When the user provides missing inputs:
+   1) Persist inputs into safety_rails[], trust_surfaces[], tiers[], forecasting_surfaces, and policies.
+   2) Add corresponding facts[] entries with source_type=user_input, add evidence_ref if provided.
+   3) Recompute T1-T6, segment scores, gates, final score, and confidence.
+   4) In the report, include: score before vs after, confidence before vs after, new evidence added (by subtest), remaining unknowns (by subtest), conflicts detected and resolution needed.
 
 9. "Rating agility and governance" - Versioned pricing changes with approvals and traceability.
 
