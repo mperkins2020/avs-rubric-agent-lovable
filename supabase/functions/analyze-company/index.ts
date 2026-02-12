@@ -742,6 +742,13 @@ THE 10 DIMENSIONS:
 
 10. "Measurement and cadence" - Regular reviews drive evidence-based pricing and rails changes.
 
+CRITICAL OUTPUT RULES:
+- Keep rationale to 1-2 sentences max per dimension.
+- Keep observed arrays to max 3 items per dimension.
+- Keep uncertaintyReasons to max 2 items per dimension.
+- Do NOT include facts[] or raw data in the output JSON. Only include the scored results.
+- Do NOT echo back the spec or field schemas. Only output the final scores.
+
 Also provide:
 - strengths: Top 3 areas where they excel with evidence
 - weaknesses: Top 3 areas needing improvement
@@ -809,7 +816,7 @@ async function callLovableAI(systemPrompt: string, userContent: string): Promise
         { role: 'user', content: userContent },
       ],
       temperature: 0.3,
-      max_tokens: 16384,
+      max_tokens: 32768,
       response_format: { type: 'json_object' },
     }),
   });
@@ -847,7 +854,30 @@ async function callLovableAI(systemPrompt: string, userContent: string): Promise
   } catch (parseError) {
     console.error('Failed to parse AI response:', content.substring(0, 500));
     console.error('Response tail:', content.substring(content.length - 200));
-    throw new Error('Failed to parse AI response as JSON');
+    
+    // Attempt to repair truncated JSON by closing open structures
+    try {
+      let repaired = content;
+      // Count open/close braces and brackets
+      const openBraces = (repaired.match(/{/g) || []).length;
+      const closeBraces = (repaired.match(/}/g) || []).length;
+      const openBrackets = (repaired.match(/\[/g) || []).length;
+      const closeBrackets = (repaired.match(/\]/g) || []).length;
+      
+      // Trim trailing incomplete key-value pairs
+      repaired = repaired.replace(/,\s*"[^"]*"?\s*:?\s*[^}\]]*$/, '');
+      
+      // Close missing brackets and braces
+      for (let i = 0; i < openBrackets - closeBrackets; i++) repaired += ']';
+      for (let i = 0; i < openBraces - closeBraces; i++) repaired += '}';
+      
+      const result = JSON.parse(repaired);
+      console.log('Successfully repaired truncated JSON response');
+      return result;
+    } catch (repairError) {
+      console.error('JSON repair also failed');
+      throw new Error('Failed to parse AI response as JSON');
+    }
   }
 }
 
