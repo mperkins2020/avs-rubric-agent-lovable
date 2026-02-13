@@ -1464,6 +1464,7 @@ CRITICAL OUTPUT RULES:
 - Keep uncertaintyReasons to max 2 items per dimension.
 - Do NOT include facts[] or raw data in the output JSON. Only include the scored results.
 - Do NOT echo back the spec or field schemas. Only output the final scores.
+- REQUIRED: For each dimension where confidence < 0.75 (not High), you MUST include missingInsiderPrompts with the relevant clarifying questions from that dimension's "Missing-insider prompts" section. Select up to 5 questions most relevant to missing data. For dimensions with High confidence (>= 0.75), set missingInsiderPrompts to an empty array [].
 
 Also provide:
 - strengths: Top 3 areas where they excel with evidence
@@ -1471,7 +1472,7 @@ Also provide:
 - trustBreakpoints: Points where trust could break (max 3)
 - recommendedFocus: Their top priority for next 90 days
 
-Return a JSON object matching this schema:
+Return a JSON object matching this schema EXACTLY:
 {
   "dimensionScores": [
     {
@@ -1484,14 +1485,12 @@ Return a JSON object matching this schema:
       "uncertaintyReasons": ["reasons for uncertainty"],
       "missingInsiderPrompts": [
         {
-          "question": "The clarifying question from the missing-insider prompts section for this dimension",
+          "question": "The clarifying question text",
           "fieldPaths": ["data.field.path1", "data.field.path2"]
         }
       ]
     }
   ],
-
-IMPORTANT: For each dimension where confidence < 0.75 (not High), include missingInsiderPrompts from that dimension's "Missing-insider prompts" section. Select up to 5 questions that are most relevant to the missing data. For dimensions with High confidence, set missingInsiderPrompts to an empty array.
   "strengths": [
     {
       "dimension": "dimension name",
