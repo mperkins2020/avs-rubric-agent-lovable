@@ -51,7 +51,137 @@ THE 10 DIMENSIONS:
 
 1. "Product north star" - One measurable 90-day outcome for value and predictability.
 
-2. "ICP and job clarity" - Clear target user and job, anchored in workflows.
+2. "ICP and job clarity" - Target buyer and job are explicit, concrete, and bounded.
+
+   ## Data fields for ICP and job clarity (use these exact field names in analysis)
+
+   **icp_profile**
+   - icp_profile.primary_buyer_role: string, example: "Head of RevOps", "ML Engineer"
+   - icp_profile.user_roles[]: list of strings, optional
+   - icp_profile.company_size_range: string, example: "1-10", "50-200", "1000+"
+   - icp_profile.company_stage: pre_seed | seed | series_a | growth | enterprise | unknown
+   - icp_profile.industries[]: list of strings
+   - icp_profile.tech_context[]: list of strings, example: ["API-first", "SOC2-required", "on-prem"]
+   - icp_profile.top_constraints[]: list of latency | accuracy | compliance | security | cost_predictability | integrations | reliability | time_to_value
+   - icp_profile.non_fit_criteria[]: list of strings, example: "not for consumer", "not for offline use"
+   - icp_profile.primary_workflows[]: list of strings, must match workflows[].name if workflows[] exists
+
+   **jtbd[]**
+   - jtbd[].job_statement: string, plain language, example: "Transcribe calls in real time for agents"
+   - jtbd[].success_state: string, testable outcome, example: "95%+ accuracy under 300ms latency"
+   - jtbd[].primary_user_role: string
+   - jtbd[].buyer_role: string
+   - jtbd[].inputs[]: list of strings
+   - jtbd[].outputs[]: list of strings
+   - jtbd[].frequency: ad_hoc | daily | weekly | continuous
+   - jtbd[].must_have_requirements[]: list of strings, example: "DPA", "SSO", "HIPAA"
+
+   **positioning_surfaces[]**
+   - positioning_surfaces[].surface_type: homepage | pricing_page | docs_quickstart | use_cases_page | case_study | demo_video | template_gallery | api_reference
+   - positioning_surfaces[].availability: public | in_product | both
+   - positioning_surfaces[].evidence_url: string or null
+   - positioning_surfaces[].last_updated: ISO string or null
+
+   **facts[] (evidence ledger, required)**
+   Each fact must be written into facts[] with:
+   - field_path: string, example: jtbd[0].success_state
+   - value: any
+   - source_type: public_url | doc | contract | user_input | assumption
+   - reliability: float 0..1
+   - evidence_ref: URL or attachment ID
+   - timestamp: ISO string
+
+   ## Evidence collection rules (before scoring)
+   1) Prefer direct statements on homepage, pricing page, use cases, quickstarts, and API docs, store as facts[].
+   2) If ICP is implied but not stated, record as source_type=assumption with reliability=0.30.
+   3) A JTBD only counts if it includes a success state or measurable requirement.
+
+   ## Scoring (deterministic)
+   Score the primary JTBD as jtbd[0]. If jtbd[] is empty, score defaults to 0 with Low confidence.
+
+   #### Subtests (0 or 1 each)
+
+   **J1 ICP is explicit and specific**
+   Pass if icp_profile includes at least 3 of these 5 fields with non-empty values:
+   - primary_buyer_role
+   - company_size_range
+   - company_stage
+   - industries[] length >= 1
+   - top_constraints[] length >= 1
+
+   **J2 Job statement is concrete**
+   Pass if:
+   - jtbd[0].job_statement exists
+   AND
+   - jtbd[0].inputs[] length >= 1
+   AND
+   - jtbd[0].outputs[] length >= 1
+
+   **J3 Success state is testable**
+   Pass if:
+   - jtbd[0].success_state exists
+   AND
+   - either jtbd[0].must_have_requirements[] length >= 1 OR icp_profile.top_constraints[] length >= 1
+
+   **J4 Workflow specificity exists**
+   Pass if at least one is true:
+   - icp_profile.primary_workflows[] length >= 1
+   - positioning_surfaces[] includes docs_quickstart with a valid evidence_url
+   - positioning_surfaces[] includes api_reference with a valid evidence_url
+
+   **J5 Non-fit boundaries are stated**
+   Pass if:
+   - icp_profile.non_fit_criteria[] length >= 1
+   OR
+   - a positioning_surfaces[] entry exists with surface_type == use_cases_page and evidence shows explicit exclusions, captured in facts.
+
+   **J6 Proof artifacts exist for the job**
+   Pass if:
+   - positioning_surfaces[] includes at least one of case_study | template_gallery | demo_video
+   AND
+   - the artifact is tied to the JTBD, capture linkage in facts[] as a short excerpt or summary.
+
+   #### Points to score mapping (0-2)
+   points = sum(J1..J6)
+   - 0-2 points: score = 0
+   - 3-4 points: score = 1
+   - 5-6 points: score = 2
+
+   #### Gates (hard enforcement caps)
+   - If J1 fails: cap score at 1.
+   - If J2 fails: final score = 0.
+   Rationale: no explicit ICP or job clarity means the dimension cannot score 2.
+
+   ## Confidence (separate from score)
+   Compute confidence per subtest:
+   - subtest_confidence = max(facts[].reliability among facts used by that subtest)
+   - If no facts used: 0
+
+   Dimension confidence:
+   - dimension_confidence = average(subtest_confidence for J1..J6)
+
+   Confidence labels: High >= 0.75, Medium 0.45-0.74, Low < 0.45
+
+   Conflict rule: If two facts with reliability >= 0.65 disagree for the same field_path, flag conflict and cap confidence at Medium until resolved.
+
+   ## Missing-insider prompts (ask only when confidence is not High, max 5 questions)
+   1) Who is the primary buyer role, company size range, stage, and top industries.
+      -> icp_profile.primary_buyer_role, company_size_range, company_stage, industries[]
+   2) What is the single primary job statement, plus inputs and outputs.
+      -> jtbd[0].job_statement, jtbd[0].inputs[], jtbd[0].outputs[]
+   3) What is the success state, include measurable constraints or requirements.
+      -> jtbd[0].success_state, jtbd[0].must_have_requirements[], icp_profile.top_constraints[]
+   4) What are the top 3 workflows you want to win first, name them.
+      -> icp_profile.primary_workflows[]
+   5) What are the non-fit boundaries, and what use cases you explicitly do not support.
+      -> icp_profile.non_fit_criteria[]
+
+   ## Rerun behavior (must be explicit in output)
+   When the user provides missing inputs:
+   1) Persist inputs into icp_profile, jtbd[], and positioning_surfaces[] if new URLs exist.
+   2) Add corresponding facts[] entries with source_type=user_input, add evidence_ref if provided.
+   3) Recompute J1-J6, score, gates, and confidence.
+   4) In the report, include: score before vs after, confidence before vs after, new evidence added (by subtest), remaining unknowns (by subtest), conflicts detected and resolution needed.
 
 3. "Buyer and budget alignment" - Plans map to buyer, budget cycles, and approvals.
 
