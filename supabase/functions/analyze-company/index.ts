@@ -1073,7 +1073,140 @@ THE 10 DIMENSIONS:
    3) Recompute G1-G6, segment scores, gates, final score, and confidence.
    4) In the report, include: score before vs after, confidence before vs after, new evidence added (by subtest), remaining unknowns (by subtest), conflicts detected and resolution needed.
 
-10. "Measurement and cadence" - Regular reviews drive evidence-based pricing and rails changes.
+10. "Measurement and cadence" - Regular reviews drive evidence-based changes to units and rails.
+
+   ## Data fields for Measurement and cadence (use these exact field names in analysis)
+
+   **measurement_cadence**
+   - measurement_cadence.primary_metrics[]: list of objects:
+     - measurement_cadence.primary_metrics[].name: string
+     - measurement_cadence.primary_metrics[].category: value_delivery | economic_predictability | growth | reliability
+     - measurement_cadence.primary_metrics[].definition: string
+     - measurement_cadence.primary_metrics[].target: string or number or null
+     - measurement_cadence.primary_metrics[].time_window: weekly | monthly | quarterly
+   - measurement_cadence.review_cadence: weekly | biweekly | monthly | quarterly | ad_hoc | none
+   - measurement_cadence.review_owner_roles: list of product | finance | growth | eng | sales | exec
+   - measurement_cadence.artifacts[]: list of objects:
+     - measurement_cadence.artifacts[].artifact_type: dashboard | weekly_review_doc | pricing_review_doc | incident_review | experiment_readout | qbr
+     - measurement_cadence.artifacts[].availability: public | internal
+     - measurement_cadence.artifacts[].evidence_url: string or null
+     - measurement_cadence.artifacts[].last_updated: ISO string or null
+   - measurement_cadence.decision_log_exists: boolean
+   - measurement_cadence.change_actions_last_90_days[]: list of objects:
+     - measurement_cadence.change_actions_last_90_days[].date: ISO string
+     - measurement_cadence.change_actions_last_90_days[].change_type: unit_change | limit_change | overage_policy_change | packaging_change | rail_change | pricing_change
+     - measurement_cadence.change_actions_last_90_days[].linked_metrics[]: list of metric names from primary_metrics[]
+     - measurement_cadence.change_actions_last_90_days[].summary: string
+     - measurement_cadence.change_actions_last_90_days[].evidence_url: string or null
+
+   **trust_surfaces[] (reuse existing object)**
+   - trust_surfaces[].surface_type: changelog | status_page | postmortems | policy_docs | usage_dashboard | cost_dashboard | audit_export
+   - trust_surfaces[].availability: public | in_product | both
+   - trust_surfaces[].evidence_url: string or null
+
+   **forecasting_surfaces (reuse existing object)**
+   - forecasting_surfaces.cost_visibility_surface: none | dashboard_total | dashboard_breakdown | export_logs
+   - forecasting_surfaces.breakdown_level: none | by_project | by_user | by_workflow | by_model | by_endpoint
+
+   **facts[] (evidence ledger, required)**
+   Each fact must be written into facts[] with:
+   - field_path: string, example: measurement_cadence.review_cadence
+   - value: any
+   - source_type: public_url | doc | contract | user_input | assumption
+   - reliability: float 0..1
+   - evidence_ref: URL or attachment ID
+   - timestamp: ISO string
+
+   ## Evidence collection rules (before scoring)
+   1) Prefer direct cadence artifacts (dashboards, review docs, decision logs) over proxies.
+   2) If only public proxies exist (changelog, postmortems, status history), score using proxies but lower confidence and label as proxy-based evidence in the narrative.
+   3) Do not infer review cadence from release cadence unless explicitly stated.
+
+   ## Scoring (deterministic)
+
+   #### Subtests (0 or 1 each)
+
+   **M1 Metric set covers value and predictability**
+   Pass if:
+   - measurement_cadence.primary_metrics[] includes at least 1 metric with category == value_delivery
+   AND
+   - includes at least 1 metric with category == economic_predictability
+   Examples of predictability metrics: surprise-bill tickets, spend variance, margin floor violations, cost per value unit.
+
+   **M2 Instrumentation exists to measure**
+   Pass if at least one is true:
+   - forecasting_surfaces.cost_visibility_surface in {dashboard_breakdown, export_logs} AND breakdown_level != none
+   - a trust_surfaces[] entry exists with surface_type in {usage_dashboard, cost_dashboard, audit_export} and a valid evidence_url
+   - measurement_cadence.artifacts[] includes an internal dashboard with last_updated present
+
+   **M3 Operating cadence is defined**
+   Pass if:
+   - measurement_cadence.review_cadence != none
+   AND
+   - measurement_cadence.review_owner_roles length >= 2
+
+   **M4 Decision loop exists**
+   Pass if:
+   - measurement_cadence.decision_log_exists == true
+   OR
+   - measurement_cadence.artifacts[] includes weekly_review_doc or pricing_review_doc with last_updated present
+
+   **M5 Cadence produces economic changes**
+   Pass if:
+   - measurement_cadence.change_actions_last_90_days[] has at least 2 entries
+   AND
+   - each entry has change_type in {unit_change, limit_change, overage_policy_change, packaging_change, rail_change, pricing_change}
+   AND
+   - each entry has at least 1 linked_metrics[]
+
+   **M6 Public accountability proxy (only if no internal artifacts)**
+   Pass if at least one is true:
+   - a public trust_surfaces[] changelog exists with evidence_url
+   - a public trust_surfaces[] status_page or postmortems exists with evidence_url
+   - a public policy_docs page exists with evidence_url and shows update dates
+   Note: if internal artifacts exist (M4 true via internal evidence), M6 is optional and can be excluded from points.
+
+   #### Points to score mapping (0-2)
+   Let points = sum(applicable subtests) where M6 is applicable only if M4 is not satisfied by internal artifacts.
+   - 0-2 points: score = 0
+   - 3-4 points: score = 1
+   - 5-6 points: score = 2
+
+   #### Gates (hard enforcement caps)
+   - If M1 fails: cap score at 1. If you do not track predictability, the loop is incomplete.
+   - If M2 fails: final score = 0. No instrumentation, no credible cadence.
+   - If M5 fails: cap score at 1. Reviews without changes are theater.
+
+   ## Confidence (separate from score)
+   Compute confidence per subtest:
+   - subtest_confidence = max(facts[].reliability among facts used by that subtest)
+   - If no facts used: 0
+
+   Dimension confidence:
+   - dimension_confidence = average(subtest_confidence for applicable subtests)
+
+   Confidence labels: High >= 0.75, Medium 0.45-0.74, Low < 0.45
+
+   Conflict rule: If two facts with reliability >= 0.65 disagree for the same field_path, flag conflict and cap confidence at Medium until resolved.
+
+   ## Missing-insider prompts (ask only when confidence is not High, max 5 questions)
+   1) List your 3 to 6 primary metrics, include at least one predictability metric and definitions.
+      -> measurement_cadence.primary_metrics[]
+   2) What is your review cadence, and which roles attend.
+      -> measurement_cadence.review_cadence, measurement_cadence.review_owner_roles
+   3) What measurement artifacts exist (dashboards, weekly review doc, pricing review doc), and when were they last updated.
+      -> measurement_cadence.artifacts[]
+   4) Do you keep a decision log for pricing, units, and rails changes.
+      -> measurement_cadence.decision_log_exists
+   5) List 2 to 5 changes in the last 90 days tied to metrics, include dates and linked metrics.
+      -> measurement_cadence.change_actions_last_90_days[]
+
+   ## Rerun behavior (must be explicit in output)
+   When the user provides missing inputs:
+   1) Persist inputs into measurement_cadence, plus any supporting trust_surfaces[] and forecasting_surfaces.
+   2) Add corresponding facts[] entries with source_type=user_input, add evidence_ref if provided.
+   3) Recompute M1-M6, score, gates, and confidence.
+   4) In the report, include: score before vs after, confidence before vs after, new evidence added (by subtest), remaining unknowns (by subtest), conflicts detected and resolution needed.
 
 CRITICAL OUTPUT RULES:
 - Keep rationale to 1-2 sentences max per dimension.
