@@ -908,7 +908,170 @@ THE 10 DIMENSIONS:
    3) Recompute T1-T6, segment scores, gates, final score, and confidence.
    4) In the report, include: score before vs after, confidence before vs after, new evidence added (by subtest), remaining unknowns (by subtest), conflicts detected and resolution needed.
 
-9. "Rating agility and governance" - Versioned pricing changes with approvals and traceability.
+9. "Rating agility and governance" - Pricing changes are versioned, communicated, approved, and reversible.
+
+   ## Data fields for Rating agility and governance (use these exact field names in analysis)
+
+   **pricing_versions[]**
+   - pricing_versions[].version_id: string, example: "v2026_01"
+   - pricing_versions[].effective_date: ISO string
+   - pricing_versions[].scope: new_customers_only | all_customers | opt_in
+   - pricing_versions[].applies_to_segments: list of indie | team | enterprise
+   - pricing_versions[].change_types: list of price_change | limit_change | unit_definition_change | overage_policy_change | packaging_change | discount_change
+   - pricing_versions[].summary: string
+   - pricing_versions[].notice_days: number or null
+   - pricing_versions[].communication_channels: list of pricing_page | changelog | email | in_product | blog | sales_outreach | contract
+   - pricing_versions[].grandfathering_policy: none | until_renewal | fixed_period | explicit_date
+   - pricing_versions[].grandfather_until: ISO string or null (required if grandfathering_policy is fixed_period or explicit_date)
+   - pricing_versions[].migration_path: none | self_serve_upgrade | assisted_migration | forced_migration
+   - pricing_versions[].rollback_option: none | revert_plan | revert_rates | cancel_without_penalty
+   - pricing_versions[].diff_url: string or null
+
+   **governance**
+   - governance.approver_roles: list of product | finance | sales | exec | legal | security
+   - governance.change_log_system: none | doc | ticketing | repo | pricing_tool
+   - governance.decision_log_exists: boolean
+   - governance.pricing_review_cadence: none | monthly | quarterly | ad_hoc
+   - governance.experimentation_allowed: boolean
+   - governance.experiment_controls: list of feature_flags | cohort_rollout | holdout_tests | kill_switch (optional)
+   - governance.contract_versioning: none | order_form_versioned | msa_versioned | both
+   - governance.notice_policy_default_days: number or null
+   - governance.change_approval_sla_days: number or null
+
+   **policies (extend existing policies object)**
+   - policies.pricing_last_updated: ISO string or null
+   - policies.pricing_change_notice_public: none | stated_days | implied
+   - policies.pricing_change_notice_days: number or null
+   - policies.grandfathering_public: none | stated
+   - policies.rollback_public: none | stated
+   - policies.overage_behavior: hard_stop | soft_limit | auto_topup | rollover (reuse)
+
+   **trust_surfaces[] (reuse existing object)**
+   - trust_surfaces[].surface_type: changelog | policy_docs | limit_behavior_docs | status_page | postmortems | audit_export | usage_dashboard | cost_dashboard | alerting
+   - trust_surfaces[].availability: public | in_product | both
+   - trust_surfaces[].evidence_url: string or null
+
+   **segments[] (reuse existing segments objects)**
+   - segments[].name: indie | team | enterprise
+   - segments[].priority_weight: float 0..1
+
+   **facts[] (evidence ledger, required)**
+   Each fact must be written into facts[] with:
+   - field_path: string, example: pricing_versions[v2026_01].notice_days
+   - value: any
+   - source_type: public_url | doc | contract | user_input | assumption
+   - reliability: float 0..1
+   - evidence_ref: URL or attachment ID
+   - timestamp: ISO string
+
+   ## Evidence collection rules (before scoring)
+   1) Extract public change signals from pricing pages ("last updated"), changelogs, blog posts, docs, terms, and trust centers, store as facts[].
+   2) If no pricing history is visible, do not invent versions. Leave pricing_versions[] empty and prompt for insider inputs.
+   3) If user provides a change event, create a pricing_versions[] entry with source_type=user_input in facts.
+   4) If public evidence conflicts with user input, flag a conflict and lower confidence.
+
+   ## Scoring (deterministic)
+   Score per segment, then aggregate across segments.
+
+   **Segment applicability**
+   If segments[] is empty, assume all three segments with equal weights and lower confidence.
+
+   #### Subtests (0 or 1 each, per segment)
+
+   **G1 Versioning and effective dates**
+   Pass if at least one is true:
+   - pricing_versions[] contains a version that includes this segment in applies_to_segments AND has effective_date
+   - policies.pricing_last_updated is present AND a trust_surfaces[] entry exists with surface_type == policy_docs or changelog and a valid evidence_url
+
+   **G2 Notice and communication**
+   Pass if at least one is true:
+   - A version for this segment has notice_days >= 14 AND communication_channels is non-empty
+   - policies.pricing_change_notice_days >= 14
+   - A trust_surfaces[] entry exists with surface_type == changelog and availability == public and a valid evidence_url
+   Segment strictness:
+   - For enterprise, require notice_days or pricing_change_notice_days to be present (not null) to pass.
+
+   **G3 Grandfathering or migration clarity**
+   Pass if at least one is true:
+   - A version for this segment has grandfathering_policy != none
+   - A version for this segment has migration_path != none AND scope != all_customers (opt-in or new customers only)
+   - policies.grandfathering_public == stated
+
+   **G4 Rollback or reversibility**
+   Pass if at least one is true:
+   - A version for this segment has rollback_option != none
+   - policies.rollback_public == stated
+   - governance.experimentation_allowed == true AND governance.experiment_controls includes kill_switch
+   Segment strictness:
+   - For enterprise, pass requires either rollback_option != none OR contract versioning in G5.
+
+   **G5 Approval and audit trail**
+   Pass if:
+   - governance.approver_roles has at least 2 roles
+   AND
+   - governance.change_log_system != none
+   AND
+   - governance.decision_log_exists == true
+   Enterprise add-on requirement:
+   - If segment is enterprise, also require governance.contract_versioning != none.
+
+   **G6 Rate and limit policy coverage**
+   Pass if:
+   - a trust_surfaces[] entry exists with surface_type == limit_behavior_docs and a valid evidence_url
+   AND
+   - at least one of these is true:
+     - policies.overage_behavior is present
+     - a trust_surfaces[] entry exists with surface_type == policy_docs and evidence_url contains pricing or billing policy
+
+   #### Points to score mapping (0-2, per segment)
+   points = sum(G1..G6)
+   - 0-2 points: segment score = 0
+   - 3-4 points: segment score = 1
+   - 5-6 points: segment score = 2
+
+   #### Dimension aggregation (0-2)
+   - If segments[].priority_weight exists and sums to 1: compute weighted average of segment scores.
+   - If missing: equal-weight across segments, and lower confidence.
+
+   #### Gates (hard enforcement caps)
+   - If the highest-priority segment fails G5: cap final dimension score at 1.
+   - If there exists any pricing_versions[] entry with scope == all_customers AND notice_days is null AND communication_channels is empty: cap final score at 1.
+   - If a version includes unit_definition_change and diff_url is null: cap final score at 1.
+
+   ## Confidence (separate from score)
+   Compute confidence per subtest:
+   - subtest_confidence = max(facts[].reliability among facts used by that subtest)
+   - If no facts used: 0
+
+   Per segment:
+   - segment_confidence = average(subtest_confidence for G1..G6)
+
+   Dimension confidence:
+   - Identify highest-priority segment: max segments[].priority_weight (or enterprise if weights missing).
+   - dimension_confidence = min(confidence(highest-priority segment), average(segment_confidence across segments))
+
+   Confidence labels: High >= 0.75, Medium 0.45-0.74, Low < 0.45
+
+   Conflict rule: If two facts with reliability >= 0.65 disagree for the same field_path, flag conflict and cap confidence at Medium until resolved.
+
+   ## Missing-insider prompts (ask only when confidence is not High, max 5 questions)
+   1) List your last 1 to 3 pricing or limit changes, include effective date, scope, and change types.
+      -> pricing_versions[]
+   2) For each change, how many days notice, and how was it communicated.
+      -> pricing_versions[].notice_days, communication_channels
+   3) Do existing customers get grandfathered, until renewal or a fixed date, and what is the migration path.
+      -> pricing_versions[].grandfathering_policy, grandfather_until, migration_path
+   4) What is the rollback option if a change breaks trust or economics.
+      -> pricing_versions[].rollback_option OR policies.rollback_public
+   5) Who approves pricing changes, where is the change logged, do you have a decision log, and do you version contracts for enterprise.
+      -> governance.*
+
+   ## Rerun behavior (must be explicit in output)
+   When the user provides missing inputs:
+   1) Persist inputs into pricing_versions[], governance, policies, and trust_surfaces[].
+   2) Add corresponding facts[] entries with source_type=user_input, add evidence_ref if provided.
+   3) Recompute G1-G6, segment scores, gates, final score, and confidence.
+   4) In the report, include: score before vs after, confidence before vs after, new evidence added (by subtest), remaining unknowns (by subtest), conflicts detected and resolution needed.
 
 10. "Measurement and cadence" - Regular reviews drive evidence-based pricing and rails changes.
 
