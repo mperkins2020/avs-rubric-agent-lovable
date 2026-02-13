@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/tooltip";
 
 const dimensionDefinitions: Record<string, string> = {
-  "Product north star": "One measurable 90-day outcome for value and predictability.",
+  "Product north star": "Observable outcomes tie to value delivery and predictability.",
   "ICP and job clarity": "Clear target user and job, anchored in workflows.",
   "Buyer and budget alignment": "Plans map to buyer, budget cycles, and approvals.",
   "Value unit": "Billable unit tracks value, is predictable and auditable.",

@@ -131,7 +131,7 @@ const Methodology = () => {
             <h2 className="text-2xl font-bold mt-12 mb-6">The 10 Dimensions</h2>
             <div className="space-y-6">
               {[
-                { name: "Product north star", definition: "One measurable 90-day outcome for value and predictability." },
+                { name: "Product north star", definition: "Observable outcomes tie to value delivery and predictability." },
                 { name: "ICP and job clarity", definition: "Clear target user and job, anchored in workflows." },
                 { name: "Buyer and budget alignment", definition: "Plans map to buyer, budget cycles, and approvals." },
                 { name: "Value unit", definition: "Billable unit tracks value, is predictable and auditable." },
