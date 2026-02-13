@@ -49,7 +49,125 @@ For each of the 10 dimensions below, provide:
 
 THE 10 DIMENSIONS:
 
-1. "Product north star" - One measurable 90-day outcome for value and predictability.
+1. "Product north star" - Observable outcomes tie to value delivery and predictability.
+
+   ## Data fields for Product north star (use these exact field names in analysis)
+
+   **north_star**
+   - north_star.primary_outcome_metric_name: string
+   - north_star.primary_outcome_metric_definition: string
+   - north_star.primary_outcome_metric_target: number or string or null
+   - north_star.primary_outcome_metric_timeframe: string or null (example: "Q2", "this year", "next 6 months")
+   - north_star.customer_done_state: string
+   - north_star.primary_workflow_name: string or null
+   - north_star.predictability_metric_name: string or null
+   - north_star.predictability_metric_definition: string or null
+   - north_star.predictability_metric_target: number or string or null
+   - north_star.tradeoffs[]: list of strings (optional)
+   - north_star.owner_roles[]: list of product | finance | eng | growth | sales | exec (optional)
+   - north_star.last_public_signal_date: ISO string or null
+
+   **observable_signals[]**
+   - observable_signals[].signal_type: homepage | pricing_page | docs | blog | changelog | trust_center | investor_deck | community_post
+   - observable_signals[].evidence_url: string
+   - observable_signals[].excerpt: string (short excerpt or summary)
+   - observable_signals[].date: ISO string or null
+   - observable_signals[].maps_to: value_delivery | economic_predictability | both
+
+   **facts[] (evidence ledger, required)**
+   Each fact must be written into facts[] with:
+   - field_path: string, example: observable_signals[0].excerpt
+   - value: any
+   - source_type: public_url | doc | contract | user_input | assumption
+   - reliability: float 0..1
+   - evidence_ref: URL or attachment ID
+   - timestamp: ISO string
+
+   ## Evidence collection rules (before scoring)
+   1) This dimension is public-signal-first: collect observable_signals[] from public surfaces, store excerpts and URLs.
+   2) Do not require targets or timeframes, but record them when present.
+   3) If multiple signals conflict, record all and flag a conflict, do not average them away.
+
+   ## Scoring (deterministic)
+   #### Subtests (0 or 1 each)
+
+   **NS1 Value outcome is stated**
+   Pass if:
+   - at least one observable_signals[] exists with maps_to in {value_delivery, both}
+   AND
+   - north_star.customer_done_state is present OR the signal excerpt explicitly describes a customer outcome (capture excerpt in facts).
+
+   **NS2 Predictability outcome is stated**
+   Pass if:
+   - at least one observable_signals[] exists with maps_to in {economic_predictability, both}
+   OR
+   - north_star.predictability_metric_name is present
+
+   **NS3 Outcome is measurable (even if target missing)**
+   Pass if:
+   - north_star.primary_outcome_metric_name is present
+   AND
+   - north_star.primary_outcome_metric_definition is present
+   AND definition is operational (how it is measured), not just a slogan.
+
+   **NS4 Workflow linkage exists**
+   Pass if at least one is true:
+   - north_star.primary_workflow_name is present
+   - an observable signal excerpt clearly names a workflow or use case tied to the outcome (capture excerpt).
+
+   **NS5 Coherence across signals**
+   Pass if:
+   - there are no unresolved conflicts among high-reliability facts for north_star.primary_outcome_metric_name and predictability outcome
+   OR
+   - conflicts exist but the rubric has a "current" signal identified by recency (latest dated signal) and explicitly marks older signals as outdated in the narrative.
+
+   **NS6 Tradeoffs are acknowledged (optional but strong)**
+   Pass if:
+   - north_star.tradeoffs[] length >= 1
+   OR
+   - an observable signal explicitly states what is deprioritized or not being optimized (capture excerpt).
+
+   #### Points to score mapping (0-2)
+   points = sum(NS1..NS6)
+   - 0-2 points: score = 0
+   - 3-4 points: score = 1
+   - 5-6 points: score = 2
+
+   #### Gates (hard enforcement caps)
+   - If NS1 fails: final score = 0. No stated value outcome means no north star.
+   - If NS2 fails: cap final score at 1. No predictability outcome means incomplete for AVS.
+   - If NS3 fails: cap final score at 1. If it is not measurable, it is not an outcome.
+
+   ## Confidence (separate from score)
+   Compute confidence per subtest:
+   - subtest_confidence = max(facts[].reliability among facts used by that subtest)
+   - If no facts used: 0
+
+   Dimension confidence:
+   - dimension_confidence = average(subtest_confidence for NS1..NS6)
+
+   Confidence labels: High >= 0.75 (typically requires direct public excerpts with dates), Medium 0.45-0.74, Low < 0.45 (typically implied or undated signals)
+
+   Conflict rule: If two facts with reliability >= 0.65 disagree for the same field_path, flag conflict and cap confidence at Medium until resolved or recency-resolved per NS5.
+
+   ## Missing-insider prompts (ask only when confidence is not High, max 5 questions)
+   1) What is the primary outcome metric name and its measurement definition.
+      -> north_star.primary_outcome_metric_name, north_star.primary_outcome_metric_definition
+   2) What customer done state does it represent, and what workflow is it tied to.
+      -> north_star.customer_done_state, north_star.primary_workflow_name
+   3) What predictability outcome are you optimizing (spend variance, surprise bills, margin floor), and how is it measured.
+      -> north_star.predictability_metric_name, north_star.predictability_metric_definition
+   4) Share the most current public statement of outcomes, provide a URL and date if possible.
+      -> observable_signals[]
+   5) What tradeoffs or non-goals are explicitly true right now.
+      -> north_star.tradeoffs[]
+
+   ## Rerun behavior (must be explicit in output)
+   When the user provides missing inputs:
+   1) Persist inputs into north_star and observable_signals[] where applicable.
+   2) Add corresponding facts[] entries with source_type=user_input, add evidence_ref if provided.
+   3) Recompute NS1-NS6, score, gates, and confidence.
+   4) In the report, include: score before vs after, confidence before vs after, new evidence added (by subtest), remaining unknowns (by subtest), conflicts detected and resolution needed.
 
 2. "ICP and job clarity" - Target buyer and job are explicit, concrete, and bounded.
 
