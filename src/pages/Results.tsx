@@ -9,10 +9,12 @@ import { ObservabilityStrip } from "@/components/ObservabilityStrip";
 import { DimensionCard } from "@/components/DimensionCard";
 import { StrengthsWeaknesses } from "@/components/StrengthsWeaknesses";
 import { ChatPanel } from "@/components/ChatPanel";
+import { InsiderPromptsPanel } from "@/components/InsiderPromptsPanel";
 import { EmailCaptureModal } from "@/components/EmailCaptureModal";
 import { FeedbackForm } from "@/components/FeedbackForm";
 import { scraperApi, type ScrapedPage } from "@/lib/api/scraper";
 import { exportToPDF } from "@/lib/pdfExport";
+import { toast } from "sonner";
 import type { ChatMessage, CompanyProfile, RubricScore, ObservabilityData } from "@/types/rubric";
 
 interface LocationState {
@@ -25,18 +27,24 @@ interface LocationState {
 export default function Results() {
   const location = useLocation();
   const navigate = useNavigate();
-  const state = location.state as LocationState | null;
+  const initialState = location.state as LocationState | null;
+  
+  const [companyProfile, setCompanyProfile] = useState<CompanyProfile | null>(initialState?.companyProfile ?? null);
+  const [rubricScore, setRubricScore] = useState<RubricScore | null>(initialState?.rubricScore ?? null);
+  const [observability, setObservability] = useState<ObservabilityData | null>(initialState?.observability ?? null);
+  const [pages, setPages] = useState<ScrapedPage[]>(initialState?.pages ?? []);
   
   const [showEmailModal, setShowEmailModal] = useState(false);
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [isChatLoading, setIsChatLoading] = useState(false);
+  const [isRerunning, setIsRerunning] = useState(false);
 
   // Redirect to home if no state
   useEffect(() => {
-    if (!state) {
+    if (!initialState) {
       navigate("/", { replace: true });
     }
-  }, [state, navigate]);
+  }, [initialState, navigate]);
 
   const handleDimensionClick = useCallback((dimension: string) => {
     const element = document.getElementById(
@@ -48,9 +56,8 @@ export default function Results() {
   }, []);
 
   const handleSendMessage = useCallback(async (content: string) => {
-    if (!state) return;
+    if (!companyProfile) return;
 
-    // Add user message
     const userMessage: ChatMessage = {
       id: `msg_${Date.now()}`,
       role: "user",
@@ -67,13 +74,13 @@ export default function Results() {
       }));
 
       const result = await scraperApi.chat(content, history, {
-        pages: state.pages,
-        companyName: state.companyProfile.companyName,
-        rubricScore: {
-          totalScore: state.rubricScore.totalScore,
-          maxScore: state.rubricScore.maxScore,
-          band: state.rubricScore.band,
-        },
+        pages,
+        companyName: companyProfile.companyName,
+        rubricScore: rubricScore ? {
+          totalScore: rubricScore.totalScore,
+          maxScore: rubricScore.maxScore,
+          band: rubricScore.band,
+        } : undefined,
       });
 
       const assistantMessage: ChatMessage = {
@@ -96,10 +103,59 @@ export default function Results() {
     } finally {
       setIsChatLoading(false);
     }
-  }, [chatMessages, state]);
+  }, [chatMessages, companyProfile, pages, rubricScore]);
+
+  const handleInsiderSubmit = useCallback(async (answers: Record<string, string>) => {
+    if (!companyProfile || !rubricScore || pages.length === 0) return;
+
+    setIsRerunning(true);
+    toast.info("Re-analyzing with your insider context...");
+
+    try {
+      const previousScores = rubricScore.dimensionScores.map(d => ({
+        dimension: d.dimension,
+        score: d.score,
+        confidence: d.confidence,
+      }));
+
+      // Extract the URL from pages
+      const url = pages[0]?.url ? new URL(pages[0].url).origin : "";
+
+      const result = await scraperApi.analyzeCompany(pages, url, {
+        insiderAnswers: answers,
+        previousScores,
+      });
+
+      if (result.success && result.rubricScore && result.observability) {
+        const oldScore = rubricScore.totalScore;
+        const newScore = result.rubricScore.totalScore;
+        
+        setRubricScore(result.rubricScore);
+        setObservability(result.observability);
+        if (result.companyProfile) {
+          setCompanyProfile(result.companyProfile);
+        }
+
+        if (newScore > oldScore) {
+          toast.success(`Score improved: ${oldScore} → ${newScore}/${rubricScore.maxScore}`);
+        } else if (newScore === oldScore) {
+          toast.info(`Score unchanged at ${newScore}/${rubricScore.maxScore}, but confidence may have improved.`);
+        } else {
+          toast.info(`Score adjusted: ${oldScore} → ${newScore}/${rubricScore.maxScore}`);
+        }
+      } else {
+        toast.error(result.error || "Re-analysis failed. Please try again.");
+      }
+    } catch (err) {
+      console.error("Rerun error:", err);
+      toast.error("Re-analysis failed. Please try again.");
+    } finally {
+      setIsRerunning(false);
+    }
+  }, [companyProfile, rubricScore, pages]);
 
   // Loading state while redirecting
-  if (!state) {
+  if (!initialState) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
@@ -107,7 +163,13 @@ export default function Results() {
     );
   }
 
-  const { companyProfile, rubricScore, observability } = state;
+  if (!companyProfile || !rubricScore || !observability) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -126,7 +188,7 @@ export default function Results() {
               Beta
             </span>
             <div className="h-4 w-px bg-border hidden md:block" />
-            <span className="text-sm text-muted-foreground truncate max-w-[200px] md:max-w-none hidden md:block">
+            <span className="text-sm text-muted-foreground truncate max-w-[200px] md:max-none hidden md:block">
               {companyProfile.companyName}
             </span>
           </div>
@@ -207,6 +269,13 @@ export default function Results() {
                 ))}
               </div>
             </motion.div>
+
+            {/* Insider Prompts Panel */}
+            <InsiderPromptsPanel
+              dimensions={rubricScore.dimensionScores}
+              onSubmitAnswers={handleInsiderSubmit}
+              isRerunning={isRerunning}
+            />
 
             {/* Challenge Chat */}
             <ChatPanel
