@@ -1,3 +1,8 @@
+export interface MissingInsiderPrompt {
+  question: string;
+  fieldPaths: string[];
+}
+
 export interface DimensionScore {
   dimension: string;
   score: 0 | 1 | 2;
@@ -6,6 +11,7 @@ export interface DimensionScore {
   rationale: string;
   observed: string[];
   uncertaintyReasons: string[];
+  missingInsiderPrompts?: MissingInsiderPrompt[];
 }
 
 export interface Evidence {

@@ -85,10 +85,22 @@ export const scraperApi = {
   /**
    * Analyze scraped pages to extract company profile and rubric score
    */
-  async analyzeCompany(pages: ScrapedPage[], url: string): Promise<AnalysisResult> {
+  async analyzeCompany(
+    pages: ScrapedPage[], 
+    url: string, 
+    options?: { 
+      insiderAnswers?: Record<string, string>; 
+      previousScores?: Array<{ dimension: string; score: number; confidence: number }>;
+    }
+  ): Promise<AnalysisResult> {
     try {
       const { data, error } = await supabase.functions.invoke('analyze-company', {
-        body: { pages, url },
+        body: { 
+          pages, 
+          url,
+          insiderAnswers: options?.insiderAnswers,
+          previousScores: options?.previousScores,
+        },
       });
 
       if (error) {

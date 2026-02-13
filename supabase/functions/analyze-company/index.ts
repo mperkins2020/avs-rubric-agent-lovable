@@ -14,6 +14,8 @@ interface ScrapedPage {
 interface AnalyzeRequest {
   pages: ScrapedPage[];
   url: string;
+  insiderAnswers?: Record<string, string>;
+  previousScores?: Array<{ dimension: string; score: number; confidence: number }>;
 }
 
 const COMPANY_PROFILE_PROMPT = `You are an expert business analyst. Analyze the following website content and extract a company profile.
@@ -1479,9 +1481,17 @@ Return a JSON object matching this schema:
       "notObservable": boolean,
       "rationale": "explanation",
       "observed": ["specific observations"],
-      "uncertaintyReasons": ["reasons for uncertainty"]
+      "uncertaintyReasons": ["reasons for uncertainty"],
+      "missingInsiderPrompts": [
+        {
+          "question": "The clarifying question from the missing-insider prompts section for this dimension",
+          "fieldPaths": ["data.field.path1", "data.field.path2"]
+        }
+      ]
     }
   ],
+
+IMPORTANT: For each dimension where confidence < 0.75 (not High), include missingInsiderPrompts from that dimension's "Missing-insider prompts" section. Select up to 5 questions that are most relevant to the missing data. For dimensions with High confidence, set missingInsiderPrompts to an empty array.
   "strengths": [
     {
       "dimension": "dimension name",
@@ -1601,7 +1611,7 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { pages, url }: AnalyzeRequest = await req.json();
+    const { pages, url, insiderAnswers, previousScores }: AnalyzeRequest = await req.json();
 
     if (!pages || pages.length === 0) {
       return new Response(
@@ -1638,6 +1648,22 @@ Description: ${companyProfile.oneLineDescription}
 Primary Users: ${companyProfile.primaryUsers}
 Product Surface: ${companyProfile.productSurface}
 Pricing Model Guess: ${companyProfile.pricingModelGuess}
+${insiderAnswers && Object.keys(insiderAnswers).length > 0 ? `
+INSIDER ANSWERS (user-provided, source_type=user_input, reliability=0.65):
+${Object.entries(insiderAnswers).map(([key, value]) => {
+  const [dimension, question] = key.split('::');
+  return `- [${dimension}] Q: ${question}\n  A: ${value}`;
+}).join('\n')}
+
+IMPORTANT: Incorporate these insider answers into your analysis. For dimensions with insider answers:
+1. Persist the answers into the relevant data fields
+2. Recompute subtests, scores, gates, and confidence using this new evidence
+3. Note which subtests changed due to the new evidence in the rationale
+${previousScores ? `
+PREVIOUS SCORES (for before/after comparison):
+${previousScores.map(s => `- ${s.dimension}: score=${s.score}, confidence=${s.confidence}`).join('\n')}
+Include score and confidence changes in the rationale for affected dimensions.
+` : ''}` : ''}
 
 Website Content:
 ${truncatedContent}`;
@@ -1654,6 +1680,7 @@ ${truncatedContent}`;
       rationale: string;
       observed: string[];
       uncertaintyReasons: string[];
+      missingInsiderPrompts?: Array<{ question: string; fieldPaths: string[] }>;
     }>;
     const totalScore = dimensionScores.reduce((sum, d) => sum + d.score, 0);
     const maxScore = dimensionScores.length * 2;
