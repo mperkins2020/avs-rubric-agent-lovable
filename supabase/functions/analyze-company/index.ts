@@ -415,7 +415,177 @@ THE 10 DIMENSIONS:
    3) Recompute C1-C6, score, gates, and confidence.
    4) In the report, include: score before vs after, confidence before vs after, new evidence added (by subtest), remaining unknowns (by subtest), conflicts detected and resolution needed.
 
-6. "Pools and packaging" - Tiers separate exploration from production by segment.
+6. "Pools and packaging" - Tiers and pools separate exploration from production by segment.
+
+   ## Data fields for Pools and packaging (use these exact field names in analysis)
+
+   **packaging**
+   - packaging.model: tiered | usage_based | hybrid | seats_plus_usage
+   - packaging.primary_unit_name: string, must match value_units[].name
+   - packaging.exploration_offering: free_trial | free_tier | credits_trial | sandbox | none
+   - packaging.production_offering: paid_tiers | enterprise_contracts | usage_only | none
+   - packaging.segment_notes: string, optional
+
+   **pools[]**
+   - pools[].name: string, example: "Exploration credits", "Team pool"
+   - pools[].pool_type: exploration | production | shared
+   - pools[].unit_name: string, must match value_units[].name
+   - pools[].included_units: number
+   - pools[].reset_cadence: none | daily | weekly | monthly | annual
+   - pools[].rollover_allowed: boolean
+   - pools[].rollover_rules: none | limited_period | unlimited (required if rollover_allowed=true)
+   - pools[].topup_allowed: boolean
+   - pools[].topup_increment: number or null (required if topup_allowed=true)
+   - pools[].scope: user | org | workspace | project | api_key
+   - pools[].allocation_mode: shared_pool | per_user_allowance | per_workspace_allowance
+   - pools[].tier_coverage: list of tier names (must match tiers[].name)
+   - pools[].notes: string, optional
+
+   **tiers[] (extend existing tiers objects)**
+   - tiers[].name: string
+   - tiers[].target_segment: indie | team | enterprise
+   - tiers[].billing_options: list of monthly | annual | usage | hybrid
+   - tiers[].payment_methods: list of card | invoice | po
+   - tiers[].unit_name: string or null, must match value_units[].name
+   - tiers[].included_units: number or null
+   - tiers[].overage_enabled: boolean
+   - tiers[].overage_unit_price: number or null
+   - tiers[].seat_price: number or null
+   - tiers[].seat_included: number or null
+   - tiers[].pool_name: string or null, must match pools[].name
+   - tiers[].upgrade_path_next: list of tier names (optional)
+   - tiers[].addon_available: boolean
+
+   **segments[] (reuse existing segments objects)**
+   - segments[].name: indie | team | enterprise
+   - segments[].priority_weight: float 0..1
+   - segments[].economic_buyer_role: string (optional)
+
+   **facts[] (evidence ledger, required)**
+   Each fact must be written into facts[] with:
+   - field_path: string, example: pools[Team pool].reset_cadence
+   - value: any
+   - source_type: public_url | doc | contract | user_input | assumption
+   - reliability: float 0..1
+   - evidence_ref: URL or attachment ID
+   - timestamp: ISO string
+
+   ## Evidence collection rules (before scoring)
+   1) Extract tiers, included units, pool language, rollover, and add-ons from pricing pages, plan tables, docs, terms, and in-product screenshots, store as facts[].
+   2) A pool only counts if it has unit_name, included_units, and reset cadence.
+   3) If tiers reference pools but the pool definition is missing, treat as missing data and lower confidence.
+
+   ## Scoring (deterministic)
+   Score per segment, then aggregate across segments.
+
+   **Segment tiers**
+   For each segment s in segments[]:
+   - segment_tiers = tiers[] where tiers[].target_segment == s.name
+   If empty, segment score = 0 with Low confidence.
+
+   **Segment pools**
+   For each segment s:
+   - segment_pools = pools[] where any tier in segment_tiers has tiers[].name in pools[].tier_coverage
+
+   #### Subtests (0 or 1 each, per segment)
+
+   **P1 Segment packaging coverage**
+   Pass if:
+   - len(segment_tiers) >= 1
+   AND
+   - at least one tier in segment_tiers has tiers[].unit_name present and matching packaging.primary_unit_name.
+
+   **P2 Exploration vs production separation**
+   Pass if:
+   - packaging.exploration_offering != none
+   AND
+   - packaging.production_offering != none
+   AND
+   - there exists at least one exploration construct that is not the same as production pricing, either:
+     - a pool with pool_type == exploration, or
+     - a tier with low-friction entry where payment_methods includes card and included_units exists and overage_enabled is false.
+
+   **P3 Pool rules are explicit**
+   Pass if for all pools in segment_pools:
+   - unit_name, included_units, and reset_cadence are present
+   AND if rollover_allowed == true, then rollover_rules is present
+   AND if topup_allowed == true, then topup_increment is present.
+   If segment_pools is empty, fail.
+
+   **P4 Pool scope matches buying unit**
+   Pass if:
+   - for team and enterprise: there exists a pool in segment_pools where scope in {org, workspace} AND allocation_mode == shared_pool
+   - for indie: there exists a pool where scope in {user, api_key} OR a tier has included_units without requiring pooling.
+
+   **P5 Packaging supports scaling without cliffs**
+   Pass if at least one is true:
+   - tiers[].upgrade_path_next exists for at least one tier in segment_tiers
+   OR
+   - tiers[].addon_available == true for at least one tier in segment_tiers
+   OR
+   - pools[].topup_allowed == true for at least one pool in segment_pools.
+
+   **P6 Overage packaging consistency**
+   Pass if:
+   - for any tier in segment_tiers where overage_enabled == true:
+     - tiers[].overage_unit_price is present
+     AND
+     - tiers[].unit_name matches packaging.primary_unit_name
+     AND
+     - a pool exists or included_units exists that makes the boundary legible, either:
+       - tiers[].included_units is present, or
+       - tiers[].pool_name references an existing pool.
+   If no tiers have overage_enabled, mark P6 as pass only if included_units or pool exists for at least one tier, otherwise fail.
+
+   #### Points to score mapping (0-2, per segment)
+   points = sum(P1..P6)
+   - 0-2 points: segment score = 0
+   - 3-4 points: segment score = 1
+   - 5-6 points: segment score = 2
+
+   #### Dimension aggregation (0-2)
+   - If segments[].priority_weight exists and sums to 1: compute weighted average of segment scores.
+   - If missing: equal-weight across provided segments, and lower confidence.
+
+   #### Gates (hard enforcement caps)
+   - If packaging.primary_unit_name is missing: final dimension score = 0.
+   - If P3 fails for the highest-priority segment: cap final dimension score at 1.
+   - If the highest-priority segment is team or enterprise and P4 fails: cap final dimension score at 1.
+
+   ## Confidence (separate from score)
+   Compute confidence per subtest:
+   - subtest_confidence = max(facts[].reliability among facts used by that subtest)
+   - If no facts used: 0
+
+   Per segment:
+   - segment_confidence = average(subtest_confidence for P1..P6)
+
+   Dimension confidence:
+   - Identify highest-priority segment: max segments[].priority_weight (or enterprise if weights missing).
+   - dimension_confidence = min(confidence(highest-priority segment), average(segment_confidence across segments))
+
+   Confidence labels: High >= 0.75, Medium 0.45-0.74, Low < 0.45
+
+   Conflict rule: If two facts with reliability >= 0.65 disagree for the same field_path, flag conflict and cap confidence at Medium until resolved.
+
+   ## Missing-insider prompts (ask only when confidence is not High, max 5 questions)
+   1) What is your primary billable unit name, and which tiers use it.
+      -> packaging.primary_unit_name, tiers[].unit_name
+   2) Describe exploration offering and production offering, free tier/trial/credits, and how it differs from paid.
+      -> packaging.exploration_offering, packaging.production_offering
+   3) For each pool, provide unit, included units, reset cadence, scope, allocation mode, rollover, and top-up details.
+      -> pools[]
+   4) For each tier, which pool applies, included units, overage pricing, add-ons, and upgrade path.
+      -> tiers[].pool_name, included_units, overage_unit_price, addon_available, upgrade_path_next
+   5) For team and enterprise, confirm whether usage is shared at org or workspace level, and who controls it.
+      -> pools[].scope, pools[].allocation_mode
+
+   ## Rerun behavior (must be explicit in output)
+   When the user provides missing inputs:
+   1) Persist inputs into packaging, pools[], tiers[].
+   2) Add corresponding facts[] entries with source_type=user_input, add evidence_ref if provided.
+   3) Recompute P1-P6, segment scores, gates, final score, and confidence.
+   4) In the report, include: score before vs after, confidence before vs after, new evidence added (by subtest), remaining unknowns (by subtest), conflicts detected and resolution needed.
 
 7. "Overages and risk allocation" - Limit behavior is explicit, risk is fairly shared, surprises are prevented.
 
