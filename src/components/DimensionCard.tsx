@@ -75,7 +75,7 @@ export function DimensionCard({ dimension, index }: DimensionCardProps) {
                     <TooltipTrigger asChild onClick={(e) => e.stopPropagation()}>
                       <HelpCircle className="w-3.5 h-3.5 text-muted-foreground hover:text-foreground transition-colors cursor-help" />
                     </TooltipTrigger>
-                    <TooltipContent side="top" className="max-w-xs text-sm">
+                    <TooltipContent side="top" align="start" className="max-w-xs text-sm z-[100]" sideOffset={8} collisionPadding={16}>
                       {dimensionDescriptions[dimension.dimension] || 
                         "Assessment criteria for this dimension."}
                     </TooltipContent>

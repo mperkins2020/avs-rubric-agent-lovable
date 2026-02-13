@@ -1464,7 +1464,7 @@ CRITICAL OUTPUT RULES:
 - Keep uncertaintyReasons to max 2 items per dimension.
 - Do NOT include facts[] or raw data in the output JSON. Only include the scored results.
 - Do NOT echo back the spec or field schemas. Only output the final scores.
-- REQUIRED: For each dimension where confidence < 0.75 (not High), you MUST include missingInsiderPrompts with the relevant clarifying questions from that dimension's "Missing-insider prompts" section. Select up to 5 questions most relevant to missing data. For dimensions with High confidence (>= 0.75), set missingInsiderPrompts to an empty array [].
+- REQUIRED: For each dimension where confidence < 0.40 (Low), you MUST include exactly 1 missingInsiderPrompt — the single most important clarifying question from that dimension's "Missing-insider prompts" section. For dimensions with confidence >= 0.40, set missingInsiderPrompts to an empty array []. This assessment is based on publicly observable evidence only.
 
 Also provide:
 - strengths: Top 3 areas where they excel with evidence
