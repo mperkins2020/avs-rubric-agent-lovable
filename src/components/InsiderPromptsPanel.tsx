@@ -17,14 +17,21 @@ export function InsiderPromptsPanel({ dimensions, onSubmitAnswers, isRerunning }
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [expandedDimension, setExpandedDimension] = useState<string | null>(null);
 
-  // Filter to dimensions with low/medium confidence that have prompts
-  const lowConfidenceDimensions = dimensions.filter(
-    (d) =>
-      !d.notObservable &&
-      d.confidence < 0.75 &&
-      d.missingInsiderPrompts &&
-      d.missingInsiderPrompts.length > 0
-  );
+  // Filter to dimensions with LOW confidence only (< 0.4) that have prompts
+  // Only publicly observable evidence matters — insider info contaminates the score
+  const lowConfidenceDimensions = dimensions
+    .filter(
+      (d) =>
+        !d.notObservable &&
+        d.confidence < 0.4 &&
+        d.missingInsiderPrompts &&
+        d.missingInsiderPrompts.length > 0
+    )
+    .map((d) => ({
+      ...d,
+      // Limit to top 1 most relevant question per dimension
+      missingInsiderPrompts: d.missingInsiderPrompts!.slice(0, 1),
+    }));
 
   if (lowConfidenceDimensions.length === 0) return null;
 
