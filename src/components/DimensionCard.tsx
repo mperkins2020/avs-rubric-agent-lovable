@@ -1,30 +1,10 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronDown, AlertCircle, Info, HelpCircle } from "lucide-react";
+import { ChevronDown, AlertCircle, Info } from "lucide-react";
 import { GlassCard } from "@/components/ui/GlassCard";
 import { ScoreBadge } from "@/components/ScoreBadge";
 import { cn } from "@/lib/utils";
 import type { DimensionScore } from "@/types/rubric";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
-
-// Dimension explanations mapping
-const dimensionDescriptions: Record<string, string> = {
-  "Product north star": "Observable outcomes tie to value delivery and predictability.",
-  "ICP and job clarity": "Clear target user and job, anchored in workflows.",
-  "Buyer and budget alignment": "Plans map to buyer, budget cycles, and approvals.",
-  "Value unit": "Billable unit tracks value, is predictable and auditable.",
-  "Cost driver mapping": "Usage and cost drivers are explicit and forecastable.",
-  "Pools and packaging": "Tiers separate exploration from production by segment.",
-  "Overages and risk allocation": "Limit behavior is explicit, risk is fairly shared.",
-  "Safety rails and trust surfaces": "Controls prevent surprises, show usage, enable limits.",
-  "Rating agility and governance": "Versioned pricing changes with approvals and traceability.",
-  "Measurement and cadence": "Regular reviews drive evidence-based pricing and rails changes.",
-};
 
 interface DimensionCardProps {
   dimension: DimensionScore;
@@ -66,22 +46,9 @@ export function DimensionCard({ dimension, index }: DimensionCardProps) {
               <span className="font-mono text-xs text-muted-foreground w-6">
                 {String(index + 1).padStart(2, "0")}
               </span>
-              <div className="flex items-center gap-1.5">
-                <h3 className="font-medium text-foreground">
-                  {dimension.dimension}
-                </h3>
-                <TooltipProvider delayDuration={200}>
-                  <Tooltip>
-                    <TooltipTrigger asChild onClick={(e) => e.stopPropagation()}>
-                      <HelpCircle className="w-3.5 h-3.5 text-muted-foreground hover:text-foreground transition-colors cursor-help" />
-                    </TooltipTrigger>
-                    <TooltipContent side="top" align="start" className="max-w-xs text-sm z-[100]" sideOffset={8} collisionPadding={16}>
-                      {dimensionDescriptions[dimension.dimension] || 
-                        "Assessment criteria for this dimension."}
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              </div>
+              <h3 className="font-medium text-foreground">
+                {dimension.dimension}
+              </h3>
             </div>
             <div className="flex items-center gap-3">
               <span className={cn("text-xs", getConfidenceColor())}>
