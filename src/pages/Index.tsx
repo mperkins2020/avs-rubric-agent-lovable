@@ -2,10 +2,11 @@ import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { URLInput } from "@/components/URLInput";
-import { Sparkles, Shield, Target, Zap, AlertCircle, Info } from "lucide-react";
+import { Sparkles, Shield, Target, Zap, AlertCircle, Info, LogOut } from "lucide-react";
 import { useScan } from "@/hooks/useScan";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/hooks/useAuth";
 import ValueTempoLogo from "@/assets/ValueTempo_Logo.png";
 import {
   Tooltip,
@@ -28,6 +29,7 @@ const dimensionDefinitions: Record<string, string> = {
 };
 const Index = () => {
   const navigate = useNavigate();
+  const { signOut } = useAuth();
   const {
     status,
     statusMessage,
@@ -105,6 +107,10 @@ const Index = () => {
             </Link>
             <Link to="/faq/product-growth" className="text-sm text-muted-foreground hover:text-foreground transition-colors">FAQ: Growth</Link>
             <Link to="/faq/cfo-revops" className="text-sm text-muted-foreground hover:text-foreground transition-colors">FAQ: RevOps</Link>
+            <Button variant="ghost" size="sm" onClick={signOut} className="gap-1 text-muted-foreground hover:text-foreground">
+              <LogOut className="w-4 h-4" />
+              Sign out
+            </Button>
           </nav>
         </div>
       </header>
