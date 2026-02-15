@@ -1654,14 +1654,16 @@ ${Object.entries(insiderAnswers).map(([key, value]) => {
   return `- [${dimension}] Q: ${question}\n  A: ${value}`;
 }).join('\n')}
 
-IMPORTANT: Incorporate these insider answers into your analysis. For dimensions with insider answers:
-1. Persist the answers into the relevant data fields
-2. Recompute subtests, scores, gates, and confidence using this new evidence
-3. Note which subtests changed due to the new evidence in the rationale
+CRITICAL PUBLIC-ONLY SCORING INVARIANT:
+- Insider-only inputs (no public URL, no publishable artifact) must NOT change dimension scores or total score.
+- Scores update ONLY when public_evidence[] gains new eligible entries (source_type in {public_url, public_doc, public_screenshot}).
+- Insider answers improve recommendations and "what to publish" guidance, but the public_score and public_confidence must remain unchanged unless the insider answer references a verifiable public URL.
+- If the insider answer contains a public URL, treat it as public evidence and allow score changes.
+- In the rationale, note what the insider context suggests but clarify that scores reflect public evidence only.
 ${previousScores ? `
 PREVIOUS SCORES (for before/after comparison):
 ${previousScores.map(s => `- ${s.dimension}: score=${s.score}, confidence=${s.confidence}`).join('\n')}
-Include score and confidence changes in the rationale for affected dimensions.
+Since these are insider-only inputs, scores should remain the same as previous unless a public URL was provided in the answers.
 ` : ''}` : ''}
 
 Website Content:

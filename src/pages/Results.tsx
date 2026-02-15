@@ -109,7 +109,7 @@ export default function Results() {
     if (!companyProfile || !rubricScore || pages.length === 0) return;
 
     setIsRerunning(true);
-    toast.info("Re-analyzing with your insider context...");
+    toast.info("Re-analyzing with your insider context (scores unchanged without public evidence)...");
 
     try {
       const previousScores = rubricScore.dimensionScores.map(d => ({
@@ -118,7 +118,6 @@ export default function Results() {
         confidence: d.confidence,
       }));
 
-      // Extract the URL from pages
       const url = pages[0]?.url ? new URL(pages[0].url).origin : "";
 
       const result = await scraperApi.analyzeCompany(pages, url, {
@@ -127,22 +126,13 @@ export default function Results() {
       });
 
       if (result.success && result.rubricScore && result.observability) {
-        const oldScore = rubricScore.totalScore;
-        const newScore = result.rubricScore.totalScore;
-        
         setRubricScore(result.rubricScore);
         setObservability(result.observability);
         if (result.companyProfile) {
           setCompanyProfile(result.companyProfile);
         }
 
-        if (newScore > oldScore) {
-          toast.success(`Score improved: ${oldScore} → ${newScore}/${rubricScore.maxScore}`);
-        } else if (newScore === oldScore) {
-          toast.info(`Score unchanged at ${newScore}/${rubricScore.maxScore}, but confidence may have improved.`);
-        } else {
-          toast.info(`Score adjusted: ${oldScore} → ${newScore}/${rubricScore.maxScore}`);
-        }
+        toast.info("Insider context processed. Recommendations updated — public scores unchanged.");
       } else {
         toast.error(result.error || "Re-analysis failed. Please try again.");
       }
@@ -154,6 +144,98 @@ export default function Results() {
     }
   }, [companyProfile, rubricScore, pages]);
 
+  const handlePublicLinksSubmit = useCallback(async (links: Array<{ url: string; dimension?: string }>) => {
+    if (!companyProfile || !rubricScore || pages.length === 0) return;
+
+    setIsRerunning(true);
+    toast.info("Scraping submitted links and re-analyzing...");
+
+    try {
+      // Scrape each submitted link
+      const scrapePromises = links.map(async (link) => {
+        try {
+          const result = await scraperApi.scrapeWebsite(link.url, { maxPages: 1 });
+          if (result.success && result.pages && result.pages.length > 0) {
+            return result.pages[0];
+          }
+          return null;
+        } catch {
+          return null;
+        }
+      });
+
+      const scrapedPages = await Promise.all(scrapePromises);
+      const newPages = scrapedPages.filter(Boolean) as typeof pages;
+
+      if (newPages.length === 0) {
+        toast.error("Could not scrape any of the submitted links. Please check the URLs.");
+        setIsRerunning(false);
+        return;
+      }
+
+      // Merge new pages with existing (dedup by URL)
+      const existingUrls = new Set(pages.map(p => p.url));
+      const uniqueNewPages = newPages.filter(p => !existingUrls.has(p.url));
+      const allPages = [...pages, ...uniqueNewPages];
+      setPages(allPages);
+
+      const previousScores = rubricScore.dimensionScores.map(d => ({
+        dimension: d.dimension,
+        score: d.score,
+        confidence: d.confidence,
+      }));
+
+      const url = pages[0]?.url ? new URL(pages[0].url).origin : "";
+
+      const result = await scraperApi.analyzeCompany(allPages, url, {
+        previousScores,
+      });
+
+      if (result.success && result.rubricScore && result.observability) {
+        const oldScore = rubricScore.totalScore;
+        const newScore = result.rubricScore.totalScore;
+        const oldConfidence = Math.round(
+          rubricScore.dimensionScores.reduce((s, d) => s + d.confidence, 0) / rubricScore.dimensionScores.length * 100
+        );
+        const newConfidence = result.observability.confidenceScore;
+
+        setRubricScore(result.rubricScore);
+        setObservability(result.observability);
+        if (result.companyProfile) {
+          setCompanyProfile(result.companyProfile);
+        }
+
+        // Show delta
+        const changedDims = result.rubricScore.dimensionScores
+          .filter((d, i) => {
+            const prev = previousScores.find(p => p.dimension === d.dimension);
+            return prev && (prev.score !== d.score || Math.abs(prev.confidence - d.confidence) > 0.05);
+          })
+          .map(d => d.dimension);
+
+        const parts: string[] = [];
+        parts.push(`Score: ${oldScore} → ${newScore}/${rubricScore.maxScore}`);
+        parts.push(`Confidence: ${oldConfidence}% → ${newConfidence}%`);
+        parts.push(`${uniqueNewPages.length} new page${uniqueNewPages.length !== 1 ? "s" : ""} added`);
+        if (changedDims.length > 0) {
+          parts.push(`Changed: ${changedDims.join(", ")}`);
+        }
+
+        if (newScore > oldScore) {
+          toast.success(parts.join(" · "));
+        } else {
+          toast.info(parts.join(" · "));
+        }
+      } else {
+        toast.error(result.error || "Re-analysis failed.");
+      }
+    } catch (err) {
+      console.error("Public links rerun error:", err);
+      toast.error("Re-analysis failed. Please try again.");
+    } finally {
+      setIsRerunning(false);
+    }
+  }, [companyProfile, rubricScore, pages]);
   // Loading state while redirecting
   if (!initialState) {
     return (
@@ -270,10 +352,11 @@ export default function Results() {
               </div>
             </motion.div>
 
-            {/* Insider Prompts Panel */}
+            {/* Improve Accuracy Panel */}
             <InsiderPromptsPanel
               dimensions={rubricScore.dimensionScores}
               onSubmitAnswers={handleInsiderSubmit}
+              onSubmitPublicLinks={handlePublicLinksSubmit}
               isRerunning={isRerunning}
             />
 
