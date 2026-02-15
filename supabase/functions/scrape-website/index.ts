@@ -107,7 +107,7 @@ Deno.serve(async (req) => {
       const urlObj = new URL(formattedUrl);
       const baseUrl = `${urlObj.protocol}//${urlObj.host}`;
       
-      // Common high-value page paths to try as fallbacks
+      // Common high-value page paths to try as fallbacks — economic surfaces first
       const commonPaths = [
         '/pricing',
         '/about',
@@ -117,10 +117,22 @@ Deno.serve(async (req) => {
         '/platform',
         '/enterprise',
         '/security',
+        '/trust',
         '/integrations',
         '/customers',
         '/use-cases',
         '/how-it-works',
+        '/docs',
+        '/help',
+        '/support',
+        '/blog',
+        '/changelog',
+        '/updates',
+        '/release-notes',
+        '/status',
+        '/terms',
+        '/legal',
+        '/privacy',
       ];
       
       const mapResponse = await fetch('https://api.firecrawl.dev/v1/map', {
@@ -173,13 +185,34 @@ Deno.serve(async (req) => {
         /\/why-/i,
         /\/compare/i,
         /\/vs-/i,
+        /\/docs\b/i,
+        /\/help\b/i,
+        /\/support\b/i,
+        /\/changelog\b/i,
+        /\/updates\b/i,
+        /\/release-notes\b/i,
+        /\/status\b/i,
+        /\/terms\b/i,
+        /\/legal\b/i,
+        /\/privacy\b/i,
+        // Billing/usage-related keyword patterns
+        /billing/i,
+        /usage/i,
+        /limits/i,
+        /credits/i,
+        /overage/i,
+        /caps?\b/i,
+        /alerts?\b/i,
+        /calculator/i,
+        /fair.?use/i,
+        /rate.?limit/i,
       ];
 
-      // Exclusion patterns
+      // Exclusion patterns - removed terms/legal/changelog from exclusion since they're now priority
       const exclusionPatterns = [
         /\.(pdf|zip|png|jpg|jpeg|gif|svg|css|js|woff|woff2|ttf|eot)$/i,
-        /\/(blog|news|press|careers|jobs|legal|terms|privacy|cookie|changelog|updates|releases)\//i,
-        /\/(blog|news|press|careers|jobs|legal|terms|privacy|cookie|changelog|updates|releases)$/i,
+        /\/(blog|news|press|careers|jobs|cookie)\//i,
+        /\/(blog|news|press|careers|jobs|cookie)$/i,
       ];
 
       const priorityLinks = combinedLinks
