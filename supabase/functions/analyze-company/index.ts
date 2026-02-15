@@ -1741,6 +1741,54 @@ ${truncatedContent}`;
       observabilityLevel,
     });
 
+    // Log evidence misses when user submitted new public URLs (previousScores present = rerun)
+    if (previousScores && previousScores.length > 0) {
+      try {
+        const domain = new URL(url).hostname;
+        // Identify dimensions that changed score or confidence
+        const changedDimensions = dimensionScores.filter(d => {
+          const prev = previousScores.find(p => p.dimension === d.dimension);
+          return prev && (prev.score !== d.score || Math.abs(prev.confidence - d.confidence) > 0.05);
+        });
+
+        if (changedDimensions.length > 0 && !insiderAnswers) {
+          // This is a public-link rerun where scores changed — means original run missed evidence
+          const supabaseUrl = Deno.env.get('SUPABASE_URL');
+          const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+          
+          if (supabaseUrl && supabaseKey) {
+            const missEntries = changedDimensions.map(d => ({
+              company_domain: domain,
+              submitted_url: pages[pages.length - 1]?.url || url, // last page is likely the user-submitted one
+              dimension: d.dimension,
+              expected_fact: d.rationale?.substring(0, 200) || null,
+              miss_reason: 'discovery_gap',
+              fix_applied: 'new_seed_url',
+            }));
+
+            const insertResponse = await fetch(`${supabaseUrl}/rest/v1/evidence_misses`, {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${supabaseKey}`,
+                'apikey': supabaseKey,
+                'Content-Type': 'application/json',
+                'Prefer': 'return=minimal',
+              },
+              body: JSON.stringify(missEntries),
+            });
+
+            if (insertResponse.ok) {
+              console.log(`Logged ${missEntries.length} evidence misses for ${domain}`);
+            } else {
+              console.error('Failed to log evidence misses:', await insertResponse.text());
+            }
+          }
+        }
+      } catch (logError) {
+        console.error('Error logging evidence misses (non-fatal):', logError);
+      }
+    }
+
     return new Response(
       JSON.stringify(result),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
