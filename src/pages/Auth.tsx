@@ -12,7 +12,12 @@ const FREE_EMAIL_DOMAINS = [
   "live.com", "msn.com", "me.com", "gmx.com", "inbox.com",
 ];
 
+const WHITELISTED_EMAILS = [
+  "mlhperkins@gmail.com",
+];
+
 function isWorkEmail(email: string): boolean {
+  if (WHITELISTED_EMAILS.includes(email.toLowerCase())) return true;
   const domain = email.split("@")[1]?.toLowerCase();
   if (!domain) return false;
   return !FREE_EMAIL_DOMAINS.includes(domain);
