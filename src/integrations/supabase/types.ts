@@ -14,6 +14,39 @@ export type Database = {
   }
   public: {
     Tables: {
+      evidence_misses: {
+        Row: {
+          company_domain: string
+          created_at: string
+          dimension: string
+          expected_fact: string | null
+          fix_applied: string
+          id: string
+          miss_reason: string
+          submitted_url: string
+        }
+        Insert: {
+          company_domain: string
+          created_at?: string
+          dimension: string
+          expected_fact?: string | null
+          fix_applied?: string
+          id?: string
+          miss_reason: string
+          submitted_url: string
+        }
+        Update: {
+          company_domain?: string
+          created_at?: string
+          dimension?: string
+          expected_fact?: string | null
+          fix_applied?: string
+          id?: string
+          miss_reason?: string
+          submitted_url?: string
+        }
+        Relationships: []
+      }
       report_feedback: {
         Row: {
           company_name: string
