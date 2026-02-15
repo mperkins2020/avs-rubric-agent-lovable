@@ -21,6 +21,55 @@ interface ScrapedPage {
   };
 }
 
+// Validate that the request includes the expected apikey header (defense-in-depth)
+function validateApiKey(req: Request): boolean {
+  const apikey = req.headers.get('apikey');
+  const authHeader = req.headers.get('authorization');
+  return !!(apikey || authHeader);
+}
+
+// SSRF protection: block private/internal IPs and non-http schemes
+function isUnsafeUrl(urlString: string): string | null {
+  let parsed: URL;
+  try {
+    parsed = new URL(urlString);
+  } catch {
+    return 'Invalid URL format';
+  }
+
+  // Only allow http/https
+  if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+    return 'Only http and https URLs are allowed';
+  }
+
+  const hostname = parsed.hostname.toLowerCase();
+
+  // Block localhost and loopback
+  if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1' || hostname === '0.0.0.0') {
+    return 'Internal URLs are not allowed';
+  }
+
+  // Block private IP ranges
+  const privateRanges = [
+    /^10\./,
+    /^172\.(1[6-9]|2[0-9]|3[0-1])\./,
+    /^192\.168\./,
+    /^169\.254\./,
+    /^fc00:/i,
+    /^fe80:/i,
+  ];
+  if (privateRanges.some(r => r.test(hostname))) {
+    return 'Internal URLs are not allowed';
+  }
+
+  // Block metadata endpoints
+  if (hostname === 'metadata.google.internal' || hostname.endsWith('.internal')) {
+    return 'Internal URLs are not allowed';
+  }
+
+  return null;
+}
+
 Deno.serve(async (req) => {
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
@@ -28,14 +77,33 @@ Deno.serve(async (req) => {
   }
 
   try {
+    // Validate caller has apikey/auth header
+    if (!validateApiKey(req)) {
+      return new Response(
+        JSON.stringify({ success: false, error: 'Unauthorized' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     const { url, includeSubpages = true, maxPages = 10 }: ScrapeRequest = await req.json();
 
-    if (!url) {
+    if (!url || typeof url !== 'string') {
       return new Response(
         JSON.stringify({ success: false, error: 'URL is required' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
+
+    // Enforce URL length limit
+    if (url.length > 2048) {
+      return new Response(
+        JSON.stringify({ success: false, error: 'URL exceeds maximum length of 2048 characters' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Enforce maxPages limit
+    const safeMaxPages = Math.min(Math.max(1, maxPages), 20);
 
     const apiKey = Deno.env.get('FIRECRAWL_API_KEY');
     if (!apiKey) {
@@ -50,6 +118,15 @@ Deno.serve(async (req) => {
     let formattedUrl = url.trim();
     if (!formattedUrl.startsWith('http://') && !formattedUrl.startsWith('https://')) {
       formattedUrl = `https://${formattedUrl}`;
+    }
+
+    // Validate URL safety (SSRF protection)
+    const unsafeReason = isUnsafeUrl(formattedUrl);
+    if (unsafeReason) {
+      return new Response(
+        JSON.stringify({ success: false, error: unsafeReason }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
     console.log('Starting scrape for URL:', formattedUrl);
@@ -100,7 +177,7 @@ Deno.serve(async (req) => {
     console.log('Main page scraped successfully');
 
     // Step 2: If subpages are requested, find and scrape relevant pages
-    if (includeSubpages && maxPages > 1) {
+    if (includeSubpages && safeMaxPages > 1) {
       console.log('Mapping website for subpages...');
       
       // Parse base URL for constructing fallback URLs
@@ -221,7 +298,7 @@ Deno.serve(async (req) => {
           if (link === formattedUrl || link === formattedUrl + '/') return false;
           return priorityPatterns.some(pattern => pattern.test(link));
         })
-        .slice(0, maxPages - 1);
+        .slice(0, safeMaxPages - 1);
 
       console.log(`Selected ${priorityLinks.length} priority pages to scrape`);
       console.log('Priority links:', priorityLinks);

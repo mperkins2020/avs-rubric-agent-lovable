@@ -83,6 +83,16 @@ Deno.serve(async (req) => {
   }
 
   try {
+    // Validate caller has apikey/auth header
+    const apikey = req.headers.get('apikey');
+    const authHeader = req.headers.get('authorization');
+    if (!apikey && !authHeader) {
+      return new Response(
+        JSON.stringify({ success: false, error: 'Unauthorized' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     const { message, history, context }: ChatRequest = await req.json();
 
     if (!message) {
