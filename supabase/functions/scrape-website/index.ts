@@ -1,4 +1,5 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -21,11 +22,19 @@ interface ScrapedPage {
   };
 }
 
-// Validate that the request includes the expected apikey header (defense-in-depth)
-function validateApiKey(req: Request): boolean {
-  const apikey = req.headers.get('apikey');
+// Validate JWT authentication
+async function validateAuth(req: Request): Promise<{ userId: string } | null> {
   const authHeader = req.headers.get('authorization');
-  return !!(apikey || authHeader);
+  if (!authHeader?.startsWith('Bearer ')) return null;
+  const sb = createClient(
+    Deno.env.get('SUPABASE_URL')!,
+    Deno.env.get('SUPABASE_ANON_KEY')!,
+    { global: { headers: { Authorization: authHeader } } }
+  );
+  const token = authHeader.replace('Bearer ', '');
+  const { data, error } = await sb.auth.getClaims(token);
+  if (error || !data?.claims) return null;
+  return { userId: data.claims.sub as string };
 }
 
 // SSRF protection: block private/internal IPs and non-http schemes
@@ -77,13 +86,15 @@ Deno.serve(async (req) => {
   }
 
   try {
-    // Validate caller has apikey/auth header
-    if (!validateApiKey(req)) {
+    // Validate JWT authentication
+    const auth = await validateAuth(req);
+    if (!auth) {
       return new Response(
         JSON.stringify({ success: false, error: 'Unauthorized' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
+    console.log('Authenticated user:', auth.userId);
 
     const { url, includeSubpages = true, maxPages = 10 }: ScrapeRequest = await req.json();
 
