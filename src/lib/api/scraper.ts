@@ -55,12 +55,16 @@ export const scraperApi = {
 
       if (error) {
         console.error('Scrape error:', error);
-        // Check for specific error types
         if (error.message?.includes('FunctionsFetchError') || error.message?.includes('Failed to fetch')) {
           return { 
             success: false, 
             error: 'Request timed out. The website may be too large or slow to respond. Please try again or try a different URL.' 
           };
+        }
+        if (error.message?.includes('non-2xx')) {
+          // Try to extract message from data if available
+          const msg = data?.error || 'The website could not be scraped. It may be blocking automated access. Please try a different URL.';
+          return { success: false, error: msg };
         }
         return { success: false, error: error.message };
       }

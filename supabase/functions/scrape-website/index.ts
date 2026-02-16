@@ -161,7 +161,20 @@ Deno.serve(async (req) => {
       }),
     });
 
-    const mainPageData = await mainPageResponse.json();
+    let mainPageData: any;
+    try {
+      const mainPageText = await mainPageResponse.text();
+      mainPageData = JSON.parse(mainPageText);
+    } catch {
+      console.error('Firecrawl returned non-JSON response, status:', mainPageResponse.status);
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: `The website could not be reached (upstream returned ${mainPageResponse.status}). Please check the URL and try again.` 
+        }),
+        { status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
     if (!mainPageResponse.ok || !mainPageData.success) {
       console.error('Failed to scrape main page:', mainPageData);
@@ -236,7 +249,13 @@ Deno.serve(async (req) => {
         }),
       });
 
-      const mapData = await mapResponse.json();
+      let mapData: any = {};
+      try {
+        const mapText = await mapResponse.text();
+        mapData = JSON.parse(mapText);
+      } catch {
+        console.warn('Map endpoint returned non-JSON, skipping subpage discovery');
+      }
       let allLinks: string[] = [];
 
       if (mapResponse.ok && mapData.success && mapData.links) {
@@ -331,7 +350,14 @@ Deno.serve(async (req) => {
             }),
           });
 
-          const pageData = await pageResponse.json();
+          let pageData: any;
+          try {
+            const pageText = await pageResponse.text();
+            pageData = JSON.parse(pageText);
+          } catch {
+            console.log('Non-JSON response for:', pageUrl);
+            return null;
+          }
 
           if (pageResponse.ok && pageData.success && pageData.data) {
             console.log('Successfully scraped:', pageUrl);
