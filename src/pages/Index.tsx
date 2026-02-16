@@ -108,7 +108,6 @@ const Index = () => {
             </Link>
             <Link to="/faq/product-growth" className="text-sm text-muted-foreground hover:text-foreground transition-colors">FAQ: Growth</Link>
             <Link to="/faq/cfo-revops" className="text-sm text-muted-foreground hover:text-foreground transition-colors">FAQ: RevOps</Link>
-            <EmailPreferences />
             <Button variant="ghost" size="sm" onClick={signOut} className="gap-1 text-muted-foreground hover:text-foreground">
               <LogOut className="w-4 h-4" />
               Sign out
@@ -232,7 +231,8 @@ const Index = () => {
 
       {/* Footer */}
       <footer className="relative z-10 border-t border-border/50 py-6">
-        <div className="container mx-auto px-4 text-center">
+        <div className="container mx-auto px-4 flex flex-col items-center gap-3">
+          <EmailPreferences />
           <p className="text-sm text-muted-foreground">
             © 2026 ValueTempo. All rights reserved.
           </p>
