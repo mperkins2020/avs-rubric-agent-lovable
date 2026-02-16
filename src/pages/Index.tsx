@@ -2,13 +2,20 @@ import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { URLInput } from "@/components/URLInput";
-import { Sparkles, Shield, Target, Zap, AlertCircle, Info, LogOut } from "lucide-react";
+import { Sparkles, Shield, Target, Zap, AlertCircle, Info, LogOut, LogIn } from "lucide-react";
 import { EmailPreferences } from "@/components/EmailPreferences";
 import { useScan } from "@/hooks/useScan";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import ValueTempoLogo from "@/assets/ValueTempo_Logo.png";
+import {
+  Dialog,
+  DialogContent,
+} from "@/components/ui/dialog";
+import { supabase } from "@/integrations/supabase/client";
+import { Input } from "@/components/ui/input";
+import { Mail, ArrowRight, Loader2 } from "lucide-react";
 import {
   Tooltip,
   TooltipContent,
@@ -28,9 +35,28 @@ const dimensionDefinitions: Record<string, string> = {
   "Rating agility and governance": "Versioned pricing changes with approvals and traceability.",
   "Measurement and cadence": "Regular reviews drive evidence-based pricing and rails changes."
 };
+const FREE_EMAIL_DOMAINS = [
+  "gmail.com", "yahoo.com", "hotmail.com", "outlook.com", "aol.com",
+  "icloud.com", "mail.com", "protonmail.com", "zoho.com", "yandex.com",
+  "live.com", "msn.com", "me.com", "gmx.com", "inbox.com",
+];
+const WHITELISTED_EMAILS = ["mlhperkins@gmail.com"];
+function isWorkEmail(email: string): boolean {
+  if (WHITELISTED_EMAILS.includes(email.toLowerCase())) return true;
+  const domain = email.split("@")[1]?.toLowerCase();
+  if (!domain) return false;
+  return !FREE_EMAIL_DOMAINS.includes(domain);
+}
+
 const Index = () => {
   const navigate = useNavigate();
-  const { signOut } = useAuth();
+  const { session, signOut } = useAuth();
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [pendingUrl, setPendingUrl] = useState<string | null>(null);
+  const [authEmail, setAuthEmail] = useState("");
+  const [authPassword, setAuthPassword] = useState("");
+  const [authIsLogin, setAuthIsLogin] = useState(true);
+  const [authLoading, setAuthLoading] = useState(false);
   const {
     status,
     statusMessage,
@@ -66,8 +92,56 @@ const Index = () => {
       });
     }
   }, [status, error]);
+  // When user signs in while a pending URL exists, start the scan
+  useEffect(() => {
+    if (session && pendingUrl) {
+      const url = pendingUrl;
+      setPendingUrl(null);
+      setShowAuthModal(false);
+      startScan(url);
+    }
+  }, [session, pendingUrl, startScan]);
+
   const handleSubmit = async (url: string) => {
+    if (!session) {
+      setPendingUrl(url);
+      setShowAuthModal(true);
+      return;
+    }
     await startScan(url);
+  };
+
+  const handleAuthSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const trimmedEmail = authEmail.trim().toLowerCase();
+    if (!trimmedEmail || !authPassword) {
+      toast.error("Please enter your email and password.");
+      return;
+    }
+    if (!authIsLogin && !isWorkEmail(trimmedEmail)) {
+      toast.error("Please use a work email address to sign up.");
+      return;
+    }
+    if (authPassword.length < 6) {
+      toast.error("Password must be at least 6 characters.");
+      return;
+    }
+    setAuthLoading(true);
+    try {
+      if (authIsLogin) {
+        const { error } = await supabase.auth.signInWithPassword({ email: trimmedEmail, password: authPassword });
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.auth.signUp({ email: trimmedEmail, password: authPassword, options: { emailRedirectTo: window.location.origin } });
+        if (error) throw error;
+        toast.success("Check your email for a confirmation link.");
+        setPendingUrl(null);
+      }
+    } catch (err: any) {
+      toast.error(err.message || "Authentication failed");
+    } finally {
+      setAuthLoading(false);
+    }
   };
   const features = [{
     icon: Target,
@@ -108,10 +182,17 @@ const Index = () => {
             </Link>
             <Link to="/faq/product-growth" className="text-sm text-muted-foreground hover:text-foreground transition-colors">FAQ: Growth</Link>
             <Link to="/faq/cfo-revops" className="text-sm text-muted-foreground hover:text-foreground transition-colors">FAQ: RevOps</Link>
-            <Button variant="ghost" size="sm" onClick={signOut} className="gap-1 text-muted-foreground hover:text-foreground">
-              <LogOut className="w-4 h-4" />
-              Sign out
-            </Button>
+            {session ? (
+              <Button variant="ghost" size="sm" onClick={signOut} className="gap-1 text-muted-foreground hover:text-foreground">
+                <LogOut className="w-4 h-4" />
+                Sign out
+              </Button>
+            ) : (
+              <Button variant="ghost" size="sm" onClick={() => setShowAuthModal(true)} className="gap-1 text-muted-foreground hover:text-foreground">
+                <LogIn className="w-4 h-4" />
+                Sign in
+              </Button>
+            )}
           </nav>
         </div>
       </header>
@@ -237,6 +318,44 @@ const Index = () => {
           </p>
         </div>
       </footer>
+
+      {/* Auth Modal */}
+      <Dialog open={showAuthModal} onOpenChange={(open) => { setShowAuthModal(open); if (!open) setPendingUrl(null); }}>
+        <DialogContent className="sm:max-w-md">
+          <div className="space-y-6">
+            <div className="text-center">
+              <img alt="ValueTempo" className="h-8 mx-auto mb-4" src="/lovable-uploads/87678626-e604-46ee-90b6-9ab9b6380322.png" />
+              <h2 className="text-xl font-bold">{authIsLogin ? "Sign in to analyze" : "Create account"}</h2>
+              <p className="text-sm text-muted-foreground mt-1">
+                {authIsLogin ? "Sign in to run your analysis" : "Use your work email to get started"}
+              </p>
+            </div>
+            <form onSubmit={handleAuthSubmit} className="space-y-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium" htmlFor="auth-email">Work email</label>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Input id="auth-email" type="email" placeholder="you@company.com" value={authEmail} onChange={(e) => setAuthEmail(e.target.value)} className="pl-10" required />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium" htmlFor="auth-password">Password</label>
+                <Input id="auth-password" type="password" placeholder="••••••••" value={authPassword} onChange={(e) => setAuthPassword(e.target.value)} minLength={6} required />
+              </div>
+              <Button type="submit" className="w-full gap-2" disabled={authLoading}>
+                {authLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <ArrowRight className="w-4 h-4" />}
+                {authIsLogin ? "Sign in" : "Sign up"}
+              </Button>
+            </form>
+            <p className="text-center text-sm text-muted-foreground">
+              {authIsLogin ? "Don't have an account?" : "Already have an account?"}{" "}
+              <button type="button" className="text-primary hover:underline font-medium" onClick={() => setAuthIsLogin(!authIsLogin)}>
+                {authIsLogin ? "Sign up" : "Sign in"}
+              </button>
+            </p>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>;
 };
 export default Index;

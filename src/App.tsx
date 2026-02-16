@@ -24,7 +24,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 const AppRoutes = () => (
   <Routes>
     <Route path="/auth" element={<Auth />} />
-    <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
+    <Route path="/" element={<Index />} />
     <Route path="/results" element={<ProtectedRoute><Results /></ProtectedRoute>} />
     <Route path="/methodology" element={<Methodology />} />
     <Route path="/faq/product-growth" element={<FAQProductGrowth />} />
