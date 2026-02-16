@@ -80,6 +80,22 @@ export default function Results() {
           totalScore: rubricScore.totalScore,
           maxScore: rubricScore.maxScore,
           band: rubricScore.band,
+          dimensionScores: rubricScore.dimensionScores.map(d => ({
+            dimension: d.dimension,
+            score: d.score,
+            confidence: d.confidence,
+            rationale: d.rationale,
+            observed: d.observed,
+          })),
+          strengths: rubricScore.strengths.map(s => ({
+            dimension: s.dimension,
+            whyItIsStrong: s.whyItIsStrong,
+          })),
+          weaknesses: rubricScore.weaknesses.map(w => ({
+            dimension: w.dimension,
+            whatIsMissingOrUnclear: w.whatIsMissingOrUnclear,
+            whyItMatters: w.whyItMatters,
+          })),
         } : undefined,
       });
 

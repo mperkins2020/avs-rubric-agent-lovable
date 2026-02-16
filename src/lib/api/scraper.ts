@@ -162,6 +162,22 @@ export const scraperApi = {
         totalScore: number;
         maxScore: number;
         band: string;
+        dimensionScores?: Array<{
+          dimension: string;
+          score: number;
+          confidence: number;
+          rationale: string;
+          observed: string[];
+        }>;
+        strengths?: Array<{
+          dimension: string;
+          whyItIsStrong: string;
+        }>;
+        weaknesses?: Array<{
+          dimension: string;
+          whatIsMissingOrUnclear: string;
+          whyItMatters: string;
+        }>;
       };
     }
   ): Promise<ChatResponse> {

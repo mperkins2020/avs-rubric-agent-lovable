@@ -27,21 +27,37 @@ interface ChatRequest {
       totalScore: number;
       maxScore: number;
       band: string;
+      dimensionScores?: Array<{
+        dimension: string;
+        score: number;
+        confidence: number;
+        rationale: string;
+        observed: string[];
+      }>;
+      strengths?: Array<{ dimension: string; whyItIsStrong: string }>;
+      weaknesses?: Array<{ dimension: string; whatIsMissingOrUnclear: string; whyItMatters: string }>;
     };
   };
 }
 
-const CHAT_SYSTEM_PROMPT = `You are an expert analyst helping users understand a company's value proposition and pricing strategy based on public website content.
+const CHAT_SYSTEM_PROMPT = `You are an expert analyst helping users understand a company's value proposition and pricing strategy based on public website content and rubric scores.
 
-You have access to scraped content from the company's website and their AVS (Adaptive Value System) rubric score.
+You have access to scraped content from the company's website, their AVS (Adaptive Value System) rubric score, and detailed per-dimension scoring with rationales.
 
-GUIDELINES:
-1. Answer questions based on the provided website content
-2. When citing information, always reference the source page URL
-3. If you can't find information in the content, say so clearly
-4. Be analytical and provide actionable insights
-5. Format your responses with clear structure using markdown
-6. When discussing scores or ratings, explain the reasoning
+CRITICAL GUIDELINES:
+1. ONLY make claims that are directly supported by the provided website content or scoring data. Never invent facts.
+2. When citing information, always reference the source page URL.
+3. If you can't find information in the content, say so clearly — do NOT guess or fabricate.
+4. A score of 2 means STRONG/CLEAR — the company demonstrates that dimension well. A score of 0 means WEAK/MISSING.
+5. When discussing what a higher score looks like, describe what the company would need to IMPROVE or ADD, grounded in what is currently observed.
+6. When the user asks "what would a 2 look like", describe what excellent execution looks like for that dimension — NOT the opposite.
+7. Always ground your answers in the actual dimension scores, rationales, observed evidence, strengths, and weaknesses provided.
+8. Format your responses with clear structure using markdown.
+
+SCORING SCALE:
+- 0 = Not observable / Missing — the dimension is not addressed on the public website
+- 1 = Partial / Emerging — some signals exist but incomplete or unclear
+- 2 = Strong / Clear — the dimension is well-demonstrated with clear public evidence
 
 CITATION FORMAT:
 When referencing content, include citations like: [Source: page title](url)
@@ -130,9 +146,34 @@ Deno.serve(async (req) => {
       : pagesContext;
 
     // Build score context if available
-    const scoreContext = context.rubricScore 
-      ? `\n\nAVS Score Summary:\n- Total Score: ${context.rubricScore.totalScore}/${context.rubricScore.maxScore}\n- Band: ${context.rubricScore.band}`
-      : '';
+    let scoreContext = '';
+    if (context.rubricScore) {
+      scoreContext = `\n\nAVS Score Summary:\n- Total Score: ${context.rubricScore.totalScore}/${context.rubricScore.maxScore}\n- Band: ${context.rubricScore.band}`;
+      
+      if (context.rubricScore.dimensionScores) {
+        scoreContext += '\n\nDIMENSION SCORES (0=Missing, 1=Partial, 2=Strong):';
+        for (const d of context.rubricScore.dimensionScores) {
+          scoreContext += `\n- ${d.dimension}: ${d.score}/2 (confidence: ${Math.round(d.confidence * 100)}%) — ${d.rationale}`;
+          if (d.observed?.length) {
+            scoreContext += `\n  Observed: ${d.observed.join('; ')}`;
+          }
+        }
+      }
+
+      if (context.rubricScore.strengths?.length) {
+        scoreContext += '\n\nSTRENGTHS:';
+        for (const s of context.rubricScore.strengths) {
+          scoreContext += `\n- ${s.dimension}: ${s.whyItIsStrong}`;
+        }
+      }
+
+      if (context.rubricScore.weaknesses?.length) {
+        scoreContext += '\n\nWEAKNESSES:';
+        for (const w of context.rubricScore.weaknesses) {
+          scoreContext += `\n- ${w.dimension}: ${w.whatIsMissingOrUnclear} — ${w.whyItMatters}`;
+        }
+      }
+    }
 
     // Build messages array
     const messages = [
