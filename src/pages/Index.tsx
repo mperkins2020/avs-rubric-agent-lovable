@@ -80,7 +80,7 @@ const Index = () => {
   }, {
     icon: Zap,
     title: "Instant Analysis",
-    description: "Get actionable insights in under 2 minutes"
+    description: "Get actionable insights: top gaps, fastest changes, and what to publish next."
   }];
   return <div className="min-h-screen bg-background relative overflow-hidden">
       {/* Background effects */}
