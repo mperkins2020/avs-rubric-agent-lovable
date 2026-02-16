@@ -126,15 +126,14 @@ const Index = () => {
         y: 0
       }} className="text-center max-w-4xl mx-auto mb-12">
 
-          <h1 className="text-4xl md:text-6xl font-bold mb-6 leading-tight">
+          <h1 className="text-4xl md:text-6xl font-bold mb-4 leading-tight">
             Score Your{" "}
-            <span className="gradient-text">AI Product's Trust</span>
-            <br />
-            in Seconds
+            <span className="gradient-text">AI Product's Trust.</span>
           </h1>
 
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto mb-12">
-        </p>
+            Results in under one minute.
+          </p>
 
           {/* URL Input */}
           <div className="flex justify-center mb-16">
