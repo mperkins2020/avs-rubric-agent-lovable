@@ -112,7 +112,11 @@ export function DimensionCard({ dimension, index }: DimensionCardProps) {
                     <div className="bg-muted/30 rounded-lg p-3">
                       <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2 flex items-center gap-1.5">
                         <AlertCircle className="w-3 h-3" />
-                        Why confidence is low
+                        {dimension.confidence >= 0.7
+                          ? "Uncertainty factors"
+                          : dimension.confidence >= 0.4
+                            ? "Why confidence is not higher"
+                            : "Why confidence is low"}
                       </h4>
                       <ul className="space-y-1">
                         {dimension.uncertaintyReasons.map((reason, i) => (
