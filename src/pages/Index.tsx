@@ -76,7 +76,7 @@ const Index = () => {
   }, {
     icon: Shield,
     title: "Evidence-Backed",
-    description: "Every score is grounded in publicly observable information"
+    description: "Scores tied to public sources, with confidence and what's missing."
   }, {
     icon: Zap,
     title: "Instant Analysis",
