@@ -72,7 +72,7 @@ const Index = () => {
   const features = [{
     icon: Target,
     title: "10 Trust Dimensions",
-    description: "Comprehensive scoring across your value system"
+    description: "Units, limits, overages, rails, governance, and more."
   }, {
     icon: Shield,
     title: "Evidence-Backed",
