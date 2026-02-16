@@ -71,7 +71,7 @@ const Index = () => {
   };
   const features = [{
     icon: Target,
-    title: "10 Rubric Dimensions",
+    title: "10 Trust Dimensions",
     description: "Comprehensive scoring across your value system"
   }, {
     icon: Shield,
