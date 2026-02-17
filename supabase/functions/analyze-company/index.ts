@@ -1259,7 +1259,7 @@ async function callLovableAI(systemPrompt: string, userContent: string): Promise
   if (!response.ok) {
     const error = await response.text();
     console.error('Lovable AI error:', error);
-    throw new Error(`AI request failed: ${response.status}`);
+    throw new Error('Analysis service temporarily unavailable');
   }
 
   const data = await response.json();
@@ -1554,7 +1554,7 @@ ${truncatedContent}`;
     return new Response(
       JSON.stringify({ 
         success: false, 
-        error: error instanceof Error ? error.message : 'Internal server error' 
+        error: 'An unexpected error occurred. Please try again.' 
       }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
