@@ -6,6 +6,15 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+function escapeHtml(unsafe: string): string {
+  return unsafe
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -67,7 +76,10 @@ Deno.serve(async (req) => {
 
     // Send email via Resend-compatible approach using the built-in SMTP
     const timestamp = new Date().toISOString();
-    const csvRow = `"${timestamp}","${company_name}","${rating}","${(feedback || "").replace(/"/g, '""')}","${email || ""}"`;
+    const safeCompany = escapeHtml(String(company_name));
+    const safeFeedback = escapeHtml(String(feedback || "—"));
+    const safeEmail = escapeHtml(String(email || "—"));
+    const csvRow = `"${timestamp}","${String(company_name).replace(/"/g, '""')}","${rating}","${(feedback || "").replace(/"/g, '""')}","${email || ""}"`;
     const csvContent = `"Timestamp","Company","Rating","Feedback","Email"\n${csvRow}`;
 
     // Use Supabase's built-in email or a simple fetch to a mail API
@@ -84,19 +96,19 @@ Deno.serve(async (req) => {
         body: JSON.stringify({
           from: "ValueTempo <onboarding@resend.dev>",
           to: ["mlhperkins@gmail.com"],
-          subject: `New Feedback: ${company_name} - ${rating}★`,
+          subject: `New Feedback: ${safeCompany} - ${rating}★`,
           html: `
             <h2>New Report Feedback</h2>
             <table style="border-collapse:collapse;border:1px solid #ccc;">
-              <tr><td style="padding:8px;border:1px solid #ccc;font-weight:bold;">Company</td><td style="padding:8px;border:1px solid #ccc;">${company_name}</td></tr>
+              <tr><td style="padding:8px;border:1px solid #ccc;font-weight:bold;">Company</td><td style="padding:8px;border:1px solid #ccc;">${safeCompany}</td></tr>
               <tr><td style="padding:8px;border:1px solid #ccc;font-weight:bold;">Rating</td><td style="padding:8px;border:1px solid #ccc;">${"★".repeat(rating)}${"☆".repeat(5 - rating)}</td></tr>
-              <tr><td style="padding:8px;border:1px solid #ccc;font-weight:bold;">Feedback</td><td style="padding:8px;border:1px solid #ccc;">${feedback || "—"}</td></tr>
-              <tr><td style="padding:8px;border:1px solid #ccc;font-weight:bold;">Email</td><td style="padding:8px;border:1px solid #ccc;">${email || "—"}</td></tr>
+              <tr><td style="padding:8px;border:1px solid #ccc;font-weight:bold;">Feedback</td><td style="padding:8px;border:1px solid #ccc;">${safeFeedback}</td></tr>
+              <tr><td style="padding:8px;border:1px solid #ccc;font-weight:bold;">Email</td><td style="padding:8px;border:1px solid #ccc;">${safeEmail}</td></tr>
               <tr><td style="padding:8px;border:1px solid #ccc;font-weight:bold;">Time</td><td style="padding:8px;border:1px solid #ccc;">${timestamp}</td></tr>
             </table>
             <br/>
             <p><strong>CSV attachment content:</strong></p>
-            <pre>${csvContent}</pre>
+            <pre>${escapeHtml(csvContent)}</pre>
           `,
         }),
       });
