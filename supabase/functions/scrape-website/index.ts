@@ -170,7 +170,7 @@ Deno.serve(async (req) => {
       return new Response(
         JSON.stringify({ 
           success: false, 
-          error: `The website could not be reached (upstream returned ${mainPageResponse.status}). Please check the URL and try again.` 
+          error: 'The website could not be reached. Please check the URL and try again.' 
         }),
         { status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
@@ -181,7 +181,7 @@ Deno.serve(async (req) => {
       return new Response(
         JSON.stringify({ 
           success: false, 
-          error: mainPageData.error || 'Failed to scrape the main page' 
+          error: 'Failed to scrape the main page. Please check the URL and try again.' 
         }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
@@ -406,7 +406,7 @@ Deno.serve(async (req) => {
     return new Response(
       JSON.stringify({ 
         success: false, 
-        error: error instanceof Error ? error.message : 'Internal server error' 
+        error: 'An unexpected error occurred. Please try again.' 
       }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
