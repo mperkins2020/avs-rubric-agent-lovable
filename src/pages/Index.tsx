@@ -32,8 +32,6 @@ const dimensionDefinitions: Record<string, string> = {
   "Pools and packaging": "Tiers separate exploration from production by segment.",
   "Overages and risk allocation": "Limit behavior is explicit, risk is fairly shared.",
   "Safety rails and trust surfaces": "Controls prevent surprises, show usage, enable limits.",
-  "Rating agility and governance": "Versioned pricing changes with approvals and traceability.",
-  "Measurement and cadence": "Regular reviews drive evidence-based pricing and rails changes."
 };
 const FREE_EMAIL_DOMAINS = [
   "gmail.com", "yahoo.com", "hotmail.com", "outlook.com", "aol.com",
@@ -145,8 +143,8 @@ const Index = () => {
   };
   const features = [{
     icon: Target,
-    title: "10 Trust Dimensions",
-    description: "Cover units, limits, overages, rails, governance, and more."
+    title: "8 Trust Dimensions",
+    description: "Cover units, limits, overages, rails, and more."
   }, {
     icon: Shield,
     title: "Evidence-Backed",
@@ -288,7 +286,7 @@ const Index = () => {
         delay: 0.6
       }} className="mt-20 text-center">
           <h2 className="text-lg font-semibold mb-4 text-muted-foreground">
-            Scored across 10 dimensions
+            Scored across 8 dimensions
           </h2>
           <TooltipProvider delayDuration={100}>
             <div className="flex flex-wrap justify-center gap-2 max-w-3xl mx-auto">
