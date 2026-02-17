@@ -129,6 +129,8 @@ const Index = () => {
       if (authIsLogin) {
         const { error } = await supabase.auth.signInWithPassword({ email: trimmedEmail, password: authPassword });
         if (error) throw error;
+        // Close modal immediately on successful login (handles case without pendingUrl)
+        setShowAuthModal(false);
       } else {
         const { error } = await supabase.auth.signUp({ email: trimmedEmail, password: authPassword, options: { emailRedirectTo: window.location.origin } });
         if (error) throw error;
