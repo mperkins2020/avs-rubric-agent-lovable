@@ -42,12 +42,20 @@ Be analytical and precise. If you can't determine something, use reasonable infe
 
 const RUBRIC_SCORING_PROMPT = `You are an expert in SaaS pricing and value strategy. Score this company against the AVS (Adaptive Value System) rubric.
 
+EVIDENCE QUALITY RULES (MANDATORY — apply before scoring every dimension):
+1. REJECT as evidence: copyright footers, cookie banners, navigation menus, social media links, generic legal boilerplate, "All rights reserved" text, partner logos without context, press release lists, job postings, and any auto-generated or templated content.
+2. REJECT vague marketing slogans as evidence unless accompanied by specific, concrete details (metrics, features, workflows, pricing numbers). "We help teams succeed" is NOT evidence. "Reduces deployment time by 40%" IS evidence.
+3. Each item in "observed" MUST cite a specific page and a concrete fact (e.g., "Pricing page lists 3 tiers: Free, Pro ($49/mo), Enterprise (custom)"). Never cite a footer, nav link, or copyright notice.
+4. Confidence should reflect the QUALITY and SPECIFICITY of evidence, not just its presence. A pricing page with detailed tier breakdowns = high reliability (0.8+). A homepage with vague feature bullets = low reliability (0.3-0.4).
+5. If the only evidence for a subtest comes from boilerplate, navigation, or footer content, that subtest FAILS.
+6. When the same fact appears on multiple pages, count it once — do not inflate confidence by repetition.
+
 For each of the 8 dimensions below, provide:
 - score: 0 (not present), 1 (emerging), or 2 (strong)
-- confidence: 0.0 to 1.0 based on how much evidence you have
+- confidence: 0.0 to 1.0 based on how much QUALITY evidence you have (apply evidence quality rules above)
 - notObservable: true if there's genuinely no way to assess this from public info
-- rationale: 2-3 sentences explaining your score
-- observed: Array of specific things you observed
+- rationale: 2-3 sentences explaining your score, referencing specific pages and concrete facts
+- observed: Array of specific things you observed (MUST pass evidence quality rules — no boilerplate)
 - uncertaintyReasons: Array of reasons for uncertainty
 
 THE 8 DIMENSIONS:
@@ -1162,12 +1170,13 @@ THE 8 DIMENSIONS:
 
 
 CRITICAL OUTPUT RULES:
-- Keep rationale to 1-2 sentences max per dimension.
-- Keep observed arrays to max 3 items per dimension.
+- Keep rationale to 1-2 sentences max per dimension. Each rationale MUST reference a specific page URL or section (e.g., "Pricing page shows...") — never cite footers, nav items, or copyright notices.
+- Keep observed arrays to max 3 items per dimension. Each observed item MUST be a concrete, specific fact from page content — NOT from footers, navigation, cookie banners, or boilerplate. If you cannot find 3 quality observations, include fewer rather than padding with weak evidence.
 - Keep uncertaintyReasons to max 2 items per dimension.
 - Do NOT include facts[] or raw data in the output JSON. Only include the scored results.
 - Do NOT echo back the spec or field schemas. Only output the final scores.
 - REQUIRED: For each dimension where confidence < 0.40 (Low), you MUST include exactly 1 missingInsiderPrompt — the single most important clarifying question from that dimension's "Missing-insider prompts" section. For dimensions with confidence >= 0.40, set missingInsiderPrompts to an empty array []. This assessment is based on publicly observable evidence only.
+- CONSISTENCY CHECK: Before finalizing, verify that a dimension scored 2 (strong) has at least 2 high-quality observed items with specific details. A dimension scored 0 should NOT have strong evidence in its observed array. If there's a mismatch, re-evaluate the score.
 
 Also provide:
 - strengths: Top 3 areas where they excel with evidence
@@ -1241,7 +1250,7 @@ async function callLovableAI(systemPrompt: string, userContent: string): Promise
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userContent },
       ],
-      temperature: 0.3,
+      temperature: 0.1,
       max_tokens: 32768,
       response_format: { type: 'json_object' },
     }),
@@ -1347,9 +1356,29 @@ Deno.serve(async (req) => {
 
     console.log(`Analyzing ${pages.length} pages from ${url}`);
 
-    // Prepare content for analysis
+    // Prepare content for analysis — strip boilerplate before sending to AI
+    const stripBoilerplate = (markdown: string): string => {
+      return markdown
+        // Remove copyright footers
+        .replace(/©\s*\d{4}[^\n]*/gi, '')
+        .replace(/copyright\s*©?\s*\d{4}[^\n]*/gi, '')
+        .replace(/all rights reserved[^\n]*/gi, '')
+        // Remove cookie consent banners
+        .replace(/we use cookies[^\n]*/gi, '')
+        .replace(/cookie\s*(policy|preferences|settings|consent)[^\n]*/gi, '')
+        .replace(/accept\s*(all\s*)?cookies[^\n]*/gi, '')
+        // Remove social media link clusters
+        .replace(/^\s*(follow us|connect with us|social)\s*$/gim, '')
+        .replace(/^\s*\[?(twitter|facebook|linkedin|instagram|youtube|x\.com)\]?\s*$/gim, '')
+        // Remove generic footer navigation patterns
+        .replace(/^\s*(privacy policy|terms of service|terms & conditions|cookie policy|sitemap)\s*$/gim, '')
+        // Remove excessive whitespace left behind
+        .replace(/\n{3,}/g, '\n\n')
+        .trim();
+    };
+
     const combinedContent = pages.map(page => 
-      `## ${page.title} (${page.url})\n\n${page.markdown}`
+      `## ${page.title} (${page.url})\n\n${stripBoilerplate(page.markdown)}`
     ).join('\n\n---\n\n');
 
     // Truncate if too long (keeping ~100k chars for safety)
