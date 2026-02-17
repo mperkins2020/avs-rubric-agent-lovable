@@ -127,8 +127,8 @@ const Methodology = () => {
               The goal is not to optimize adoption, but to align belief early enough that retention doesn't collapse later.
             </p>
 
-            {/* 10 Dimensions Section */}
-            <h2 className="text-2xl font-bold mt-12 mb-6">The 10 Dimensions</h2>
+            {/* 8 Dimensions Section */}
+            <h2 className="text-2xl font-bold mt-12 mb-6">The 8 Dimensions</h2>
             <div className="space-y-6">
               {[
                 { name: "Product north star", definition: "Observable outcomes tie to value delivery and predictability." },
@@ -138,9 +138,7 @@ const Methodology = () => {
                 { name: "Cost driver mapping", definition: "Usage and cost drivers are explicit and forecastable." },
                 { name: "Pools and packaging", definition: "Tiers separate exploration from production by segment." },
                 { name: "Overages and risk allocation", definition: "Limit behavior is explicit, risk is fairly shared." },
-                { name: "Safety rails and trust surfaces", definition: "Controls prevent surprises, show usage, enable limits." },
-                { name: "Rating agility and governance", definition: "Versioned pricing changes with approvals and traceability." },
-                { name: "Measurement and cadence", definition: "Regular reviews drive evidence-based pricing and rails changes." }
+                { name: "Safety rails and trust surfaces", definition: "Controls prevent surprises, show usage, enable limits." }
               ].map((dim, index) => (
                 <div key={dim.name} className="p-4 rounded-lg bg-secondary/30 border border-border/50">
                   <h4 className="font-semibold mb-2 text-foreground">

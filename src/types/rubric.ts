@@ -113,8 +113,6 @@ export const RUBRIC_DIMENSIONS = [
   'Pools and packaging',
   'Overages and risk allocation',
   'Safety rails and trust surfaces',
-  'Rating agility and governance',
-  'Measurement and cadence',
 ] as const;
 
 export type RubricDimension = typeof RUBRIC_DIMENSIONS[number];

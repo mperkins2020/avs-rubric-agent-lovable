@@ -25,8 +25,8 @@ export const mockCompanyProfile: CompanyProfile = {
 
 // Mock rubric scores
 export const mockRubricScore: RubricScore = {
-  totalScore: 12,
-  maxScore: 20,
+  totalScore: 9,
+  maxScore: 16,
   band: "Emerging",
   dimensionScores: [
     {
@@ -123,31 +123,6 @@ export const mockRubricScore: RubricScore = {
         "Trust/security documentation not found publicly",
       ],
     },
-    {
-      dimension: "Rating agility and governance",
-      score: 1,
-      confidence: 0.2,
-      notObservable: true,
-      rationale: "Unable to observe pricing governance or change processes publicly.",
-      observed: [],
-      uncertaintyReasons: [
-        "This dimension is rarely observable publicly without technical or billing docs",
-        "No public pricing change policy",
-      ],
-    },
-    {
-      dimension: "Measurement and cadence",
-      score: 2,
-      confidence: 0.75,
-      notObservable: false,
-      rationale: "Good measurement infrastructure visible with clear reporting cadence.",
-      observed: [
-        "Real-time analytics dashboard",
-        "Monthly usage reports mentioned",
-        "API for programmatic access to metrics",
-      ],
-      uncertaintyReasons: ["Historical trend analysis capabilities unclear"],
-    },
   ],
   strengths: [
     {
@@ -166,14 +141,6 @@ export const mockRubricScore: RubricScore = {
         { url: "https://acme.com/pricing", quote: "Pay only for completed workflow runs" },
       ],
     },
-    {
-      dimension: "Measurement and cadence",
-      whyItIsStrong: "Robust analytics infrastructure with real-time visibility",
-      whatItEnables: "Customers can track ROI and optimize usage proactively",
-      evidence: [
-        { url: "https://acme.com/docs/analytics", quote: "Access real-time metrics via dashboard or API" },
-      ],
-    },
   ],
   weaknesses: [
     {
@@ -190,13 +157,6 @@ export const mockRubricScore: RubricScore = {
       whatToVerifyNext: "Document budget control features and make them visible on the website",
       evidence: [],
     },
-    {
-      dimension: "Rating agility and governance",
-      whatIsMissingOrUnclear: "No public information on how pricing changes are communicated or governed",
-      whyItMatters: "Lack of governance transparency can erode trust with enterprise buyers",
-      whatToVerifyNext: "Consider publishing a pricing change policy or SLA",
-      evidence: [],
-    },
   ],
   trustBreakpoints: [
     {
@@ -206,10 +166,6 @@ export const mockRubricScore: RubricScore = {
     {
       area: "Budget predictability",
       description: "Lack of visible caps and alerts creates uncertainty in financial planning",
-    },
-    {
-      area: "Pricing changes",
-      description: "No governance framework visible for how price changes are handled",
     },
   ],
   recommendedFocus: {
@@ -229,7 +185,6 @@ export const mockObservability: ObservabilityData = {
   confidenceScore: 58,
   pagesUsed: ["Homepage", "Pricing", "Product", "Docs", "Blog", "About"],
   mostUncertainDimensions: [
-    { dimension: "Rating agility and governance", confidence: null, notObservable: true },
     { dimension: "Overages and risk allocation", confidence: 0.3, notObservable: false },
   ],
 };
