@@ -193,7 +193,7 @@ const Index = () => {
 
           <h1 className="text-4xl md:text-6xl font-bold mb-4 leading-tight">
             Score Your{" "}
-            <span className="gradient-text">AI Product's Trust.</span>
+            <span className="gradient-text">AI Product's Trust</span>
           </h1>
 
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto mb-12">
