@@ -197,7 +197,7 @@ const Index = () => {
           </h1>
 
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto mb-12">
-            Results in under one minute.
+            Results in under one minute
           </p>
 
           {/* URL Input */}
