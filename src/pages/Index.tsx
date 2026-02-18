@@ -33,18 +33,6 @@ const dimensionDefinitions: Record<string, string> = {
   "Overages and risk allocation": "Limit behavior is explicit, risk is fairly shared.",
   "Safety rails and trust surfaces": "Controls prevent surprises, show usage, enable limits.",
 };
-const FREE_EMAIL_DOMAINS = [
-  "gmail.com", "yahoo.com", "hotmail.com", "outlook.com", "aol.com",
-  "icloud.com", "mail.com", "protonmail.com", "zoho.com", "yandex.com",
-  "live.com", "msn.com", "me.com", "gmx.com", "inbox.com",
-];
-const WHITELISTED_EMAILS = ["mlhperkins@gmail.com"];
-function isWorkEmail(email: string): boolean {
-  if (WHITELISTED_EMAILS.includes(email.toLowerCase())) return true;
-  const domain = email.split("@")[1]?.toLowerCase();
-  if (!domain) return false;
-  return !FREE_EMAIL_DOMAINS.includes(domain);
-}
 
 const Index = () => {
   const navigate = useNavigate();
@@ -114,10 +102,6 @@ const Index = () => {
     const trimmedEmail = authEmail.trim().toLowerCase();
     if (!trimmedEmail || !authPassword) {
       toast.error("Please enter your email and password.");
-      return;
-    }
-    if (!authIsLogin && !isWorkEmail(trimmedEmail)) {
-      toast.error("Please use a work email address to sign up.");
       return;
     }
     if (authPassword.length < 6) {
@@ -327,15 +311,15 @@ const Index = () => {
               <img alt="ValueTempo" className="h-8 mx-auto mb-4" src="/lovable-uploads/87678626-e604-46ee-90b6-9ab9b6380322.png" />
               <h2 className="text-xl font-bold">{authIsLogin ? "Sign in to analyze" : "Create account"}</h2>
               <p className="text-sm text-muted-foreground mt-1">
-                {authIsLogin ? "Sign in to run your analysis" : "Use your work email to get started"}
+                {authIsLogin ? "Sign in to run your analysis" : "Sign up to get started — 3 analyses per week"}
               </p>
             </div>
             <form onSubmit={handleAuthSubmit} className="space-y-4">
               <div className="space-y-2">
-                <label className="text-sm font-medium" htmlFor="auth-email">Work email</label>
+                <label className="text-sm font-medium" htmlFor="auth-email">Email</label>
                 <div className="relative">
                   <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                  <Input id="auth-email" type="email" placeholder="you@company.com" value={authEmail} onChange={(e) => setAuthEmail(e.target.value)} className="pl-10" required />
+                  <Input id="auth-email" type="email" placeholder="you@example.com" value={authEmail} onChange={(e) => setAuthEmail(e.target.value)} className="pl-10" required />
                 </div>
               </div>
               <div className="space-y-2">
