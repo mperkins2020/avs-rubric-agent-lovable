@@ -68,7 +68,7 @@ async function callLovableAI(messages: Array<{ role: string; content: string }>)
   const apiKey = Deno.env.get('LOVABLE_API_KEY');
   
   if (!apiKey) {
-    throw new Error('LOVABLE_API_KEY not configured');
+    throw new Error('Service temporarily unavailable');
   }
 
   const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {

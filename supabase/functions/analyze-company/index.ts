@@ -1235,7 +1235,7 @@ async function callLovableAI(systemPrompt: string, userContent: string): Promise
   const apiKey = Deno.env.get('LOVABLE_API_KEY');
   
   if (!apiKey) {
-    throw new Error('LOVABLE_API_KEY not configured');
+    throw new Error('Service temporarily unavailable');
   }
 
   const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
@@ -1347,13 +1347,15 @@ Deno.serve(async (req) => {
     const userEmail = claimsData.claims.email as string;
     console.log('Authenticated user:', userId);
 
-    // Rate limit: 3 scans per week per user
+    // Rate limit: 3 scans per week per user AND per email
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL')!,
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
     );
     const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
-    const { count, error: countError } = await supabaseAdmin
+
+    // Check by user_id
+    const { count: userCount, error: countError } = await supabaseAdmin
       .from('scan_usage')
       .select('*', { count: 'exact', head: true })
       .eq('user_id', userId)
@@ -1361,14 +1363,56 @@ Deno.serve(async (req) => {
 
     if (countError) {
       console.error('Rate limit check failed:', countError);
-    } else if (count !== null && count >= 3) {
+    } else if (userCount !== null && userCount >= 3) {
       return new Response(
         JSON.stringify({ success: false, error: 'Weekly limit reached. You can run 3 analyses per week. Try again next week.' }),
         { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
+    // Secondary check by email to deter multi-account bypass
+    if (userEmail) {
+      const { count: emailCount, error: emailCountError } = await supabaseAdmin
+        .from('scan_usage')
+        .select('*', { count: 'exact', head: true })
+        .eq('email', userEmail)
+        .gte('created_at', weekAgo);
+
+      if (!emailCountError && emailCount !== null && emailCount >= 3) {
+        return new Response(
+          JSON.stringify({ success: false, error: 'Weekly limit reached. You can run 3 analyses per week. Try again next week.' }),
+          { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+    }
+
     const { pages, url, insiderAnswers, previousScores }: AnalyzeRequest = await req.json();
+
+    // Input size validation (DoS protection)
+    if (insiderAnswers && typeof insiderAnswers === 'object') {
+      const keys = Object.keys(insiderAnswers);
+      if (keys.length > 10) {
+        return new Response(
+          JSON.stringify({ success: false, error: 'Too many insider answers provided' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      for (const key of keys) {
+        if (typeof insiderAnswers[key] === 'string' && insiderAnswers[key].length > 500) {
+          return new Response(
+            JSON.stringify({ success: false, error: 'Insider answer exceeds maximum length of 500 characters' }),
+            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+      }
+    }
+
+    if (pages && pages.length > 25) {
+      return new Response(
+        JSON.stringify({ success: false, error: 'Too many pages provided' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
     if (!pages || pages.length === 0) {
       return new Response(
