@@ -1343,7 +1343,30 @@ Deno.serve(async (req) => {
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
-    console.log('Authenticated user:', claimsData.claims.sub);
+    const userId = claimsData.claims.sub as string;
+    const userEmail = claimsData.claims.email as string;
+    console.log('Authenticated user:', userId);
+
+    // Rate limit: 3 scans per week per user
+    const supabaseAdmin = createClient(
+      Deno.env.get('SUPABASE_URL')!,
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
+    );
+    const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+    const { count, error: countError } = await supabaseAdmin
+      .from('scan_usage')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', userId)
+      .gte('created_at', weekAgo);
+
+    if (countError) {
+      console.error('Rate limit check failed:', countError);
+    } else if (count !== null && count >= 3) {
+      return new Response(
+        JSON.stringify({ success: false, error: 'Weekly limit reached. You can run 3 analyses per week. Try again next week.' }),
+        { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
     const { pages, url, insiderAnswers, previousScores }: AnalyzeRequest = await req.json();
 
@@ -1542,6 +1565,15 @@ ${truncatedContent}`;
       } catch (logError) {
         console.error('Error logging evidence misses (non-fatal):', logError);
       }
+    }
+
+    // Record scan usage for rate limiting
+    try {
+      await supabaseAdmin
+        .from('scan_usage')
+        .insert({ user_id: userId, email: userEmail, scanned_url: url });
+    } catch (usageErr) {
+      console.error('Failed to record scan usage (non-fatal):', usageErr);
     }
 
     return new Response(

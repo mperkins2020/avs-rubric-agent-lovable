@@ -96,6 +96,10 @@ export function URLInput({ onSubmit, isLoading = false }: URLInputProps) {
           {error}
         </motion.p>
       )}
+
+      <p className="mt-3 text-xs text-muted-foreground/60 text-center">
+        Free to use · 3 analyses per week per account
+      </p>
     </form>
   );
 }
