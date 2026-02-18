@@ -1,10 +1,13 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { Mail, ArrowRight, Loader2 } from "lucide-react";
+import { Turnstile } from "@marsidev/react-turnstile";
+
+const TURNSTILE_SITE_KEY = "0x4AAAAAACfM3KdRLh5K8OGh";
 
 const FREE_EMAIL_DOMAINS = [
   "gmail.com", "yahoo.com", "hotmail.com", "outlook.com", "aol.com",
@@ -29,6 +32,8 @@ export default function Auth() {
   const [password, setPassword] = useState("");
   const [isLogin, setIsLogin] = useState(true);
   const [loading, setLoading] = useState(false);
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+  const turnstileRef = useRef<any>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -47,6 +52,33 @@ export default function Auth() {
     if (password.length < 6) {
       toast.error("Password must be at least 6 characters.");
       return;
+    }
+
+    // Require CAPTCHA for signup only
+    if (!isLogin) {
+      if (!turnstileToken) {
+        toast.error("Please complete the CAPTCHA verification.");
+        return;
+      }
+
+      // Verify the Turnstile token server-side
+      const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+      const anonKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+      const verifyRes = await fetch(
+        `https://${projectId}.supabase.co/functions/v1/verify-turnstile`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "apikey": anonKey },
+          body: JSON.stringify({ token: turnstileToken }),
+        }
+      );
+      const verifyData = await verifyRes.json();
+      if (!verifyData.success) {
+        toast.error("CAPTCHA verification failed. Please try again.");
+        turnstileRef.current?.reset();
+        setTurnstileToken(null);
+        return;
+      }
     }
 
     setLoading(true);
@@ -69,6 +101,10 @@ export default function Auth() {
       }
     } catch (err: any) {
       toast.error(err.message || "Authentication failed");
+      if (!isLogin) {
+        turnstileRef.current?.reset();
+        setTurnstileToken(null);
+      }
     } finally {
       setLoading(false);
     }
@@ -129,6 +165,21 @@ export default function Auth() {
             />
           </div>
 
+          {!isLogin && (
+            <div className="flex justify-center">
+              <Turnstile
+                ref={turnstileRef}
+                siteKey={TURNSTILE_SITE_KEY}
+                onSuccess={(token) => setTurnstileToken(token)}
+                onExpire={() => setTurnstileToken(null)}
+                onError={() => {
+                  setTurnstileToken(null);
+                  toast.error("CAPTCHA failed to load. Please refresh.");
+                }}
+              />
+            </div>
+          )}
+
           <Button type="submit" className="w-full gap-2" disabled={loading}>
             {loading ? (
               <Loader2 className="w-4 h-4 animate-spin" />
@@ -144,7 +195,7 @@ export default function Auth() {
           <button
             type="button"
             className="text-primary hover:underline font-medium"
-            onClick={() => setIsLogin(!isLogin)}
+            onClick={() => { setIsLogin(!isLogin); setTurnstileToken(null); turnstileRef.current?.reset(); }}
           >
             {isLogin ? "Sign up" : "Sign in"}
           </button>
