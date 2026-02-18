@@ -118,10 +118,10 @@ Deno.serve(async (req) => {
 
     const apiKey = Deno.env.get('FIRECRAWL_API_KEY');
     if (!apiKey) {
-      console.error('FIRECRAWL_API_KEY not configured');
+      console.error('Required API key not configured');
       return new Response(
-        JSON.stringify({ success: false, error: 'Firecrawl connector not configured' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ success: false, error: 'Service temporarily unavailable. Please try again later.' }),
+        { status: 503, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
