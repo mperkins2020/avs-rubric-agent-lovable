@@ -100,9 +100,51 @@ const Privacy = () => {
               <ul className="list-disc pl-6 space-y-2 text-muted-foreground">
                 <li><strong>Access:</strong> You can view all your scan results and profile data within the application.</li>
                 <li><strong>Correction:</strong> You can update your display name and email preferences at any time.</li>
-                <li><strong>Deletion:</strong> Contact us to request full account and data deletion.</li>
+                <li><strong>Deletion:</strong> Contact us to request full account and data deletion. We will respond within 45 days.</li>
                 <li><strong>Opt-out:</strong> You can opt out of email communications via the footer link on the landing page.</li>
+                <li><strong>Non-discrimination:</strong> We will not discriminate against you for exercising any of your privacy rights.</li>
               </ul>
+            </section>
+
+            <section>
+              <h2 className="text-2xl font-semibold mb-3">California Privacy Rights (CCPA / CPRA)</h2>
+              <p className="text-muted-foreground mb-4">
+                If you are a California resident, the California Consumer Privacy Act (CCPA) and the California Privacy Rights Act (CPRA) provide you with additional rights regarding your personal information.
+              </p>
+
+              <h3 className="text-lg font-semibold mb-2">Categories of Personal Information Collected</h3>
+              <ul className="list-disc pl-6 space-y-2 text-muted-foreground mb-4">
+                <li><strong>Identifiers:</strong> Email address, display name, user ID.</li>
+                <li><strong>Internet activity:</strong> URLs submitted for analysis, scan usage logs, interaction with the application.</li>
+                <li><strong>Inferences:</strong> Rubric scores and dimension assessments derived from publicly available website content (not from your personal information).</li>
+              </ul>
+
+              <h3 className="text-lg font-semibold mb-2">We Do Not Sell or Share Your Personal Information</h3>
+              <p className="text-muted-foreground mb-4">
+                We do <strong>not</strong> sell your personal information. We do <strong>not</strong> share your personal information for cross-context behavioral advertising. We have not sold or shared personal information in the preceding 12 months.
+              </p>
+
+              <h3 className="text-lg font-semibold mb-2">Your CCPA Rights</h3>
+              <ul className="list-disc pl-6 space-y-2 text-muted-foreground mb-4">
+                <li><strong>Right to Know:</strong> You may request the categories and specific pieces of personal information we have collected about you, the sources, the business purpose, and any third parties with whom it was shared.</li>
+                <li><strong>Right to Delete:</strong> You may request deletion of your personal information. We will comply within 45 days and direct any service providers to do the same.</li>
+                <li><strong>Right to Correct:</strong> You may request correction of inaccurate personal information.</li>
+                <li><strong>Right to Opt-Out of Sale/Sharing:</strong> We do not sell or share your data, so no opt-out mechanism is required. If this changes, we will provide a "Do Not Sell or Share My Personal Information" link.</li>
+                <li><strong>Right to Limit Use of Sensitive Information:</strong> We do not collect sensitive personal information as defined by the CCPA.</li>
+                <li><strong>Non-Discrimination:</strong> We will not deny services, charge different prices, or provide a different quality of service because you exercised your CCPA rights.</li>
+              </ul>
+
+              <h3 className="text-lg font-semibold mb-2">How to Submit a Request</h3>
+              <p className="text-muted-foreground mb-4">
+                To exercise any of these rights, email us at{" "}
+                <a href="mailto:privacy@valuetempo.com" className="text-primary hover:underline">privacy@valuetempo.com</a>.
+                We may verify your identity before fulfilling a request. You may also designate an authorized agent to make a request on your behalf.
+              </p>
+
+              <h3 className="text-lg font-semibold mb-2">Disclosure of Personal Information</h3>
+              <p className="text-muted-foreground">
+                In the preceding 12 months, we have disclosed the following categories of personal information for a business purpose: Internet activity data (website content only, not personal data) shared with AI model providers for rubric analysis. No personal identifiers are shared with third parties.
+              </p>
             </section>
 
             <section>
