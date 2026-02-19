@@ -104,6 +104,30 @@ export type Database = {
         }
         Relationships: []
       }
+      scan_results: {
+        Row: {
+          created_at: string
+          expires_at: string
+          id: string
+          result_json: Json
+          url_domain: string
+        }
+        Insert: {
+          created_at?: string
+          expires_at?: string
+          id?: string
+          result_json: Json
+          url_domain: string
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string
+          id?: string
+          result_json?: Json
+          url_domain?: string
+        }
+        Relationships: []
+      }
       scan_usage: {
         Row: {
           created_at: string

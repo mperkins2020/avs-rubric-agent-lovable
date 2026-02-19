@@ -1430,6 +1430,35 @@ Deno.serve(async (req) => {
       );
     }
 
+    // Normalize domain for cache key
+    let domain = url;
+    try {
+      const parsed = new URL(url.startsWith('http') ? url : `https://${url}`);
+      domain = parsed.hostname.replace(/^www\./, '');
+    } catch { /* use raw url */ }
+
+    // ── Cache lookup (skip for re-runs with insider/public-link context) ──
+    const isFreshScan = !insiderAnswers && !previousScores;
+    if (isFreshScan) {
+      const { data: cached } = await supabaseAdmin
+        .from('scan_results')
+        .select('result_json')
+        .eq('url_domain', domain)
+        .gt('expires_at', new Date().toISOString())
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single();
+
+      if (cached?.result_json) {
+        console.log(`Cache HIT for ${domain} — returning cached result`);
+        return new Response(
+          JSON.stringify(cached.result_json),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      console.log(`Cache MISS for ${domain} — running fresh analysis`);
+    }
+
     console.log(`Analyzing ${pages.length} pages from ${url}`);
 
     // Prepare content for analysis — strip boilerplate before sending to AI
@@ -1572,10 +1601,26 @@ ${truncatedContent}`;
       observabilityLevel,
     });
 
+    // ── Write to cache for fresh scans ──
+    if (isFreshScan) {
+      try {
+        await supabaseAdmin
+          .from('scan_results')
+          .insert({
+            url_domain: domain,
+            result_json: result,
+            expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+          });
+        console.log(`Cached result for ${domain}`);
+      } catch (cacheErr) {
+        console.error('Failed to cache result (non-fatal):', cacheErr);
+      }
+    }
+
     // Log evidence misses when user submitted new public URLs (previousScores present = rerun)
     if (previousScores && previousScores.length > 0) {
       try {
-        const domain = new URL(url).hostname;
+        const missDomain = new URL(url).hostname;
         // Identify dimensions that changed score or confidence
         const changedDimensions = dimensionScores.filter(d => {
           const prev = previousScores.find(p => p.dimension === d.dimension);
@@ -1589,8 +1634,8 @@ ${truncatedContent}`;
           
           if (supabaseUrl && supabaseKey) {
             const missEntries = changedDimensions.map(d => ({
-              company_domain: domain,
-              submitted_url: pages[pages.length - 1]?.url || url, // last page is likely the user-submitted one
+              company_domain: missDomain,
+              submitted_url: pages[pages.length - 1]?.url || url,
               dimension: d.dimension,
               expected_fact: d.rationale?.substring(0, 200) || null,
               miss_reason: 'discovery_gap',
@@ -1609,7 +1654,7 @@ ${truncatedContent}`;
             });
 
             if (insertResponse.ok) {
-              console.log(`Logged ${missEntries.length} evidence misses for ${domain}`);
+              console.log(`Logged ${missEntries.length} evidence misses for ${missDomain}`);
             } else {
               console.error('Failed to log evidence misses:', await insertResponse.text());
             }
