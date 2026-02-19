@@ -109,7 +109,13 @@ export const scraperApi = {
 
       if (error) {
         console.error('Analysis error:', error);
-        return { success: false, error: error.message };
+        // Extract the meaningful error message from the response body (e.g. 429 rate limit)
+        const msg = data?.error || error.message;
+        return { success: false, error: msg };
+      }
+
+      if (data && !data.success && data.error) {
+        return { success: false, error: data.error };
       }
 
       return data as AnalysisResult;
