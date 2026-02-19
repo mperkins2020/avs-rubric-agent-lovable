@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { URLInput } from "@/components/URLInput";
-import { Sparkles, Shield, Target, Zap, AlertCircle, Info, LogOut, LogIn } from "lucide-react";
+import { Sparkles, Shield, Target, Zap, AlertCircle, Info, LogOut, LogIn, Menu, X } from "lucide-react";
 import { EmailPreferences } from "@/components/EmailPreferences";
 import { useScan } from "@/hooks/useScan";
 import { toast } from "sonner";
@@ -39,6 +39,7 @@ const Index = () => {
   const { session, signOut } = useAuth();
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [pendingUrl, setPendingUrl] = useState<string | null>(null);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [authEmail, setAuthEmail] = useState("");
   const [authPassword, setAuthPassword] = useState("");
   const [authIsLogin, setAuthIsLogin] = useState(true);
@@ -152,11 +153,11 @@ const Index = () => {
             <Link to="/">
               <img alt="ValueTempo" className="h-8" src="/lovable-uploads/87678626-e604-46ee-90b6-9ab9b6380322.png" />
             </Link>
-            <Button variant="outline" size="sm" className="gap-2">
+            <Button variant="outline" size="sm" className="gap-2 hidden sm:flex">
               <Sparkles className="w-4 h-4" />
               AVS Rubric Agent
             </Button>
-            <span className="px-2 py-0.5 text-xs font-semibold rounded-full bg-primary/10 text-primary border border-primary/20">
+            <span className="px-2 py-0.5 text-xs font-semibold rounded-full bg-primary/10 text-primary border border-primary/20 hidden sm:inline">
               Beta
             </span>
           </div>
@@ -178,8 +179,91 @@ const Index = () => {
               </Button>
             )}
           </nav>
+          {/* Mobile hamburger */}
+          <button
+            className="md:hidden p-2 rounded-md text-muted-foreground hover:text-foreground transition-colors"
+            onClick={() => setMobileMenuOpen(true)}
+            aria-label="Open menu"
+          >
+            <Menu className="w-5 h-5" />
+          </button>
         </div>
       </header>
+
+      {/* Mobile slide-in menu */}
+      <AnimatePresence>
+        {mobileMenuOpen && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-40 bg-black/50"
+              onClick={() => setMobileMenuOpen(false)}
+            />
+            <motion.div
+              initial={{ x: "100%" }}
+              animate={{ x: 0 }}
+              exit={{ x: "100%" }}
+              transition={{ type: "spring", damping: 30, stiffness: 300 }}
+              className="fixed top-0 right-0 z-50 h-full w-72 bg-background border-l border-border/50 flex flex-col"
+            >
+              <div className="flex items-center justify-between px-5 py-4 border-b border-border/50">
+                <span className="font-semibold text-sm">Menu</span>
+                <button
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="p-1 rounded-md text-muted-foreground hover:text-foreground transition-colors"
+                  aria-label="Close menu"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              <nav className="flex flex-col gap-1 px-3 py-4 flex-1">
+                <Link
+                  to="/methodology"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="flex items-center px-3 py-2.5 rounded-lg text-sm text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors"
+                >
+                  Methodology
+                </Link>
+                <Link
+                  to="/faq/product-growth"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="flex items-center px-3 py-2.5 rounded-lg text-sm text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors"
+                >
+                  FAQ: Growth
+                </Link>
+                <Link
+                  to="/faq/cfo-revops"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="flex items-center px-3 py-2.5 rounded-lg text-sm text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors"
+                >
+                  FAQ: RevOps
+                </Link>
+              </nav>
+              <div className="px-3 py-4 border-t border-border/50">
+                {session ? (
+                  <button
+                    onClick={() => { signOut(); setMobileMenuOpen(false); }}
+                    className="flex items-center gap-2 w-full px-3 py-2.5 rounded-lg text-sm text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors"
+                  >
+                    <LogOut className="w-4 h-4" />
+                    Sign out
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => { setMobileMenuOpen(false); setShowAuthModal(true); }}
+                    className="flex items-center gap-2 w-full px-3 py-2.5 rounded-lg text-sm text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors"
+                  >
+                    <LogIn className="w-4 h-4" />
+                    Sign in
+                  </button>
+                )}
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
 
       <div className="relative z-10 container mx-auto px-4 py-16 md:py-24">
         {/* Hero */}
@@ -195,7 +279,7 @@ const Index = () => {
             Trust is the new growth constraint in AI
           </p>
 
-          <h1 className="text-4xl md:text-6xl font-bold mb-4 leading-tight">
+          <h1 className="text-3xl sm:text-4xl md:text-6xl font-bold mb-4 leading-tight">
             Score Your{" "}
             <span className="gradient-text">AI Product's Trust</span>
           </h1>
