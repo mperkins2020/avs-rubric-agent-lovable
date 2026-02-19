@@ -1352,37 +1352,46 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_URL')!,
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
     );
-    const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
 
-    // Check by user_id
-    const { count: userCount, error: countError } = await supabaseAdmin
-      .from('scan_usage')
-      .select('*', { count: 'exact', head: true })
-      .eq('user_id', userId)
-      .gte('created_at', weekAgo);
+    // Check if user has admin role (whitelisted — unlimited scans)
+    const { data: adminCheck } = await supabaseAdmin
+      .rpc('has_role', { _user_id: userId, _role: 'admin' });
+    const isAdmin = adminCheck === true;
+    console.log('Admin check for', userId, ':', isAdmin);
 
-    if (countError) {
-      console.error('Rate limit check failed:', countError);
-    } else if (userCount !== null && userCount >= 3) {
-      return new Response(
-        JSON.stringify({ success: false, error: 'Weekly limit reached. You can run 3 analyses per week. Try again next week.' }),
-        { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
+    if (!isAdmin) {
+      const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
 
-    // Secondary check by email to deter multi-account bypass
-    if (userEmail) {
-      const { count: emailCount, error: emailCountError } = await supabaseAdmin
+      // Check by user_id
+      const { count: userCount, error: countError } = await supabaseAdmin
         .from('scan_usage')
         .select('*', { count: 'exact', head: true })
-        .eq('email', userEmail)
+        .eq('user_id', userId)
         .gte('created_at', weekAgo);
 
-      if (!emailCountError && emailCount !== null && emailCount >= 3) {
+      if (countError) {
+        console.error('Rate limit check failed:', countError);
+      } else if (userCount !== null && userCount >= 3) {
         return new Response(
           JSON.stringify({ success: false, error: 'Weekly limit reached. You can run 3 analyses per week. Try again next week.' }),
           { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
+      }
+
+      // Secondary check by email to deter multi-account bypass
+      if (userEmail) {
+        const { count: emailCount, error: emailCountError } = await supabaseAdmin
+          .from('scan_usage')
+          .select('*', { count: 'exact', head: true })
+          .eq('email', userEmail)
+          .gte('created_at', weekAgo);
+
+        if (!emailCountError && emailCount !== null && emailCount >= 3) {
+          return new Response(
+            JSON.stringify({ success: false, error: 'Weekly limit reached. You can run 3 analyses per week. Try again next week.' }),
+            { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
       }
     }
 
