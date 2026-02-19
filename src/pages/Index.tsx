@@ -191,6 +191,10 @@ const Index = () => {
         y: 0
       }} className="text-center max-w-4xl mx-auto mb-12">
 
+          <p className="text-sm font-semibold uppercase tracking-widest text-muted-foreground mb-4">
+            Trust is the new growth constraint in AI
+          </p>
+
           <h1 className="text-4xl md:text-6xl font-bold mb-4 leading-tight">
             Score Your{" "}
             <span className="gradient-text">AI Product's Trust</span>
