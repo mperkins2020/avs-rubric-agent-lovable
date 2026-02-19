@@ -126,7 +126,7 @@ export function TotalScoreCard({
                 </div>
               </div>
 
-              <div className="hidden md:block text-right">
+              <div className="text-right">
                 <div className="text-4xl font-mono font-bold gradient-text">
                   {Math.round(percentage)}%
                 </div>
