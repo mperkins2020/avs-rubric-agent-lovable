@@ -11,6 +11,7 @@ import FAQProductGrowth from "./pages/FAQProductGrowth";
 import FAQCFORevOps from "./pages/FAQCFORevOps";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
+import Privacy from "./pages/Privacy";
 
 const queryClient = new QueryClient();
 
@@ -29,6 +30,7 @@ const AppRoutes = () => (
     <Route path="/methodology" element={<Methodology />} />
     <Route path="/faq/product-growth" element={<FAQProductGrowth />} />
     <Route path="/faq/cfo-revops" element={<FAQCFORevOps />} />
+    <Route path="/privacy" element={<Privacy />} />
     <Route path="*" element={<NotFound />} />
   </Routes>
 );
