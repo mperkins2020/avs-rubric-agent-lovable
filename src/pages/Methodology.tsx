@@ -17,7 +17,7 @@ const Methodology = () => {
             </Link>
             <Link to="/">
               <Button variant="outline" size="sm" className="gap-2">
-                AVS Rubric Agent
+                AVS Rubric
               </Button>
             </Link>
           </div>
@@ -44,7 +44,7 @@ const Methodology = () => {
             Back to Home
           </Link>
 
-          <h1 className="text-4xl font-bold mb-6">About AVS Rubric Agent: The Methodology</h1>
+          <h1 className="text-4xl font-bold mb-6">About AVS Rubric: The Methodology</h1>
 
           <div className="prose prose-lg dark:prose-invert max-w-none">
             <p className="text-xl text-muted-foreground mb-8">An evidence-backed rubric that evaluates public signals and your inputs, then generates a real-time report on legibility and predictability gaps, with clear confidence and uncertainty labels. It complements funnels and analytics by measuring what they miss: whether the market can predict how your AI-native product will behave before committing.
@@ -62,7 +62,7 @@ const Methodology = () => {
               </div>
 
               <p className="text-muted-foreground mb-8">
-                The AVS Rubric Agent focuses on the first moment, where most revenue friction begins. It is also usually the least measured.
+                The AVS Rubric focuses on the first moment, where most revenue friction begins. It is also usually the least measured.
               </p>
 
               <h3 className="text-xl font-semibold mb-4">The Belief Formation Stack</h3>

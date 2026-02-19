@@ -52,11 +52,11 @@ By the time your dashboards flash red, trust erosion has already happened.
 Example: While NRR holds, discounting rises. That's belief erosion, not usage failure.`
   }, {
     question: "How is this different from what ChatGPT, Claude, or Gemini can already do?",
-    answer: `General-purpose agents can analyze a company. The AVS Rubric Agent is not a smarter agent. It is a stricter, repeatable assessment system that uses a fixed rubric, explicit evidence rules, and calibrated uncertainty.
+    answer: `General-purpose agents can analyze a company. The AVS Rubric is not a smarter agent. It is a stricter, repeatable assessment system that uses a fixed rubric, explicit evidence rules, and calibrated uncertainty.
 
 General-purpose agents browse, summarize, critique, and simulate opinions—but they are unstructured, non-repeatable, non-calibrated, and epistemically sloppy by default. They don't know what to score, what not to score, how conservative to be, or how to express uncertainty consistently. They produce answers, not assessments.
 
-The AVS Rubric Agent uses defined dimensions, follows scoring rules, enforces evidence thresholds, has observability labeling, separates judgment from calibration, refuses to score without proof, defaults downward when signals are missing, surfaces uncertainty explicitly, and produces a shareable, defensible artifact.
+The AVS Rubric uses defined dimensions, follows scoring rules, enforces evidence thresholds, has observability labeling, separates judgment from calibration, refuses to score without proof, defaults downward when signals are missing, surfaces uncertainty explicitly, and produces a shareable, defensible artifact.
 
 Example: Two people running this assessment get the same result. Two ChatGPT conversations rarely do.`
   }, {
@@ -91,7 +91,7 @@ Example: If the assessment surfaces workflow cutover risk, the action is not "re
             </Link>
             <Link to="/">
               <Button variant="outline" size="sm" className="gap-2">
-                AVS Rubric Agent
+                AVS Rubric
               </Button>
             </Link>
           </div>

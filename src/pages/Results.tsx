@@ -280,7 +280,7 @@ export default function Results() {
             </Link>
             <Button variant="outline" size="sm" className="gap-2">
               <Sparkles className="w-4 h-4" />
-              AVS Rubric Agent
+              AVS Rubric
             </Button>
             <span className="px-2 py-0.5 text-xs font-semibold rounded-full bg-primary/10 text-primary border border-primary/20">
               Beta
