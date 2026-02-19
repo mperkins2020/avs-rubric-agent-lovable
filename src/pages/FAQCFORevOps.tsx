@@ -94,7 +94,7 @@ Example: A CFO can forward the report to GTM, Product, and CS and align on risks
             </Link>
             <Link to="/">
               <Button variant="outline" size="sm" className="gap-2">
-                AVS Rubric Agent
+                AVS Rubric
               </Button>
             </Link>
           </div>
