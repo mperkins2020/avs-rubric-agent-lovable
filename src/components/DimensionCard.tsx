@@ -41,17 +41,15 @@ export function DimensionCard({ dimension, index }: DimensionCardProps) {
         onClick={() => setIsExpanded(!isExpanded)}
       >
         <div className="p-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <span className="font-mono text-xs text-muted-foreground w-6">
-                {String(index + 1).padStart(2, "0")}
-              </span>
-              <h3 className="font-medium text-foreground">
-                {dimension.dimension}
-              </h3>
-            </div>
-            <div className="flex items-center gap-3">
-              <span className={cn("text-xs", getConfidenceColor())}>
+          <div className="flex items-center gap-3">
+            <span className="font-mono text-xs text-muted-foreground w-6 flex-shrink-0">
+              {String(index + 1).padStart(2, "0")}
+            </span>
+            <h3 className="font-medium text-foreground flex-1 min-w-0">
+              {dimension.dimension}
+            </h3>
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <span className={cn("text-xs hidden sm:inline", getConfidenceColor())}>
                 {getConfidenceLabel()}
               </span>
               <ScoreBadge score={dimension.score} />

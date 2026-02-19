@@ -87,7 +87,7 @@ export function TotalScoreCard({
 
             {/* Score Circle */}
             <div className="flex items-center gap-6">
-              <div className="relative w-28 h-28">
+              <div className="relative w-28 h-28 flex-shrink-0">
                 {/* Background ring */}
                 <svg className="w-full h-full -rotate-90">
                   <circle
