@@ -207,7 +207,34 @@ Deno.serve(async (req) => {
       // Parse base URL for constructing fallback URLs
       const urlObj = new URL(formattedUrl);
       const baseUrl = `${urlObj.protocol}//${urlObj.host}`;
-      
+      const domainForLookup = urlObj.hostname.replace(/^www\./, '');
+
+      // Load community-submitted evidence URLs for this domain
+      let communityUrls: string[] = [];
+      try {
+        const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+        const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+        const ceResponse = await fetch(
+          `${supabaseUrl}/rest/v1/community_evidence?url_domain=eq.${encodeURIComponent(domainForLookup)}&select=evidence_url&order=created_at.desc&limit=20`,
+          {
+            headers: {
+              'Authorization': `Bearer ${supabaseKey}`,
+              'apikey': supabaseKey,
+              'Content-Type': 'application/json',
+            },
+          }
+        );
+        if (ceResponse.ok) {
+          const ceData = await ceResponse.json();
+          communityUrls = (ceData || []).map((r: { evidence_url: string }) => r.evidence_url);
+          if (communityUrls.length > 0) {
+            console.log(`Found ${communityUrls.length} community evidence URLs for ${domainForLookup}`);
+          }
+        }
+      } catch (ceErr) {
+        console.error('Failed to load community evidence (non-fatal):', ceErr);
+      }
+
       // Common high-value page paths to try as fallbacks — economic surfaces first
       const commonPaths = [
         '/pricing',
@@ -267,9 +294,9 @@ Deno.serve(async (req) => {
       const fallbackUrls = commonPaths.map(path => baseUrl + path);
       console.log('Adding fallback URLs for common pages');
       
-      // Combine mapped links with fallbacks (fallbacks first for priority)
-      const combinedLinks = [...new Set([...fallbackUrls, ...allLinks])];
-      console.log(`Total combined links: ${combinedLinks.length}`);
+      // Combine: community evidence URLs first (highest priority), then fallbacks, then mapped links
+      const combinedLinks = [...new Set([...communityUrls, ...fallbackUrls, ...allLinks])];
+      console.log(`Total combined links: ${combinedLinks.length} (${communityUrls.length} from community evidence)`);
 
       // Filter for high-value pages
       const priorityPatterns = [
@@ -322,11 +349,14 @@ Deno.serve(async (req) => {
         /\/(blog|news|press|careers|jobs|cookie)$/i,
       ];
 
+      // Community evidence URLs bypass priority filtering (they're pre-validated as useful)
+      const communityUrlSet = new Set(communityUrls);
       const priorityLinks = combinedLinks
         .filter((link: string) => {
           if (exclusionPatterns.some(pattern => pattern.test(link))) return false;
           if (link === formattedUrl || link === formattedUrl + '/') return false;
-          return priorityPatterns.some(pattern => pattern.test(link));
+          // Community URLs always pass; others need to match priority patterns
+          return communityUrlSet.has(link) || priorityPatterns.some(pattern => pattern.test(link));
         })
         .slice(0, safeMaxPages - 1);
 

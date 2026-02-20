@@ -1633,7 +1633,7 @@ ${truncatedContent}`;
     // Log evidence misses when user submitted new public URLs (previousScores present = rerun)
     if (previousScores && previousScores.length > 0) {
       try {
-        const missDomain = new URL(url).hostname;
+        const missDomain = new URL(url).hostname.replace(/^www\./, '');
         // Identify dimensions that changed score or confidence
         const changedDimensions = dimensionScores.filter(d => {
           const prev = previousScores.find(p => p.dimension === d.dimension);
@@ -1671,6 +1671,37 @@ ${truncatedContent}`;
             } else {
               console.error('Failed to log evidence misses:', await insertResponse.text());
             }
+          }
+        }
+
+        // Persist submitted public URLs to community_evidence for future scans
+        if (!insiderAnswers) {
+          try {
+            // Find URLs that were added in this rerun (not in the original scan)
+            // The new pages are typically at the end of the pages array
+            const originalPageCount = previousScores.length > 0 ? pages.length : 0;
+            const allPageUrls = pages.map(p => p.url);
+            
+            const evidenceEntries = allPageUrls.map(pageUrl => ({
+              url_domain: domain,
+              evidence_url: pageUrl,
+              dimension: null,
+              submitted_by: userId,
+            }));
+
+            if (evidenceEntries.length > 0) {
+              const { error: evidenceError } = await supabaseAdmin
+                .from('community_evidence')
+                .upsert(evidenceEntries, { onConflict: 'url_domain,evidence_url', ignoreDuplicates: true });
+
+              if (evidenceError) {
+                console.error('Failed to persist community evidence (non-fatal):', evidenceError);
+              } else {
+                console.log(`Persisted ${evidenceEntries.length} community evidence URLs for ${domain}`);
+              }
+            }
+          } catch (ceError) {
+            console.error('Error persisting community evidence (non-fatal):', ceError);
           }
         }
       } catch (logError) {
