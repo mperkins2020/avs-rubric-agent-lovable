@@ -1,8 +1,8 @@
-import { motion } from "framer-motion";
-import { ArrowLeft, ChevronDown, Layers, Target, DollarSign, Shield, Users, BookOpen, BarChart3, Lightbulb } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { ArrowLeft, ChevronDown, Layers, Target, DollarSign, Shield, Users, BookOpen, BarChart3, Lightbulb, List, X } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   Accordion,
   AccordionContent,
@@ -22,6 +22,8 @@ const tocSections = [
 
 const Methodology = () => {
   const [activeSection, setActiveSection] = useState("");
+  const [showScrolled, setShowScrolled] = useState(false);
+  const [mobileTocOpen, setMobileTocOpen] = useState(false);
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -40,8 +42,15 @@ const Methodology = () => {
     return () => observer.disconnect();
   }, []);
 
+  useEffect(() => {
+    const handleScroll = () => setShowScrolled(window.scrollY > 300);
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
   const scrollTo = (id: string) => {
     document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
+    setMobileTocOpen(false);
   };
 
   return (
@@ -65,6 +74,51 @@ const Methodology = () => {
           </nav>
         </div>
       </header>
+
+      {/* Mobile floating TOC */}
+      <AnimatePresence>
+        {showScrolled && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 20 }}
+            className="lg:hidden fixed bottom-6 right-6 z-50"
+          >
+            {mobileTocOpen ? (
+              <div className="bg-card/95 backdrop-blur-xl border border-border rounded-xl shadow-2xl p-4 w-64">
+                <div className="flex items-center justify-between mb-3">
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">On this page</p>
+                  <button onClick={() => setMobileTocOpen(false)} className="text-muted-foreground hover:text-foreground">
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+                <div className="space-y-1 max-h-64 overflow-y-auto">
+                  {tocSections.map(({ id, label }) => (
+                    <button
+                      key={id}
+                      onClick={() => scrollTo(id)}
+                      className={`block w-full text-left text-sm py-1.5 px-3 rounded-md transition-colors ${
+                        activeSection === id
+                          ? "text-primary bg-primary/10 font-medium"
+                          : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <button
+                onClick={() => setMobileTocOpen(true)}
+                className="p-3 rounded-full bg-primary text-primary-foreground shadow-2xl hover:scale-105 transition-transform"
+              >
+                <List className="w-5 h-5" />
+              </button>
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <div className="relative z-10 container mx-auto px-4 py-12">
         <div className="flex gap-10 max-w-6xl mx-auto">
