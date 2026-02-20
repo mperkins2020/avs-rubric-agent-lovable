@@ -1507,11 +1507,24 @@ Description: ${companyProfile.oneLineDescription}
 Primary Users: ${companyProfile.primaryUsers}
 Product Surface: ${companyProfile.productSurface}
 Pricing Model Guess: ${companyProfile.pricingModelGuess}
-${insiderAnswers && Object.keys(insiderAnswers).length > 0 ? `
+${previousScores && previousScores.length > 0 && !insiderAnswers ? `
+RERUN WITH NEW PUBLIC EVIDENCE:
+This is a re-analysis with additional public pages that were not available in the original scan.
+PREVIOUS SCORES (for before/after comparison):
+${previousScores.map((s: { dimension: string; score: number; confidence: number }) => `- ${s.dimension}: score=${s.score}, confidence=${s.confidence}`).join('\n')}
+
+CRITICAL INSTRUCTIONS FOR RERUN:
+- You MUST re-evaluate all dimensions using the FULL set of pages below, including newly added pages.
+- Scores and confidence CAN change based on new public evidence found in the additional pages.
+- In the rationale for each dimension, explicitly reference any NEW evidence found in the newly added pages.
+- If a dimension's score or confidence changed from the previous run, explain WHY in the rationale (what new evidence was found).
+- If a dimension's score did NOT change despite new pages, briefly note that the new pages did not contain additional evidence for that dimension.
+- Follow the rerun behavior specified in each dimension's spec: include score before vs after, confidence before vs after, new evidence added.
+` : ''}${insiderAnswers && Object.keys(insiderAnswers).length > 0 ? `
 INSIDER ANSWERS (user-provided, source_type=user_input, reliability=0.65):
 ${Object.entries(insiderAnswers).map(([key, value]) => {
   const [dimension, question] = key.split('::');
-  return `- [${dimension}] Q: ${question}\n  A: ${value}`;
+  return '- [' + dimension + '] Q: ' + question + '\n  A: ' + value;
 }).join('\n')}
 
 CRITICAL PUBLIC-ONLY SCORING INVARIANT:
@@ -1522,7 +1535,7 @@ CRITICAL PUBLIC-ONLY SCORING INVARIANT:
 - In the rationale, note what the insider context suggests but clarify that scores reflect public evidence only.
 ${previousScores ? `
 PREVIOUS SCORES (for before/after comparison):
-${previousScores.map(s => `- ${s.dimension}: score=${s.score}, confidence=${s.confidence}`).join('\n')}
+${previousScores.map((s: { dimension: string; score: number; confidence: number }) => '- ' + s.dimension + ': score=' + s.score + ', confidence=' + s.confidence).join('\n')}
 Since these are insider-only inputs, scores should remain the same as previous unless a public URL was provided in the answers.
 ` : ''}` : ''}
 
