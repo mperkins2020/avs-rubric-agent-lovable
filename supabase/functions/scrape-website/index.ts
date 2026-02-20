@@ -96,7 +96,7 @@ Deno.serve(async (req) => {
     }
     console.log('Authenticated user:', auth.userId);
 
-    const { url, includeSubpages = true, maxPages = 10 }: ScrapeRequest = await req.json();
+    const { url, includeSubpages = true, maxPages = 15 }: ScrapeRequest = await req.json();
 
     if (!url || typeof url !== 'string') {
       return new Response(
@@ -114,7 +114,7 @@ Deno.serve(async (req) => {
     }
 
     // Enforce maxPages limit
-    const safeMaxPages = Math.min(Math.max(1, maxPages), 20);
+    const safeMaxPages = Math.min(Math.max(1, maxPages), 25);
 
     const apiKey = Deno.env.get('FIRECRAWL_API_KEY');
     if (!apiKey) {
@@ -252,7 +252,18 @@ Deno.serve(async (req) => {
         '/how-it-works',
         '/docs',
         '/help',
+        '/help-center',
+        '/knowledge-base',
+        '/faq',
         '/support',
+        '/api',
+        '/developers',
+        '/billing',
+        '/usage',
+        '/usage-limits',
+        '/credits',
+        '/subscription',
+        '/plans',
         '/blog',
         '/changelog',
         '/updates',
@@ -262,6 +273,18 @@ Deno.serve(async (req) => {
         '/legal',
         '/privacy',
       ];
+
+      // Detect common help/docs subdomains
+      const helpSubdomains = ['help', 'support', 'docs', 'developer', 'developers', 'kb', 'knowledge', 'community'];
+      const rootDomain = urlObj.hostname.replace(/^www\./, '');
+      // Extract the registrable domain (e.g., elevenlabs.io from www.elevenlabs.io)
+      const domainParts = rootDomain.split('.');
+      const registrableDomain = domainParts.length >= 2 ? domainParts.slice(-2).join('.') : rootDomain;
+
+      const subdomainUrls: string[] = [];
+      for (const sub of helpSubdomains) {
+        subdomainUrls.push(`https://${sub}.${registrableDomain}`);
+      }
       
       const mapResponse = await fetch('https://api.firecrawl.dev/v1/map', {
         method: 'POST',
@@ -271,8 +294,8 @@ Deno.serve(async (req) => {
         },
         body: JSON.stringify({
           url: formattedUrl,
-          limit: 100,
-          includeSubdomains: false,
+          limit: 200,
+          includeSubdomains: true,
         }),
       });
 
@@ -294,9 +317,9 @@ Deno.serve(async (req) => {
       const fallbackUrls = commonPaths.map(path => baseUrl + path);
       console.log('Adding fallback URLs for common pages');
       
-      // Combine: community evidence URLs first (highest priority), then fallbacks, then mapped links
-      const combinedLinks = [...new Set([...communityUrls, ...fallbackUrls, ...allLinks])];
-      console.log(`Total combined links: ${combinedLinks.length} (${communityUrls.length} from community evidence)`);
+      // Combine: community evidence URLs first (highest priority), then subdomain roots, then fallbacks, then mapped links
+      const combinedLinks = [...new Set([...communityUrls, ...subdomainUrls, ...fallbackUrls, ...allLinks])];
+      console.log(`Total combined links: ${combinedLinks.length} (${communityUrls.length} community, ${subdomainUrls.length} subdomain probes)`);
 
       // Filter for high-value pages
       const priorityPatterns = [
@@ -321,7 +344,12 @@ Deno.serve(async (req) => {
         /\/vs-/i,
         /\/docs\b/i,
         /\/help\b/i,
+        /\/help-center\b/i,
+        /\/knowledge-base\b/i,
+        /\/faq\b/i,
         /\/support\b/i,
+        /\/api\b/i,
+        /\/developers?\b/i,
         /\/changelog\b/i,
         /\/updates\b/i,
         /\/release-notes\b/i,
@@ -329,6 +357,10 @@ Deno.serve(async (req) => {
         /\/terms\b/i,
         /\/legal\b/i,
         /\/privacy\b/i,
+        /\/billing\b/i,
+        /\/subscription\b/i,
+        /\/plans\b/i,
+        /\/credits\b/i,
         // Billing/usage-related keyword patterns
         /billing/i,
         /usage/i,
@@ -340,7 +372,15 @@ Deno.serve(async (req) => {
         /calculator/i,
         /fair.?use/i,
         /rate.?limit/i,
+        /quota/i,
+        /metering/i,
+        /cost/i,
+        /spend/i,
+        // Help center subdomain root pages match automatically
       ];
+
+      // Also match subdomain roots (help.example.com, docs.example.com, etc.)
+      const subdomainRootPattern = new RegExp(`^https?://(${helpSubdomains.join('|')})\\.`, 'i');
 
       // Exclusion patterns - removed terms/legal/changelog from exclusion since they're now priority
       const exclusionPatterns = [
@@ -356,7 +396,7 @@ Deno.serve(async (req) => {
           if (exclusionPatterns.some(pattern => pattern.test(link))) return false;
           if (link === formattedUrl || link === formattedUrl + '/') return false;
           // Community URLs always pass; others need to match priority patterns
-          return communityUrlSet.has(link) || priorityPatterns.some(pattern => pattern.test(link));
+          return communityUrlSet.has(link) || subdomainRootPattern.test(link) || priorityPatterns.some(pattern => pattern.test(link));
         })
         .slice(0, safeMaxPages - 1);
 

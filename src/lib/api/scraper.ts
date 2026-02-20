@@ -47,7 +47,7 @@ export const scraperApi = {
         body: { 
           url, 
           includeSubpages: true,
-          maxPages: options?.maxPages || 10,
+          maxPages: options?.maxPages || 15,
         },
       });
 
