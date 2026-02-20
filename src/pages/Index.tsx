@@ -139,7 +139,7 @@ const Index = () => {
   }, {
     icon: Zap,
     title: "Instant Analysis",
-    description: "Highlights top gaps, fastest fixes, and what to publish next."
+    description: "Identifies trust gaps, ranks by severity, and recommends what to fix first."
   }];
   return <div className="min-h-screen bg-background relative overflow-hidden">
       {/* Background effects */}
