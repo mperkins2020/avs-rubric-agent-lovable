@@ -23,8 +23,7 @@ const Privacy = () => {
           </div>
           <nav className="hidden md:flex items-center gap-6">
             <Link to="/methodology" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Methodology</Link>
-            <Link to="/faq/product-growth" className="text-sm text-muted-foreground hover:text-foreground transition-colors">FAQ: Growth</Link>
-            <Link to="/faq/cfo-revops" className="text-sm text-muted-foreground hover:text-foreground transition-colors">FAQ: RevOps</Link>
+            <Link to="/faq" className="text-sm text-muted-foreground hover:text-foreground transition-colors">FAQ</Link>
           </nav>
         </div>
       </header>

@@ -165,8 +165,7 @@ const Index = () => {
             <Link to="/methodology" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
               Methodology
             </Link>
-            <Link to="/faq/product-growth" className="text-sm text-muted-foreground hover:text-foreground transition-colors">FAQ: Growth</Link>
-            <Link to="/faq/cfo-revops" className="text-sm text-muted-foreground hover:text-foreground transition-colors">FAQ: RevOps</Link>
+            <Link to="/faq" className="text-sm text-muted-foreground hover:text-foreground transition-colors">FAQ</Link>
             {session ? (
               <Button variant="ghost" size="sm" onClick={signOut} className="gap-1 text-muted-foreground hover:text-foreground">
                 <LogOut className="w-4 h-4" />
@@ -227,18 +226,11 @@ const Index = () => {
                   Methodology
                 </Link>
                 <Link
-                  to="/faq/product-growth"
+                  to="/faq"
                   onClick={() => setMobileMenuOpen(false)}
                   className="flex items-center px-3 py-2.5 rounded-lg text-sm text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors"
                 >
-                  FAQ: Growth
-                </Link>
-                <Link
-                  to="/faq/cfo-revops"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="flex items-center px-3 py-2.5 rounded-lg text-sm text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors"
-                >
-                  FAQ: RevOps
+                  FAQ
                 </Link>
               </nav>
               <div className="px-3 py-4 border-t border-border/50">

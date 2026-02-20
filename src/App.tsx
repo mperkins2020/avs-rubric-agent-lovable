@@ -7,8 +7,7 @@ import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import Index from "./pages/Index";
 import Results from "./pages/Results";
 import Methodology from "./pages/Methodology";
-import FAQProductGrowth from "./pages/FAQProductGrowth";
-import FAQCFORevOps from "./pages/FAQCFORevOps";
+import FAQ from "./pages/FAQ";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 import Privacy from "./pages/Privacy";
@@ -28,8 +27,9 @@ const AppRoutes = () => (
     <Route path="/" element={<Index />} />
     <Route path="/results" element={<ProtectedRoute><Results /></ProtectedRoute>} />
     <Route path="/methodology" element={<Methodology />} />
-    <Route path="/faq/product-growth" element={<FAQProductGrowth />} />
-    <Route path="/faq/cfo-revops" element={<FAQCFORevOps />} />
+    <Route path="/faq" element={<FAQ />} />
+    <Route path="/faq/product-growth" element={<Navigate to="/faq" replace />} />
+    <Route path="/faq/cfo-revops" element={<Navigate to="/faq" replace />} />
     <Route path="/privacy" element={<Privacy />} />
     <Route path="*" element={<NotFound />} />
   </Routes>
