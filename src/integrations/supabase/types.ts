@@ -14,6 +14,33 @@ export type Database = {
   }
   public: {
     Tables: {
+      community_evidence: {
+        Row: {
+          created_at: string
+          dimension: string | null
+          evidence_url: string
+          id: string
+          submitted_by: string | null
+          url_domain: string
+        }
+        Insert: {
+          created_at?: string
+          dimension?: string | null
+          evidence_url: string
+          id?: string
+          submitted_by?: string | null
+          url_domain: string
+        }
+        Update: {
+          created_at?: string
+          dimension?: string | null
+          evidence_url?: string
+          id?: string
+          submitted_by?: string | null
+          url_domain?: string
+        }
+        Relationships: []
+      }
       evidence_misses: {
         Row: {
           company_domain: string
