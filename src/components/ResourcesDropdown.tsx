@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { ChevronDown, BookOpen, FileText } from "lucide-react";
+import { ChevronDown, BookOpen, FileText, HelpCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface ResourcesDropdownProps {
@@ -24,6 +24,7 @@ export function ResourcesDropdown({ onNavigate, mobile = false }: ResourcesDropd
   const items = [
     { label: "Case Studies", to: "/resources/case-studies", icon: FileText },
     { label: "Blog", to: "/resources/blog", icon: BookOpen },
+    { label: "FAQ", to: "/faq", icon: HelpCircle },
   ];
 
   if (mobile) {

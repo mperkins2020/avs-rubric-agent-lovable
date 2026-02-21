@@ -166,7 +166,6 @@ const Index = () => {
             <Link to="/methodology" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
               Methodology
             </Link>
-            <Link to="/faq" className="text-sm text-muted-foreground hover:text-foreground transition-colors">FAQ</Link>
             <ResourcesDropdown />
             {session ? (
               <Button variant="ghost" size="sm" onClick={signOut} className="gap-1 text-muted-foreground hover:text-foreground">
@@ -226,13 +225,6 @@ const Index = () => {
                   className="flex items-center px-3 py-2.5 rounded-lg text-sm text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors"
                 >
                   Methodology
-                </Link>
-                <Link
-                  to="/faq"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="flex items-center px-3 py-2.5 rounded-lg text-sm text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors"
-                >
-                  FAQ
                 </Link>
                 <ResourcesDropdown mobile onNavigate={() => setMobileMenuOpen(false)} />
               </nav>

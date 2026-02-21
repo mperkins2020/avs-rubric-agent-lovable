@@ -36,7 +36,6 @@ export default function CaseStudyElevenLabs() {
           </div>
           <nav className="hidden md:flex items-center gap-6">
             <Link to="/methodology" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Methodology</Link>
-            <Link to="/faq" className="text-sm text-muted-foreground hover:text-foreground transition-colors">FAQ</Link>
             <ResourcesDropdown />
           </nav>
         </div>
