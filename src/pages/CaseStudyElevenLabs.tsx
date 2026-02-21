@@ -354,6 +354,17 @@ export default function CaseStudyElevenLabs() {
 
         <hr className="border-border/50 my-12" />
 
+        {/* Methodology Note */}
+        <Section>
+          <div className="rounded-lg border border-border/50 bg-muted/30 p-5">
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              <span className="font-semibold text-foreground">Methodology Note:</span> Revenue impact estimates are based on industry benchmarks (OpenView, ChartMogul, ProfitWell) and illustrative customer data, as ElevenLabs' internal metrics are not publicly available. The value of this analysis is the systematic framework for connecting trust gaps to revenue impact, which can be validated with actual company data in an advisory engagement.
+            </p>
+          </div>
+        </Section>
+
+        <hr className="border-border/50 my-12" />
+
         {/* CTA */}
         <Section className="text-center py-8">
           <h2 className="text-2xl font-bold mb-2">See Your Trust Gaps</h2>
