@@ -16,6 +16,7 @@ import { scraperApi, type ScrapedPage } from "@/lib/api/scraper";
 import { exportToPDF } from "@/lib/pdfExport";
 import { toast } from "sonner";
 import type { ChatMessage, CompanyProfile, RubricScore, ObservabilityData } from "@/types/rubric";
+import { ResourcesDropdown } from "@/components/ResourcesDropdown";
 
 interface LocationState {
   companyProfile: CompanyProfile;
@@ -298,6 +299,7 @@ export default function Results() {
               <Link to="/faq" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
                 FAQ
               </Link>
+              <ResourcesDropdown />
             </nav>
             <Button 
               variant="outline"
