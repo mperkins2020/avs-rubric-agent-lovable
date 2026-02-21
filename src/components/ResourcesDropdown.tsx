@@ -1,31 +1,26 @@
-import { useState, useRef, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { ChevronDown, BookOpen, FileText, HelpCircle } from "lucide-react";
-import { cn } from "@/lib/utils";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Link } from "react-router-dom";
 
 interface ResourcesDropdownProps {
   onNavigate?: () => void;
   mobile?: boolean;
 }
 
+const items = [
+  { label: "Case Studies", to: "/resources/case-studies", icon: FileText },
+  { label: "Blog", to: "/resources/blog", icon: BookOpen },
+  { label: "FAQ", to: "/faq", icon: HelpCircle },
+];
+
 export function ResourcesDropdown({ onNavigate, mobile = false }: ResourcesDropdownProps) {
-  const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (mobile) return;
-    const handler = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
-    };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, [mobile]);
-
-  const items = [
-    { label: "Case Studies", to: "/resources/case-studies", icon: FileText },
-    { label: "Blog", to: "/resources/blog", icon: BookOpen },
-    { label: "FAQ", to: "/faq", icon: HelpCircle },
-  ];
+  const navigate = useNavigate();
 
   if (mobile) {
     return (
@@ -49,32 +44,25 @@ export function ResourcesDropdown({ onNavigate, mobile = false }: ResourcesDropd
   }
 
   return (
-    <div ref={ref} className="relative">
-      <button
-        onClick={() => setOpen(!open)}
-        className={cn(
-          "flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors",
-          open && "text-foreground"
-        )}
-      >
-        Resources
-        <ChevronDown className={cn("w-3.5 h-3.5 transition-transform", open && "rotate-180")} />
-      </button>
-      {open && (
-        <div className="absolute top-full left-0 mt-2 w-48 py-1 rounded-lg border border-border/50 bg-popover shadow-lg backdrop-blur-xl z-50">
-          {items.map((item) => (
-            <Link
-              key={item.to}
-              to={item.to}
-              onClick={() => { setOpen(false); onNavigate?.(); }}
-              className="flex items-center gap-2 px-3 py-2 text-sm text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors"
-            >
-              <item.icon className="w-4 h-4" />
-              {item.label}
-            </Link>
-          ))}
-        </div>
-      )}
-    </div>
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors outline-none">
+          Resources
+          <ChevronDown className="w-3.5 h-3.5" />
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="start" className="w-48">
+        {items.map((item) => (
+          <DropdownMenuItem
+            key={item.to}
+            onClick={() => { navigate(item.to); onNavigate?.(); }}
+            className="flex items-center gap-2 cursor-pointer"
+          >
+            <item.icon className="w-4 h-4" />
+            {item.label}
+          </DropdownMenuItem>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }
