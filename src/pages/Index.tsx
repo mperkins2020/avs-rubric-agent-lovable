@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import ValueTempoLogo from "@/assets/ValueTempo_Logo.png";
+import { ResourcesDropdown } from "@/components/ResourcesDropdown";
 import {
   Dialog,
   DialogContent,
@@ -166,6 +167,7 @@ const Index = () => {
               Methodology
             </Link>
             <Link to="/faq" className="text-sm text-muted-foreground hover:text-foreground transition-colors">FAQ</Link>
+            <ResourcesDropdown />
             {session ? (
               <Button variant="ghost" size="sm" onClick={signOut} className="gap-1 text-muted-foreground hover:text-foreground">
                 <LogOut className="w-4 h-4" />
@@ -232,6 +234,7 @@ const Index = () => {
                 >
                   FAQ
                 </Link>
+                <ResourcesDropdown mobile onNavigate={() => setMobileMenuOpen(false)} />
               </nav>
               <div className="px-3 py-4 border-t border-border/50">
                 {session ? (

@@ -11,6 +11,9 @@ import FAQ from "./pages/FAQ";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 import Privacy from "./pages/Privacy";
+import CaseStudies from "./pages/CaseStudies";
+import CaseStudyElevenLabs from "./pages/CaseStudyElevenLabs";
+import Blog from "./pages/Blog";
 
 const queryClient = new QueryClient();
 
@@ -31,6 +34,9 @@ const AppRoutes = () => (
     <Route path="/faq/product-growth" element={<Navigate to="/faq" replace />} />
     <Route path="/faq/cfo-revops" element={<Navigate to="/faq" replace />} />
     <Route path="/privacy" element={<Privacy />} />
+    <Route path="/resources/case-studies" element={<CaseStudies />} />
+    <Route path="/resources/case-studies/elevenlabs" element={<CaseStudyElevenLabs />} />
+    <Route path="/resources/blog" element={<Blog />} />
     <Route path="*" element={<NotFound />} />
   </Routes>
 );
