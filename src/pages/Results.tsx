@@ -296,9 +296,6 @@ export default function Results() {
               <Link to="/methodology" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
                 Methodology
               </Link>
-              <Link to="/faq" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-                FAQ
-              </Link>
               <ResourcesDropdown />
             </nav>
             <Button 
