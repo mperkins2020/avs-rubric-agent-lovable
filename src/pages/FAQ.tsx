@@ -2,6 +2,7 @@ import { useState, useMemo } from "react";
 import { motion } from "framer-motion";
 import { ArrowLeft, Search, ExternalLink } from "lucide-react";
 import { Link } from "react-router-dom";
+import { ResourcesDropdown } from "@/components/ResourcesDropdown";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -297,7 +298,7 @@ const FAQ = () => {
             <Link to="/methodology" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
               Methodology
             </Link>
-            <Link to="/faq" className="text-sm font-medium text-primary">FAQ</Link>
+            <ResourcesDropdown />
           </nav>
         </div>
       </header>
