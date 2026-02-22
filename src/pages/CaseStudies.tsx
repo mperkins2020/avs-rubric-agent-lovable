@@ -24,6 +24,15 @@ const caseStudies: CaseStudyEntry[] = [
     maxScore: 16,
     scorePercent: 75,
   },
+  {
+    slug: "clay",
+    companyName: "Clay",
+    logoUrl: "/case-studies/clay-logo.ico",
+    headline: "The $100M Platform With a Cost Predictability Gap",
+    trustScore: 13,
+    maxScore: 16,
+    scorePercent: 81,
+  },
 ];
 
 export default function CaseStudies() {
