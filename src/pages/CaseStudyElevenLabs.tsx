@@ -178,16 +178,12 @@ export default function CaseStudyElevenLabs() {
           {/* Third Gap */}
           <h4 className="text-base font-bold mb-3">The Third Gap: Product North Star</h4>
           <div className="p-4 rounded-xl bg-card/60 border border-border/50 mb-8">
-            <div className="flex items-center justify-between mb-2">
-              <span className="font-medium">Product North Star</span>
-              <div className="flex items-center gap-2">
-                <span className="score-badge score-badge-medium">50%</span>
-                <span className="text-xs text-muted-foreground">Medium (40%)</span>
-              </div>
+            <div className="grid grid-cols-[1fr_auto_auto_2fr] items-start gap-x-4">
+              <span className="font-medium py-2">Product North Star</span>
+              <span className="score-badge score-badge-medium py-2">50%</span>
+              <span className="text-muted-foreground py-2">Medium (40%)</span>
+              <span className="text-sm text-muted-foreground py-2">Vision clear, but measurable outcome metric undefined. Customers can't quantify value objectively.</span>
             </div>
-            <p className="text-sm text-muted-foreground">
-              Vision clear, but measurable outcome metric undefined. Customers can't quantify value objectively.
-            </p>
           </div>
         </Section>
 
