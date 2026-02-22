@@ -15,6 +15,7 @@ import CaseStudies from "./pages/CaseStudies";
 import CaseStudyElevenLabs from "./pages/CaseStudyElevenLabs";
 import CaseStudyClay from "./pages/CaseStudyClay";
 import Blog from "./pages/Blog";
+import BlogTrustGrowthConstraint from "./pages/BlogTrustGrowthConstraint";
 
 const queryClient = new QueryClient();
 
@@ -39,6 +40,7 @@ const AppRoutes = () => (
     <Route path="/resources/case-studies/elevenlabs" element={<CaseStudyElevenLabs />} />
     <Route path="/resources/case-studies/clay" element={<CaseStudyClay />} />
     <Route path="/resources/blog" element={<Blog />} />
+    <Route path="/resources/blog/trust-growth-constraint" element={<BlogTrustGrowthConstraint />} />
     <Route path="*" element={<NotFound />} />
   </Routes>
 );

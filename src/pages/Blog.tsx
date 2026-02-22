@@ -25,12 +25,21 @@ export default function Blog() {
         </div>
       </header>
 
-      <main className="container mx-auto px-4 py-16">
-        <div className="max-w-4xl mx-auto text-center">
+      <main className="container mx-auto px-4 py-12 md:py-20">
+        <div className="max-w-4xl mx-auto">
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-            <h1 className="text-3xl md:text-4xl font-bold mb-4">Blog</h1>
-            <p className="text-muted-foreground">Coming soon — insights on trust infrastructure, pricing strategy, and value alignment.</p>
+            <h1 className="text-3xl md:text-4xl font-bold mb-10">Blog</h1>
           </motion.div>
+
+          <div className="space-y-6">
+            <Link to="/resources/blog/trust-growth-constraint" className="block group">
+              <motion.article initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="bg-muted/20 border border-border/40 rounded-xl p-6 hover:border-primary/40 transition-colors">
+                <p className="text-sm text-muted-foreground mb-2">February 2026</p>
+                <h2 className="text-xl md:text-2xl font-bold group-hover:text-primary transition-colors mb-2">Trust is the new growth constraint in AI</h2>
+                <p className="text-muted-foreground">A practical way to make value, usage, and cost feel predictable — why pricing drift becomes trust drift, and how AVS gives operators a shared map.</p>
+              </motion.article>
+            </Link>
+          </div>
         </div>
       </main>
     </div>
