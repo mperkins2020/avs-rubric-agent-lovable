@@ -70,9 +70,9 @@ export default function CaseStudyElevenLabs() {
 
         <hr className="border-border/50 my-12" />
 
-        {/* Social Feedback */}
+        {/* User Feedback */}
         <Section>
-          <h2 className="text-2xl font-bold mb-2">What Social Feedback Shows</h2>
+          <h2 className="text-2xl font-bold mb-2">What User Feedback Shows</h2>
           <h3 className="text-lg font-semibold text-muted-foreground mb-6">The Scattered Signal</h3>
           <div className="space-y-4">
             {[
@@ -344,7 +344,7 @@ export default function CaseStudyElevenLabs() {
             ))}
           </ul>
           <div className="p-4 rounded-xl bg-card/60 border border-border/50 space-y-2">
-            <p className="text-sm text-muted-foreground">Social feedback identifies scattered symptoms.</p>
+            <p className="text-sm text-muted-foreground">User feedback identifies scattered symptoms.</p>
             <p className="text-sm text-muted-foreground">AVS diagnoses the structural gaps causing those symptoms.</p>
             <p className="text-sm font-medium mt-2">
               The difference: One leads to reactive support scaling. The other leads to proactive infrastructure fixes that unlock $4.5-6.5M in addressable revenue.
