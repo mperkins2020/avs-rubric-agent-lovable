@@ -164,12 +164,35 @@ export default function Results() {
   const handlePublicLinksSubmit = useCallback(async (links: Array<{ url: string; dimension?: string }>) => {
     if (!companyProfile || !rubricScore || pages.length === 0) return;
 
+    // Validate URLs before scraping
+    const validLinks = links.filter(link => {
+      try {
+        let urlToTest = link.url.trim();
+        if (!urlToTest.startsWith("http://") && !urlToTest.startsWith("https://")) {
+          urlToTest = "https://" + urlToTest;
+        }
+        new URL(urlToTest);
+        return true;
+      } catch {
+        return false;
+      }
+    });
+
+    if (validLinks.length === 0) {
+      toast.error("No valid URLs provided. Please enter valid web addresses.");
+      return;
+    }
+
+    if (validLinks.length < links.length) {
+      toast.warning(`${links.length - validLinks.length} invalid URL(s) skipped.`);
+    }
+
     setIsRerunning(true);
     toast.info("Scraping submitted links and re-analyzing...");
 
     try {
       // Scrape each submitted link
-      const scrapePromises = links.map(async (link) => {
+      const scrapePromises = validLinks.map(async (link) => {
         try {
           const result = await scraperApi.scrapeWebsite(link.url, { maxPages: 1 });
           if (result.success && result.pages && result.pages.length > 0) {
