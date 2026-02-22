@@ -57,14 +57,14 @@ export default function CaseStudyElevenLabs() {
           <h1 className="text-3xl md:text-4xl font-bold mb-4 leading-tight">
             The 75% Problem: When Strong Fundamentals Meet Predictability Gaps
           </h1>
-          <p className="text-lg text-muted-foreground leading-relaxed mb-2">Industry-leading voice AI technology. 75% AVS trust score. 3.1/5 customer rating.
+          <p className="text-lg text-muted-foreground leading-relaxed mb-2">Industry-leading voice AI technology. 75% AVS Trust Score. 3.1/5 Trustpilot rating.
 
           </p>
           <p className="text-muted-foreground leading-relaxed">
             ElevenLabs has built exceptional AI technology with strong commercial infrastructure — clear value units, transparent overage pricing, well-aligned buyer tiers. Yet cost predictability complaints dominate customer feedback, enterprise deals extend beyond 120 days, and expansion velocity lags 40% below potential.
           </p>
-          <p className="text-muted-foreground leading-relaxed mt-4 font-medium">
-            The paradox: A 75% AVS score should indicate strong trust infrastructure. Why do "surprise bill" and "can't predict costs" complaints persist?
+          <p className="text-muted-foreground leading-relaxed mt-4 font-medium">The paradox: A 75% AVS trust score should indicate strong trust infrastructure. Why do "surprise bill" and "can't predict costs" complaints persist?
+
           </p>
         </Section>
 
