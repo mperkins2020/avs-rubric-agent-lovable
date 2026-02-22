@@ -101,7 +101,7 @@ export default function CaseStudyElevenLabs() {
           <div className="flex items-center gap-4 mb-6 p-4 rounded-xl bg-card/60 border border-border/50">
             <div>
               <span className="text-3xl font-mono font-bold gradient-text">75%</span>
-              <p className="text-xs text-muted-foreground">AVS Overall Score (12/16)</p>
+              <p className="text-xs text-muted-foreground">AVS Trust Score</p>
             </div>
             <div className="h-8 w-px bg-border" />
             <div>
