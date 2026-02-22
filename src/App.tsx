@@ -15,6 +15,7 @@ import CaseStudies from "./pages/CaseStudies";
 import CaseStudyElevenLabs from "./pages/CaseStudyElevenLabs";
 import CaseStudyClay from "./pages/CaseStudyClay";
 import Blog from "./pages/Blog";
+import BlogTrustGrowthConstraint from "./pages/BlogTrustGrowthConstraint";
 
 const queryClient = new QueryClient();
 
