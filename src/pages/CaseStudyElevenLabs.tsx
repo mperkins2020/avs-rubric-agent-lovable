@@ -162,7 +162,8 @@ export default function CaseStudyElevenLabs() {
               <tbody>
                 {[
                 { gap: "Cost Driver Mapping", score: "50%", conf: "Medium (60%)", missing: "Drivers identified, but formulas linking product behavior to cost quantity missing. No p50/p95 cost estimates for workflows." },
-                { gap: "Safety Rails", score: "50%", conf: "Medium (60%)", missing: "Basic notifications exist, but configurable budget/usage caps not documented. Rate limits unclear. Audit log details missing." }].
+                { gap: "Safety Rails", score: "50%", conf: "Medium (60%)", missing: "Basic notifications exist, but configurable budget/usage caps not documented. Rate limits unclear. Audit log details missing." },
+                { gap: "Product North Star", score: "50%", conf: "Medium (40%)", missing: "Vision clear, but measurable outcome metric undefined. Customers can't quantify value objectively." }].
                 map((r) =>
                 <tr key={r.gap} className="border-b border-border/30">
                     <td className="py-2 pr-4 font-medium">{r.gap}</td>
@@ -173,22 +174,6 @@ export default function CaseStudyElevenLabs() {
                 )}
               </tbody>
             </table>
-          </div>
-
-          {/* Third Gap */}
-          <h4 className="text-base font-bold mb-3">
-          </h4>
-          <div className="p-4 rounded-xl bg-card/60 border border-border/50 mb-8">
-            <div className="flex items-center justify-between mb-2">
-              <span className="font-medium py-[8px]">Product North Star</span>
-              <div className="flex items-center gap-2">
-                <span className="score-badge score-badge-medium">50%</span>
-                <span className="text-xs text-muted-foreground">Medium (40%)</span>
-              </div>
-            </div>
-            <p className="text-sm text-muted-foreground">
-              Vision clear, but measurable outcome metric undefined. Customers can't quantify value objectively.
-            </p>
           </div>
         </Section>
 
