@@ -176,7 +176,8 @@ export default function CaseStudyElevenLabs() {
           </div>
 
           {/* Third Gap */}
-          <h4 className="text-base font-bold mb-3">The Third Gap: Product North Star</h4>
+          <h4 className="text-base font-bold mb-3">
+          </h4>
           <div className="p-4 rounded-xl bg-card/60 border border-border/50 mb-8">
             <div className="flex items-center justify-between mb-2">
               <span className="font-medium py-[8px]">Product North Star</span>
@@ -198,8 +199,7 @@ export default function CaseStudyElevenLabs() {
           <h2 className="text-2xl font-bold mb-4">The Insight: A 75% Score With Persistent Problems</h2>
           <p className="text-muted-foreground mb-6">Why complaints persist despite strong fundamentals:</p>
           <div className="space-y-4">
-            {[
-            { good: "Value Unit is clear (100%) — Customers understand \"credits\"", but: "Cost Driver Mapping is incomplete (50%) — They can't forecast how many credits their workflow will consume" },
+            {[{ good: "Value Unit is clear (100%) — Customers understand \"credits\"", but: "Cost Driver Mapping is incomplete (50%) — They can't forecast how many credits their workflow will consume" },
             { good: "Overage pricing is transparent (100%) — Customers know the price per 1000 credits", but: "Safety Rails are undocumented (50%) — They can't set caps to prevent surprise bills" }].
             map((pair, i) =>
             <div key={i} className="grid md:grid-cols-2 gap-3">
