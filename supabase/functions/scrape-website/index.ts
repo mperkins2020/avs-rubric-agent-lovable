@@ -36,7 +36,7 @@ interface FirecrawlMapResponse {
 }
 
 // Validate JWT authentication
-async function validateAuth(req: Request): Promise<{ userId: string } | null> {
+async function validateAuth(req: Request): Promise<{ userId: string; userEmail: string } | null> {
   const authHeader = req.headers.get('authorization');
   if (!authHeader?.startsWith('Bearer ')) return null;
   const sb = createClient(
@@ -47,7 +47,10 @@ async function validateAuth(req: Request): Promise<{ userId: string } | null> {
   const token = authHeader.replace('Bearer ', '');
   const { data, error } = await sb.auth.getClaims(token);
   if (error || !data?.claims) return null;
-  return { userId: data.claims.sub as string };
+  return {
+    userId: data.claims.sub as string,
+    userEmail: (data.claims.email as string) ?? '',
+  };
 }
 
 // SSRF protection: block private/internal IPs and non-http schemes
@@ -108,6 +111,48 @@ Deno.serve(async (req) => {
       );
     }
     console.log('Authenticated user:', auth.userId);
+
+    // Rate limit: 3 scrapes per week per user (mirrors analyze-company)
+    const supabaseAdmin = createClient(
+      Deno.env.get('SUPABASE_URL')!,
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
+    );
+
+    const { data: adminCheck } = await supabaseAdmin
+      .rpc('has_role', { _user_id: auth.userId, _role: 'admin' });
+    const isAdmin = adminCheck === true;
+
+    if (!isAdmin) {
+      const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+
+      const { count: userCount, error: countError } = await supabaseAdmin
+        .from('scan_usage')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', auth.userId)
+        .gte('created_at', weekAgo);
+
+      if (!countError && userCount !== null && userCount >= 3) {
+        return new Response(
+          JSON.stringify({ success: false, error: 'Weekly limit reached. You can run 3 analyses per week. Try again next week.' }),
+          { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      if (auth.userEmail) {
+        const { count: emailCount, error: emailCountError } = await supabaseAdmin
+          .from('scan_usage')
+          .select('*', { count: 'exact', head: true })
+          .eq('email', auth.userEmail)
+          .gte('created_at', weekAgo);
+
+        if (!emailCountError && emailCount !== null && emailCount >= 3) {
+          return new Response(
+            JSON.stringify({ success: false, error: 'Weekly limit reached. You can run 3 analyses per week. Try again next week.' }),
+            { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+      }
+    }
 
     const { url, includeSubpages = true, maxPages = 15 }: ScrapeRequest = await req.json();
 
