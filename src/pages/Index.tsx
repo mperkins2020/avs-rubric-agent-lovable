@@ -266,7 +266,7 @@ const Index = () => {
             Trust is the new growth constraint in AI
           </p>
 
-          <h1 className="text-3xl sm:text-4xl md:text-6xl font-bold mb-4 leading-tight">
+          <h1 id="hero" className="text-3xl sm:text-4xl md:text-6xl font-bold mb-4 leading-tight">
             Score Your{" "}
             <span className="gradient-text">AI Product's Trust</span>
           </h1>
