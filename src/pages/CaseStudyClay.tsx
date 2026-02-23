@@ -1,4 +1,5 @@
 import { Link, useNavigate } from "react-router-dom";
+import { Footer } from "@/components/Footer";
 import { motion } from "framer-motion";
 import { Sparkles, ArrowLeft, ArrowRight, CheckCircle, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -471,15 +472,7 @@ export default function CaseStudyClay() {
         </Section>
       </main>
 
-      {/* Footer */}
-      <footer className="border-t border-border/50 py-6">
-        <div className="container mx-auto px-4 flex flex-col items-center gap-3">
-          <div className="flex items-center gap-4">
-            <Link to="/privacy" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Privacy & Data Handling</Link>
-          </div>
-          <p className="text-sm text-muted-foreground">© 2026 ValueTempo. All rights reserved.</p>
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 }

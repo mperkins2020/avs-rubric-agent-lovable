@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { Footer } from "@/components/Footer";
 import { motion } from "framer-motion";
 import { ArrowLeft, Search, ExternalLink } from "lucide-react";
 import { Link } from "react-router-dom";
@@ -399,6 +400,7 @@ const FAQ = () => {
           </div>
         </motion.div>
       </div>
+      <Footer />
     </div>
   );
 };

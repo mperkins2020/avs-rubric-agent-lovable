@@ -1,4 +1,5 @@
 import { motion, AnimatePresence } from "framer-motion";
+import { Footer } from "@/components/Footer";
 import { ArrowLeft, ChevronDown, Layers, Target, DollarSign, Shield, Users, BookOpen, BarChart3, Lightbulb, List, X } from "lucide-react";
 import { Link } from "react-router-dom";
 import { ResourcesDropdown } from "@/components/ResourcesDropdown";
@@ -448,6 +449,7 @@ const Methodology = () => {
           </main>
         </div>
       </div>
+      <Footer />
     </div>
   );
 };

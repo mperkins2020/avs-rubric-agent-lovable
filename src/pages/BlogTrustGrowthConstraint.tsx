@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
+import { Footer } from "@/components/Footer";
 import { Sparkles, ArrowLeft, Calendar } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ResourcesDropdown } from "@/components/ResourcesDropdown";
@@ -246,6 +247,7 @@ export default function BlogTrustGrowthConstraint() {
           </motion.article>
         </div>
       </main>
+      <Footer />
     </div>
   );
 }
