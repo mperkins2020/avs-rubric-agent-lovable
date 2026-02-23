@@ -72,6 +72,15 @@ const Index = () => {
     }
   }, [status, companyProfile, rubricScore, observability, pages, navigate]);
 
+  // Scroll to hash on mount
+  useEffect(() => {
+    if (window.location.hash) {
+      const id = window.location.hash.slice(1);
+      const el = document.getElementById(id);
+      if (el) setTimeout(() => el.scrollIntoView({ behavior: 'smooth' }), 100);
+    }
+  }, []);
+
   // Show error toast
   useEffect(() => {
     if (status === 'error' && error) {

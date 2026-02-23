@@ -229,12 +229,12 @@ export default function BlogTrustGrowthConstraint() {
             <div className="mt-16 border-t border-border/50 pt-12 text-center">
               <h3 className="text-2xl font-bold mb-4">See Your Trust Gaps</h3>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <Link to="/#hero">
-                  <Button size="lg" className="gap-2 w-full sm:w-auto">
+                <Button size="lg" className="gap-2 w-full sm:w-auto" asChild>
+                  <a href="/#hero">
                     <Sparkles className="w-4 h-4" />
                     Analyze My Product
-                  </Button>
-                </Link>
+                  </a>
+                </Button>
                 <a href="https://cal.com" target="_blank" rel="noopener noreferrer">
                   <Button variant="outline" size="lg" className="w-full sm:w-auto">
                     Book Diagnostic Session
