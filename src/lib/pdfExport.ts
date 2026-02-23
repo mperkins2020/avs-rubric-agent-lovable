@@ -8,6 +8,9 @@ interface ExportData {
   observability: ObservabilityData;
 }
 
+// jspdf-autotable augments the jsPDF instance with lastAutoTable at runtime
+type jsPDFWithAutoTable = jsPDF & { lastAutoTable: { finalY: number } };
+
 const COLORS = {
   primary: [79, 70, 229] as [number, number, number], // Indigo
   success: [34, 197, 94] as [number, number, number], // Green
@@ -120,7 +123,7 @@ export function exportToPDF({ companyProfile, rubricScore, observability }: Expo
     margin: { left: 20, right: 20 },
   });
 
-  yPos = (doc as jsPDF & { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 15;
+  yPos = (doc as jsPDFWithAutoTable).lastAutoTable.finalY + 15;
 
   // Observability Section
   checkPageBreak(30);
@@ -178,7 +181,7 @@ export function exportToPDF({ companyProfile, rubricScore, observability }: Expo
     },
   });
 
-  yPos = (doc as jsPDF & { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 15;
+  yPos = (doc as jsPDFWithAutoTable).lastAutoTable.finalY + 15;
 
   // Strengths Section
   checkPageBreak(50);
@@ -206,7 +209,7 @@ export function exportToPDF({ companyProfile, rubricScore, observability }: Expo
       },
       margin: { left: 20, right: 20 },
     });
-    yPos = (doc as jsPDF & { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 15;
+    yPos = (doc as jsPDFWithAutoTable).lastAutoTable.finalY + 15;
   }
 
   // Weaknesses Section
@@ -235,7 +238,7 @@ export function exportToPDF({ companyProfile, rubricScore, observability }: Expo
       },
       margin: { left: 20, right: 20 },
     });
-    yPos = (doc as jsPDF & { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 15;
+    yPos = (doc as jsPDFWithAutoTable).lastAutoTable.finalY + 15;
   }
 
   // Recommended Focus Section
