@@ -22,6 +22,19 @@ interface ScrapedPage {
   };
 }
 
+interface FirecrawlScrapeResponse {
+  success: boolean;
+  data?: {
+    markdown?: string;
+    metadata?: { title?: string; description?: string; keywords?: string };
+  };
+}
+
+interface FirecrawlMapResponse {
+  success: boolean;
+  links?: string[];
+}
+
 // Validate JWT authentication
 async function validateAuth(req: Request): Promise<{ userId: string } | null> {
   const authHeader = req.headers.get('authorization');
@@ -161,7 +174,7 @@ Deno.serve(async (req) => {
       }),
     });
 
-    let mainPageData: any;
+    let mainPageData: FirecrawlScrapeResponse;
     try {
       const mainPageText = await mainPageResponse.text();
       mainPageData = JSON.parse(mainPageText);
@@ -299,7 +312,7 @@ Deno.serve(async (req) => {
         }),
       });
 
-      let mapData: any = {};
+      let mapData: FirecrawlMapResponse = {};
       try {
         const mapText = await mapResponse.text();
         mapData = JSON.parse(mapText);
@@ -420,7 +433,7 @@ Deno.serve(async (req) => {
             }),
           });
 
-          let pageData: any;
+          let pageData: FirecrawlScrapeResponse;
           try {
             const pageText = await pageResponse.text();
             pageData = JSON.parse(pageText);

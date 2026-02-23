@@ -11,11 +11,13 @@ describe('cn()', () => {
   });
 
   it('handles conditional classes — truthy condition included', () => {
-    expect(cn('base', true && 'active')).toBe('base active');
+    const isActive = true as boolean;
+    expect(cn('base', isActive && 'active')).toBe('base active');
   });
 
   it('handles conditional classes — falsy condition excluded', () => {
-    expect(cn('base', false && 'never')).toBe('base');
+    const isActive = false as boolean;
+    expect(cn('base', isActive && 'never')).toBe('base');
   });
 
   it('handles undefined and null values without crashing', () => {

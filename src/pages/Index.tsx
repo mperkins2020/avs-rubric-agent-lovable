@@ -132,8 +132,8 @@ const Index = () => {
         toast.success("Check your email for a confirmation link.");
         setPendingUrl(null);
       }
-    } catch (err: any) {
-      toast.error(err.message || "Authentication failed");
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Authentication failed");
     } finally {
       setAuthLoading(false);
     }
