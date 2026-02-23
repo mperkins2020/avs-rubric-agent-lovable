@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect } from "react";
+import { Footer } from "@/components/Footer";
 import { useLocation, Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Sparkles, Loader2, Download } from "lucide-react";
@@ -417,6 +418,7 @@ export default function Results() {
         onClose={() => setShowEmailModal(false)}
         companyName={companyProfile.companyName}
       />
+      <Footer />
     </div>
   );
 }

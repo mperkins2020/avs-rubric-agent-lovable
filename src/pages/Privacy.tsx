@@ -1,4 +1,5 @@
 import { motion } from "framer-motion";
+import { Footer } from "@/components/Footer";
 import { ArrowLeft, Shield } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -166,6 +167,7 @@ const Privacy = () => {
           </div>
         </motion.div>
       </main>
+      <Footer />
     </div>
   );
 };

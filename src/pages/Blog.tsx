@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { Footer } from "@/components/Footer";
 import { motion } from "framer-motion";
 import { Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -42,6 +43,7 @@ export default function Blog() {
           </div>
         </div>
       </main>
+      <Footer />
     </div>
   );
 }
