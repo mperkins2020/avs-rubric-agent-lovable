@@ -454,7 +454,7 @@ export default function CaseStudyClay() {
         <Section className="text-center py-8">
           <h2 className="text-2xl font-bold mb-2">See Your Trust Gaps</h2>
           <div className="flex flex-col sm:flex-row gap-3 justify-center mt-6">
-            <Button onClick={() => navigate("/")} className="bg-gradient-primary gap-2">
+            <Button onClick={() => navigate("/#hero")} className="bg-gradient-primary gap-2">
               <Sparkles className="w-4 h-4" />
               Analyze My Product
             </Button>
