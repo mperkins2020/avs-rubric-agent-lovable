@@ -19,7 +19,7 @@ interface ExampleData {
 }
 
 const hexExample: ExampleData = {
-  label: "Using Hex as an example",
+  label: "Hex report example",
   company: "Hex",
   band: "Established",
   bandClass: "text-score-high bg-score-high/10 border-score-high/30",
@@ -50,7 +50,7 @@ const hexExample: ExampleData = {
 };
 
 const lovableExample: ExampleData = {
-  label: "Using Lovable as an example",
+  label: "Lovable report example",
   company: "Lovable",
   band: "Advanced",
   bandClass: "text-score-high bg-score-high/10 border-score-high/30",
