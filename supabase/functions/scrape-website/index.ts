@@ -246,15 +246,17 @@ Deno.serve(async (req) => {
     }
 
     const mainPage = mainPageData.data;
-    pages.push({
-      url: formattedUrl,
-      title: mainPage.metadata?.title || 'Home',
-      markdown: mainPage.markdown || '',
-      metadata: {
-        description: mainPage.metadata?.description,
-        keywords: mainPage.metadata?.keywords,
-      },
-    });
+    if (mainPage) {
+      pages.push({
+        url: formattedUrl,
+        title: mainPage.metadata?.title || 'Home',
+        markdown: mainPage.markdown || '',
+        metadata: {
+          description: mainPage.metadata?.description,
+          keywords: mainPage.metadata?.keywords,
+        },
+      });
+    }
 
     console.log('Main page scraped successfully');
 
@@ -340,8 +342,16 @@ Deno.serve(async (req) => {
       const registrableDomain = domainParts.length >= 2 ? domainParts.slice(-2).join('.') : rootDomain;
 
       const subdomainUrls: string[] = [];
+      const docsSubpaths = ['/pricing', '/introduction', '/introduction/plans-and-credits', '/getting-started', '/overview', '/guides', '/api-reference', '/quickstart'];
       for (const sub of helpSubdomains) {
-        subdomainUrls.push(`https://${sub}.${registrableDomain}`);
+        const subRoot = `https://${sub}.${registrableDomain}`;
+        subdomainUrls.push(subRoot);
+        // Add common docs subpaths for docs/help subdomains
+        if (['docs', 'help', 'support', 'developer', 'developers', 'kb'].includes(sub)) {
+          for (const subpath of docsSubpaths) {
+            subdomainUrls.push(subRoot + subpath);
+          }
+        }
       }
       
       const mapResponse = await fetch('https://api.firecrawl.dev/v1/map', {
@@ -357,7 +367,7 @@ Deno.serve(async (req) => {
         }),
       });
 
-      let mapData: FirecrawlMapResponse = {};
+      let mapData: FirecrawlMapResponse = { success: false };
       try {
         const mapText = await mapResponse.text();
         mapData = JSON.parse(mapText);
@@ -437,8 +447,8 @@ Deno.serve(async (req) => {
         // Help center subdomain root pages match automatically
       ];
 
-      // Also match subdomain roots (help.example.com, docs.example.com, etc.)
-      const subdomainRootPattern = new RegExp(`^https?://(${helpSubdomains.join('|')})\\.`, 'i');
+      // Match ALL pages under help/docs subdomains (not just roots)
+      const subdomainPattern = new RegExp(`^https?://(${helpSubdomains.join('|')})\\.`, 'i');
 
       // Exclusion patterns - removed terms/legal/changelog from exclusion since they're now priority
       const exclusionPatterns = [
@@ -454,7 +464,7 @@ Deno.serve(async (req) => {
           if (exclusionPatterns.some(pattern => pattern.test(link))) return false;
           if (link === formattedUrl || link === formattedUrl + '/') return false;
           // Community URLs always pass; others need to match priority patterns
-          return communityUrlSet.has(link) || subdomainRootPattern.test(link) || priorityPatterns.some(pattern => pattern.test(link));
+          return communityUrlSet.has(link) || subdomainPattern.test(link) || priorityPatterns.some(pattern => pattern.test(link));
         })
         .slice(0, safeMaxPages - 1);
 
