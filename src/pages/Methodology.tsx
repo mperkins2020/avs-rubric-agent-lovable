@@ -440,8 +440,8 @@ const Methodology = () => {
                 <p className="text-muted-foreground mb-4">
                   Questions about the methodology? Book a 30-min session to discuss your specific context.
                 </p>
-                <a href="https://calendly.com/valuetempo/30min" target="_blank" rel="noopener noreferrer">
-                  <Button className="bg-gradient-primary">Book a Session</Button>
+                <a href="https://calendly.com/mlhperkins/30min" target="_blank" rel="noopener noreferrer">
+                  <Button className="bg-gradient-primary">Book 30-min Session</Button>
                 </a>
               </section>
 

@@ -236,9 +236,9 @@ export default function BlogTrustGrowthConstraint() {
                     Analyze My Product
                   </a>
                 </Button>
-                <a href="https://cal.com" target="_blank" rel="noopener noreferrer">
+                <a href="https://calendly.com/mlhperkins/30min" target="_blank" rel="noopener noreferrer">
                   <Button variant="outline" size="lg" className="w-full sm:w-auto">
-                    Book Diagnostic Session
+                    Book 30-min Session
                   </Button>
                 </a>
               </div>

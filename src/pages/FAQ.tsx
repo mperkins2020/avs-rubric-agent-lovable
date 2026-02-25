@@ -394,7 +394,7 @@ const FAQ = () => {
             <p className="text-muted-foreground mb-4">Have questions? Book a 30-min diagnostic session.</p>
             <a href="https://calendly.com/mlhperkins/30min" target="_blank" rel="noopener noreferrer">
               <Button className="gap-2">
-                Book a Session <ExternalLink className="w-4 h-4" />
+                Book 30-min Session <ExternalLink className="w-4 h-4" />
               </Button>
             </a>
           </div>
