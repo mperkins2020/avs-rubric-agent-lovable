@@ -450,11 +450,29 @@ Deno.serve(async (req) => {
       // Match ALL pages under help/docs subdomains (not just roots)
       const subdomainPattern = new RegExp(`^https?://(${helpSubdomains.join('|')})\\.`, 'i');
 
+      // Check if a URL is a shallow path (1-2 segments) on the main domain
+      // These are almost always top-level product, feature, or use-case pages
+      const isShallowSameDomainPath = (link: string): boolean => {
+        try {
+          const linkUrl = new URL(link);
+          const linkHost = linkUrl.hostname.replace(/^www\./, '');
+          const baseHost = urlObj.hostname.replace(/^www\./, '');
+          if (linkHost !== baseHost) return false;
+          // Count path segments (ignore trailing slash)
+          const pathSegments = linkUrl.pathname.replace(/\/$/, '').split('/').filter(Boolean);
+          return pathSegments.length >= 1 && pathSegments.length <= 2;
+        } catch {
+          return false;
+        }
+      };
+
       // Exclusion patterns - removed terms/legal/changelog from exclusion since they're now priority
       const exclusionPatterns = [
         /\.(pdf|zip|png|jpg|jpeg|gif|svg|css|js|woff|woff2|ttf|eot)$/i,
-        /\/(blog|news|press|careers|jobs|cookie)\//i,
-        /\/(blog|news|press|careers|jobs|cookie)$/i,
+        /\/(blog|news|press|careers|jobs|cookie|author|tag|category)\//i,
+        /\/(blog|news|press|careers|jobs|cookie|author|tag|category)$/i,
+        /\/(wp-content|wp-admin|wp-includes|wp-json)\//i,
+        /\/(login|signup|sign-up|sign-in|register|cart|checkout)\b/i,
       ];
 
       // Community evidence URLs bypass priority filtering (they're pre-validated as useful)
@@ -463,8 +481,15 @@ Deno.serve(async (req) => {
         .filter((link: string) => {
           if (exclusionPatterns.some(pattern => pattern.test(link))) return false;
           if (link === formattedUrl || link === formattedUrl + '/') return false;
-          // Community URLs always pass; others need to match priority patterns
-          return communityUrlSet.has(link) || subdomainPattern.test(link) || priorityPatterns.some(pattern => pattern.test(link));
+          // Community URLs always pass
+          if (communityUrlSet.has(link)) return true;
+          // Subdomain help/docs pages always pass
+          if (subdomainPattern.test(link)) return true;
+          // Keyword-matched priority pages pass
+          if (priorityPatterns.some(pattern => pattern.test(link))) return true;
+          // Shallow same-domain paths (product/feature/use-case pages) pass
+          if (isShallowSameDomainPath(link)) return true;
+          return false;
         })
         .slice(0, safeMaxPages - 1);
 
