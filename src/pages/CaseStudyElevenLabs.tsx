@@ -362,8 +362,8 @@ export default function CaseStudyElevenLabs() {
               </a>
             </Button>
             <Button variant="outline" asChild>
-              <a href="mailto:hello@valuetempo.com" className="gap-2">
-                Book Diagnostic Session
+              <a href="https://calendly.com/mlhperkins/30min" target="_blank" rel="noopener noreferrer" className="gap-2">
+                Book 30-min Session
                 <ArrowRight className="w-4 h-4" />
               </a>
             </Button>
