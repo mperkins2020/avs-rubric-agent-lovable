@@ -11,7 +11,7 @@ import { DimensionCard } from "@/components/DimensionCard";
 import { StrengthsWeaknesses } from "@/components/StrengthsWeaknesses";
 import { ChatPanel } from "@/components/ChatPanel";
 import { InsiderPromptsPanel } from "@/components/InsiderPromptsPanel";
-import { EmailCaptureModal } from "@/components/EmailCaptureModal";
+
 import { FeedbackForm } from "@/components/FeedbackForm";
 import { scraperApi, type ScrapedPage } from "@/lib/api/scraper";
 import { exportToPDF } from "@/lib/pdfExport";
@@ -36,7 +36,7 @@ export default function Results() {
   const [observability, setObservability] = useState<ObservabilityData | null>(initialState?.observability ?? null);
   const [pages, setPages] = useState<ScrapedPage[]>(initialState?.pages ?? []);
   
-  const [showEmailModal, setShowEmailModal] = useState(false);
+  
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [isChatLoading, setIsChatLoading] = useState(false);
   const [isRerunning, setIsRerunning] = useState(false);
@@ -330,14 +330,6 @@ export default function Results() {
               <Download className="w-4 h-4 mr-2" />
               PDF
             </Button>
-            <Button 
-              onClick={() => setShowEmailModal(true)}
-              size="sm"
-              className="bg-gradient-primary"
-            >
-              <Sparkles className="w-4 h-4 mr-2" />
-              Full Plan
-            </Button>
           </div>
         </div>
       </header>
@@ -412,12 +404,6 @@ export default function Results() {
         </div>
       </main>
 
-      {/* Email Capture Modal */}
-      <EmailCaptureModal
-        isOpen={showEmailModal}
-        onClose={() => setShowEmailModal(false)}
-        companyName={companyProfile.companyName}
-      />
       <Footer />
     </div>
   );

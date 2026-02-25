@@ -10,8 +10,15 @@ export function Footer() {
           <span>© 2026 ValueTempo. All rights reserved.</span>
           <span className="hidden sm:inline text-border">|</span>
           <Link to="/privacy" className="hover:text-foreground transition-colors">
-            Privacy & Data Handling
+            Privacy Policy
           </Link>
+          <span className="hidden sm:inline text-border">|</span>
+          <a
+            href="mailto:info@valuetempo.com"
+            className="hover:text-foreground transition-colors"
+          >
+            Contact
+          </a>
           <span className="hidden sm:inline text-border">|</span>
           <EmailPreferences />
           <span className="hidden sm:inline text-border">|</span>
