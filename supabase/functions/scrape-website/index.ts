@@ -385,13 +385,17 @@ Deno.serve(async (req) => {
       const fallbackUrls = commonPaths.map(path => baseUrl + path);
       console.log('Adding fallback URLs for common pages');
       
-      // Combine: community evidence URLs first (highest priority), then subdomain roots, then fallbacks, then mapped links
-      const combinedLinks = [...new Set([...communityUrls, ...subdomainUrls, ...fallbackUrls, ...allLinks])];
+      // Combine and score candidates (avoid insertion-order bias toward docs subdomains)
+      const combinedLinks = [...new Set([...communityUrls, ...fallbackUrls, ...subdomainUrls, ...allLinks])];
       console.log(`Total combined links: ${combinedLinks.length} (${communityUrls.length} community, ${subdomainUrls.length} subdomain probes)`);
 
       // Filter for high-value pages
       const priorityPatterns = [
         /\/pricing\b/i,
+        /\/plans?\b/i,
+        /\/billing\b/i,
+        /\/subscription\b/i,
+        /\/usage\b/i,
         /\/about\b/i,
         /\/features?\b/i,
         /\/products?\b/i,
@@ -425,15 +429,8 @@ Deno.serve(async (req) => {
         /\/terms\b/i,
         /\/legal\b/i,
         /\/privacy\b/i,
-        /\/billing\b/i,
-        /\/subscription\b/i,
-        /\/plans\b/i,
         /\/credits\b/i,
         // Billing/usage-related keyword patterns
-        /billing/i,
-        /usage/i,
-        /limits/i,
-        /credits/i,
         /overage/i,
         /caps?\b/i,
         /alerts?\b/i,
@@ -444,11 +441,24 @@ Deno.serve(async (req) => {
         /metering/i,
         /cost/i,
         /spend/i,
-        // Help center subdomain root pages match automatically
       ];
 
       // Match ALL pages under help/docs subdomains (not just roots)
       const subdomainPattern = new RegExp(`^https?://(${helpSubdomains.join('|')})\\.`, 'i');
+
+      const highIntentMainDomainPaths = new Set([
+        '/pricing',
+        '/plans',
+        '/plan',
+        '/billing',
+        '/usage',
+        '/subscription',
+        '/features',
+        '/feature',
+        '/product',
+        '/products',
+        '/solutions',
+      ]);
 
       // Check if a URL is a shallow path (1-2 segments) on the main domain
       // These are almost always top-level product, feature, or use-case pages
@@ -466,6 +476,22 @@ Deno.serve(async (req) => {
         }
       };
 
+      const getNormalizedPath = (link: string): string => {
+        try {
+          return new URL(link).pathname.replace(/\/$/, '').toLowerCase() || '/';
+        } catch {
+          return '/';
+        }
+      };
+
+      const isSameDomain = (link: string): boolean => {
+        try {
+          return new URL(link).hostname.replace(/^www\./, '') === urlObj.hostname.replace(/^www\./, '');
+        } catch {
+          return false;
+        }
+      };
+
       // Exclusion patterns - removed terms/legal/changelog from exclusion since they're now priority
       const exclusionPatterns = [
         /\.(pdf|zip|png|jpg|jpeg|gif|svg|css|js|woff|woff2|ttf|eot)$/i,
@@ -477,21 +503,37 @@ Deno.serve(async (req) => {
 
       // Community evidence URLs bypass priority filtering (they're pre-validated as useful)
       const communityUrlSet = new Set(communityUrls);
-      const priorityLinks = combinedLinks
+      const scoredLinks = combinedLinks
         .filter((link: string) => {
           if (exclusionPatterns.some(pattern => pattern.test(link))) return false;
           if (link === formattedUrl || link === formattedUrl + '/') return false;
-          // Community URLs always pass
+
           if (communityUrlSet.has(link)) return true;
-          // Subdomain help/docs pages always pass
-          if (subdomainPattern.test(link)) return true;
-          // Keyword-matched priority pages pass
-          if (priorityPatterns.some(pattern => pattern.test(link))) return true;
-          // Shallow same-domain paths (product/feature/use-case pages) pass
           if (isShallowSameDomainPath(link)) return true;
+          if (priorityPatterns.some(pattern => pattern.test(link))) return true;
+          if (subdomainPattern.test(link)) return true;
           return false;
         })
-        .slice(0, safeMaxPages - 1);
+        .map((link: string) => {
+          const path = getNormalizedPath(link);
+          const sameDomain = isSameDomain(link);
+          const shallowMainDomain = sameDomain && isShallowSameDomainPath(link);
+          const highIntentMainDomain = sameDomain && highIntentMainDomainPaths.has(path);
+          const keywordMatch = priorityPatterns.some(pattern => pattern.test(link));
+          const docsSubdomain = subdomainPattern.test(link);
+
+          let score = 0;
+          if (communityUrlSet.has(link)) score += 1000;
+          if (highIntentMainDomain) score += 900;
+          if (shallowMainDomain) score += 500;
+          if (keywordMatch) score += 250;
+          if (docsSubdomain) score += 100;
+
+          return { link, score };
+        })
+        .sort((a, b) => b.score - a.score || a.link.localeCompare(b.link));
+
+      const priorityLinks = scoredLinks.map(({ link }) => link).slice(0, safeMaxPages - 1);
 
       console.log(`Selected ${priorityLinks.length} priority pages to scrape`);
       console.log('Priority links:', priorityLinks);
