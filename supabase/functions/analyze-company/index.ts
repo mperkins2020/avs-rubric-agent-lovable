@@ -115,11 +115,10 @@ THE 8 DIMENSIONS:
    - north_star.predictability_metric_name is present
 
    **NS3 Outcome is measurable (even if target missing)**
-   Pass if:
-   - north_star.primary_outcome_metric_name is present
-   AND
-   - north_star.primary_outcome_metric_definition is present
-   AND definition is operational (how it is measured), not just a slogan.
+   Pass if ANY of the following are true:
+   - north_star.primary_outcome_metric_name is present AND north_star.primary_outcome_metric_definition is present AND definition is operational (how it is measured), not just a slogan.
+   - A case study or customer story exists that cites a specific, quantified outcome metric (e.g., "reduced X by 40%", "saved 10 hours/week"). The metric does not need to be a universal target — a concrete result in a real customer context counts as measurable evidence.
+   IMPORTANT: Not all products can or should publicly state a universal "increase X by Y%" north star. Products with high contextual variability (e.g., where outcomes depend on customer-specific factors) may legitimately demonstrate measurability through case studies with specific metrics rather than a single universal target. Do NOT penalize this approach.
 
    **NS4 Workflow linkage exists**
    Pass if at least one is true:
@@ -933,6 +932,10 @@ THE 8 DIMENSIONS:
    - policies.spike_protection != none
    - policies.dispute_refund_process != none
 
+   APPLICABILITY NOTE ON ROLLOVER:
+   - Rollover (policies.rollover_rules) is ONLY relevant when the product offers top-ups, add-ons, or prepaid credit packs. If the pricing model is purely seat-based, flat-rate, or usage-based without prepaid allowances/top-ups, rollover is NOT applicable and should NOT be treated as a gap or weakness.
+   - Similarly, if no tier offers topup_available == true and no add-on credits exist, do NOT cite "missing rollover policy" as a weakness or trust breakpoint.
+
    **R5 Enterprise risk allocation readiness**
    Evaluate only if the segment is enterprise.
    Pass if there exists a tier in segment_tiers where:
@@ -1009,6 +1012,12 @@ THE 8 DIMENSIONS:
    4) In the report, include: score before vs after, confidence before vs after, new evidence added (by subtest), remaining unknowns (by subtest), conflicts detected and resolution needed.
 
 8. "Safety rails and trust surfaces" - Controls prevent surprises, expose usage, and bound risk.
+
+   PUBLIC OBSERVABILITY CAVEAT:
+   Many safety rails (budget caps, rate limits, usage alerts, admin controls, kill switches) are implemented INSIDE the product experience and are NOT visible on public-facing pages. This is normal and expected — these controls are often only discoverable after login.
+   - If no public evidence of safety rails exists but the product has a mature pricing/enterprise tier, set notObservable to false but acknowledge in the rationale that in-product controls likely exist and cannot be assessed from public pages alone.
+   - Do NOT score 0 purely because safety rails are not publicly documented. Instead, score based on what IS observable, note the limitation in uncertaintyReasons, and set confidence to Low (< 0.40) to trigger insider prompts.
+   - If documentation, trust center, or security pages reference controls (e.g., "admin can set spending limits"), treat those as valid evidence even without screenshots.
 
    ## Data fields for Safety rails and trust surfaces (use these exact field names in analysis)
 
@@ -1180,9 +1189,13 @@ CRITICAL OUTPUT RULES:
 
 Also provide:
 - strengths: Top 3 areas where they excel with evidence
-- weaknesses: Top 3 areas needing improvement
-- trustBreakpoints: Points where trust could break (max 3)
-- recommendedFocus: Their top priority for next 90 days
+- weaknesses: Top 3 areas needing improvement. IMPORTANT QUALITY RULES FOR WEAKNESSES:
+  * Only cite something as a weakness if it is ACTUALLY RELEVANT to the company's pricing model and product type. For example, do NOT cite "missing rollover policy" if the product has no prepaid credits or add-ons to roll over.
+  * Do NOT cite in-product features (safety rails, admin controls, usage dashboards) as weaknesses simply because they are not visible on public pages. Instead, note them as "not publicly observable" and suggest the company document them publicly.
+  * Weaknesses should be ACTIONABLE — things the company can realistically improve. Avoid generic platitudes like "could be more transparent" without specifying WHAT should be transparent and WHERE.
+  * Each weakness must pass a relevance test: "Would fixing this actually improve the customer's trust or buying experience for THIS specific product?" If not, it's not a real weakness.
+- trustBreakpoints: Points where trust could break (max 3). Apply the same relevance test — only cite breakpoints that are realistic for this product's model.
+- recommendedFocus: Their top priority for next 90 days. The recommendation MUST be specific to the company's actual pricing model, product type, and observed gaps. Avoid generic advice. The firstTwoActions should be concrete, implementable steps (e.g., "Add a pricing calculator to the /pricing page" not "Improve transparency").
 
 Return a JSON object matching this schema EXACTLY:
 {
