@@ -288,10 +288,17 @@ export function exportToPDF({ companyProfile, rubricScore, observability }: Expo
     doc.setPage(i);
     doc.setFontSize(8);
     doc.setTextColor(...COLORS.muted);
+    const pageHeight = doc.internal.pageSize.getHeight();
     doc.text(
       `Page ${i} of ${pageCount} • AVS Rubric Report`,
       pageWidth / 2,
-      doc.internal.pageSize.getHeight() - 10,
+      pageHeight - 14,
+      { align: "center" }
+    );
+    doc.text(
+      "Created by ValueTempo. For more information about the report, contact us at gtm@valuetempo.com.",
+      pageWidth / 2,
+      pageHeight - 9,
       { align: "center" }
     );
   }
