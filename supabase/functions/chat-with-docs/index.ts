@@ -125,9 +125,24 @@ Deno.serve(async (req) => {
 
     const { message, history, context }: ChatRequest = await req.json();
 
-    if (!message) {
+    if (!message || typeof message !== 'string') {
       return new Response(
         JSON.stringify({ success: false, error: 'Message is required' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Input validation
+    if (message.length > 2000) {
+      return new Response(
+        JSON.stringify({ success: false, error: 'Message too long (max 2000 chars)' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    if (history && history.length > 50) {
+      return new Response(
+        JSON.stringify({ success: false, error: 'Conversation history too long' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
