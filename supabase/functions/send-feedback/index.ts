@@ -53,17 +53,32 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Store in database
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-    );
+    // Input length validation
+    if (String(company_name).length > 200) {
+      return new Response(
+        JSON.stringify({ error: "Company name too long" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+    if (feedback && String(feedback).length > 2000) {
+      return new Response(
+        JSON.stringify({ error: "Feedback too long (max 2000 chars)" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+    if (email && String(email).length > 255) {
+      return new Response(
+        JSON.stringify({ error: "Email too long" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
-    const { error: dbError } = await supabase.from("report_feedback").insert({
-      company_name,
+    // Store in database using the authenticated user's client (respects RLS)
+    const { error: dbError } = await authSupabase.from("report_feedback").insert({
+      company_name: String(company_name).substring(0, 200),
       rating,
-      feedback: feedback || null,
-      email: email || null,
+      feedback: feedback ? String(feedback).substring(0, 2000) : null,
+      email: email ? String(email).substring(0, 255) : null,
     });
 
     if (dbError) {
