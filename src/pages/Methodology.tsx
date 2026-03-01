@@ -17,6 +17,7 @@ const tocSections = [
   { id: "trust-stack", label: "The Trust Stack" },
   { id: "dimensions", label: "The Eight Dimensions" },
   { id: "how-it-works", label: "How It Works" },
+  { id: "scoring", label: "The 0–2 Scoring System" },
   { id: "confidence", label: "Confidence Labels" },
   { id: "analytics-miss", label: "What Analytics Miss" },
   { id: "why-ai", label: "Why This Matters for AI" },
@@ -287,17 +288,20 @@ const Methodology = () => {
               <section id="how-it-works" className="scroll-mt-24 mb-16">
                 <SectionHeading icon={<BookOpen className="w-5 h-5" />} title="How It Works" />
 
-                <h3 className="text-lg font-semibold mb-3 mt-6">Input</h3>
+                <h3 className="text-lg font-semibold mb-3 mt-6">Input: Publicly Observable Signals</h3>
                 <p className="text-muted-foreground mb-4 leading-relaxed">
-                  You enter your company URL. The AVS Rubric Agent evaluates publicly visible signals across your digital presence:
+                  You enter your company URL. The AVS Rubric Agent crawls up to 25 pages across your public digital presence, prioritizing high-intent surfaces using a weighted scoring engine:
                 </p>
                 <div className="grid sm:grid-cols-2 gap-3 mb-6">
                   {[
-                    ["Pricing page", "Structure, transparency, unit definitions, tier breakdowns"],
-                    ["Documentation", "Cost calculators, usage examples, constraint explanations"],
-                    ["Product outputs", "Publicly shared artifacts (e.g., shared apps, presentations)"],
-                    ["Terms of service", "Overage policies, limit behaviors, refund terms"],
-                    ["Dashboard screenshots", "Usage tracking visibility via public demo or screenshots"],
+                    ["Homepage", "Primary positioning, outcome claims, ICP signals"],
+                    ["Pricing page", "Tier structure, unit definitions, overage behavior, billing options"],
+                    ["Documentation & API reference", "Cost calculators, usage examples, metering details, quickstarts"],
+                    ["Blog & changelog", "Product updates, case studies with quantified outcomes"],
+                    ["Trust center", "Security controls, compliance certifications, audit surfaces"],
+                    ["Use cases & case studies", "Workflow specificity, customer outcomes, proof artifacts"],
+                    ["Terms of service", "Overage policies, limit behaviors, renewal/cancellation terms"],
+                    ["Community & investor content", "Public demos, architecture posts, community evidence"],
                   ].map(([title, desc]) => (
                     <div key={title} className="p-3 rounded-lg bg-muted/40 border border-border/40">
                       <p className="text-sm font-medium text-foreground">{title}</p>
@@ -305,28 +309,118 @@ const Methodology = () => {
                     </div>
                   ))}
                 </div>
-                <p className="text-muted-foreground mb-4 text-sm leading-relaxed">
-                  The rubric analyzes what's already public and generates the assessment automatically — no manual questionnaire.
+
+                <h4 className="text-sm font-semibold mb-3 text-foreground">Evidence Quality Rules</h4>
+                <p className="text-muted-foreground mb-3 text-sm leading-relaxed">
+                  Not all public content counts as evidence. The rubric enforces strict quality filters:
                 </p>
+                <ul className="space-y-1.5 text-sm text-muted-foreground mb-4 pl-4">
+                  <li>• <strong className="text-foreground">Rejected as evidence:</strong> copyright footers, cookie banners, navigation menus, social media links, generic legal boilerplate, partner logos without context, job postings, and auto-generated content.</li>
+                  <li>• <strong className="text-foreground">Marketing slogans rejected</strong> unless accompanied by specific, concrete details (metrics, features, workflows, pricing numbers).</li>
+                  <li>• <strong className="text-foreground">Every citation must be specific:</strong> page + concrete fact (e.g., "Pricing page lists 3 tiers: Free, Pro ($49/mo), Enterprise (custom)").</li>
+                  <li>• <strong className="text-foreground">Duplicate evidence is counted once</strong> — the same fact on multiple pages does not inflate confidence.</li>
+                </ul>
                 <Callout>
                   The report reflects what your prospects can actually see — not what you believe you're communicating. This is the trust infrastructure gap.
                 </Callout>
 
                 <h3 className="text-lg font-semibold mb-3 mt-8">Output</h3>
                 <p className="text-muted-foreground mb-4 leading-relaxed">
-                  You receive a real-time trust infrastructure score (0–100%) with:
+                  You receive a trust infrastructure report with a total score (0–16, mapped to a maturity band) including:
                 </p>
                 <ul className="space-y-2 text-sm text-muted-foreground mb-4">
                   {[
-                    ["Overall AVS Score", "Aggregate trust infrastructure strength"],
-                    ["Dimension breakdown", "Scores for each of the 8 dimensions"],
-                    ["Gap analysis", "Specific findings on weak legibility and predictability"],
-                    ["Confidence labels", "How certain each assessment is"],
-                    ["Next steps", "Prioritized actions to close trust gaps"],
+                    ["Overall AVS Score", "Sum of 8 dimension scores (each 0–2), categorized as Nascent, Emerging, Established, or Advanced"],
+                    ["Dimension breakdown", "Individual 0–2 scores with subtest-level detail for each of the 8 dimensions"],
+                    ["Strengths & weaknesses", "What's working, what's missing, and what it enables or blocks"],
+                    ["Trust breakpoints", "Specific gaps that are actively blocking trust and growth"],
+                    ["Confidence labels", "How certain each assessment is, based on evidence quality"],
+                    ["90-day focus", "Prioritized actions with measurable outcomes to close trust gaps"],
                   ].map(([b, d]) => (
                     <li key={b}><strong className="text-foreground">{b}</strong> — {d}</li>
                   ))}
                 </ul>
+              </section>
+
+              {/* ─── The 0–2 Scoring System ─── */}
+              <section id="scoring" className="scroll-mt-24 mb-16">
+                <SectionHeading icon={<BarChart3 className="w-5 h-5" />} title="The 0–2 Scoring System" />
+                <p className="text-muted-foreground mb-6 leading-relaxed">
+                  Each dimension is scored on a <strong className="text-foreground">0–2 scale</strong> using a deterministic, subtest-based methodology. Scores are not subjective ratings — they are computed from evidence.
+                </p>
+
+                <h3 className="text-lg font-semibold mb-3">Score Definitions</h3>
+                <div className="space-y-3 mb-8">
+                  {[
+                    { score: "0", label: "Not Present", color: "border-red-500/40 bg-red-500/5", meaning: "The trust signal is absent or too vague to be actionable. Fewer than 3 of 6 subtests pass.", action: "This is a critical gap — prospects cannot evaluate this aspect of your product." },
+                    { score: "1", label: "Emerging", color: "border-yellow-500/40 bg-yellow-500/5", meaning: "Partial evidence exists but key elements are missing. 3–4 of 6 subtests pass, or a hard gate caps the score.", action: "Foundation exists but isn't complete enough to build trust at scale." },
+                    { score: "2", label: "Strong", color: "border-green-500/40 bg-green-500/5", meaning: "Clear, specific, and verifiable evidence across the dimension. 5–6 of 6 subtests pass with no gate failures.", action: "This dimension is actively building trust and enabling growth." },
+                  ].map((s) => (
+                    <div key={s.score} className={`p-4 rounded-lg border ${s.color}`}>
+                      <div className="flex items-baseline gap-3 mb-1">
+                        <span className="font-mono font-bold text-foreground text-lg">{s.score}</span>
+                        <span className="font-semibold text-foreground text-sm">{s.label}</span>
+                      </div>
+                      <p className="text-sm text-muted-foreground">{s.meaning}</p>
+                      <p className="text-sm text-foreground font-medium mt-1">{s.action}</p>
+                    </div>
+                  ))}
+                </div>
+
+                <h3 className="text-lg font-semibold mb-3">How Scores Are Computed</h3>
+                <p className="text-muted-foreground mb-4 leading-relaxed">
+                  Each dimension uses <strong className="text-foreground">6 subtests</strong> (5 for Buyer & Budget Alignment). Each subtest is binary: pass (1) or fail (0). The subtests evaluate specific, observable criteria — not subjective impressions.
+                </p>
+
+                <div className="p-4 rounded-lg bg-muted/40 border border-border/40 mb-6">
+                  <p className="text-sm font-semibold text-foreground mb-2">Points → Score Mapping</p>
+                  <div className="grid grid-cols-3 gap-3 text-sm">
+                    <div className="p-2 rounded bg-red-500/10 text-center">
+                      <p className="font-mono font-bold text-foreground">0–2 pts</p>
+                      <p className="text-muted-foreground text-xs">Score = 0</p>
+                    </div>
+                    <div className="p-2 rounded bg-yellow-500/10 text-center">
+                      <p className="font-mono font-bold text-foreground">3–4 pts</p>
+                      <p className="text-muted-foreground text-xs">Score = 1</p>
+                    </div>
+                    <div className="p-2 rounded bg-green-500/10 text-center">
+                      <p className="font-mono font-bold text-foreground">5–6 pts</p>
+                      <p className="text-muted-foreground text-xs">Score = 2</p>
+                    </div>
+                  </div>
+                </div>
+
+                <h3 className="text-lg font-semibold mb-3">Hard Gates</h3>
+                <p className="text-muted-foreground mb-4 leading-relaxed">
+                  Certain subtests act as <strong className="text-foreground">hard gates</strong> — if they fail, the dimension score is capped regardless of how many other subtests pass. Gates enforce that critical capabilities (like auditability, measurability, or stated outcomes) cannot be bypassed.
+                </p>
+                <div className="p-4 rounded-lg bg-muted/40 border border-border/40 mb-6">
+                  <p className="text-sm text-muted-foreground leading-relaxed">
+                    <strong className="text-foreground">Example:</strong> In the "Value Unit" dimension, if the unit definition lacks auditability (no dashboard breakdown or export logs), the score is capped at 1 — even if all other subtests pass. A billable unit that customers can't verify isn't production-grade.
+                  </p>
+                </div>
+
+                <h3 className="text-lg font-semibold mb-3">Overall Score & Maturity Bands</h3>
+                <p className="text-muted-foreground mb-4 leading-relaxed">
+                  The total AVS score is the sum of all 8 dimension scores (max 16). This maps to a maturity band:
+                </p>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+                  {[
+                    { band: "Nascent", range: "0–4", color: "bg-red-500/10 border-red-500/30" },
+                    { band: "Emerging", range: "5–8", color: "bg-yellow-500/10 border-yellow-500/30" },
+                    { band: "Established", range: "9–12", color: "bg-blue-500/10 border-blue-500/30" },
+                    { band: "Advanced", range: "13–16", color: "bg-green-500/10 border-green-500/30" },
+                  ].map((b) => (
+                    <div key={b.band} className={`p-3 rounded-lg border text-center ${b.color}`}>
+                      <p className="font-semibold text-foreground text-sm">{b.band}</p>
+                      <p className="font-mono text-xs text-muted-foreground">{b.range}</p>
+                    </div>
+                  ))}
+                </div>
+
+                <Callout>
+                  Scores are computed from an evidence ledger — every fact is tracked with its source, reliability, and page reference. This makes scores reproducible and auditable.
+                </Callout>
               </section>
 
               {/* ─── Confidence Labels ─── */}
