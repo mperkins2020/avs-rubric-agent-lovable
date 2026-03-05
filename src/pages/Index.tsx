@@ -277,12 +277,12 @@ const Index = () => {
           </p>
 
           <h1 id="hero" className="text-3xl sm:text-4xl md:text-6xl font-bold mb-4 leading-tight">
-            Score Your{" "}
-            <span className="gradient-text">AI Product's Trust</span>
+            Close Trust Gaps{" "}
+            <span className="gradient-text">Faster</span>
           </h1>
 
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto mb-12">
-            Results in under one minute
+            Our open rubric scores your AI product across 8 trust dimensions in under a minute — so you know exactly where to improve.
           </p>
 
           {/* URL Input */}
