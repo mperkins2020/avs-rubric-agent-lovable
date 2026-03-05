@@ -64,8 +64,7 @@ export default function CaseStudyElevenLabs() {
           <p className="text-muted-foreground leading-relaxed">
             ElevenLabs has built exceptional AI technology with strong commercial infrastructure — clear value units, transparent overage pricing, well-aligned buyer tiers. Yet cost predictability complaints dominate customer feedback, enterprise deals extend beyond 120 days, and expansion velocity lags 40% below potential.
           </p>
-          <p className="text-muted-foreground leading-relaxed mt-4 font-medium">The paradox: A 75% AVS trust score should indicate strong trust infrastructure. Why do "surprise bill" and "can't predict costs" complaints persist?
-
+          <p className="text-muted-foreground leading-relaxed mt-4 font-medium">The paradox: A 75% AVS trust score should indicate strong trust infrastructure. Why do "surprise bill" and "can't predict costs" complaints persist? Our analysis estimates closing these gaps could drive a <span className="text-foreground font-semibold">2–7% uplift in ARR</span>.
           </p>
         </Section>
 

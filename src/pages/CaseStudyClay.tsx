@@ -65,7 +65,7 @@ export default function CaseStudyClay() {
             Clay has built the defining GTM platform of the AI era with exceptional product-market fit, explosive growth (6x in 2024, tripling in 2025), and a credit-based model that clearly maps value to usage. Yet credit consumption complaints dominate user feedback, teams burn $500-$800 in their first week learning the platform, and failed lookups still cost credits. The infrastructure that made Clay scale is the same infrastructure creating trust friction at the expansion layer.
           </p>
           <p className="text-muted-foreground leading-relaxed mt-4 font-medium">
-            At $100M ARR, even small efficiency gaps represent millions in addressable revenue.
+            At $100M ARR, even small efficiency gaps represent millions in addressable revenue. Our analysis estimates closing the identified trust gaps could drive a <span className="text-foreground font-semibold">2–7% uplift in ARR</span>.
           </p>
         </Section>
 
