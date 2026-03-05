@@ -24,28 +24,32 @@ export function TotalScoreCard({
           color: "text-score-high",
           bgColor: "bg-score-high/10",
           borderColor: "border-score-high/30",
-          description: "Exceptional value system maturity",
+          description: "Enterprise-ready trust infrastructure — supports fastest sales cycles",
+          outcome: "Companies at this level typically see 5–7% higher net revenue retention",
         };
       case "Established":
         return {
           color: "text-score-high",
           bgColor: "bg-score-high/10",
           borderColor: "border-score-high/30",
-          description: "Strong foundation with room to optimize",
+          description: "Strong foundation — closing remaining gaps can unlock 2–5% ARR uplift",
+          outcome: "Fastest path to revenue impact: fix the 1–2 gaps holding back expansion",
         };
       case "Emerging":
         return {
           color: "text-score-medium",
           bgColor: "bg-score-medium/10",
           borderColor: "border-score-medium/30",
-          description: "Key elements in place, gaps to address",
+          description: "Key elements in place — structural gaps are costing you deals",
+          outcome: "Addressing top gaps typically drives 3–7% improvement in conversion",
         };
       default:
         return {
           color: "text-score-low",
           bgColor: "bg-score-low/10",
           borderColor: "border-score-low/30",
-          description: "Early stage, significant work ahead",
+          description: "Early stage — trust gaps are likely your biggest growth constraint",
+          outcome: "Foundational fixes here have outsized impact on sales velocity",
         };
     }
   };
@@ -82,6 +86,9 @@ export function TotalScoreCard({
               </div>
               <p className="text-sm text-muted-foreground">
                 {config.description}
+              </p>
+              <p className="text-xs text-primary/70 font-medium mt-1">
+                {config.outcome}
               </p>
             </div>
 
