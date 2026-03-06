@@ -137,7 +137,18 @@ export function exportToPDF({ companyProfile, rubricScore, observability }: Expo
   doc.text(`Level: ${observability.level} • Confidence: ${observability.confidenceScore}%`, 20, yPos);
   yPos += 10;
   doc.text(`Pages analyzed: ${observability.pagesUsed.length}`, 20, yPos);
-  yPos += 15;
+  yPos += 8;
+
+  // List each page used
+  observability.pagesUsed.forEach((page) => {
+    checkPageBreak(6);
+    doc.setFontSize(8);
+    doc.setTextColor(...COLORS.muted);
+    const pageLine = doc.splitTextToSize(`• ${page}`, pageWidth - 50);
+    doc.text(pageLine, 25, yPos);
+    yPos += pageLine.length * 4 + 2;
+  });
+  yPos += 8;
 
   // Dimension Scores Table
   checkPageBreak(50);
