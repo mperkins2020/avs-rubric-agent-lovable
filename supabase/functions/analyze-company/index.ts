@@ -1948,6 +1948,41 @@ ${truncatedContent}`;
       /(1 credit per message|cost of each message|message history|three dots)/i.test(item)
     );
 
+    // Generic safety net helper: if LLM scored 0 but we have sufficient digest evidence, floor at 1
+    const applyDigestFloor = (
+      dimension: { dimension: string; score: number; confidence: number; notObservable: boolean; rationale: string; observed: string[]; sourceEvidence?: Array<{ url: string; snippet: string }>; uncertaintyReasons: string[]; missingInsiderPrompts?: Array<{ question: string; fieldPaths: string[] }> },
+      digestBucket: string[],
+      minEvidence: number,
+      floorConfidence: number,
+      floorRationale: string,
+      uncertaintyNote: string,
+    ) => {
+      const observed = Array.isArray(dimension.observed) ? [...dimension.observed] : [];
+      const uncertaintyReasons = Array.isArray(dimension.uncertaintyReasons) ? [...dimension.uncertaintyReasons] : [];
+      const mergedObserved = [...observed, ...digestBucket].slice(0, 4);
+      const mergedSourceEvidence = normalizeSourceEvidence(dimension.sourceEvidence, mergedObserved);
+
+      if (dimension.score === 0 && digestBucket.length >= minEvidence) {
+        return {
+          ...dimension,
+          score: 1,
+          confidence: Math.max(Number(dimension.confidence) || 0, floorConfidence),
+          notObservable: false,
+          rationale: floorRationale,
+          observed: mergedObserved,
+          sourceEvidence: mergedSourceEvidence,
+          uncertaintyReasons: [...uncertaintyReasons, uncertaintyNote].slice(0, 2),
+        };
+      }
+
+      return {
+        ...dimension,
+        observed: mergedObserved.length > observed.length ? mergedObserved : observed,
+        sourceEvidence: mergedSourceEvidence,
+        uncertaintyReasons,
+      };
+    };
+
     const dimensionScores = ((rubricData.dimensionScores || []) as Array<{
       dimension: string;
       score: number;
@@ -1963,6 +1998,7 @@ ${truncatedContent}`;
       const uncertaintyReasons = Array.isArray(dimension.uncertaintyReasons) ? [...dimension.uncertaintyReasons] : [];
       const sourceEvidence = normalizeSourceEvidence(dimension.sourceEvidence, observed);
 
+      // === Product north star ===
       if (dimension.dimension === 'Product north star' && dimension.score === 0 && evidenceDigest.northStar.length >= 2) {
         const mergedObserved = [...observed, ...evidenceDigest.northStar].slice(0, 4);
         const mergedSourceEvidence = normalizeSourceEvidence(sourceEvidence, mergedObserved);
@@ -1979,8 +2015,23 @@ ${truncatedContent}`;
         };
       }
 
+      // === ICP and job clarity ===
+      if (dimension.dimension === 'ICP and job clarity') {
+        return applyDigestFloor(dimension, evidenceDigest.icpJob, 2, 0.5,
+          'Public pages describe target users, use cases, and workflows, supporting emerging ICP and job clarity even though explicit non-fit boundaries and detailed success states are not publicly stated.',
+          'Explicit non-fit criteria and testable success states are not fully public.');
+      }
+
+      // === Buyer and budget alignment ===
+      if (dimension.dimension === 'Buyer and budget alignment') {
+        return applyDigestFloor(dimension, evidenceDigest.buyerBudget, 2, 0.5,
+          'Public pricing pages show tier structures, payment options, and enterprise features, supporting emerging buyer and budget alignment even though segment-level approval readiness details are incomplete.',
+          'Segment-specific approval readiness and commercial terms details are not fully documented on public pages.');
+      }
+
+      // === Value unit ===
       if (dimension.dimension === 'Value unit') {
-        const mergedObserved = [...observed, ...evidenceDigest.costDriver].slice(0, 5);
+        const mergedObserved = [...observed, ...evidenceDigest.valueUnit, ...evidenceDigest.costDriver].slice(0, 5);
         const mergedSourceEvidence = normalizeSourceEvidence(sourceEvidence, mergedObserved);
 
         if (hasExplicitCreditFaqSignals && dimension.score === 0) {
@@ -2022,6 +2073,7 @@ ${truncatedContent}`;
         };
       }
 
+      // === Cost driver mapping ===
       if (dimension.dimension === 'Cost driver mapping') {
         const mergedObserved = [...observed, ...evidenceDigest.costDriver].slice(0, 4);
         const mergedSourceEvidence = normalizeSourceEvidence(sourceEvidence, mergedObserved);
@@ -2056,6 +2108,27 @@ ${truncatedContent}`;
           sourceEvidence: mergedSourceEvidence,
           uncertaintyReasons,
         };
+      }
+
+      // === Pools and packaging ===
+      if (dimension.dimension === 'Pools and packaging') {
+        return applyDigestFloor(dimension, evidenceDigest.poolsPackaging, 2, 0.5,
+          'Public pricing pages show tier structures, included allowances, and add-on/top-up options, supporting emerging pools and packaging even though detailed pool scope and allocation rules are not fully public.',
+          'Pool scope, allocation mode, and rollover rules are not fully documented on public pages.');
+      }
+
+      // === Overages and risk allocation ===
+      if (dimension.dimension === 'Overages and risk allocation') {
+        return applyDigestFloor(dimension, evidenceDigest.overagesRisk, 2, 0.45,
+          'Public pages reference overage behavior, spending limits, or cap mechanisms, supporting emerging risk allocation even though detailed dispute processes and tail protection are not fully documented.',
+          'Detailed dispute/refund processes, grace buffers, and spike protection mechanisms are not publicly documented.');
+      }
+
+      // === Safety rails and trust surfaces ===
+      if (dimension.dimension === 'Safety rails and trust surfaces') {
+        return applyDigestFloor(dimension, evidenceDigest.safetyRails, 2, 0.4,
+          'Public pages reference usage dashboards, alerts, admin controls, or rate limits, supporting emerging safety rails even though in-product control details are not publicly visible.',
+          'Most safety rails (budget caps, kill switches, admin controls) are typically in-product and not publicly documented.');
       }
 
       return {
