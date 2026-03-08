@@ -1549,25 +1549,41 @@ Deno.serve(async (req) => {
     const collectHighSignalEvidence = (inputPages: ScrapedPage[]) => {
       const northStar: string[] = [];
       const costDriver: string[] = [];
+      const icpJob: string[] = [];
+      const buyerBudget: string[] = [];
+      const valueUnit: string[] = [];
+      const poolsPackaging: string[] = [];
+      const overagesRisk: string[] = [];
+      const safetyRails: string[] = [];
       const seenNorthStar = new Set<string>();
       const seenCostDriver = new Set<string>();
+      const seenIcpJob = new Set<string>();
+      const seenBuyerBudget = new Set<string>();
+      const seenValueUnit = new Set<string>();
+      const seenPoolsPackaging = new Set<string>();
+      const seenOveragesRisk = new Set<string>();
+      const seenSafetyRails = new Set<string>();
 
-      const pushUniqueEvidence = (bucket: 'northStar' | 'costDriver', pageUrl: string, snippet: string) => {
+      const bucketMap: Record<string, { arr: string[]; seen: Set<string> }> = {
+        northStar: { arr: northStar, seen: seenNorthStar },
+        costDriver: { arr: costDriver, seen: seenCostDriver },
+        icpJob: { arr: icpJob, seen: seenIcpJob },
+        buyerBudget: { arr: buyerBudget, seen: seenBuyerBudget },
+        valueUnit: { arr: valueUnit, seen: seenValueUnit },
+        poolsPackaging: { arr: poolsPackaging, seen: seenPoolsPackaging },
+        overagesRisk: { arr: overagesRisk, seen: seenOveragesRisk },
+        safetyRails: { arr: safetyRails, seen: seenSafetyRails },
+      };
+
+      const pushUniqueEvidence = (bucket: string, pageUrl: string, snippet: string) => {
         const cleanedSnippet = cleanEvidenceLine(snippet).slice(0, 260);
         if (cleanedSnippet.length < 20) return;
-
+        const b = bucketMap[bucket];
+        if (!b || b.arr.length >= 10) return;
         const formatted = `${pageUrl}: "${cleanedSnippet}"`;
-
-        if (bucket === 'northStar') {
-          if (northStar.length >= 10 || seenNorthStar.has(formatted)) return;
-          seenNorthStar.add(formatted);
-          northStar.push(formatted);
-          return;
-        }
-
-        if (costDriver.length >= 10 || seenCostDriver.has(formatted)) return;
-        seenCostDriver.add(formatted);
-        costDriver.push(formatted);
+        if (b.seen.has(formatted)) return;
+        b.seen.add(formatted);
+        b.arr.push(formatted);
       };
 
       const pagePriority = (pageUrl: string) => {
@@ -1583,20 +1599,56 @@ Deno.serve(async (req) => {
         const lines = page.markdown.split('\n');
 
         for (const rawLine of lines) {
-          if (northStar.length >= 10 && costDriver.length >= 10) break;
-
           const line = cleanEvidenceLine(rawLine);
           if (line.length < 20 || line.length > 360) continue;
 
-          const northStarMatch = /(build|create|prototype|production-ready|deploy|ship|launch|workflow|real[- ]time|capacity|team|template|use case)/i.test(line);
-          const costDriverMatch = /(credit|usage-based|top-?up|rollover|monthly credits?|daily credits?|overage|quota|limit|billing|cloud \+ ai|task complexity|1 credit per message|user prompt|work done|cost of each message|message history|three dots)/i.test(line);
-
-          if (northStarMatch) {
+          // North star
+          if (/(build|create|prototype|production-ready|deploy|ship|launch|workflow|real[- ]time|capacity|team|template|use case)/i.test(line)) {
             pushUniqueEvidence('northStar', page.url, line);
           }
 
-          if (costDriverMatch) {
+          // Cost driver
+          if (/(credit|usage-based|top-?up|rollover|monthly credits?|daily credits?|overage|quota|limit|billing|cloud \+ ai|task complexity|1 credit per message|user prompt|work done|cost of each message|message history|three dots)/i.test(line)) {
             pushUniqueEvidence('costDriver', page.url, line);
+          }
+
+          // ICP and job clarity
+          if (/(developer|engineer|startup|enterprise|team|freelancer|agency|designer|founder|non-technical|technical|solo|small business|mid-market)/i.test(line) &&
+              /(for |built for|designed for|ideal for|who|target|persona|audience|user)/i.test(line)) {
+            pushUniqueEvidence('icpJob', page.url, line);
+          }
+          if (/(use case|workflow|job|task|problem|solution|helps? you|enables? you|so you can)/i.test(line)) {
+            pushUniqueEvidence('icpJob', page.url, line);
+          }
+
+          // Buyer and budget alignment
+          if (/(free|starter|pro|team|enterprise|business|growth|scale|custom|contact sales)/i.test(line) &&
+              /(plan|tier|pricing|per month|per year|\/mo|\/yr|annual|monthly)/i.test(line)) {
+            pushUniqueEvidence('buyerBudget', page.url, line);
+          }
+          if (/(invoice|purchase order|annual contract|sso|soc ?2|dpa|rbac|admin|seat)/i.test(line)) {
+            pushUniqueEvidence('buyerBudget', page.url, line);
+          }
+
+          // Value unit
+          if (/(credit|token|minute|hour|api call|request|message|task|unit|per |metering|billable)/i.test(line) &&
+              /(cost|price|charge|bill|meter|usage|consume|spend|deduct)/i.test(line)) {
+            pushUniqueEvidence('valueUnit', page.url, line);
+          }
+
+          // Pools and packaging
+          if (/(included|allowance|pool|allocation|add-on|addon|top-?up|rollover|overage|tier|upgrade|downgrade|free trial|free tier|sandbox|credits? per)/i.test(line)) {
+            pushUniqueEvidence('poolsPackaging', page.url, line);
+          }
+
+          // Overages and risk allocation
+          if (/(overage|exceed|limit|cap|hard stop|soft limit|auto.?top.?up|grace|spike|dispute|refund|true.?up|budget cap|spending limit)/i.test(line)) {
+            pushUniqueEvidence('overagesRisk', page.url, line);
+          }
+
+          // Safety rails and trust surfaces
+          if (/(rate limit|budget cap|usage cap|alert|notification|dashboard|audit|kill switch|circuit breaker|approval|admin control|visibility|monitor)/i.test(line)) {
+            pushUniqueEvidence('safetyRails', page.url, line);
           }
         }
 
@@ -1606,10 +1658,10 @@ Deno.serve(async (req) => {
           { pattern: /default\s*mode\s*:\s*credits\s+vary\s+based\s+on\s+task\s+complexity/i, snippet: 'Default Mode: credits vary based on task complexity' },
           { pattern: /chat\s*mode\s*:\s*1\s+credit\s+per\s+message/i, snippet: 'Chat Mode: 1 credit per message' },
           { pattern: /you\s+can\s+see\s+the\s+cost\s+of\s+each\s+message[\s\S]{0,120}(?:three\s+dots?|message\s+history)/i, snippet: 'Message history exposes exact credits used per message (three-dots menu).' },
-          { pattern: /make\s+the\s+button\s+gray[\s\S]{0,160}(?:0\.50|0,50)/i, snippet: 'Prompt example: “Make the button gray” maps to 0.50 credits' },
-          { pattern: /remove\s+the\s+footer[\s\S]{0,160}(?:0\.90|0,90)/i, snippet: 'Prompt example: “Remove the footer” maps to 0.90 credits' },
-          { pattern: /add\s+authentication\s+with\s+sign\s+up\s+and\s+login[\s\S]{0,220}(?:1\.20|1,20)/i, snippet: 'Prompt example: “Add authentication with sign up and login” maps to 1.20 credits' },
-          { pattern: /build\s+me\s+a\s+landing\s+page,?\s+use\s+images[\s\S]{0,220}(?:1\.70|1,70)/i, snippet: 'Prompt example: “Build me a landing page, use images” maps to 1.70 credits' },
+          { pattern: /make\s+the\s+button\s+gray[\s\S]{0,160}(?:0\.50|0,50)/i, snippet: 'Prompt example: "Make the button gray" maps to 0.50 credits' },
+          { pattern: /remove\s+the\s+footer[\s\S]{0,160}(?:0\.90|0,90)/i, snippet: 'Prompt example: "Remove the footer" maps to 0.90 credits' },
+          { pattern: /add\s+authentication\s+with\s+sign\s+up\s+and\s+login[\s\S]{0,220}(?:1\.20|1,20)/i, snippet: 'Prompt example: "Add authentication with sign up and login" maps to 1.20 credits' },
+          { pattern: /build\s+me\s+a\s+landing\s+page,?\s+use\s+images[\s\S]{0,220}(?:1\.70|1,70)/i, snippet: 'Prompt example: "Build me a landing page, use images" maps to 1.70 credits' },
         ];
 
         for (const signal of targetedCostSignals) {
@@ -1633,7 +1685,7 @@ Deno.serve(async (req) => {
         }
       }
 
-      return { northStar, costDriver };
+      return { northStar, costDriver, icpJob, buyerBudget, valueUnit, poolsPackaging, overagesRisk, safetyRails };
     };
 
     const cleanedPages = pages
