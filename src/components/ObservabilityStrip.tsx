@@ -1,7 +1,7 @@
 import { motion } from "framer-motion";
 import { GlassCard } from "@/components/ui/GlassCard";
 import { ConfidenceIndicator } from "@/components/ConfidenceIndicator";
-import { FileText, AlertTriangle, ArrowDown } from "lucide-react";
+import { FileText, AlertTriangle, ArrowDown, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { ObservabilityData } from "@/types/rubric";
