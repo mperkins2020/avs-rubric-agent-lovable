@@ -1541,7 +1541,7 @@ Deno.serve(async (req) => {
       return line
         .replace(/!\[[^\]]*\]\([^\)]+\)/g, '')
         .replace(/\[([^\]]+)\]\([^\)]+\)/g, '$1')
-        .replace(/[>#*_`]+/g, ' ')
+        .replace(/[>#*_`|]+/g, ' ')
         .replace(/\s+/g, ' ')
         .trim();
     };
@@ -1552,10 +1552,28 @@ Deno.serve(async (req) => {
       const seenNorthStar = new Set<string>();
       const seenCostDriver = new Set<string>();
 
+      const pushUniqueEvidence = (bucket: 'northStar' | 'costDriver', pageUrl: string, snippet: string) => {
+        const cleanedSnippet = cleanEvidenceLine(snippet).slice(0, 260);
+        if (cleanedSnippet.length < 20) return;
+
+        const formatted = `${pageUrl}: "${cleanedSnippet}"`;
+
+        if (bucket === 'northStar') {
+          if (northStar.length >= 10 || seenNorthStar.has(formatted)) return;
+          seenNorthStar.add(formatted);
+          northStar.push(formatted);
+          return;
+        }
+
+        if (costDriver.length >= 10 || seenCostDriver.has(formatted)) return;
+        seenCostDriver.add(formatted);
+        costDriver.push(formatted);
+      };
+
       const pagePriority = (pageUrl: string) => {
-        if (/\/pricing\b/i.test(pageUrl)) return 4;
-        if (/\/templates?\b/i.test(pageUrl)) return 3;
-        if (/\/(product|solutions?)\b/i.test(pageUrl)) return 2;
+        if (/\/(pricing|plans?|billing|credits|usage)\b/i.test(pageUrl)) return 5;
+        if (/\/templates?\b/i.test(pageUrl)) return 4;
+        if (/\/(product|solutions?)\b/i.test(pageUrl)) return 3;
         return 1;
       };
 
@@ -1565,27 +1583,50 @@ Deno.serve(async (req) => {
         const lines = page.markdown.split('\n');
 
         for (const rawLine of lines) {
-          if (northStar.length >= 8 && costDriver.length >= 8) break;
+          if (northStar.length >= 10 && costDriver.length >= 10) break;
 
           const line = cleanEvidenceLine(rawLine);
-          if (line.length < 24 || line.length > 220) continue;
+          if (line.length < 20 || line.length > 360) continue;
 
-          const northStarMatch = /(build|create|prototype|production-ready|deploy|ship|launch|workflow|real[- ]time|capacity|team)/i.test(line);
-          const costDriverMatch = /(credit|usage-based|top-?up|rollover|monthly credits?|daily credits?|overage|quota|limit|billing|cloud \+ ai)/i.test(line);
+          const northStarMatch = /(build|create|prototype|production-ready|deploy|ship|launch|workflow|real[- ]time|capacity|team|template|use case)/i.test(line);
+          const costDriverMatch = /(credit|usage-based|top-?up|rollover|monthly credits?|daily credits?|overage|quota|limit|billing|cloud \+ ai|task complexity|1 credit per message|user prompt|work done)/i.test(line);
 
-          if (northStarMatch && northStar.length < 8) {
-            const snippet = `${page.url}: "${line}"`;
-            if (!seenNorthStar.has(snippet)) {
-              seenNorthStar.add(snippet);
-              northStar.push(snippet);
-            }
+          if (northStarMatch) {
+            pushUniqueEvidence('northStar', page.url, line);
           }
 
-          if (costDriverMatch && costDriver.length < 8) {
-            const snippet = `${page.url}: "${line}"`;
-            if (!seenCostDriver.has(snippet)) {
-              seenCostDriver.add(snippet);
-              costDriver.push(snippet);
+          if (costDriverMatch) {
+            pushUniqueEvidence('costDriver', page.url, line);
+          }
+        }
+
+        const fullMarkdown = page.markdown;
+
+        const targetedCostSignals: Array<{ pattern: RegExp; snippet: string }> = [
+          { pattern: /default\s*mode\s*:\s*credits\s+vary\s+based\s+on\s+task\s+complexity/i, snippet: 'Default Mode: credits vary based on task complexity' },
+          { pattern: /chat\s*mode\s*:\s*1\s+credit\s+per\s+message/i, snippet: 'Chat Mode: 1 credit per message' },
+          { pattern: /make\s+the\s+button\s+gray[\s\S]{0,160}(?:0\.50|0,50)/i, snippet: 'Prompt example: “Make the button gray” maps to 0.50 credits' },
+          { pattern: /remove\s+the\s+footer[\s\S]{0,160}(?:0\.90|0,90)/i, snippet: 'Prompt example: “Remove the footer” maps to 0.90 credits' },
+          { pattern: /add\s+authentication\s+with\s+sign\s+up\s+and\s+login[\s\S]{0,220}(?:1\.20|1,20)/i, snippet: 'Prompt example: “Add authentication with sign up and login” maps to 1.20 credits' },
+          { pattern: /build\s+me\s+a\s+landing\s+page,?\s+use\s+images[\s\S]{0,220}(?:1\.70|1,70)/i, snippet: 'Prompt example: “Build me a landing page, use images” maps to 1.70 credits' },
+        ];
+
+        for (const signal of targetedCostSignals) {
+          if (signal.pattern.test(fullMarkdown)) {
+            pushUniqueEvidence('costDriver', page.url, signal.snippet);
+          }
+        }
+
+        if (/\/templates?\b/i.test(page.url)) {
+          const templateSignals: Array<{ pattern: RegExp; snippet: string }> = [
+            { pattern: /production[- ]ready/i, snippet: 'Templates emphasize production-ready starting points for real workflows' },
+            { pattern: /(landing page|authentication|internal tools?)/i, snippet: 'Templates surface concrete workflows (landing pages, authentication, internal tools)' },
+            { pattern: /(build|ship|launch).{0,60}(faster|quickly|in minutes)/i, snippet: 'Templates position faster time-to-value for building and shipping' },
+          ];
+
+          for (const signal of templateSignals) {
+            if (signal.pattern.test(fullMarkdown)) {
+              pushUniqueEvidence('northStar', page.url, signal.snippet);
             }
           }
         }
