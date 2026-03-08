@@ -93,33 +93,12 @@ export function DimensionCard({ dimension, index }: DimensionCardProps) {
                     </p>
                   </div>
 
-                  {/* Observed */}
-                  {dimension.observed.length > 0 && (
-                    <div>
-                      <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                        <Info className="w-3 h-3" />
-                        What we observed
-                      </h4>
-                      <ul className="space-y-1">
-                        {dimension.observed.map((item, i) => (
-                          <li
-                            key={i}
-                            className="text-sm text-foreground/80 flex items-start gap-2"
-                          >
-                            <span className="text-primary mt-1">•</span>
-                            {item}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-
-                  {/* Source Evidence */}
-                  {dimension.sourceEvidence && dimension.sourceEvidence.length > 0 && (
+                  {/* Evidence — merged observed + source evidence */}
+                  {dimension.sourceEvidence && dimension.sourceEvidence.length > 0 ? (
                     <div className="bg-primary/5 rounded-lg p-3 border border-primary/10">
                       <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2 flex items-center gap-1.5">
                         <FileText className="w-3 h-3" />
-                        Evidence sources
+                        Evidence
                       </h4>
                       <ul className="space-y-2">
                         {dimension.sourceEvidence.map((evidence, i) => (
@@ -141,7 +120,22 @@ export function DimensionCard({ dimension, index }: DimensionCardProps) {
                         ))}
                       </ul>
                     </div>
-                  )}
+                  ) : dimension.observed.length > 0 ? (
+                    <div>
+                      <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                        <Info className="w-3 h-3" />
+                        What we observed
+                      </h4>
+                      <ul className="space-y-1">
+                        {dimension.observed.map((item, i) => (
+                          <li key={i} className="text-sm text-foreground/80 flex items-start gap-2">
+                            <span className="text-primary mt-1">•</span>
+                            {item}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  ) : null}
 
                   {/* Uncertainty Reasons */}
                   {dimension.uncertaintyReasons.length > 0 && (
