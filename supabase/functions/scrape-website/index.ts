@@ -606,8 +606,8 @@ Deno.serve(async (req) => {
             
             // If HTML was fetched for accordion pages, extract text from hidden accordion content
             // and append it to the markdown so the analysis engine can see it
-            if (hasAccordions && pageData.data.html) {
-              const html = pageData.data.html;
+            if (hasAccordions && (pageData.data.rawHtml || pageData.data.html)) {
+              const html = pageData.data.rawHtml || pageData.data.html || '';
               const extractedTexts: string[] = [];
               const seenExtracted = new Set<string>();
 
