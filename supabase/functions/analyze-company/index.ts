@@ -1976,7 +1976,7 @@ ${truncatedContent}`;
       observability: {
         level: observabilityLevel,
         confidenceScore: Math.round(avgConfidence * 100),
-        pagesUsed: pages.map(p => p.url),
+        pagesUsed: selectedUrls,
         mostUncertainDimensions: mostUncertain,
       },
     };
