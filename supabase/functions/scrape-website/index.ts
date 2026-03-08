@@ -566,7 +566,13 @@ Deno.serve(async (req) => {
         try {
           // Use full page content for pages likely to have FAQ/accordion sections
           const needsFullContent = fullContentPatterns.some(p => p.test(pageUrl));
-          console.log('Scraping:', pageUrl, needsFullContent ? '(full content)' : '(main only)');
+          // Pages with accordions need waitFor + html to capture hidden content
+          const hasAccordions = /\/(pricing|faq|plans?|credits)\b/i.test(pageUrl);
+          console.log('Scraping:', pageUrl, needsFullContent ? '(full content)' : '(main only)', hasAccordions ? '(+html for accordions)' : '');
+          
+          const formats: string[] = ['markdown'];
+          if (hasAccordions) formats.push('html');
+          
           const pageResponse = await fetch('https://api.firecrawl.dev/v1/scrape', {
             method: 'POST',
             headers: {
@@ -575,8 +581,9 @@ Deno.serve(async (req) => {
             },
             body: JSON.stringify({
               url: pageUrl,
-              formats: ['markdown'],
+              formats,
               onlyMainContent: !needsFullContent,
+              ...(hasAccordions ? { waitFor: 3000 } : {}),
             }),
           });
 
@@ -591,10 +598,39 @@ Deno.serve(async (req) => {
 
           if (pageResponse.ok && pageData.success && pageData.data) {
             console.log('Successfully scraped:', pageUrl);
+            
+            let finalMarkdown = pageData.data.markdown || '';
+            
+            // If HTML was fetched for accordion pages, extract text from hidden accordion content
+            // and append it to the markdown so the analysis engine can see it
+            if (hasAccordions && pageData.data.html) {
+              const html = pageData.data.html;
+              // Extract text from accordion/collapsible elements that markdown may have missed
+              // Look for common accordion patterns: details/summary, data-state="closed", aria-hidden
+              const accordionContentRegex = /<(?:div|section|p|span|li)[^>]*(?:data-(?:state|radix|orientation)|role="region"|aria-labelledby)[^>]*>([\s\S]*?)<\/(?:div|section|p|span|li)>/gi;
+              const extractedTexts: string[] = [];
+              let match;
+              while ((match = accordionContentRegex.exec(html)) !== null) {
+                // Strip remaining HTML tags to get plain text
+                const plainText = match[1]
+                  .replace(/<[^>]+>/g, ' ')
+                  .replace(/\s+/g, ' ')
+                  .trim();
+                if (plainText.length > 30) { // Only meaningful content
+                  extractedTexts.push(plainText);
+                }
+              }
+              
+              if (extractedTexts.length > 0) {
+                console.log(`Extracted ${extractedTexts.length} accordion sections from HTML for: ${pageUrl}`);
+                finalMarkdown += '\n\n---\n\n## FAQ / Accordion Content\n\n' + extractedTexts.join('\n\n');
+              }
+            }
+            
             return {
               url: pageUrl,
               title: pageData.data.metadata?.title || pageUrl,
-              markdown: pageData.data.markdown || '',
+              markdown: finalMarkdown,
               metadata: {
                 description: pageData.data.metadata?.description,
               },
