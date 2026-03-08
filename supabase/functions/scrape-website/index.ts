@@ -507,6 +507,7 @@ Deno.serve(async (req) => {
         /\/(blog|news|press|careers|jobs|cookie|author|tag|category)\//i,
         /\/(blog|news|press|careers|jobs|cookie|author|tag|category)$/i,
         /\/(wp-content|wp-admin|wp-includes|wp-json)\//i,
+        /\/dashboard\b/i,
         /\/(login|signup|sign-up|sign-in|register|cart|checkout)\b/i,
       ];
 

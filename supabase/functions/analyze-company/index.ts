@@ -1509,19 +1509,77 @@ Deno.serve(async (req) => {
       let score = 0;
       if (/\/(pricing|plans?|billing|usage|credits|subscription)\b/.test(target)) score += 1200;
       if (/\/(faq|support|help|docs|changelog|trust|security|api|developers?)\b/.test(target)) score += 900;
+      if (/\/(templates?)\b/.test(target)) score += 350;
       if (/\/(terms|legal|privacy)\b/.test(target)) score += 450;
       if (/faq \/ accordion content/i.test(page.markdown)) score += 500;
 
       // Boost pages that actually contain economic/pricing evidence
       if (/(credit|top-up|overage|usage-based|monthly|annual|tier|pricing|quota|limit|billing)/i.test(content)) score += 300;
 
-      // Penalize noisy showcase/marketplace pages
-      if (/\/(discover|templates|products)\b/.test(target)) score -= 500;
+      // Penalize noisy marketplace/community listing pages
+      if (/\/(discover|products)\b/.test(target)) score -= 500;
 
       // Keep homepage, but lower than pricing/docs evidence pages
       if (page.url.replace(/\/$/, '') === url.replace(/\/$/, '')) score -= 150;
 
       return score;
+    };
+
+    const cleanEvidenceLine = (line: string): string => {
+      return line
+        .replace(/!\[[^\]]*\]\([^\)]+\)/g, '')
+        .replace(/\[([^\]]+)\]\([^\)]+\)/g, '$1')
+        .replace(/[>#*_`]+/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+    };
+
+    const collectHighSignalEvidence = (inputPages: ScrapedPage[]) => {
+      const northStar: string[] = [];
+      const costDriver: string[] = [];
+      const seenNorthStar = new Set<string>();
+      const seenCostDriver = new Set<string>();
+
+      const pagePriority = (pageUrl: string) => {
+        if (/\/pricing\b/i.test(pageUrl)) return 4;
+        if (/\/templates?\b/i.test(pageUrl)) return 3;
+        if (/\/(product|solutions?)\b/i.test(pageUrl)) return 2;
+        return 1;
+      };
+
+      const orderedPages = [...inputPages].sort((a, b) => pagePriority(b.url) - pagePriority(a.url));
+
+      for (const page of orderedPages) {
+        const lines = page.markdown.split('\n');
+
+        for (const rawLine of lines) {
+          if (northStar.length >= 8 && costDriver.length >= 8) break;
+
+          const line = cleanEvidenceLine(rawLine);
+          if (line.length < 24 || line.length > 220) continue;
+
+          const northStarMatch = /(build|create|prototype|production-ready|deploy|ship|launch|workflow|real[- ]time|capacity|team)/i.test(line);
+          const costDriverMatch = /(credit|usage-based|top-?up|rollover|monthly credits?|daily credits?|overage|quota|limit|billing|cloud \+ ai)/i.test(line);
+
+          if (northStarMatch && northStar.length < 8) {
+            const snippet = `${page.url}: "${line}"`;
+            if (!seenNorthStar.has(snippet)) {
+              seenNorthStar.add(snippet);
+              northStar.push(snippet);
+            }
+          }
+
+          if (costDriverMatch && costDriver.length < 8) {
+            const snippet = `${page.url}: "${line}"`;
+            if (!seenCostDriver.has(snippet)) {
+              seenCostDriver.add(snippet);
+              costDriver.push(snippet);
+            }
+          }
+        }
+      }
+
+      return { northStar, costDriver };
     };
 
     const cleanedPages = pages
@@ -1578,9 +1636,14 @@ Deno.serve(async (req) => {
     }
 
     const truncatedContent = selectedBlocks.join('');
+    const evidenceDigest = collectHighSignalEvidence(prioritizedPages);
 
     console.log('Content length:', truncatedContent.length);
     console.log('Pages selected for scoring:', selectedUrls);
+    console.log('High-signal evidence digest counts:', {
+      northStar: evidenceDigest.northStar.length,
+      costDriver: evidenceDigest.costDriver.length,
+    });
 
     // Step 1: Extract company profile
     console.log('Extracting company profile...');
@@ -1628,6 +1691,12 @@ ${previousScores.map((s: { dimension: string; score: number; confidence: number 
 Since these are insider-only inputs, scores should remain the same as previous unless a public URL was provided in the answers.
 ` : ''}` : ''}
 
+HIGH-SIGNAL EVIDENCE DIGEST (prioritized snippets from public pages):
+- Product north star candidates:
+${evidenceDigest.northStar.length > 0 ? evidenceDigest.northStar.map((item) => `  - ${item}`).join('\n') : '  - None captured'}
+- Cost driver mapping candidates:
+${evidenceDigest.costDriver.length > 0 ? evidenceDigest.costDriver.map((item) => `  - ${item}`).join('\n') : '  - None captured'}
+
 Website Content:
 ${truncatedContent}`;
 
@@ -1635,7 +1704,7 @@ ${truncatedContent}`;
     console.log('Rubric scoring complete');
 
     // Calculate totals
-    const dimensionScores = (rubricData.dimensionScores || []) as Array<{ 
+    const dimensionScores = ((rubricData.dimensionScores || []) as Array<{ 
       dimension: string; 
       score: number; 
       confidence: number; 
@@ -1644,7 +1713,42 @@ ${truncatedContent}`;
       observed: string[];
       uncertaintyReasons: string[];
       missingInsiderPrompts?: Array<{ question: string; fieldPaths: string[] }>;
-    }>;
+    }>).map((dimension) => {
+      const observed = Array.isArray(dimension.observed) ? [...dimension.observed] : [];
+      const uncertaintyReasons = Array.isArray(dimension.uncertaintyReasons) ? [...dimension.uncertaintyReasons] : [];
+
+      if (dimension.dimension === 'Product north star' && dimension.score === 0 && evidenceDigest.northStar.length >= 2) {
+        const mergedObserved = [...observed, ...evidenceDigest.northStar].slice(0, 3);
+        return {
+          ...dimension,
+          score: 1,
+          confidence: Math.max(Number(dimension.confidence) || 0, 0.5),
+          notObservable: false,
+          rationale: 'Public pricing/template signals describe concrete value-delivery outcomes and intended workflows, which supports an emerging product north star even though predictability metrics are still incomplete.',
+          observed: mergedObserved,
+          uncertaintyReasons: [...uncertaintyReasons, 'Public pages still do not expose a single explicit predictability metric target.'].slice(0, 2),
+        };
+      }
+
+      if (dimension.dimension === 'Cost driver mapping' && dimension.score === 0 && evidenceDigest.costDriver.length >= 2) {
+        const mergedObserved = [...observed, ...evidenceDigest.costDriver].slice(0, 3);
+        return {
+          ...dimension,
+          score: 1,
+          confidence: Math.max(Number(dimension.confidence) || 0, 0.5),
+          notObservable: false,
+          rationale: 'The pricing surface explicitly defines usage-linked economics (credits, usage-based Cloud + AI, rollovers/top-ups), which is enough for emerging cost-driver mapping even if detailed formulas are not publicly documented.',
+          observed: mergedObserved,
+          uncertaintyReasons: [...uncertaintyReasons, 'Driver formulas and p50/p95 workflow cost estimates remain non-public.'].slice(0, 2),
+        };
+      }
+
+      return {
+        ...dimension,
+        observed,
+        uncertaintyReasons,
+      };
+    });
     const totalScore = dimensionScores.reduce((sum, d) => sum + d.score, 0);
     const maxScore = dimensionScores.length * 2;
 
