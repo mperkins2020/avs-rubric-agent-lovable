@@ -355,6 +355,9 @@ export default function Results() {
               onDimensionClick={handleDimensionClick}
             />
 
+            {/* Evidence Sources */}
+            <EvidenceSourcesPanel pages={pages} />
+
             {/* Strengths & Weaknesses */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
