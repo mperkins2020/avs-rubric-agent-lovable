@@ -19,7 +19,7 @@ interface AnalyzeRequest {
   previousScores?: Array<{ dimension: string; score: number; confidence: number }>;
 }
 
-const ANALYSIS_VERSION = '2026-03-08-3pass-allnets-v1';
+const ANALYSIS_VERSION = '2026-03-08-tiered-ns2-v1';
 
 const COMPANY_PROFILE_PROMPT = `You are an expert business analyst. Analyze the following website content and extract a company profile.
 
@@ -111,10 +111,20 @@ THE 8 DIMENSIONS:
    - north_star.customer_done_state is present OR the signal excerpt explicitly describes a customer outcome (capture excerpt in facts).
 
    **NS2 Predictability outcome is stated**
-   Pass if:
+   Pass if ANY of the following tiers are satisfied:
+
+   Tier A (explicit predictability):
    - at least one observable_signals[] exists with maps_to in {economic_predictability, both}
    OR
    - north_star.predictability_metric_name is present
+
+   Tier B (implicit predictability via transparent usage pricing):
+   Pass if ALL THREE of these conditions hold simultaneously:
+   1. Credit-based, token-based, or metered pricing is present (e.g., "credits", "tokens", "messages", "compute units", "API calls" with visible per-unit pricing or bundle sizes)
+   2. Per-unit cost is visible or calculable from the public pricing page (e.g., "$0.01 per message", "100 credits for $25", tier tables with usage caps)
+   3. A usage dashboard, usage tracker, spend alert, budget cap, or cost estimation surface is mentioned or shown (e.g., "track your usage", "set spending limits", "usage dashboard", "cost calculator")
+
+   IMPORTANT: Vague mentions of "flexible pricing" or "pay as you go" alone do NOT satisfy Tier B. All three conditions must hold with concrete evidence from the scraped pages. Tier B recognizes that transparent credit/usage pricing with cost visibility IS a form of economic predictability.
 
    **NS3 Outcome is measurable (even if target missing)**
    Pass if ANY of the following are true:
