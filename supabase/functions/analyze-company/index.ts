@@ -1802,12 +1802,97 @@ HIGH-SIGNAL EVIDENCE DIGEST (prioritized snippets from public pages):
 ${evidenceDigest.northStar.length > 0 ? evidenceDigest.northStar.map((item) => `  - ${item}`).join('\n') : '  - None captured'}
 - Cost driver mapping candidates:
 ${evidenceDigest.costDriver.length > 0 ? evidenceDigest.costDriver.map((item) => `  - ${item}`).join('\n') : '  - None captured'}
+- ICP and job clarity candidates:
+${evidenceDigest.icpJob.length > 0 ? evidenceDigest.icpJob.map((item) => `  - ${item}`).join('\n') : '  - None captured'}
+- Buyer and budget alignment candidates:
+${evidenceDigest.buyerBudget.length > 0 ? evidenceDigest.buyerBudget.map((item) => `  - ${item}`).join('\n') : '  - None captured'}
+- Value unit candidates:
+${evidenceDigest.valueUnit.length > 0 ? evidenceDigest.valueUnit.map((item) => `  - ${item}`).join('\n') : '  - None captured'}
+- Pools and packaging candidates:
+${evidenceDigest.poolsPackaging.length > 0 ? evidenceDigest.poolsPackaging.map((item) => `  - ${item}`).join('\n') : '  - None captured'}
+- Overages and risk allocation candidates:
+${evidenceDigest.overagesRisk.length > 0 ? evidenceDigest.overagesRisk.map((item) => `  - ${item}`).join('\n') : '  - None captured'}
+- Safety rails and trust surfaces candidates:
+${evidenceDigest.safetyRails.length > 0 ? evidenceDigest.safetyRails.map((item) => `  - ${item}`).join('\n') : '  - None captured'}
 
 Website Content:
 ${truncatedContent}`;
 
-    const rubricData = await callLovableAI(RUBRIC_SCORING_PROMPT, scoringContent) as Record<string, unknown>;
-    console.log('Rubric scoring complete');
+    // Step 2b: 3-pass majority vote scoring for consistency
+    console.log('Running 3-pass majority vote scoring...');
+    const rubricPasses = await Promise.all([
+      callLovableAI(RUBRIC_SCORING_PROMPT, scoringContent),
+      callLovableAI(RUBRIC_SCORING_PROMPT, scoringContent),
+      callLovableAI(RUBRIC_SCORING_PROMPT, scoringContent),
+    ]) as Array<Record<string, unknown>>;
+    console.log('All 3 rubric passes complete');
+
+    // Merge: for each dimension, take median score; for ties, use the result from the pass whose score equals the median
+    const DIMENSION_NAMES = [
+      'Product north star', 'ICP and job clarity', 'Buyer and budget alignment',
+      'Value unit', 'Cost driver mapping', 'Pools and packaging',
+      'Overages and risk allocation', 'Safety rails and trust surfaces',
+    ];
+
+    const getPassDimensions = (passData: Record<string, unknown>) =>
+      (Array.isArray(passData.dimensionScores) ? passData.dimensionScores : []) as Array<{
+        dimension: string; score: number; confidence: number; notObservable: boolean;
+        rationale: string; observed: string[]; sourceEvidence?: Array<{ url: string; snippet: string }>;
+        uncertaintyReasons: string[]; missingInsiderPrompts?: Array<{ question: string; fieldPaths: string[] }>;
+      }>;
+
+    const pass1Dims = getPassDimensions(rubricPasses[0]);
+    const pass2Dims = getPassDimensions(rubricPasses[1]);
+    const pass3Dims = getPassDimensions(rubricPasses[2]);
+
+    // Log per-dimension scores across passes for diagnostics
+    for (const dimName of DIMENSION_NAMES) {
+      const s1 = pass1Dims.find(d => d.dimension === dimName)?.score ?? -1;
+      const s2 = pass2Dims.find(d => d.dimension === dimName)?.score ?? -1;
+      const s3 = pass3Dims.find(d => d.dimension === dimName)?.score ?? -1;
+      console.log(`  [3-pass] ${dimName}: ${s1}, ${s2}, ${s3}`);
+    }
+
+    // Build merged dimension scores using median
+    const mergedDimensionScores = DIMENSION_NAMES.map(dimName => {
+      const candidates = [
+        pass1Dims.find(d => d.dimension === dimName),
+        pass2Dims.find(d => d.dimension === dimName),
+        pass3Dims.find(d => d.dimension === dimName),
+      ].filter(Boolean) as typeof pass1Dims;
+
+      if (candidates.length === 0) {
+        return { dimension: dimName, score: 0, confidence: 0, notObservable: true, rationale: '', observed: [], sourceEvidence: [], uncertaintyReasons: ['No data from any pass'], missingInsiderPrompts: [] };
+      }
+
+      // Median score
+      const scores = candidates.map(c => c.score).sort((a, b) => a - b);
+      const medianScore = scores[Math.floor(scores.length / 2)];
+
+      // Pick the candidate whose score equals median (prefer the one with highest confidence)
+      const matchingCandidates = candidates.filter(c => c.score === medianScore);
+      const bestCandidate = matchingCandidates.sort((a, b) => (b.confidence || 0) - (a.confidence || 0))[0];
+
+      // Median confidence across all passes
+      const confidences = candidates.map(c => c.confidence || 0).sort((a, b) => a - b);
+      const medianConfidence = confidences[Math.floor(confidences.length / 2)];
+
+      return {
+        ...bestCandidate,
+        score: medianScore,
+        confidence: medianConfidence,
+      };
+    });
+
+    // Use pass 1 for strengths/weaknesses/breakpoints/focus (these are narrative, not scored)
+    const rubricData: Record<string, unknown> = {
+      dimensionScores: mergedDimensionScores,
+      strengths: rubricPasses[0].strengths || [],
+      weaknesses: rubricPasses[0].weaknesses || [],
+      trustBreakpoints: rubricPasses[0].trustBreakpoints || [],
+      recommendedFocus: rubricPasses[0].recommendedFocus || null,
+    };
+    console.log('Rubric scoring complete (3-pass merged)');
 
     // Calculate totals
     type SourceEvidence = { url: string; snippet: string };
