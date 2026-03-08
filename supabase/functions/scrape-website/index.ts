@@ -205,7 +205,14 @@ Deno.serve(async (req) => {
     const pages: ScrapedPage[] = [];
 
     // Step 1: Scrape the main page
-    console.log('Scraping main page...');
+    // Determine if the submitted URL itself is a high-value page needing full content
+    const mainPageFullContentPatterns = [
+      /\/pricing\b/i, /\/plans?\b/i, /\/billing\b/i, /\/faq\b/i,
+      /\/help\b/i, /\/support\b/i, /\/trust\b/i, /\/security\b/i,
+      /\/credits\b/i, /\/usage\b/i,
+    ];
+    const mainNeedsFullContent = mainPageFullContentPatterns.some(p => p.test(formattedUrl));
+    console.log('Scraping main page...', mainNeedsFullContent ? '(full content)' : '(main only)');
     const mainPageResponse = await fetch('https://api.firecrawl.dev/v1/scrape', {
       method: 'POST',
       headers: {
@@ -215,7 +222,7 @@ Deno.serve(async (req) => {
       body: JSON.stringify({
         url: formattedUrl,
         formats: ['markdown', 'links'],
-        onlyMainContent: true,
+        onlyMainContent: !mainNeedsFullContent,
       }),
     });
 
