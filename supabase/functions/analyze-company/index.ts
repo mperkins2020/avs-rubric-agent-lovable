@@ -19,7 +19,7 @@ interface AnalyzeRequest {
   previousScores?: Array<{ dimension: string; score: number; confidence: number }>;
 }
 
-const ANALYSIS_VERSION = '2026-03-08-credit-faq-v2';
+const ANALYSIS_VERSION = '2026-03-08-3pass-allnets-v1';
 
 const COMPANY_PROFILE_PROMPT = `You are an expert business analyst. Analyze the following website content and extract a company profile.
 
