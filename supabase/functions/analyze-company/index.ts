@@ -19,6 +19,8 @@ interface AnalyzeRequest {
   previousScores?: Array<{ dimension: string; score: number; confidence: number }>;
 }
 
+const ANALYSIS_VERSION = '2026-03-08-credit-faq-v1';
+
 const COMPANY_PROFILE_PROMPT = `You are an expert business analyst. Analyze the following website content and extract a company profile.
 
 Return a JSON object with these exact fields:
@@ -1463,14 +1465,23 @@ Deno.serve(async (req) => {
         .limit(1)
         .single();
 
-      if (cached?.result_json) {
-        console.log(`Cache HIT for ${domain} — returning cached result`);
+      const cachedVersion = cached?.result_json && typeof cached.result_json === 'object'
+        ? (cached.result_json as Record<string, unknown>).analysisVersion
+        : null;
+
+      if (cached?.result_json && cachedVersion === ANALYSIS_VERSION) {
+        console.log(`Cache HIT for ${domain} — returning cached result (${ANALYSIS_VERSION})`);
         return new Response(
           JSON.stringify(cached.result_json),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
-      console.log(`Cache MISS for ${domain} — running fresh analysis`);
+
+      if (cached?.result_json) {
+        console.log(`Cache STALE for ${domain} — expected ${ANALYSIS_VERSION}, got ${String(cachedVersion ?? 'none')}`);
+      } else {
+        console.log(`Cache MISS for ${domain} — running fresh analysis`);
+      }
     }
 
     console.log(`Analyzing ${pages.length} pages from ${url}`);
@@ -1530,7 +1541,7 @@ Deno.serve(async (req) => {
       return line
         .replace(/!\[[^\]]*\]\([^\)]+\)/g, '')
         .replace(/\[([^\]]+)\]\([^\)]+\)/g, '$1')
-        .replace(/[>#*_`]+/g, ' ')
+        .replace(/[>#*_`|]+/g, ' ')
         .replace(/\s+/g, ' ')
         .trim();
     };
@@ -1541,10 +1552,28 @@ Deno.serve(async (req) => {
       const seenNorthStar = new Set<string>();
       const seenCostDriver = new Set<string>();
 
+      const pushUniqueEvidence = (bucket: 'northStar' | 'costDriver', pageUrl: string, snippet: string) => {
+        const cleanedSnippet = cleanEvidenceLine(snippet).slice(0, 260);
+        if (cleanedSnippet.length < 20) return;
+
+        const formatted = `${pageUrl}: "${cleanedSnippet}"`;
+
+        if (bucket === 'northStar') {
+          if (northStar.length >= 10 || seenNorthStar.has(formatted)) return;
+          seenNorthStar.add(formatted);
+          northStar.push(formatted);
+          return;
+        }
+
+        if (costDriver.length >= 10 || seenCostDriver.has(formatted)) return;
+        seenCostDriver.add(formatted);
+        costDriver.push(formatted);
+      };
+
       const pagePriority = (pageUrl: string) => {
-        if (/\/pricing\b/i.test(pageUrl)) return 4;
-        if (/\/templates?\b/i.test(pageUrl)) return 3;
-        if (/\/(product|solutions?)\b/i.test(pageUrl)) return 2;
+        if (/\/(pricing|plans?|billing|credits|usage)\b/i.test(pageUrl)) return 5;
+        if (/\/templates?\b/i.test(pageUrl)) return 4;
+        if (/\/(product|solutions?)\b/i.test(pageUrl)) return 3;
         return 1;
       };
 
@@ -1554,27 +1583,50 @@ Deno.serve(async (req) => {
         const lines = page.markdown.split('\n');
 
         for (const rawLine of lines) {
-          if (northStar.length >= 8 && costDriver.length >= 8) break;
+          if (northStar.length >= 10 && costDriver.length >= 10) break;
 
           const line = cleanEvidenceLine(rawLine);
-          if (line.length < 24 || line.length > 220) continue;
+          if (line.length < 20 || line.length > 360) continue;
 
-          const northStarMatch = /(build|create|prototype|production-ready|deploy|ship|launch|workflow|real[- ]time|capacity|team)/i.test(line);
-          const costDriverMatch = /(credit|usage-based|top-?up|rollover|monthly credits?|daily credits?|overage|quota|limit|billing|cloud \+ ai)/i.test(line);
+          const northStarMatch = /(build|create|prototype|production-ready|deploy|ship|launch|workflow|real[- ]time|capacity|team|template|use case)/i.test(line);
+          const costDriverMatch = /(credit|usage-based|top-?up|rollover|monthly credits?|daily credits?|overage|quota|limit|billing|cloud \+ ai|task complexity|1 credit per message|user prompt|work done)/i.test(line);
 
-          if (northStarMatch && northStar.length < 8) {
-            const snippet = `${page.url}: "${line}"`;
-            if (!seenNorthStar.has(snippet)) {
-              seenNorthStar.add(snippet);
-              northStar.push(snippet);
-            }
+          if (northStarMatch) {
+            pushUniqueEvidence('northStar', page.url, line);
           }
 
-          if (costDriverMatch && costDriver.length < 8) {
-            const snippet = `${page.url}: "${line}"`;
-            if (!seenCostDriver.has(snippet)) {
-              seenCostDriver.add(snippet);
-              costDriver.push(snippet);
+          if (costDriverMatch) {
+            pushUniqueEvidence('costDriver', page.url, line);
+          }
+        }
+
+        const fullMarkdown = page.markdown;
+
+        const targetedCostSignals: Array<{ pattern: RegExp; snippet: string }> = [
+          { pattern: /default\s*mode\s*:\s*credits\s+vary\s+based\s+on\s+task\s+complexity/i, snippet: 'Default Mode: credits vary based on task complexity' },
+          { pattern: /chat\s*mode\s*:\s*1\s+credit\s+per\s+message/i, snippet: 'Chat Mode: 1 credit per message' },
+          { pattern: /make\s+the\s+button\s+gray[\s\S]{0,160}(?:0\.50|0,50)/i, snippet: 'Prompt example: “Make the button gray” maps to 0.50 credits' },
+          { pattern: /remove\s+the\s+footer[\s\S]{0,160}(?:0\.90|0,90)/i, snippet: 'Prompt example: “Remove the footer” maps to 0.90 credits' },
+          { pattern: /add\s+authentication\s+with\s+sign\s+up\s+and\s+login[\s\S]{0,220}(?:1\.20|1,20)/i, snippet: 'Prompt example: “Add authentication with sign up and login” maps to 1.20 credits' },
+          { pattern: /build\s+me\s+a\s+landing\s+page,?\s+use\s+images[\s\S]{0,220}(?:1\.70|1,70)/i, snippet: 'Prompt example: “Build me a landing page, use images” maps to 1.70 credits' },
+        ];
+
+        for (const signal of targetedCostSignals) {
+          if (signal.pattern.test(fullMarkdown)) {
+            pushUniqueEvidence('costDriver', page.url, signal.snippet);
+          }
+        }
+
+        if (/\/templates?\b/i.test(page.url)) {
+          const templateSignals: Array<{ pattern: RegExp; snippet: string }> = [
+            { pattern: /production[- ]ready/i, snippet: 'Templates emphasize production-ready starting points for real workflows' },
+            { pattern: /(landing page|authentication|internal tools?)/i, snippet: 'Templates surface concrete workflows (landing pages, authentication, internal tools)' },
+            { pattern: /(build|ship|launch).{0,60}(faster|quickly|in minutes)/i, snippet: 'Templates position faster time-to-value for building and shipping' },
+          ];
+
+          for (const signal of templateSignals) {
+            if (signal.pattern.test(fullMarkdown)) {
+              pushUniqueEvidence('northStar', page.url, signal.snippet);
             }
           }
         }
@@ -1705,51 +1757,130 @@ ${truncatedContent}`;
     console.log('Rubric scoring complete');
 
     // Calculate totals
-    const dimensionScores = ((rubricData.dimensionScores || []) as Array<{ 
-      dimension: string; 
-      score: number; 
-      confidence: number; 
+    type SourceEvidence = { url: string; snippet: string };
+
+    const parseSourceEvidenceFromObserved = (entry: string): SourceEvidence | null => {
+      if (typeof entry !== 'string') return null;
+      const match = entry.match(/(https?:\/\/[^\s"”]+)\s*:\s*["“]?([\s\S]+?)["”]?$/);
+      if (!match) return null;
+
+      const urlValue = match[1]?.trim();
+      const snippetValue = match[2]?.replace(/["”]+$/g, '').trim();
+      if (!urlValue || !snippetValue) return null;
+
+      return {
+        url: urlValue,
+        snippet: snippetValue.slice(0, 260),
+      };
+    };
+
+    const normalizeSourceEvidence = (rawEvidence: unknown, observedEntries: string[]): SourceEvidence[] => {
+      const fromModel = Array.isArray(rawEvidence)
+        ? rawEvidence
+            .filter((item): item is { url?: unknown; snippet?: unknown } => typeof item === 'object' && item !== null)
+            .map((item) => ({
+              url: typeof item.url === 'string' ? item.url.trim() : '',
+              snippet: typeof item.snippet === 'string' ? item.snippet.trim() : '',
+            }))
+            .filter((item) => item.url.length > 0 && item.snippet.length > 0)
+        : [];
+
+      const fromObserved = observedEntries
+        .map(parseSourceEvidenceFromObserved)
+        .filter((item): item is SourceEvidence => item !== null);
+
+      const seen = new Set<string>();
+      const merged: SourceEvidence[] = [];
+
+      for (const item of [...fromModel, ...fromObserved]) {
+        const key = `${item.url}|${item.snippet}`;
+        if (seen.has(key)) continue;
+        seen.add(key);
+        merged.push(item);
+      }
+
+      return merged.slice(0, 6);
+    };
+
+    const hasExplicitCreditFaqSignals = evidenceDigest.costDriver.some((item) =>
+      /(default mode|chat mode|1 credit per message|task complexity|0\.50|0\.90|1\.20|1\.70|what is a credit\?|how does pricing for lovable cloud \+ ai work\?)/i.test(item)
+    );
+
+    const dimensionScores = ((rubricData.dimensionScores || []) as Array<{
+      dimension: string;
+      score: number;
+      confidence: number;
       notObservable: boolean;
       rationale: string;
       observed: string[];
+      sourceEvidence?: Array<{ url: string; snippet: string }>;
       uncertaintyReasons: string[];
       missingInsiderPrompts?: Array<{ question: string; fieldPaths: string[] }>;
     }>).map((dimension) => {
       const observed = Array.isArray(dimension.observed) ? [...dimension.observed] : [];
       const uncertaintyReasons = Array.isArray(dimension.uncertaintyReasons) ? [...dimension.uncertaintyReasons] : [];
+      const sourceEvidence = normalizeSourceEvidence(dimension.sourceEvidence, observed);
 
       if (dimension.dimension === 'Product north star' && dimension.score === 0 && evidenceDigest.northStar.length >= 2) {
-        const mergedObserved = [...observed, ...evidenceDigest.northStar].slice(0, 3);
+        const mergedObserved = [...observed, ...evidenceDigest.northStar].slice(0, 4);
+        const mergedSourceEvidence = normalizeSourceEvidence(sourceEvidence, mergedObserved);
+
         return {
           ...dimension,
           score: 1,
-          confidence: Math.max(Number(dimension.confidence) || 0, 0.5),
+          confidence: Math.max(Number(dimension.confidence) || 0, 0.55),
           notObservable: false,
           rationale: 'Public pricing/template signals describe concrete value-delivery outcomes and intended workflows, which supports an emerging product north star even though predictability metrics are still incomplete.',
           observed: mergedObserved,
+          sourceEvidence: mergedSourceEvidence,
           uncertaintyReasons: [...uncertaintyReasons, 'Public pages still do not expose a single explicit predictability metric target.'].slice(0, 2),
         };
       }
 
-      if (dimension.dimension === 'Cost driver mapping' && dimension.score === 0 && evidenceDigest.costDriver.length >= 2) {
-        const mergedObserved = [...observed, ...evidenceDigest.costDriver].slice(0, 3);
+      if (dimension.dimension === 'Cost driver mapping') {
+        const mergedObserved = [...observed, ...evidenceDigest.costDriver].slice(0, 4);
+        const mergedSourceEvidence = normalizeSourceEvidence(sourceEvidence, mergedObserved);
+
+        if (dimension.score === 0 && evidenceDigest.costDriver.length >= 2) {
+          return {
+            ...dimension,
+            score: 1,
+            confidence: Math.max(Number(dimension.confidence) || 0, hasExplicitCreditFaqSignals ? 0.65 : 0.5),
+            notObservable: false,
+            rationale: 'The pricing surface explicitly defines usage-linked economics (credits, usage-based Cloud + AI, task-level credit examples, rollovers/top-ups), which is enough for emerging cost-driver mapping even if detailed formulas are not publicly documented.',
+            observed: mergedObserved,
+            sourceEvidence: mergedSourceEvidence,
+            uncertaintyReasons: [...uncertaintyReasons, 'Driver formulas and p50/p95 workflow cost estimates remain non-public.'].slice(0, 2),
+          };
+        }
+
+        if (hasExplicitCreditFaqSignals && (Number(dimension.confidence) || 0) < 0.65) {
+          return {
+            ...dimension,
+            confidence: 0.65,
+            notObservable: false,
+            observed: mergedObserved,
+            sourceEvidence: mergedSourceEvidence,
+            uncertaintyReasons,
+          };
+        }
+
         return {
           ...dimension,
-          score: 1,
-          confidence: Math.max(Number(dimension.confidence) || 0, 0.5),
-          notObservable: false,
-          rationale: 'The pricing surface explicitly defines usage-linked economics (credits, usage-based Cloud + AI, rollovers/top-ups), which is enough for emerging cost-driver mapping even if detailed formulas are not publicly documented.',
-          observed: mergedObserved,
-          uncertaintyReasons: [...uncertaintyReasons, 'Driver formulas and p50/p95 workflow cost estimates remain non-public.'].slice(0, 2),
+          observed,
+          sourceEvidence: mergedSourceEvidence,
+          uncertaintyReasons,
         };
       }
 
       return {
         ...dimension,
         observed,
+        sourceEvidence,
         uncertaintyReasons,
       };
     });
+
     const totalScore = dimensionScores.reduce((sum, d) => sum + d.score, 0);
     const maxScore = dimensionScores.length * 2;
 
@@ -1782,6 +1913,7 @@ ${truncatedContent}`;
 
     const result = {
       success: true,
+      analysisVersion: ANALYSIS_VERSION,
       companyProfile,
       rubricScore: {
         totalScore,

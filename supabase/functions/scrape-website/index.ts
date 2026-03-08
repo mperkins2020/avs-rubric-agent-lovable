@@ -531,6 +531,7 @@ Deno.serve(async (req) => {
           const highIntentMainDomain = sameDomain && highIntentMainDomainPaths.has(path);
           const keywordMatch = priorityPatterns.some(pattern => pattern.test(link));
           const docsSubdomain = subdomainPattern.test(link);
+          const docsCreditOrPricingPath = docsSubdomain && /\/(plans-and-credits|credits|pricing|billing|usage|subscription)\b/i.test(path);
 
           let score = 0;
           if (communityUrlSet.has(link)) score += 1000;
@@ -538,6 +539,7 @@ Deno.serve(async (req) => {
           if (shallowMainDomain) score += 500;
           if (keywordMatch) score += 250;
           if (docsSubdomain) score += 100;
+          if (docsCreditOrPricingPath) score += 700;
 
           return { link, score };
         })
@@ -572,7 +574,7 @@ Deno.serve(async (req) => {
           console.log('Scraping:', pageUrl, needsFullContent ? '(full content)' : '(main only)', hasAccordions ? '(+html for accordions)' : '');
           
           const formats: string[] = ['markdown'];
-          if (hasAccordions) formats.push('html');
+          if (hasAccordions) formats.push('html', 'rawHtml');
           
           const pageResponse = await fetch('https://api.firecrawl.dev/v1/scrape', {
             method: 'POST',
@@ -604,26 +606,77 @@ Deno.serve(async (req) => {
             
             // If HTML was fetched for accordion pages, extract text from hidden accordion content
             // and append it to the markdown so the analysis engine can see it
-            if (hasAccordions && pageData.data.html) {
-              const html = pageData.data.html;
-              // Extract text from accordion/collapsible elements that markdown may have missed
-              // Look for common accordion patterns: details/summary, data-state="closed", aria-hidden
-              const accordionContentRegex = /<(?:div|section|p|span|li)[^>]*(?:data-(?:state|radix|orientation)|role="region"|aria-labelledby)[^>]*>([\s\S]*?)<\/(?:div|section|p|span|li)>/gi;
+            if (hasAccordions && (pageData.data.rawHtml || pageData.data.html)) {
+              const html = pageData.data.rawHtml || pageData.data.html || '';
               const extractedTexts: string[] = [];
+              const seenExtracted = new Set<string>();
+
+              const pushExtracted = (value: string) => {
+                const plainText = value
+                  .replace(/<[^>]+>/g, ' ')
+                  .replace(/&nbsp;/g, ' ')
+                  .replace(/&amp;/g, '&')
+                  .replace(/\s+/g, ' ')
+                  .trim();
+
+                if (plainText.length < 30) return;
+                const normalized = plainText.slice(0, 420);
+                if (seenExtracted.has(normalized)) return;
+                seenExtracted.add(normalized);
+                extractedTexts.push(normalized);
+              };
+
+              // Extract text from accordion/collapsible elements that markdown may have missed
+              const accordionContentRegex = /<(?:div|section|p|span|li|details)[^>]*(?:data-(?:state|radix|orientation)|role="region"|aria-labelledby|aria-controls|accordion|collapse)[^>]*>([\s\S]*?)<\/(?:div|section|p|span|li|details)>/gi;
               let match;
               while ((match = accordionContentRegex.exec(html)) !== null) {
-                // Strip remaining HTML tags to get plain text
-                const plainText = match[1]
+                pushExtracted(match[1]);
+              }
+
+              // Extract table rows (critical for pricing credit examples often rendered in FAQ accordions)
+              const tableRowRegex = /<tr[^>]*>([\s\S]*?)<\/tr>/gi;
+              while ((match = tableRowRegex.exec(html)) !== null) {
+                const rowHtml = match[1];
+                const cells = Array.from(rowHtml.matchAll(/<t[hd][^>]*>([\s\S]*?)<\/t[hd]>/gi))
+                  .map((cellMatch) => cellMatch[1]
+                    .replace(/<[^>]+>/g, ' ')
+                    .replace(/\s+/g, ' ')
+                    .trim())
+                  .filter(Boolean);
+
+                if (cells.length >= 2) {
+                  pushExtracted(cells.join(' | '));
+                }
+              }
+
+              // Targeted capture for "What is a credit?" FAQ content block and task-cost examples
+              const creditFaqIndex = html.toLowerCase().indexOf('what is a credit?');
+              if (creditFaqIndex >= 0) {
+                const creditFaqSegment = html.slice(creditFaqIndex, creditFaqIndex + 18000)
+                  .replace(/<script[\s\S]*?<\/script>/gi, ' ')
+                  .replace(/<style[\s\S]*?<\/style>/gi, ' ')
                   .replace(/<[^>]+>/g, ' ')
                   .replace(/\s+/g, ' ')
                   .trim();
-                if (plainText.length > 30) { // Only meaningful content
-                  extractedTexts.push(plainText);
+
+                const targetedFaqSignals: Array<{ pattern: RegExp; snippet: string }> = [
+                  { pattern: /default\s*mode\s*:\s*credits\s+vary\s+based\s+on\s+task\s+complexity/i, snippet: 'Default Mode: credits vary based on task complexity' },
+                  { pattern: /chat\s*mode\s*:\s*1\s+credit\s+per\s+message/i, snippet: 'Chat Mode: 1 credit per message' },
+                  { pattern: /make\s+the\s+button\s+gray[\s\S]{0,120}(?:0\.50|0,50)/i, snippet: 'Prompt example: “Make the button gray” maps to 0.50 credits' },
+                  { pattern: /remove\s+the\s+footer[\s\S]{0,120}(?:0\.90|0,90)/i, snippet: 'Prompt example: “Remove the footer” maps to 0.90 credits' },
+                  { pattern: /add\s+authentication\s+with\s+sign\s+up\s+and\s+login[\s\S]{0,180}(?:1\.20|1,20)/i, snippet: 'Prompt example: “Add authentication with sign up and login” maps to 1.20 credits' },
+                  { pattern: /build\s+me\s+a\s+landing\s+page,?\s+use\s+images[\s\S]{0,180}(?:1\.70|1,70)/i, snippet: 'Prompt example: “Build me a landing page, use images” maps to 1.70 credits' },
+                ];
+
+                for (const signal of targetedFaqSignals) {
+                  if (signal.pattern.test(creditFaqSegment)) {
+                    pushExtracted(signal.snippet);
+                  }
                 }
               }
-              
+
               if (extractedTexts.length > 0) {
-                console.log(`Extracted ${extractedTexts.length} accordion sections from HTML for: ${pageUrl}`);
+                console.log(`Extracted ${extractedTexts.length} accordion/table sections from HTML for: ${pageUrl}`);
                 finalMarkdown += '\n\n---\n\n## FAQ / Accordion Content\n\n' + extractedTexts.join('\n\n');
               }
             }
