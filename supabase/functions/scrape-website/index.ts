@@ -647,10 +647,30 @@ Deno.serve(async (req) => {
                 }
               }
 
-              // Targeted capture for "What is a credit?" FAQ content block
-              const creditFaqBlockMatch = html.match(/what\s+is\s+a\s+credit\?[\s\S]{0,5000}?<\/(?:section|details|div)>/i);
-              if (creditFaqBlockMatch) {
-                pushExtracted(creditFaqBlockMatch[0]);
+              // Targeted capture for "What is a credit?" FAQ content block and task-cost examples
+              const creditFaqIndex = html.toLowerCase().indexOf('what is a credit?');
+              if (creditFaqIndex >= 0) {
+                const creditFaqSegment = html.slice(creditFaqIndex, creditFaqIndex + 18000)
+                  .replace(/<script[\s\S]*?<\/script>/gi, ' ')
+                  .replace(/<style[\s\S]*?<\/style>/gi, ' ')
+                  .replace(/<[^>]+>/g, ' ')
+                  .replace(/\s+/g, ' ')
+                  .trim();
+
+                const targetedFaqSignals: Array<{ pattern: RegExp; snippet: string }> = [
+                  { pattern: /default\s*mode\s*:\s*credits\s+vary\s+based\s+on\s+task\s+complexity/i, snippet: 'Default Mode: credits vary based on task complexity' },
+                  { pattern: /chat\s*mode\s*:\s*1\s+credit\s+per\s+message/i, snippet: 'Chat Mode: 1 credit per message' },
+                  { pattern: /make\s+the\s+button\s+gray[\s\S]{0,120}(?:0\.50|0,50)/i, snippet: 'Prompt example: “Make the button gray” maps to 0.50 credits' },
+                  { pattern: /remove\s+the\s+footer[\s\S]{0,120}(?:0\.90|0,90)/i, snippet: 'Prompt example: “Remove the footer” maps to 0.90 credits' },
+                  { pattern: /add\s+authentication\s+with\s+sign\s+up\s+and\s+login[\s\S]{0,180}(?:1\.20|1,20)/i, snippet: 'Prompt example: “Add authentication with sign up and login” maps to 1.20 credits' },
+                  { pattern: /build\s+me\s+a\s+landing\s+page,?\s+use\s+images[\s\S]{0,180}(?:1\.70|1,70)/i, snippet: 'Prompt example: “Build me a landing page, use images” maps to 1.70 credits' },
+                ];
+
+                for (const signal of targetedFaqSignals) {
+                  if (signal.pattern.test(creditFaqSegment)) {
+                    pushExtracted(signal.snippet);
+                  }
+                }
               }
 
               if (extractedTexts.length > 0) {
