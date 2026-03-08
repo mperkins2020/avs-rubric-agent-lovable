@@ -182,10 +182,10 @@ const Methodology = () => {
 
                 <div className="space-y-2 mb-4">
                   {[
-                    { layer: 4, name: "Buyer Alignment", question: "Can the economic buyer approve this?", opacity: "bg-primary/15 border-primary/40" },
-                    { layer: 3, name: "Risk Management", question: "Can customers control spend & avoid surprises?", opacity: "bg-primary/10 border-primary/30" },
-                    { layer: 2, name: "Value-Cost Alignment", question: "Can customers predict what they'll pay?", opacity: "bg-primary/7 border-primary/20" },
-                    { layer: 1, name: "Foundation", question: "Do you know who you serve & what success looks like?", opacity: "bg-primary/4 border-primary/15" },
+                    { layer: 4, name: "Enterprise Readiness", question: "Can the economic buyer approve this?", opacity: "bg-primary/15 border-primary/40" },
+                    { layer: 3, name: "Operational Controls", question: "Can customers control spend & avoid surprises?", opacity: "bg-primary/10 border-primary/30" },
+                    { layer: 2, name: "Pricing Architecture", question: "Can customers predict what they'll pay?", opacity: "bg-primary/7 border-primary/20" },
+                    { layer: 1, name: "Product-ICP Clarity", question: "Do you know who you serve & what success looks like?", opacity: "bg-primary/4 border-primary/15" },
                   ].map((l, i) => (
                     <div key={l.layer}>
                       <div className={`p-4 rounded-lg border ${l.opacity}`}>
@@ -206,7 +206,7 @@ const Methodology = () => {
                 </p>
 
                 <Accordion type="multiple" className="space-y-3">
-                  <LayerGroup label="Layer 1: Foundation" color="text-primary">
+                  <LayerGroup label="Layer 1: Product-ICP Clarity" color="text-primary">
                     <DimensionAccordion
                       value="d1"
                       num={1}
@@ -225,7 +225,7 @@ const Methodology = () => {
                     />
                   </LayerGroup>
 
-                  <LayerGroup label="Layer 2: Value-Cost Alignment" color="text-primary">
+                  <LayerGroup label="Layer 2: Pricing Architecture" color="text-primary">
                     <DimensionAccordion
                       value="d3"
                       num={3}
@@ -244,7 +244,7 @@ const Methodology = () => {
                     />
                   </LayerGroup>
 
-                  <LayerGroup label="Layer 3: Risk Management" color="text-primary">
+                  <LayerGroup label="Layer 3: Operational Controls" color="text-primary">
                     <DimensionAccordion
                       value="d5"
                       num={5}
@@ -271,7 +271,7 @@ const Methodology = () => {
                     />
                   </LayerGroup>
 
-                  <LayerGroup label="Layer 4: Buyer Alignment" color="text-primary">
+                  <LayerGroup label="Layer 4: Enterprise Readiness" color="text-primary">
                     <DimensionAccordion
                       value="d8"
                       num={8}
