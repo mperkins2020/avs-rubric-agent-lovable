@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronDown, AlertCircle, Info } from "lucide-react";
+import { ChevronDown, AlertCircle, Info, ExternalLink, FileText } from "lucide-react";
 import { GlassCard } from "@/components/ui/GlassCard";
 import { ScoreBadge } from "@/components/ScoreBadge";
 import { cn } from "@/lib/utils";
@@ -26,6 +26,15 @@ export function DimensionCard({ dimension, index }: DimensionCardProps) {
     if (dimension.confidence >= 0.7) return "text-confidence-strong";
     if (dimension.confidence >= 0.4) return "text-confidence-partial";
     return "text-confidence-sparse";
+  };
+
+  const formatUrl = (url: string) => {
+    try {
+      const u = new URL(url);
+      return u.pathname === "/" ? u.hostname : `${u.hostname}${u.pathname}`;
+    } catch {
+      return url;
+    }
   };
 
   return (
@@ -99,6 +108,35 @@ export function DimensionCard({ dimension, index }: DimensionCardProps) {
                           >
                             <span className="text-primary mt-1">•</span>
                             {item}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {/* Source Evidence */}
+                  {dimension.sourceEvidence && dimension.sourceEvidence.length > 0 && (
+                    <div className="bg-primary/5 rounded-lg p-3 border border-primary/10">
+                      <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                        <FileText className="w-3 h-3" />
+                        Evidence sources
+                      </h4>
+                      <ul className="space-y-2">
+                        {dimension.sourceEvidence.map((evidence, i) => (
+                          <li key={i} className="text-sm">
+                            <a
+                              href={evidence.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-primary hover:underline inline-flex items-center gap-1 font-medium"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              {formatUrl(evidence.url)}
+                              <ExternalLink className="w-3 h-3 flex-shrink-0" />
+                            </a>
+                            <p className="text-foreground/60 text-xs mt-0.5 italic pl-0.5">
+                              &ldquo;{evidence.snippet}&rdquo;
+                            </p>
                           </li>
                         ))}
                       </ul>

@@ -3,6 +3,11 @@ export interface MissingInsiderPrompt {
   fieldPaths: string[];
 }
 
+export interface SourceEvidence {
+  url: string;
+  snippet: string;
+}
+
 export interface DimensionScore {
   dimension: string;
   score: 0 | 1 | 2;
@@ -10,6 +15,7 @@ export interface DimensionScore {
   notObservable: boolean;
   rationale: string;
   observed: string[];
+  sourceEvidence?: SourceEvidence[];
   uncertaintyReasons: string[];
   missingInsiderPrompts?: MissingInsiderPrompt[];
 }

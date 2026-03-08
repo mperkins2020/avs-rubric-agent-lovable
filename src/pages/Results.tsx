@@ -11,6 +11,7 @@ import { DimensionCard } from "@/components/DimensionCard";
 import { StrengthsWeaknesses } from "@/components/StrengthsWeaknesses";
 import { ChatPanel } from "@/components/ChatPanel";
 import { InsiderPromptsPanel } from "@/components/InsiderPromptsPanel";
+import { EvidenceSourcesPanel } from "@/components/EvidenceSourcesPanel";
 
 import { FeedbackForm } from "@/components/FeedbackForm";
 import { scraperApi, type ScrapedPage } from "@/lib/api/scraper";
@@ -353,6 +354,9 @@ export default function Results() {
               data={observability}
               onDimensionClick={handleDimensionClick}
             />
+
+            {/* Evidence Sources */}
+            <EvidenceSourcesPanel pages={pages} />
 
             {/* Strengths & Weaknesses */}
             <motion.div

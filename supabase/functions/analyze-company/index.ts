@@ -1207,6 +1207,7 @@ Return a JSON object matching this schema EXACTLY:
       "notObservable": boolean,
       "rationale": "explanation",
       "observed": ["specific observations"],
+      "sourceEvidence": [{"url": "the page URL where the evidence was found", "snippet": "the exact quote or key phrase from that page"}],
       "uncertaintyReasons": ["reasons for uncertainty"],
       "missingInsiderPrompts": [
         {
