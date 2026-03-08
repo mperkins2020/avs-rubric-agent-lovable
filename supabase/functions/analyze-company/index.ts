@@ -1757,51 +1757,130 @@ ${truncatedContent}`;
     console.log('Rubric scoring complete');
 
     // Calculate totals
-    const dimensionScores = ((rubricData.dimensionScores || []) as Array<{ 
-      dimension: string; 
-      score: number; 
-      confidence: number; 
+    type SourceEvidence = { url: string; snippet: string };
+
+    const parseSourceEvidenceFromObserved = (entry: string): SourceEvidence | null => {
+      if (typeof entry !== 'string') return null;
+      const match = entry.match(/(https?:\/\/[^\s"”]+)\s*:\s*["“]?([\s\S]+?)["”]?$/);
+      if (!match) return null;
+
+      const urlValue = match[1]?.trim();
+      const snippetValue = match[2]?.replace(/["”]+$/g, '').trim();
+      if (!urlValue || !snippetValue) return null;
+
+      return {
+        url: urlValue,
+        snippet: snippetValue.slice(0, 260),
+      };
+    };
+
+    const normalizeSourceEvidence = (rawEvidence: unknown, observedEntries: string[]): SourceEvidence[] => {
+      const fromModel = Array.isArray(rawEvidence)
+        ? rawEvidence
+            .filter((item): item is { url?: unknown; snippet?: unknown } => typeof item === 'object' && item !== null)
+            .map((item) => ({
+              url: typeof item.url === 'string' ? item.url.trim() : '',
+              snippet: typeof item.snippet === 'string' ? item.snippet.trim() : '',
+            }))
+            .filter((item) => item.url.length > 0 && item.snippet.length > 0)
+        : [];
+
+      const fromObserved = observedEntries
+        .map(parseSourceEvidenceFromObserved)
+        .filter((item): item is SourceEvidence => item !== null);
+
+      const seen = new Set<string>();
+      const merged: SourceEvidence[] = [];
+
+      for (const item of [...fromModel, ...fromObserved]) {
+        const key = `${item.url}|${item.snippet}`;
+        if (seen.has(key)) continue;
+        seen.add(key);
+        merged.push(item);
+      }
+
+      return merged.slice(0, 6);
+    };
+
+    const hasExplicitCreditFaqSignals = evidenceDigest.costDriver.some((item) =>
+      /(default mode|chat mode|1 credit per message|task complexity|0\.50|0\.90|1\.20|1\.70)/i.test(item)
+    );
+
+    const dimensionScores = ((rubricData.dimensionScores || []) as Array<{
+      dimension: string;
+      score: number;
+      confidence: number;
       notObservable: boolean;
       rationale: string;
       observed: string[];
+      sourceEvidence?: Array<{ url: string; snippet: string }>;
       uncertaintyReasons: string[];
       missingInsiderPrompts?: Array<{ question: string; fieldPaths: string[] }>;
     }>).map((dimension) => {
       const observed = Array.isArray(dimension.observed) ? [...dimension.observed] : [];
       const uncertaintyReasons = Array.isArray(dimension.uncertaintyReasons) ? [...dimension.uncertaintyReasons] : [];
+      const sourceEvidence = normalizeSourceEvidence(dimension.sourceEvidence, observed);
 
       if (dimension.dimension === 'Product north star' && dimension.score === 0 && evidenceDigest.northStar.length >= 2) {
-        const mergedObserved = [...observed, ...evidenceDigest.northStar].slice(0, 3);
+        const mergedObserved = [...observed, ...evidenceDigest.northStar].slice(0, 4);
+        const mergedSourceEvidence = normalizeSourceEvidence(sourceEvidence, mergedObserved);
+
         return {
           ...dimension,
           score: 1,
-          confidence: Math.max(Number(dimension.confidence) || 0, 0.5),
+          confidence: Math.max(Number(dimension.confidence) || 0, 0.55),
           notObservable: false,
           rationale: 'Public pricing/template signals describe concrete value-delivery outcomes and intended workflows, which supports an emerging product north star even though predictability metrics are still incomplete.',
           observed: mergedObserved,
+          sourceEvidence: mergedSourceEvidence,
           uncertaintyReasons: [...uncertaintyReasons, 'Public pages still do not expose a single explicit predictability metric target.'].slice(0, 2),
         };
       }
 
-      if (dimension.dimension === 'Cost driver mapping' && dimension.score === 0 && evidenceDigest.costDriver.length >= 2) {
-        const mergedObserved = [...observed, ...evidenceDigest.costDriver].slice(0, 3);
+      if (dimension.dimension === 'Cost driver mapping') {
+        const mergedObserved = [...observed, ...evidenceDigest.costDriver].slice(0, 4);
+        const mergedSourceEvidence = normalizeSourceEvidence(sourceEvidence, mergedObserved);
+
+        if (dimension.score === 0 && evidenceDigest.costDriver.length >= 2) {
+          return {
+            ...dimension,
+            score: 1,
+            confidence: Math.max(Number(dimension.confidence) || 0, hasExplicitCreditFaqSignals ? 0.65 : 0.5),
+            notObservable: false,
+            rationale: 'The pricing surface explicitly defines usage-linked economics (credits, usage-based Cloud + AI, task-level credit examples, rollovers/top-ups), which is enough for emerging cost-driver mapping even if detailed formulas are not publicly documented.',
+            observed: mergedObserved,
+            sourceEvidence: mergedSourceEvidence,
+            uncertaintyReasons: [...uncertaintyReasons, 'Driver formulas and p50/p95 workflow cost estimates remain non-public.'].slice(0, 2),
+          };
+        }
+
+        if (hasExplicitCreditFaqSignals && (Number(dimension.confidence) || 0) < 0.65) {
+          return {
+            ...dimension,
+            confidence: 0.65,
+            notObservable: false,
+            observed: mergedObserved,
+            sourceEvidence: mergedSourceEvidence,
+            uncertaintyReasons,
+          };
+        }
+
         return {
           ...dimension,
-          score: 1,
-          confidence: Math.max(Number(dimension.confidence) || 0, 0.5),
-          notObservable: false,
-          rationale: 'The pricing surface explicitly defines usage-linked economics (credits, usage-based Cloud + AI, rollovers/top-ups), which is enough for emerging cost-driver mapping even if detailed formulas are not publicly documented.',
-          observed: mergedObserved,
-          uncertaintyReasons: [...uncertaintyReasons, 'Driver formulas and p50/p95 workflow cost estimates remain non-public.'].slice(0, 2),
+          observed,
+          sourceEvidence: mergedSourceEvidence,
+          uncertaintyReasons,
         };
       }
 
       return {
         ...dimension,
         observed,
+        sourceEvidence,
         uncertaintyReasons,
       };
     });
+
     const totalScore = dimensionScores.reduce((sum, d) => sum + d.score, 0);
     const maxScore = dimensionScores.length * 2;
 
