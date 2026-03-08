@@ -55,9 +55,9 @@ const lovableExample: ExampleData = {
   band: "Advanced",
   bandClass: "text-score-high bg-score-high/10 border-score-high/30",
   bandDesc: "Enterprise-ready trust infrastructure — supports fastest sales cycles",
-  score: 15,
+  score: 14,
   maxScore: 16,
-  percentage: "94%",
+  percentage: "88%",
   strengths: {
     title: "ICP and job clarity",
     desc: "Lovable clearly articulates its target audience segments and the specific problems it solves for each, supported by a comprehensive list of use cases and templates.",
@@ -75,7 +75,7 @@ const lovableExample: ExampleData = {
   dimensions: [
     { n: "01", name: "Product north star", conf: "High", score: "2/2", color: "text-score-high bg-score-high/15" },
     { n: "02", name: "ICP and job clarity", conf: "High", score: "2/2", color: "text-score-high bg-score-high/15" },
-    { n: "03", name: "Buyer and budget alignment", conf: "High", score: "2/2", color: "text-score-high bg-score-high/15" },
+    { n: "03", name: "Cost driver mapping", conf: "High", score: "1/2", color: "text-yellow-500 bg-yellow-500/15" },
     { n: "04", name: "Value unit", conf: "High", score: "2/2", color: "text-score-high bg-score-high/15" },
   ],
 };
