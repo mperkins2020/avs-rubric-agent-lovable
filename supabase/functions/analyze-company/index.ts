@@ -1913,6 +1913,7 @@ ${truncatedContent}`;
 
     const result = {
       success: true,
+      analysisVersion: ANALYSIS_VERSION,
       companyProfile,
       rubricScore: {
         totalScore,
