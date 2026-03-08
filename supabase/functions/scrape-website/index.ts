@@ -531,6 +531,7 @@ Deno.serve(async (req) => {
           const highIntentMainDomain = sameDomain && highIntentMainDomainPaths.has(path);
           const keywordMatch = priorityPatterns.some(pattern => pattern.test(link));
           const docsSubdomain = subdomainPattern.test(link);
+          const docsCreditOrPricingPath = docsSubdomain && /\/(plans-and-credits|credits|pricing|billing|usage|subscription)\b/i.test(path);
 
           let score = 0;
           if (communityUrlSet.has(link)) score += 1000;
@@ -538,6 +539,7 @@ Deno.serve(async (req) => {
           if (shallowMainDomain) score += 500;
           if (keywordMatch) score += 250;
           if (docsSubdomain) score += 100;
+          if (docsCreditOrPricingPath) score += 700;
 
           return { link, score };
         })
