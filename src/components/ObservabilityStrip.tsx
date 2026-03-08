@@ -1,7 +1,7 @@
 import { motion } from "framer-motion";
 import { GlassCard } from "@/components/ui/GlassCard";
 import { ConfidenceIndicator } from "@/components/ConfidenceIndicator";
-import { FileText, AlertTriangle, ArrowDown } from "lucide-react";
+import { FileText, AlertTriangle, ArrowDown, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { ObservabilityData } from "@/types/rubric";
@@ -50,14 +50,28 @@ export function ObservabilityStrip({
               </span>
             </div>
             <div className="flex flex-wrap gap-2">
-              {data.pagesUsed.map((page) => (
-                <span
-                  key={page}
-                  className="px-2 py-1 text-xs bg-secondary/50 rounded-md text-secondary-foreground"
-                >
-                  {page}
-                </span>
-              ))}
+              {data.pagesUsed.map((page) => {
+                const formatUrl = (url: string) => {
+                  try {
+                    const u = new URL(url);
+                    return u.pathname === "/" ? u.hostname : `${u.hostname}${u.pathname}`;
+                  } catch {
+                    return url;
+                  }
+                };
+                return (
+                  <a
+                    key={page}
+                    href={page}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="px-2 py-1 text-xs bg-secondary/50 rounded-md text-primary hover:bg-secondary/80 transition-colors inline-flex items-center gap-1"
+                  >
+                    {formatUrl(page)}
+                    <ExternalLink className="w-2.5 h-2.5 flex-shrink-0" />
+                  </a>
+                );
+              })}
             </div>
           </div>
 
