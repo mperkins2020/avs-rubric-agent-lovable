@@ -1691,6 +1691,12 @@ ${previousScores.map((s: { dimension: string; score: number; confidence: number 
 Since these are insider-only inputs, scores should remain the same as previous unless a public URL was provided in the answers.
 ` : ''}` : ''}
 
+HIGH-SIGNAL EVIDENCE DIGEST (prioritized snippets from public pages):
+- Product north star candidates:
+${evidenceDigest.northStar.length > 0 ? evidenceDigest.northStar.map((item) => `  - ${item}`).join('\n') : '  - None captured'}
+- Cost driver mapping candidates:
+${evidenceDigest.costDriver.length > 0 ? evidenceDigest.costDriver.map((item) => `  - ${item}`).join('\n') : '  - None captured'}
+
 Website Content:
 ${truncatedContent}`;
 
