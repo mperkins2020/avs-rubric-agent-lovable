@@ -574,7 +574,7 @@ Deno.serve(async (req) => {
           console.log('Scraping:', pageUrl, needsFullContent ? '(full content)' : '(main only)', hasAccordions ? '(+html for accordions)' : '');
           
           const formats: string[] = ['markdown'];
-          if (hasAccordions) formats.push('html');
+          if (hasAccordions) formats.push('html', 'rawHtml');
           
           const pageResponse = await fetch('https://api.firecrawl.dev/v1/scrape', {
             method: 'POST',
