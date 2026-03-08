@@ -26,6 +26,8 @@ interface FirecrawlScrapeResponse {
   success: boolean;
   data?: {
     markdown?: string;
+    html?: string;
+    rawHtml?: string;
     metadata?: { title?: string; description?: string; keywords?: string };
   };
 }
