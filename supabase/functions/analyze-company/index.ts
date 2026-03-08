@@ -165,7 +165,7 @@ THE 8 DIMENSIONS:
 
    #### Gates (hard enforcement caps)
    - If NS1 fails: final score = 0. No stated value outcome means no north star.
-   - If NS2 fails: cap final score at 1. No predictability outcome means incomplete for AVS.
+   - If NS2 fails: reduce confidence by 0.15 but allow score 2 if other subtests justify it. Predictability is preferred but not required for AI-native products.
    - If NS3 fails: cap final score at 1. If it is not measurable, it is not an outcome.
 
    ## Confidence (separate from score)
