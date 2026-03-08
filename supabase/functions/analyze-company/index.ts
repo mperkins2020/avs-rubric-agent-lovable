@@ -1474,9 +1474,11 @@ Deno.serve(async (req) => {
 
     console.log(`Analyzing ${pages.length} pages from ${url}`);
 
-    // Prepare content for analysis — strip boilerplate before sending to AI
+    // Prepare content for analysis — prioritize high-signal pages before truncation
     const stripBoilerplate = (markdown: string): string => {
       return markdown
+        // Remove image-only markdown lines (high token cost, low evidence value)
+        .replace(/^\s*!\[[^\]]*\]\([^\)]+\)\s*$/gim, '')
         // Remove copyright footers
         .replace(/©\s*\d{4}[^\n]*/gi, '')
         .replace(/copyright\s*©?\s*\d{4}[^\n]*/gi, '')
@@ -1495,16 +1497,90 @@ Deno.serve(async (req) => {
         .trim();
     };
 
-    const combinedContent = pages.map(page => 
-      `## ${page.title} (${page.url})\n\n${stripBoilerplate(page.markdown)}`
-    ).join('\n\n---\n\n');
+    const isLikely404Page = (page: ScrapedPage): boolean => {
+      const text = `${page.title}\n${page.markdown}`.toLowerCase();
+      return text.includes('page not found') || text.includes('# 404') || text.includes('doesn\'t exist or has been moved');
+    };
 
-    // Truncate if too long (keeping ~100k chars for safety)
-    const truncatedContent = combinedContent.length > 100000 
-      ? combinedContent.substring(0, 100000) + '\n\n[Content truncated...]'
-      : combinedContent;
+    const scorePagePriority = (page: ScrapedPage): number => {
+      const target = `${page.url} ${page.title}`.toLowerCase();
+      const content = page.markdown.toLowerCase();
+
+      let score = 0;
+      if (/\/(pricing|plans?|billing|usage|credits|subscription)\b/.test(target)) score += 1200;
+      if (/\/(faq|support|help|docs|changelog|trust|security|api|developers?)\b/.test(target)) score += 900;
+      if (/\/(terms|legal|privacy)\b/.test(target)) score += 450;
+      if (/faq \/ accordion content/i.test(page.markdown)) score += 500;
+
+      // Boost pages that actually contain economic/pricing evidence
+      if (/(credit|top-up|overage|usage-based|monthly|annual|tier|pricing|quota|limit|billing)/i.test(content)) score += 300;
+
+      // Penalize noisy showcase/marketplace pages
+      if (/\/(discover|templates|products)\b/.test(target)) score -= 500;
+
+      // Keep homepage, but lower than pricing/docs evidence pages
+      if (page.url.replace(/\/$/, '') === url.replace(/\/$/, '')) score -= 150;
+
+      return score;
+    };
+
+    const cleanedPages = pages
+      .filter((page) => !isLikely404Page(page))
+      .map((page) => ({ ...page, markdown: stripBoilerplate(page.markdown) }))
+      .filter((page) => page.markdown.length > 0);
+
+    // Fallback to original pages if everything was filtered out
+    const candidatePages = cleanedPages.length > 0 ? cleanedPages : pages;
+
+    const prioritizedPages = [...candidatePages]
+      .sort((a, b) => scorePagePriority(b) - scorePagePriority(a));
+
+    const MAX_CONTENT_CHARS = 100000;
+    let usedChars = 0;
+    const selectedBlocks: string[] = [];
+    const selectedUrls: string[] = [];
+
+    for (const page of prioritizedPages) {
+      const priority = scorePagePriority(page);
+      const perPageBudget = priority >= 1000 ? 18000 : priority >= 600 ? 12000 : 6000;
+
+      let pageMarkdown = page.markdown;
+
+      // Ensure FAQ/accordion extraction survives per-page trimming
+      const faqMatch = pageMarkdown.match(/## FAQ \/ Accordion Content[\s\S]*/i);
+      const faqSection = faqMatch ? faqMatch[0] : '';
+
+      if (pageMarkdown.length > perPageBudget) {
+        if (faqSection.length > 0) {
+          const preservedFaq = faqSection.slice(0, 5000);
+          const mainBudget = Math.max(1500, perPageBudget - preservedFaq.length - 2);
+          pageMarkdown = `${pageMarkdown.slice(0, mainBudget).trim()}\n\n${preservedFaq}`;
+        } else {
+          pageMarkdown = pageMarkdown.slice(0, perPageBudget).trim();
+        }
+      }
+
+      const block = `## ${page.title} (${page.url})\n\n${pageMarkdown}`;
+      const blockWithDivider = selectedBlocks.length === 0 ? block : `\n\n---\n\n${block}`;
+
+      if (usedChars + blockWithDivider.length > MAX_CONTENT_CHARS) {
+        const remaining = MAX_CONTENT_CHARS - usedChars;
+        if (remaining > 1500) {
+          selectedBlocks.push(blockWithDivider.slice(0, remaining) + '\n\n[Content truncated...]');
+          selectedUrls.push(page.url);
+        }
+        break;
+      }
+
+      selectedBlocks.push(blockWithDivider);
+      selectedUrls.push(page.url);
+      usedChars += blockWithDivider.length;
+    }
+
+    const truncatedContent = selectedBlocks.join('');
 
     console.log('Content length:', truncatedContent.length);
+    console.log('Pages selected for scoring:', selectedUrls);
 
     // Step 1: Extract company profile
     console.log('Extracting company profile...');
