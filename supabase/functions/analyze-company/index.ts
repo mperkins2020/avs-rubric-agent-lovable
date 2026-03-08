@@ -1842,6 +1842,49 @@ ${truncatedContent}`;
         };
       }
 
+      if (dimension.dimension === 'Value unit') {
+        const mergedObserved = [...observed, ...evidenceDigest.costDriver].slice(0, 5);
+        const mergedSourceEvidence = normalizeSourceEvidence(sourceEvidence, mergedObserved);
+
+        if (hasExplicitCreditFaqSignals && dimension.score === 0) {
+          return {
+            ...dimension,
+            score: 1,
+            confidence: Math.max(Number(dimension.confidence) || 0, 0.65),
+            notObservable: false,
+            rationale: 'Public FAQ evidence clearly defines credits as a billable unit and shows concrete task/message credit examples, which supports an emerging value unit even though full deterministic metering details are still incomplete.',
+            observed: mergedObserved,
+            sourceEvidence: mergedSourceEvidence,
+            uncertaintyReasons: [
+              ...uncertaintyReasons.filter((reason) => !/audit|visibility|breakdown/i.test(reason)),
+              'Detailed deterministic metering rules (rounding, attribution boundaries, and edge-case counting) are still not fully public.',
+            ].slice(0, 2),
+          };
+        }
+
+        if (hasPerMessageCreditVisibilitySignals && (Number(dimension.confidence) || 0) < 0.7) {
+          return {
+            ...dimension,
+            confidence: 0.7,
+            notObservable: false,
+            rationale: 'Public FAQ evidence shows explicit per-message/task credit costs and message-level visibility, so value-unit transparency is publicly demonstrable; remaining uncertainty is mostly around full metering formula details.',
+            observed: mergedObserved,
+            sourceEvidence: mergedSourceEvidence,
+            uncertaintyReasons: [
+              ...uncertaintyReasons.filter((reason) => !/audit|visibility|breakdown/i.test(reason)),
+              'Full metering formula details (rounding and attribution edge cases) are not fully specified in public docs.',
+            ].slice(0, 2),
+          };
+        }
+
+        return {
+          ...dimension,
+          observed,
+          sourceEvidence: mergedSourceEvidence,
+          uncertaintyReasons,
+        };
+      }
+
       if (dimension.dimension === 'Cost driver mapping') {
         const mergedObserved = [...observed, ...evidenceDigest.costDriver].slice(0, 4);
         const mergedSourceEvidence = normalizeSourceEvidence(sourceEvidence, mergedObserved);
