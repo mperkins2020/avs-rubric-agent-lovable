@@ -355,8 +355,14 @@ export default function Results() {
               onDimensionClick={handleDimensionClick}
             />
 
-            {/* Evidence Sources */}
-            <EvidenceSourcesPanel pages={pages} />
+            {/* Evidence Sources — only show pages actually used for scoring */}
+            <EvidenceSourcesPanel
+              pages={
+                observability?.pagesUsed
+                  ? pages.filter(p => observability.pagesUsed.includes(p.url))
+                  : pages
+              }
+            />
 
             {/* Strengths & Weaknesses */}
             <motion.div
