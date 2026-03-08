@@ -19,7 +19,7 @@ interface AnalyzeRequest {
   previousScores?: Array<{ dimension: string; score: number; confidence: number }>;
 }
 
-const ANALYSIS_VERSION = '2026-03-08-credit-faq-v2';
+const ANALYSIS_VERSION = '2026-03-08-3pass-allnets-v1';
 
 const COMPANY_PROFILE_PROMPT = `You are an expert business analyst. Analyze the following website content and extract a company profile.
 
@@ -1549,25 +1549,41 @@ Deno.serve(async (req) => {
     const collectHighSignalEvidence = (inputPages: ScrapedPage[]) => {
       const northStar: string[] = [];
       const costDriver: string[] = [];
+      const icpJob: string[] = [];
+      const buyerBudget: string[] = [];
+      const valueUnit: string[] = [];
+      const poolsPackaging: string[] = [];
+      const overagesRisk: string[] = [];
+      const safetyRails: string[] = [];
       const seenNorthStar = new Set<string>();
       const seenCostDriver = new Set<string>();
+      const seenIcpJob = new Set<string>();
+      const seenBuyerBudget = new Set<string>();
+      const seenValueUnit = new Set<string>();
+      const seenPoolsPackaging = new Set<string>();
+      const seenOveragesRisk = new Set<string>();
+      const seenSafetyRails = new Set<string>();
 
-      const pushUniqueEvidence = (bucket: 'northStar' | 'costDriver', pageUrl: string, snippet: string) => {
+      const bucketMap: Record<string, { arr: string[]; seen: Set<string> }> = {
+        northStar: { arr: northStar, seen: seenNorthStar },
+        costDriver: { arr: costDriver, seen: seenCostDriver },
+        icpJob: { arr: icpJob, seen: seenIcpJob },
+        buyerBudget: { arr: buyerBudget, seen: seenBuyerBudget },
+        valueUnit: { arr: valueUnit, seen: seenValueUnit },
+        poolsPackaging: { arr: poolsPackaging, seen: seenPoolsPackaging },
+        overagesRisk: { arr: overagesRisk, seen: seenOveragesRisk },
+        safetyRails: { arr: safetyRails, seen: seenSafetyRails },
+      };
+
+      const pushUniqueEvidence = (bucket: string, pageUrl: string, snippet: string) => {
         const cleanedSnippet = cleanEvidenceLine(snippet).slice(0, 260);
         if (cleanedSnippet.length < 20) return;
-
+        const b = bucketMap[bucket];
+        if (!b || b.arr.length >= 10) return;
         const formatted = `${pageUrl}: "${cleanedSnippet}"`;
-
-        if (bucket === 'northStar') {
-          if (northStar.length >= 10 || seenNorthStar.has(formatted)) return;
-          seenNorthStar.add(formatted);
-          northStar.push(formatted);
-          return;
-        }
-
-        if (costDriver.length >= 10 || seenCostDriver.has(formatted)) return;
-        seenCostDriver.add(formatted);
-        costDriver.push(formatted);
+        if (b.seen.has(formatted)) return;
+        b.seen.add(formatted);
+        b.arr.push(formatted);
       };
 
       const pagePriority = (pageUrl: string) => {
@@ -1583,20 +1599,56 @@ Deno.serve(async (req) => {
         const lines = page.markdown.split('\n');
 
         for (const rawLine of lines) {
-          if (northStar.length >= 10 && costDriver.length >= 10) break;
-
           const line = cleanEvidenceLine(rawLine);
           if (line.length < 20 || line.length > 360) continue;
 
-          const northStarMatch = /(build|create|prototype|production-ready|deploy|ship|launch|workflow|real[- ]time|capacity|team|template|use case)/i.test(line);
-          const costDriverMatch = /(credit|usage-based|top-?up|rollover|monthly credits?|daily credits?|overage|quota|limit|billing|cloud \+ ai|task complexity|1 credit per message|user prompt|work done|cost of each message|message history|three dots)/i.test(line);
-
-          if (northStarMatch) {
+          // North star
+          if (/(build|create|prototype|production-ready|deploy|ship|launch|workflow|real[- ]time|capacity|team|template|use case)/i.test(line)) {
             pushUniqueEvidence('northStar', page.url, line);
           }
 
-          if (costDriverMatch) {
+          // Cost driver
+          if (/(credit|usage-based|top-?up|rollover|monthly credits?|daily credits?|overage|quota|limit|billing|cloud \+ ai|task complexity|1 credit per message|user prompt|work done|cost of each message|message history|three dots)/i.test(line)) {
             pushUniqueEvidence('costDriver', page.url, line);
+          }
+
+          // ICP and job clarity
+          if (/(developer|engineer|startup|enterprise|team|freelancer|agency|designer|founder|non-technical|technical|solo|small business|mid-market)/i.test(line) &&
+              /(for |built for|designed for|ideal for|who|target|persona|audience|user)/i.test(line)) {
+            pushUniqueEvidence('icpJob', page.url, line);
+          }
+          if (/(use case|workflow|job|task|problem|solution|helps? you|enables? you|so you can)/i.test(line)) {
+            pushUniqueEvidence('icpJob', page.url, line);
+          }
+
+          // Buyer and budget alignment
+          if (/(free|starter|pro|team|enterprise|business|growth|scale|custom|contact sales)/i.test(line) &&
+              /(plan|tier|pricing|per month|per year|\/mo|\/yr|annual|monthly)/i.test(line)) {
+            pushUniqueEvidence('buyerBudget', page.url, line);
+          }
+          if (/(invoice|purchase order|annual contract|sso|soc ?2|dpa|rbac|admin|seat)/i.test(line)) {
+            pushUniqueEvidence('buyerBudget', page.url, line);
+          }
+
+          // Value unit
+          if (/(credit|token|minute|hour|api call|request|message|task|unit|per |metering|billable)/i.test(line) &&
+              /(cost|price|charge|bill|meter|usage|consume|spend|deduct)/i.test(line)) {
+            pushUniqueEvidence('valueUnit', page.url, line);
+          }
+
+          // Pools and packaging
+          if (/(included|allowance|pool|allocation|add-on|addon|top-?up|rollover|overage|tier|upgrade|downgrade|free trial|free tier|sandbox|credits? per)/i.test(line)) {
+            pushUniqueEvidence('poolsPackaging', page.url, line);
+          }
+
+          // Overages and risk allocation
+          if (/(overage|exceed|limit|cap|hard stop|soft limit|auto.?top.?up|grace|spike|dispute|refund|true.?up|budget cap|spending limit)/i.test(line)) {
+            pushUniqueEvidence('overagesRisk', page.url, line);
+          }
+
+          // Safety rails and trust surfaces
+          if (/(rate limit|budget cap|usage cap|alert|notification|dashboard|audit|kill switch|circuit breaker|approval|admin control|visibility|monitor)/i.test(line)) {
+            pushUniqueEvidence('safetyRails', page.url, line);
           }
         }
 
@@ -1606,10 +1658,10 @@ Deno.serve(async (req) => {
           { pattern: /default\s*mode\s*:\s*credits\s+vary\s+based\s+on\s+task\s+complexity/i, snippet: 'Default Mode: credits vary based on task complexity' },
           { pattern: /chat\s*mode\s*:\s*1\s+credit\s+per\s+message/i, snippet: 'Chat Mode: 1 credit per message' },
           { pattern: /you\s+can\s+see\s+the\s+cost\s+of\s+each\s+message[\s\S]{0,120}(?:three\s+dots?|message\s+history)/i, snippet: 'Message history exposes exact credits used per message (three-dots menu).' },
-          { pattern: /make\s+the\s+button\s+gray[\s\S]{0,160}(?:0\.50|0,50)/i, snippet: 'Prompt example: “Make the button gray” maps to 0.50 credits' },
-          { pattern: /remove\s+the\s+footer[\s\S]{0,160}(?:0\.90|0,90)/i, snippet: 'Prompt example: “Remove the footer” maps to 0.90 credits' },
-          { pattern: /add\s+authentication\s+with\s+sign\s+up\s+and\s+login[\s\S]{0,220}(?:1\.20|1,20)/i, snippet: 'Prompt example: “Add authentication with sign up and login” maps to 1.20 credits' },
-          { pattern: /build\s+me\s+a\s+landing\s+page,?\s+use\s+images[\s\S]{0,220}(?:1\.70|1,70)/i, snippet: 'Prompt example: “Build me a landing page, use images” maps to 1.70 credits' },
+          { pattern: /make\s+the\s+button\s+gray[\s\S]{0,160}(?:0\.50|0,50)/i, snippet: 'Prompt example: "Make the button gray" maps to 0.50 credits' },
+          { pattern: /remove\s+the\s+footer[\s\S]{0,160}(?:0\.90|0,90)/i, snippet: 'Prompt example: "Remove the footer" maps to 0.90 credits' },
+          { pattern: /add\s+authentication\s+with\s+sign\s+up\s+and\s+login[\s\S]{0,220}(?:1\.20|1,20)/i, snippet: 'Prompt example: "Add authentication with sign up and login" maps to 1.20 credits' },
+          { pattern: /build\s+me\s+a\s+landing\s+page,?\s+use\s+images[\s\S]{0,220}(?:1\.70|1,70)/i, snippet: 'Prompt example: "Build me a landing page, use images" maps to 1.70 credits' },
         ];
 
         for (const signal of targetedCostSignals) {
@@ -1633,7 +1685,7 @@ Deno.serve(async (req) => {
         }
       }
 
-      return { northStar, costDriver };
+      return { northStar, costDriver, icpJob, buyerBudget, valueUnit, poolsPackaging, overagesRisk, safetyRails };
     };
 
     const cleanedPages = pages
@@ -1750,12 +1802,97 @@ HIGH-SIGNAL EVIDENCE DIGEST (prioritized snippets from public pages):
 ${evidenceDigest.northStar.length > 0 ? evidenceDigest.northStar.map((item) => `  - ${item}`).join('\n') : '  - None captured'}
 - Cost driver mapping candidates:
 ${evidenceDigest.costDriver.length > 0 ? evidenceDigest.costDriver.map((item) => `  - ${item}`).join('\n') : '  - None captured'}
+- ICP and job clarity candidates:
+${evidenceDigest.icpJob.length > 0 ? evidenceDigest.icpJob.map((item) => `  - ${item}`).join('\n') : '  - None captured'}
+- Buyer and budget alignment candidates:
+${evidenceDigest.buyerBudget.length > 0 ? evidenceDigest.buyerBudget.map((item) => `  - ${item}`).join('\n') : '  - None captured'}
+- Value unit candidates:
+${evidenceDigest.valueUnit.length > 0 ? evidenceDigest.valueUnit.map((item) => `  - ${item}`).join('\n') : '  - None captured'}
+- Pools and packaging candidates:
+${evidenceDigest.poolsPackaging.length > 0 ? evidenceDigest.poolsPackaging.map((item) => `  - ${item}`).join('\n') : '  - None captured'}
+- Overages and risk allocation candidates:
+${evidenceDigest.overagesRisk.length > 0 ? evidenceDigest.overagesRisk.map((item) => `  - ${item}`).join('\n') : '  - None captured'}
+- Safety rails and trust surfaces candidates:
+${evidenceDigest.safetyRails.length > 0 ? evidenceDigest.safetyRails.map((item) => `  - ${item}`).join('\n') : '  - None captured'}
 
 Website Content:
 ${truncatedContent}`;
 
-    const rubricData = await callLovableAI(RUBRIC_SCORING_PROMPT, scoringContent) as Record<string, unknown>;
-    console.log('Rubric scoring complete');
+    // Step 2b: 3-pass majority vote scoring for consistency
+    console.log('Running 3-pass majority vote scoring...');
+    const rubricPasses = await Promise.all([
+      callLovableAI(RUBRIC_SCORING_PROMPT, scoringContent),
+      callLovableAI(RUBRIC_SCORING_PROMPT, scoringContent),
+      callLovableAI(RUBRIC_SCORING_PROMPT, scoringContent),
+    ]) as Array<Record<string, unknown>>;
+    console.log('All 3 rubric passes complete');
+
+    // Merge: for each dimension, take median score; for ties, use the result from the pass whose score equals the median
+    const DIMENSION_NAMES = [
+      'Product north star', 'ICP and job clarity', 'Buyer and budget alignment',
+      'Value unit', 'Cost driver mapping', 'Pools and packaging',
+      'Overages and risk allocation', 'Safety rails and trust surfaces',
+    ];
+
+    const getPassDimensions = (passData: Record<string, unknown>) =>
+      (Array.isArray(passData.dimensionScores) ? passData.dimensionScores : []) as Array<{
+        dimension: string; score: number; confidence: number; notObservable: boolean;
+        rationale: string; observed: string[]; sourceEvidence?: Array<{ url: string; snippet: string }>;
+        uncertaintyReasons: string[]; missingInsiderPrompts?: Array<{ question: string; fieldPaths: string[] }>;
+      }>;
+
+    const pass1Dims = getPassDimensions(rubricPasses[0]);
+    const pass2Dims = getPassDimensions(rubricPasses[1]);
+    const pass3Dims = getPassDimensions(rubricPasses[2]);
+
+    // Log per-dimension scores across passes for diagnostics
+    for (const dimName of DIMENSION_NAMES) {
+      const s1 = pass1Dims.find(d => d.dimension === dimName)?.score ?? -1;
+      const s2 = pass2Dims.find(d => d.dimension === dimName)?.score ?? -1;
+      const s3 = pass3Dims.find(d => d.dimension === dimName)?.score ?? -1;
+      console.log(`  [3-pass] ${dimName}: ${s1}, ${s2}, ${s3}`);
+    }
+
+    // Build merged dimension scores using median
+    const mergedDimensionScores = DIMENSION_NAMES.map(dimName => {
+      const candidates = [
+        pass1Dims.find(d => d.dimension === dimName),
+        pass2Dims.find(d => d.dimension === dimName),
+        pass3Dims.find(d => d.dimension === dimName),
+      ].filter(Boolean) as typeof pass1Dims;
+
+      if (candidates.length === 0) {
+        return { dimension: dimName, score: 0, confidence: 0, notObservable: true, rationale: '', observed: [], sourceEvidence: [], uncertaintyReasons: ['No data from any pass'], missingInsiderPrompts: [] };
+      }
+
+      // Median score
+      const scores = candidates.map(c => c.score).sort((a, b) => a - b);
+      const medianScore = scores[Math.floor(scores.length / 2)];
+
+      // Pick the candidate whose score equals median (prefer the one with highest confidence)
+      const matchingCandidates = candidates.filter(c => c.score === medianScore);
+      const bestCandidate = matchingCandidates.sort((a, b) => (b.confidence || 0) - (a.confidence || 0))[0];
+
+      // Median confidence across all passes
+      const confidences = candidates.map(c => c.confidence || 0).sort((a, b) => a - b);
+      const medianConfidence = confidences[Math.floor(confidences.length / 2)];
+
+      return {
+        ...bestCandidate,
+        score: medianScore,
+        confidence: medianConfidence,
+      };
+    });
+
+    // Use pass 1 for strengths/weaknesses/breakpoints/focus (these are narrative, not scored)
+    const rubricData: Record<string, unknown> = {
+      dimensionScores: mergedDimensionScores,
+      strengths: rubricPasses[0].strengths || [],
+      weaknesses: rubricPasses[0].weaknesses || [],
+      trustBreakpoints: rubricPasses[0].trustBreakpoints || [],
+      recommendedFocus: rubricPasses[0].recommendedFocus || null,
+    };
+    console.log('Rubric scoring complete (3-pass merged)');
 
     // Calculate totals
     type SourceEvidence = { url: string; snippet: string };
@@ -1811,6 +1948,41 @@ ${truncatedContent}`;
       /(1 credit per message|cost of each message|message history|three dots)/i.test(item)
     );
 
+    // Generic safety net helper: if LLM scored 0 but we have sufficient digest evidence, floor at 1
+    const applyDigestFloor = (
+      dimension: { dimension: string; score: number; confidence: number; notObservable: boolean; rationale: string; observed: string[]; sourceEvidence?: Array<{ url: string; snippet: string }>; uncertaintyReasons: string[]; missingInsiderPrompts?: Array<{ question: string; fieldPaths: string[] }> },
+      digestBucket: string[],
+      minEvidence: number,
+      floorConfidence: number,
+      floorRationale: string,
+      uncertaintyNote: string,
+    ) => {
+      const observed = Array.isArray(dimension.observed) ? [...dimension.observed] : [];
+      const uncertaintyReasons = Array.isArray(dimension.uncertaintyReasons) ? [...dimension.uncertaintyReasons] : [];
+      const mergedObserved = [...observed, ...digestBucket].slice(0, 4);
+      const mergedSourceEvidence = normalizeSourceEvidence(dimension.sourceEvidence, mergedObserved);
+
+      if (dimension.score === 0 && digestBucket.length >= minEvidence) {
+        return {
+          ...dimension,
+          score: 1,
+          confidence: Math.max(Number(dimension.confidence) || 0, floorConfidence),
+          notObservable: false,
+          rationale: floorRationale,
+          observed: mergedObserved,
+          sourceEvidence: mergedSourceEvidence,
+          uncertaintyReasons: [...uncertaintyReasons, uncertaintyNote].slice(0, 2),
+        };
+      }
+
+      return {
+        ...dimension,
+        observed: mergedObserved.length > observed.length ? mergedObserved : observed,
+        sourceEvidence: mergedSourceEvidence,
+        uncertaintyReasons,
+      };
+    };
+
     const dimensionScores = ((rubricData.dimensionScores || []) as Array<{
       dimension: string;
       score: number;
@@ -1826,6 +1998,7 @@ ${truncatedContent}`;
       const uncertaintyReasons = Array.isArray(dimension.uncertaintyReasons) ? [...dimension.uncertaintyReasons] : [];
       const sourceEvidence = normalizeSourceEvidence(dimension.sourceEvidence, observed);
 
+      // === Product north star ===
       if (dimension.dimension === 'Product north star' && dimension.score === 0 && evidenceDigest.northStar.length >= 2) {
         const mergedObserved = [...observed, ...evidenceDigest.northStar].slice(0, 4);
         const mergedSourceEvidence = normalizeSourceEvidence(sourceEvidence, mergedObserved);
@@ -1842,8 +2015,23 @@ ${truncatedContent}`;
         };
       }
 
+      // === ICP and job clarity ===
+      if (dimension.dimension === 'ICP and job clarity') {
+        return applyDigestFloor(dimension, evidenceDigest.icpJob, 2, 0.5,
+          'Public pages describe target users, use cases, and workflows, supporting emerging ICP and job clarity even though explicit non-fit boundaries and detailed success states are not publicly stated.',
+          'Explicit non-fit criteria and testable success states are not fully public.');
+      }
+
+      // === Buyer and budget alignment ===
+      if (dimension.dimension === 'Buyer and budget alignment') {
+        return applyDigestFloor(dimension, evidenceDigest.buyerBudget, 2, 0.5,
+          'Public pricing pages show tier structures, payment options, and enterprise features, supporting emerging buyer and budget alignment even though segment-level approval readiness details are incomplete.',
+          'Segment-specific approval readiness and commercial terms details are not fully documented on public pages.');
+      }
+
+      // === Value unit ===
       if (dimension.dimension === 'Value unit') {
-        const mergedObserved = [...observed, ...evidenceDigest.costDriver].slice(0, 5);
+        const mergedObserved = [...observed, ...evidenceDigest.valueUnit, ...evidenceDigest.costDriver].slice(0, 5);
         const mergedSourceEvidence = normalizeSourceEvidence(sourceEvidence, mergedObserved);
 
         if (hasExplicitCreditFaqSignals && dimension.score === 0) {
@@ -1885,6 +2073,7 @@ ${truncatedContent}`;
         };
       }
 
+      // === Cost driver mapping ===
       if (dimension.dimension === 'Cost driver mapping') {
         const mergedObserved = [...observed, ...evidenceDigest.costDriver].slice(0, 4);
         const mergedSourceEvidence = normalizeSourceEvidence(sourceEvidence, mergedObserved);
@@ -1919,6 +2108,27 @@ ${truncatedContent}`;
           sourceEvidence: mergedSourceEvidence,
           uncertaintyReasons,
         };
+      }
+
+      // === Pools and packaging ===
+      if (dimension.dimension === 'Pools and packaging') {
+        return applyDigestFloor(dimension, evidenceDigest.poolsPackaging, 2, 0.5,
+          'Public pricing pages show tier structures, included allowances, and add-on/top-up options, supporting emerging pools and packaging even though detailed pool scope and allocation rules are not fully public.',
+          'Pool scope, allocation mode, and rollover rules are not fully documented on public pages.');
+      }
+
+      // === Overages and risk allocation ===
+      if (dimension.dimension === 'Overages and risk allocation') {
+        return applyDigestFloor(dimension, evidenceDigest.overagesRisk, 2, 0.45,
+          'Public pages reference overage behavior, spending limits, or cap mechanisms, supporting emerging risk allocation even though detailed dispute processes and tail protection are not fully documented.',
+          'Detailed dispute/refund processes, grace buffers, and spike protection mechanisms are not publicly documented.');
+      }
+
+      // === Safety rails and trust surfaces ===
+      if (dimension.dimension === 'Safety rails and trust surfaces') {
+        return applyDigestFloor(dimension, evidenceDigest.safetyRails, 2, 0.4,
+          'Public pages reference usage dashboards, alerts, admin controls, or rate limits, supporting emerging safety rails even though in-product control details are not publicly visible.',
+          'Most safety rails (budget caps, kill switches, admin controls) are typically in-product and not publicly documented.');
       }
 
       return {
