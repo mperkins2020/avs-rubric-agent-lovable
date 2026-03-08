@@ -55,18 +55,18 @@ const lovableExample: ExampleData = {
   band: "Advanced",
   bandClass: "text-score-high bg-score-high/10 border-score-high/30",
   bandDesc: "Enterprise-ready trust infrastructure — supports fastest sales cycles",
-  score: 15,
+  score: 14,
   maxScore: 16,
-  percentage: "94%",
+  percentage: "88%",
   strengths: {
     title: "ICP and job clarity",
     desc: "Lovable clearly articulates its target audience segments and the specific problems it solves for each, supported by a comprehensive list of use cases and templates.",
-    enables: "Enables: This clarity allows potential customers to quickly identify if Lovable is the right solution for their needs, reducing friction in the sales cycle and ensuring product-market fit.",
+    enables: "Enables: Potential customers can quickly identify if Lovable is the right solution, reducing friction in the sales cycle.",
   },
   weaknesses: {
     title: "Cost driver mapping",
-    desc: "While credit usage is explained, the underlying cost drivers (e.g., specific AI models, token counts, compute resources) and their direct impact on credit consumption are not detailed.",
-    impact: "Impact: Lack of transparency into the specific components driving credit costs makes it difficult for users to optimize their usage, forecast accurately, or understand the economic levers of the platform beyond 'message complexity'.",
+    desc: "While credit usage is explained, the underlying cost drivers and their direct impact on credit consumption are not fully detailed.",
+    impact: "Impact: Users may find it difficult to optimize usage or forecast costs beyond 'message complexity'.",
   },
   breakpoints: [
     { title: "Unexpected Overage Costs", desc: "If a complex prompt unexpectedly consumes a large number of credits, users could face higher-than-anticipated bills." },
@@ -76,7 +76,7 @@ const lovableExample: ExampleData = {
     { n: "01", name: "Product north star", conf: "High", score: "2/2", color: "text-score-high bg-score-high/15" },
     { n: "02", name: "ICP and job clarity", conf: "High", score: "2/2", color: "text-score-high bg-score-high/15" },
     { n: "03", name: "Buyer and budget alignment", conf: "High", score: "2/2", color: "text-score-high bg-score-high/15" },
-    { n: "04", name: "Value unit", conf: "High", score: "2/2", color: "text-score-high bg-score-high/15" },
+    { n: "04", name: "Value unit", conf: "High", score: "1/2", color: "text-yellow-500 bg-yellow-500/15" },
   ],
 };
 
