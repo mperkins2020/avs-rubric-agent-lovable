@@ -606,24 +606,55 @@ Deno.serve(async (req) => {
             // and append it to the markdown so the analysis engine can see it
             if (hasAccordions && pageData.data.html) {
               const html = pageData.data.html;
-              // Extract text from accordion/collapsible elements that markdown may have missed
-              // Look for common accordion patterns: details/summary, data-state="closed", aria-hidden
-              const accordionContentRegex = /<(?:div|section|p|span|li)[^>]*(?:data-(?:state|radix|orientation)|role="region"|aria-labelledby)[^>]*>([\s\S]*?)<\/(?:div|section|p|span|li)>/gi;
               const extractedTexts: string[] = [];
-              let match;
-              while ((match = accordionContentRegex.exec(html)) !== null) {
-                // Strip remaining HTML tags to get plain text
-                const plainText = match[1]
+              const seenExtracted = new Set<string>();
+
+              const pushExtracted = (value: string) => {
+                const plainText = value
                   .replace(/<[^>]+>/g, ' ')
+                  .replace(/&nbsp;/g, ' ')
+                  .replace(/&amp;/g, '&')
                   .replace(/\s+/g, ' ')
                   .trim();
-                if (plainText.length > 30) { // Only meaningful content
-                  extractedTexts.push(plainText);
+
+                if (plainText.length < 30) return;
+                const normalized = plainText.slice(0, 420);
+                if (seenExtracted.has(normalized)) return;
+                seenExtracted.add(normalized);
+                extractedTexts.push(normalized);
+              };
+
+              // Extract text from accordion/collapsible elements that markdown may have missed
+              const accordionContentRegex = /<(?:div|section|p|span|li|details)[^>]*(?:data-(?:state|radix|orientation)|role="region"|aria-labelledby|aria-controls|accordion|collapse)[^>]*>([\s\S]*?)<\/(?:div|section|p|span|li|details)>/gi;
+              let match;
+              while ((match = accordionContentRegex.exec(html)) !== null) {
+                pushExtracted(match[1]);
+              }
+
+              // Extract table rows (critical for pricing credit examples often rendered in FAQ accordions)
+              const tableRowRegex = /<tr[^>]*>([\s\S]*?)<\/tr>/gi;
+              while ((match = tableRowRegex.exec(html)) !== null) {
+                const rowHtml = match[1];
+                const cells = Array.from(rowHtml.matchAll(/<t[hd][^>]*>([\s\S]*?)<\/t[hd]>/gi))
+                  .map((cellMatch) => cellMatch[1]
+                    .replace(/<[^>]+>/g, ' ')
+                    .replace(/\s+/g, ' ')
+                    .trim())
+                  .filter(Boolean);
+
+                if (cells.length >= 2) {
+                  pushExtracted(cells.join(' | '));
                 }
               }
-              
+
+              // Targeted capture for "What is a credit?" FAQ content block
+              const creditFaqBlockMatch = html.match(/what\s+is\s+a\s+credit\?[\s\S]{0,5000}?<\/(?:section|details|div)>/i);
+              if (creditFaqBlockMatch) {
+                pushExtracted(creditFaqBlockMatch[0]);
+              }
+
               if (extractedTexts.length > 0) {
-                console.log(`Extracted ${extractedTexts.length} accordion sections from HTML for: ${pageUrl}`);
+                console.log(`Extracted ${extractedTexts.length} accordion/table sections from HTML for: ${pageUrl}`);
                 finalMarkdown += '\n\n---\n\n## FAQ / Accordion Content\n\n' + extractedTexts.join('\n\n');
               }
             }
