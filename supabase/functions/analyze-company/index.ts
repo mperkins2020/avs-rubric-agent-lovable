@@ -1803,7 +1803,7 @@ ${truncatedContent}`;
     };
 
     const hasExplicitCreditFaqSignals = evidenceDigest.costDriver.some((item) =>
-      /(default mode|chat mode|1 credit per message|task complexity|0\.50|0\.90|1\.20|1\.70)/i.test(item)
+      /(default mode|chat mode|1 credit per message|task complexity|0\.50|0\.90|1\.20|1\.70|what is a credit\?|how does pricing for lovable cloud \+ ai work\?)/i.test(item)
     );
 
     const dimensionScores = ((rubricData.dimensionScores || []) as Array<{
