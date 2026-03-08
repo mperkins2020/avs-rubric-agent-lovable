@@ -124,7 +124,15 @@ THE 8 DIMENSIONS:
    2. Per-unit cost is visible or calculable from the public pricing page (e.g., "$0.01 per message", "100 credits for $25", tier tables with usage caps)
    3. A usage dashboard, usage tracker, spend alert, budget cap, or cost estimation surface is mentioned or shown (e.g., "track your usage", "set spending limits", "usage dashboard", "cost calculator")
 
-   IMPORTANT: Vague mentions of "flexible pricing" or "pay as you go" alone do NOT satisfy Tier B. All three conditions must hold with concrete evidence from the scraped pages. Tier B recognizes that transparent credit/usage pricing with cost visibility IS a form of economic predictability.
+   IMPORTANT: Vague mentions of "flexible pricing" or "pay as you go" alone do NOT satisfy Tier B. All three conditions must hold with concrete evidence from the scraped pages.
+
+   Tier C (bounded-scope predictability for AI-native products):
+   Pass if ALL THREE of these conditions hold simultaneously:
+   1. Flat-rate or tiered pricing plans are present (not purely pay-per-use)
+   2. Capability envelopes or scope boundaries are clearly defined (e.g., "unlimited messages", "X projects included", "Y team members", "unlimited usage within plan", specific feature limits per tier)
+   3. Plan boundaries provide meaningful economic predictability despite variable outputs (e.g., knowing your monthly cost is capped even if individual task complexity varies)
+
+   IMPORTANT: This tier recognizes that for AI-native products with stochastic outputs, capping INPUT scope (messages, projects, seats) IS a valid form of economic predictability, even when individual OUTPUT complexity varies. Do NOT require deterministic per-unit outcomes for this tier.
 
    **NS3 Outcome is measurable (even if target missing)**
    Pass if ANY of the following are true:
