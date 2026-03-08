@@ -21,12 +21,12 @@ interface ExampleData {
 const hexExample: ExampleData = {
   label: "Hex report example",
   company: "Hex",
-  band: "Established",
-  bandClass: "text-score-high bg-score-high/10 border-score-high/30",
-  bandDesc: "Strong foundation with room to optimize",
-  score: 9,
+  band: "Emerging",
+  bandClass: "text-yellow-500 bg-yellow-500/10 border-yellow-500/30",
+  bandDesc: "Key elements in place — structural gaps are costing you deals",
+  score: 8,
   maxScore: 16,
-  percentage: "56%",
+  percentage: "50%",
   strengths: {
     title: "ICP and job clarity",
     desc: "Hex clearly articulates its target audience, including both technical and non-technical users.",
