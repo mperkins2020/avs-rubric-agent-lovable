@@ -1465,14 +1465,23 @@ Deno.serve(async (req) => {
         .limit(1)
         .single();
 
-      if (cached?.result_json) {
-        console.log(`Cache HIT for ${domain} — returning cached result`);
+      const cachedVersion = cached?.result_json && typeof cached.result_json === 'object'
+        ? (cached.result_json as Record<string, unknown>).analysisVersion
+        : null;
+
+      if (cached?.result_json && cachedVersion === ANALYSIS_VERSION) {
+        console.log(`Cache HIT for ${domain} — returning cached result (${ANALYSIS_VERSION})`);
         return new Response(
           JSON.stringify(cached.result_json),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
-      console.log(`Cache MISS for ${domain} — running fresh analysis`);
+
+      if (cached?.result_json) {
+        console.log(`Cache STALE for ${domain} — expected ${ANALYSIS_VERSION}, got ${String(cachedVersion ?? 'none')}`);
+      } else {
+        console.log(`Cache MISS for ${domain} — running fresh analysis`);
+      }
     }
 
     console.log(`Analyzing ${pages.length} pages from ${url}`);
