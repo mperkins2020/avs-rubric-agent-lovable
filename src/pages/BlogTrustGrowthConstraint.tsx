@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { ResourcesDropdown } from "@/components/ResourcesDropdown";
 import avsArchitecture from "@/assets/avs-system-architecture.png";
 import { BlogTOC, TocItem } from "@/components/BlogTOC";
+import { SEOHead } from "@/components/SEOHead";
 
 const tocSections: TocItem[] = [
   { id: "value-system", label: "What I Mean by Value System" },
@@ -21,6 +22,13 @@ const tocSections: TocItem[] = [
 export default function BlogTrustGrowthConstraint() {
   return (
     <div className="min-h-screen bg-background">
+      <SEOHead
+        title="Trust Is the New Growth Constraint in AI"
+        description="A practical way to make value, usage, and cost feel predictable — why pricing drift becomes trust drift, and how AVS gives operators a shared map."
+        canonicalUrl="https://valuetempo.lovable.app/resources/blog/trust-growth-constraint"
+        publishedDate="2026-02-01"
+        tags={["AI trust", "growth constraint", "AVS", "pricing architecture", "value system"]}
+      />
       <header className="border-b border-border/50 bg-background/80 backdrop-blur-sm sticky top-0 z-40">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">

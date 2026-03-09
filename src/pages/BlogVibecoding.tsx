@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { ResourcesDropdown } from "@/components/ResourcesDropdown";
 import { BlogTOC, TocItem } from "@/components/BlogTOC";
 import { AVSSystemDiagram } from "@/components/AVSSystemDiagram";
+import { SEOHead } from "@/components/SEOHead";
 
 const tocSections: TocItem[] = [
   { id: "rubric-failed", label: "The Rubric Failed Its First Test" },
@@ -24,6 +25,13 @@ const tocSections: TocItem[] = [
 export default function BlogVibecoding() {
   return (
     <div className="min-h-screen bg-background">
+      <SEOHead
+        title="What I Learned Vibecoding an AI Startup Tool using Lovable + Claude Code"
+        description="A build-in-public note on what broke, what worked, and what vibecoding an AI product taught me about reliability, production readiness, and trust infrastructure."
+        canonicalUrl="https://valuetempo.lovable.app/resources/blog/vibecoding-ai-startup-tool"
+        publishedDate="2026-03-01"
+        tags={["vibecoding", "AI tools", "trust infrastructure", "AVS Rubric", "Lovable", "Claude Code"]}
+      />
       <header className="border-b border-border/50 bg-background/80 backdrop-blur-sm sticky top-0 z-40">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
