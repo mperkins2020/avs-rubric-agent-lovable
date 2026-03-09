@@ -4,6 +4,21 @@ import { Footer } from "@/components/Footer";
 import { Sparkles, ArrowLeft, Calendar } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ResourcesDropdown } from "@/components/ResourcesDropdown";
+import { BlogTOC, TocItem } from "@/components/BlogTOC";
+
+const tocSections: TocItem[] = [
+  { id: "rubric-failed", label: "The Rubric Failed Its First Test" },
+  { id: "trust-infrastructure", label: "The Trust Infrastructure" },
+  { id: "five-lessons", label: "Five Things I Learned" },
+  { id: "lesson-prompt", label: "1. Prompt as Business Logic" },
+  { id: "lesson-data", label: "2. Data Quality > Model" },
+  { id: "lesson-uncertainty", label: "3. Surface Uncertainty" },
+  { id: "lesson-production", label: "4. Prototype vs Production" },
+  { id: "lesson-reliability", label: "5. Reliability Matters" },
+  { id: "production-grade", label: "Making It Production-Grade" },
+  { id: "bigger-idea", label: "The Bigger Idea" },
+  { id: "try-rubric", label: "Try the Rubric" },
+];
 
 export default function BlogVibecoding() {
   return (
@@ -42,6 +57,8 @@ export default function BlogVibecoding() {
               <p className="text-lg md:text-xl text-muted-foreground">A build-in-public note on what broke, what worked, and what vibecoding an AI product taught me about reliability, production readiness, and trust infrastructure.</p>
             </div>
 
+            <BlogTOC sections={tocSections} />
+
             <div className="space-y-6 text-foreground/90 leading-relaxed">
               <p>I vibecoded an AI tool to score the trust infrastructure of AI startups.</p>
               <p>It looked great.</p>
@@ -50,7 +67,7 @@ export default function BlogVibecoding() {
               <p>Over the past few weeks I ran the rubric across 50+ AI-native SaaS companies, which learned several unexpected failure modes.</p>
 
               {/* The Rubric Failed Its First Test */}
-              <h2 className="text-2xl font-bold mt-12 mb-4 text-foreground">The Rubric Failed Its First Test</h2>
+              <h2 id="rubric-failed" className="text-2xl font-bold mt-12 mb-4 text-foreground">The Rubric Failed Its First Test</h2>
               <p>The AVS Rubric exists to answer one question:</p>
               <p className="text-lg font-semibold text-primary">Does your AI product expose enough trust infrastructure for growth to compound?</p>
               <p>Before it could answer that for anyone else, it had to answer it honestly about itself.</p>
@@ -67,7 +84,7 @@ export default function BlogVibecoding() {
               <p className="font-semibold">Lesson one: AI evaluation systems are harder to make reliable than they appear.</p>
 
               {/* Trust Infrastructure */}
-              <h2 className="text-2xl font-bold mt-12 mb-4 text-foreground">The Trust Infrastructure the Rubric Measures</h2>
+              <h2 id="trust-infrastructure" className="text-2xl font-bold mt-12 mb-4 text-foreground">The Trust Infrastructure the Rubric Measures</h2>
               <p>For context, the rubric evaluates eight dimensions organized into four layers.</p>
               <p className="font-semibold text-primary">The idea is simple: gaps at the foundation cascade upward.</p>
 
@@ -102,13 +119,13 @@ export default function BlogVibecoding() {
               <p>If customers cannot identify your value unit, cost drivers, controls for monthly spending and token allocation, no amount of security documentation will close enterprise deals.</p>
 
               {/* Five Things I Learned */}
-              <h2 className="text-2xl font-bold mt-12 mb-4 text-foreground">Five Things I Learned Vibecoding an AI Product</h2>
+              <h2 id="five-lessons" className="text-2xl font-bold mt-12 mb-4 text-foreground">Five Things I Learned Vibecoding an AI Product</h2>
               <p>I built the first version using <strong>Lovable</strong>. The speed-to-done was impressive. After I uploaded a product requirements document, a working product with a nicely designed UI appeared in less than an hour.</p>
               <p>But sooner or later we all realize that shipping a prototype and building something reliable are two very different problems.</p>
               <p>Here are the lessons that mattered most to me.</p>
 
               {/* Lesson 1 */}
-              <h3 className="text-xl font-bold mt-8 mb-2 text-foreground">1. Your Prompt Becomes Your Business Logic</h3>
+              <h3 id="lesson-prompt" className="text-xl font-bold mt-8 mb-2 text-foreground">1. Your Prompt Becomes Your Business Logic</h3>
               <p>The scoring rubric lives inside the edge function prompt.</p>
               <p>Every nuance about how trust infrastructure is evaluated exists as natural-language instructions to the model.</p>
               <p>That includes rules like:</p>
@@ -121,7 +138,7 @@ export default function BlogVibecoding() {
               <p className="font-semibold">They effectively become application logic written in natural language.</p>
 
               {/* Lesson 2 */}
-              <h3 className="text-xl font-bold mt-8 mb-2 text-foreground">2. Data Collection Quality Matters More Than the Model</h3>
+              <h3 id="lesson-data" className="text-xl font-bold mt-8 mb-2 text-foreground">2. Data Collection Quality Matters More Than the Model</h3>
               <p>Early versions simply scraped the first N links from a website.</p>
               <p>That meant help center articles crowded out the pages that actually mattered.</p>
               <p>The fix was a link prioritization layer that weighted paths like:</p>
@@ -135,7 +152,7 @@ export default function BlogVibecoding() {
               <p className="font-semibold">Garbage in still equals garbage out.</p>
 
               {/* Lesson 3 */}
-              <h3 className="text-xl font-bold mt-8 mb-2 text-foreground">3. AI Assessments Must Surface Uncertainty</h3>
+              <h3 id="lesson-uncertainty" className="text-xl font-bold mt-8 mb-2 text-foreground">3. AI Assessments Must Surface Uncertainty</h3>
               <p>One of the most common questions about the rubric is: "Isn't this subjective?"</p>
               <p>The real issue is that a score without confidence is misleading.</p>
               <p>Early versions produced a simple 0–2 score per dimension. That looked clean, but it hid a critical problem: the system sometimes had very little evidence to justify that score.</p>
@@ -158,7 +175,7 @@ export default function BlogVibecoding() {
               <p className="font-semibold">Ironically, the system became more trustworthy once it started admitting what it didn't know.</p>
 
               {/* Lesson 4 */}
-              <h3 className="text-xl font-bold mt-8 mb-2 text-foreground">4. Vibecoding Makes Prototypes Fast. Production Requires Discipline.</h3>
+              <h3 id="lesson-production" className="text-xl font-bold mt-8 mb-2 text-foreground">4. Vibecoding Makes Prototypes Fast. Production Requires Discipline.</h3>
               <p>Lovable made it possible to ship a working pipeline incredibly quickly.</p>
               <p>Scraping → analysis → UI rendering → PDF export all appeared within a few sessions.</p>
               <p>But moving from prototype to production exposed a completely different set of problems.</p>
@@ -175,7 +192,7 @@ export default function BlogVibecoding() {
               <p className="font-semibold">Vibecoding makes it easy to build quickly. Production readiness requires a different mindset.</p>
 
               {/* Lesson 5 */}
-              <h3 className="text-xl font-bold mt-8 mb-2 text-foreground">5. Reliability Matters: AI Is Probabilistic</h3>
+              <h3 id="lesson-reliability" className="text-xl font-bold mt-8 mb-2 text-foreground">5. Reliability Matters: AI Is Probabilistic</h3>
               <p>Another subtle issue appeared early. Running the same company through the rubric twice could produce slightly different scores.</p>
               <p>That is not surprising once you remember that LLMs are probabilistic systems.</p>
               <p>The solution was to stop treating model output as ground truth and instead treat it as a noisy signal that needs stabilization.</p>
@@ -192,7 +209,7 @@ export default function BlogVibecoding() {
               <p className="font-semibold">LLM output must be surrounded by deterministic guardrails to behave like production-grade software.</p>
 
               {/* Production-Grade */}
-              <h2 className="text-2xl font-bold mt-12 mb-4 text-foreground">What It Took to Make the Rubric Production-Grade</h2>
+              <h2 id="production-grade" className="text-2xl font-bold mt-12 mb-4 text-foreground">What It Took to Make the Rubric Production-Grade</h2>
               <p>Shipping fast with Lovable created technical debt that needed to be addressed.</p>
               <p>But interestingly, the hardest production problems were <strong>not model problems</strong>. They were infrastructure problems.</p>
               <p>Five things mattered most.</p>
@@ -243,7 +260,7 @@ export default function BlogVibecoding() {
               <p className="font-semibold">A reminder that sometimes the biggest production issues come from the least interesting parts of the stack.</p>
 
               {/* Bigger Idea */}
-              <h2 className="text-2xl font-bold mt-12 mb-4 text-foreground">The Bigger Idea Behind the Rubric</h2>
+              <h2 id="bigger-idea" className="text-2xl font-bold mt-12 mb-4 text-foreground">The Bigger Idea Behind the Rubric</h2>
               <p>The rubric is based on the <strong>Adaptive Value System (AVS)</strong>.</p>
               <p>AVS is a framework for aligning four forces inside AI-native products:</p>
               <ul className="list-disc pl-6 space-y-2">
@@ -269,7 +286,7 @@ export default function BlogVibecoding() {
               <p>But diagnosing that through public evidence is significantly harder. That capability is still being developed.</p>
 
               {/* CTA */}
-              <h2 className="text-2xl font-bold mt-12 mb-4 text-foreground">Try the Rubric</h2>
+              <h2 id="try-rubric" className="text-2xl font-bold mt-12 mb-4 text-foreground">Try the Rubric</h2>
               <p>The AVS Rubric is free and live at <Link to="/" className="text-primary hover:underline font-semibold">valuetempo.com</Link>.</p>
               <p>It evaluates only what buyers can see publicly.</p>
               <p>Running your own product through it can be surprisingly revealing.</p>

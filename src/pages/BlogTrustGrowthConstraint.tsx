@@ -5,6 +5,18 @@ import { Sparkles, ArrowLeft, Calendar } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ResourcesDropdown } from "@/components/ResourcesDropdown";
 import avsArchitecture from "@/assets/avs-system-architecture.png";
+import { BlogTOC, TocItem } from "@/components/BlogTOC";
+
+const tocSections: TocItem[] = [
+  { id: "value-system", label: "What I Mean by Value System" },
+  { id: "retention-data", label: "The Retention Warning Sign" },
+  { id: "strong-value", label: "Strong Value Systems in the Wild" },
+  { id: "why-avs", label: "Why AVS Exists" },
+  { id: "avs-replaces", label: "What AVS Replaces" },
+  { id: "trust-layer", label: "AVS as the Economic Trust Layer" },
+  { id: "operating-cadence", label: "Living Operating Cadence" },
+  { id: "takeaway", label: "The Takeaway" },
+];
 
 export default function BlogTrustGrowthConstraint() {
   return (
@@ -43,6 +55,8 @@ export default function BlogTrustGrowthConstraint() {
               <p className="text-lg md:text-xl text-muted-foreground">A practical way to make value, usage, and cost feel predictable</p>
             </div>
 
+            <BlogTOC sections={tocSections} />
+
             <div className="space-y-6 text-foreground/90 leading-relaxed">
               <p>This is the year AI stops getting graded on "capabilities" and starts getting graded on economic value. Less demo magic, more measurable impact. Less "we added AI," more "what did it actually change in the workflow?"</p>
 
@@ -62,7 +76,7 @@ export default function BlogTrustGrowthConstraint() {
 
               <hr className="border-border/50 my-8" />
 
-              <h2 className="text-2xl font-bold text-foreground mt-10">What I mean by "value system."</h2>
+              <h2 id="value-system" className="text-2xl font-bold text-foreground mt-10">What I mean by "value system."</h2>
 
               <p>Your value system is how your company:</p>
 
@@ -87,7 +101,7 @@ export default function BlogTrustGrowthConstraint() {
 
               <hr className="border-border/50 my-8" />
 
-              <h2 className="text-2xl font-bold text-foreground">The retention data is the loudest warning sign.</h2>
+              <h2 id="retention-data" className="text-2xl font-bold text-foreground">The retention data is the loudest warning sign.</h2>
 
               <p>Kyle Poyar and Chart Mogul looked at retention across 3,500 software companies. Benchmarks:</p>
 
@@ -112,7 +126,7 @@ export default function BlogTrustGrowthConstraint() {
 
               <hr className="border-border/50 my-8" />
 
-              <h2 className="text-2xl font-bold text-foreground">How strong value systems show up in the wild</h2>
+              <h2 id="strong-value" className="text-2xl font-bold text-foreground">How strong value systems show up in the wild</h2>
 
               <p>ZoomInfo's CEO, Henry Schuck, shared a simple truth: their best AI ROI did not come from flashy demos. It came from "boring AI" embedded into repeatable workflows at scale, like daily prioritization, more relevant outreach, calls into usable data, and faster engineering execution.</p>
 
@@ -120,7 +134,7 @@ export default function BlogTrustGrowthConstraint() {
 
               <hr className="border-border/50 my-8" />
 
-              <h2 className="text-2xl font-bold text-foreground">Why the Adaptive Value System (AVS) exists</h2>
+              <h2 id="why-avs" className="text-2xl font-bold text-foreground">Why the Adaptive Value System (AVS) exists</h2>
 
               <p>Most AI native teams feel like they are building a plane while they are flying it. They are trying to steer growth while:</p>
 
@@ -158,7 +172,7 @@ export default function BlogTrustGrowthConstraint() {
 
               <hr className="border-border/50 my-8" />
 
-              <h2 className="text-2xl font-bold text-foreground">What AVS replaces: the manual operating pattern that creates drift</h2>
+              <h2 id="avs-replaces" className="text-2xl font-bold text-foreground">What AVS replaces: the manual operating pattern that creates drift</h2>
 
               <p>AVS does not replace tools. It replaces the quarter-late, manual process of connecting monetization changes to behavior, trust, and margin outcomes. It gives operators a shared map, makes leading signals observable week to week, and turns learning into a repeatable cadence across product, finance, infra, and GTM.</p>
 
@@ -181,7 +195,7 @@ export default function BlogTrustGrowthConstraint() {
 
               <hr className="border-border/50 my-8" />
 
-              <h2 className="text-2xl font-bold text-foreground">AVS as the economic trust layer</h2>
+              <h2 id="trust-layer" className="text-2xl font-bold text-foreground">AVS as the economic trust layer</h2>
 
               <p>Trust in an AI product has many layers: predictable outputs, recoverable failures, clear uncertainty, aligned expectations, and low-friction workflows.</p>
 
@@ -202,7 +216,7 @@ export default function BlogTrustGrowthConstraint() {
 
               <hr className="border-border/50 my-8" />
 
-              <h2 className="text-2xl font-bold text-foreground">How AVS becomes a living operating cadence</h2>
+              <h2 id="operating-cadence" className="text-2xl font-bold text-foreground">How AVS becomes a living operating cadence</h2>
 
               <p>AVS stays useful by turning "pricing iteration" into a repeatable operating rhythm:</p>
 
@@ -218,7 +232,7 @@ export default function BlogTrustGrowthConstraint() {
 
               <hr className="border-border/50 my-8" />
 
-              <h2 className="text-2xl font-bold text-foreground">The takeaway</h2>
+              <h2 id="takeaway" className="text-2xl font-bold text-foreground">The takeaway</h2>
 
               <div className="bg-muted/30 border border-border/50 rounded-xl p-6 my-6">
                 <p className="text-lg font-semibold text-foreground mb-2">Belief starts the value loop. Trust sustains it. Habit compounds it.</p>
