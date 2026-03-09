@@ -216,7 +216,7 @@ export default function BlogTrustGrowthConstraint() {
 
               <hr className="border-border/50 my-8" />
 
-              <h2 className="text-2xl font-bold text-foreground">How AVS becomes a living operating cadence</h2>
+              <h2 id="operating-cadence" className="text-2xl font-bold text-foreground">How AVS becomes a living operating cadence</h2>
 
               <p>AVS stays useful by turning "pricing iteration" into a repeatable operating rhythm:</p>
 
