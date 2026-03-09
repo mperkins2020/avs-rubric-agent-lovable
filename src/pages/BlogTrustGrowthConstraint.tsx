@@ -5,6 +5,18 @@ import { Sparkles, ArrowLeft, Calendar } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ResourcesDropdown } from "@/components/ResourcesDropdown";
 import avsArchitecture from "@/assets/avs-system-architecture.png";
+import { BlogTOC, TocItem } from "@/components/BlogTOC";
+
+const tocSections: TocItem[] = [
+  { id: "value-system", label: "What I Mean by Value System" },
+  { id: "retention-data", label: "The Retention Warning Sign" },
+  { id: "strong-value", label: "Strong Value Systems in the Wild" },
+  { id: "why-avs", label: "Why AVS Exists" },
+  { id: "avs-replaces", label: "What AVS Replaces" },
+  { id: "trust-layer", label: "AVS as the Economic Trust Layer" },
+  { id: "operating-cadence", label: "Living Operating Cadence" },
+  { id: "takeaway", label: "The Takeaway" },
+];
 
 export default function BlogTrustGrowthConstraint() {
   return (

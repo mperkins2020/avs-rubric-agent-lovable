@@ -4,6 +4,21 @@ import { Footer } from "@/components/Footer";
 import { Sparkles, ArrowLeft, Calendar } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ResourcesDropdown } from "@/components/ResourcesDropdown";
+import { BlogTOC, TocItem } from "@/components/BlogTOC";
+
+const tocSections: TocItem[] = [
+  { id: "rubric-failed", label: "The Rubric Failed Its First Test" },
+  { id: "trust-infrastructure", label: "The Trust Infrastructure" },
+  { id: "five-lessons", label: "Five Things I Learned" },
+  { id: "lesson-prompt", label: "1. Prompt as Business Logic" },
+  { id: "lesson-data", label: "2. Data Quality > Model" },
+  { id: "lesson-uncertainty", label: "3. Surface Uncertainty" },
+  { id: "lesson-production", label: "4. Prototype vs Production" },
+  { id: "lesson-reliability", label: "5. Reliability Matters" },
+  { id: "production-grade", label: "Making It Production-Grade" },
+  { id: "bigger-idea", label: "The Bigger Idea" },
+  { id: "try-rubric", label: "Try the Rubric" },
+];
 
 export default function BlogVibecoding() {
   return (
