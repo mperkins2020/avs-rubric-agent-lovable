@@ -3,6 +3,8 @@ import { ArrowLeft, Layers, MessageSquare, Heart } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import ValueTempoLogo from "@/assets/ValueTempo_Logo.png";
+import { FAQJsonLd } from "@/components/FAQJsonLd";
+import { SEOHead } from "@/components/SEOHead";
 const FAQProductGrowth = () => {
   const faqs = [{
     question: "Belief is mostly shaped by the words we use on the website. Isn't this just copy and messaging?",

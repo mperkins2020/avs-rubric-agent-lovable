@@ -3,6 +3,8 @@ import { ArrowLeft } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import ValueTempoLogo from "@/assets/ValueTempo_Logo.png";
+import { FAQJsonLd } from "@/components/FAQJsonLd";
+import { SEOHead } from "@/components/SEOHead";
 const FAQCFORevOps = () => {
   const faqs = [{
     question: "We already have Stripe, billing, cohorts, and a data warehouse. Why do we need this?",

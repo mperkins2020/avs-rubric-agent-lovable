@@ -12,6 +12,8 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import { FAQJsonLd } from "@/components/FAQJsonLd";
+import { SEOHead } from "@/components/SEOHead";
 
 type FAQCategory = "product-growth" | "cfo-revops";
 
