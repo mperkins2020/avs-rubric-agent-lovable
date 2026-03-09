@@ -68,6 +68,7 @@ export default function BlogVibecoding() {
               <p>Over the past few weeks I ran the rubric across 50+ AI-native SaaS companies, which learned several unexpected failure modes.</p>
 
               {/* The Rubric Failed Its First Test */}
+              <hr className="border-border/50 my-8" />
               <h2 id="rubric-failed" className="text-2xl font-bold mt-12 mb-4 text-foreground">The Rubric Failed Its First Test</h2>
               <p>The AVS Rubric exists to answer one question:</p>
               <p className="text-lg font-semibold text-primary">Does your AI product expose enough trust infrastructure for growth to compound?</p>
@@ -85,6 +86,7 @@ export default function BlogVibecoding() {
               <p className="font-semibold">Lesson one: AI evaluation systems are harder to make reliable than they appear.</p>
 
               {/* Trust Infrastructure */}
+              <hr className="border-border/50 my-8" />
               <h2 id="trust-infrastructure" className="text-2xl font-bold mt-12 mb-4 text-foreground">The Trust Infrastructure the Rubric Measures</h2>
               <p>For context, the rubric evaluates eight dimensions organized into four layers.</p>
               <p className="font-semibold text-primary">The idea is simple: gaps at the foundation cascade upward.</p>
@@ -123,6 +125,7 @@ export default function BlogVibecoding() {
               <p>If customers cannot identify your value unit, cost drivers, controls for monthly spending and token allocation, no amount of security documentation will close enterprise deals.</p>
 
               {/* Five Things I Learned */}
+              <hr className="border-border/50 my-8" />
               <h2 id="five-lessons" className="text-2xl font-bold mt-12 mb-4 text-foreground">Five Things I Learned Vibecoding an AI Product</h2>
               <p>I built the first version using <strong>Lovable</strong>. The speed-to-done was impressive. After I uploaded a product requirements document, a working product with a nicely designed UI appeared in less than an hour.</p>
               <p>But sooner or later we all realize that shipping a prototype and building something reliable are two very different problems.</p>
@@ -213,6 +216,7 @@ export default function BlogVibecoding() {
               <p className="font-semibold">LLM output must be surrounded by deterministic guardrails to behave like production-grade software.</p>
 
               {/* Production-Grade */}
+              <hr className="border-border/50 my-8" />
               <h2 id="production-grade" className="text-2xl font-bold mt-12 mb-4 text-foreground">What It Took to Make the Rubric Production-Grade</h2>
               <p>Shipping fast with Lovable created technical debt that needed to be addressed.</p>
               <p>But interestingly, the hardest production problems were <strong>not model problems</strong>. They were infrastructure problems.</p>
@@ -264,6 +268,7 @@ export default function BlogVibecoding() {
               <p className="font-semibold">A reminder that sometimes the biggest production issues come from the least interesting parts of the stack.</p>
 
               {/* Bigger Idea */}
+              <hr className="border-border/50 my-8" />
               <h2 id="bigger-idea" className="text-2xl font-bold mt-12 mb-4 text-foreground">The Bigger Idea Behind the Rubric</h2>
               <p>The rubric is based on the <strong>Adaptive Value System (AVS)</strong>.</p>
               <p>AVS is a framework for aligning four forces inside AI-native products:</p>
@@ -290,6 +295,7 @@ export default function BlogVibecoding() {
               <p>But diagnosing that through public evidence is significantly harder. That capability is still being developed.</p>
 
               {/* CTA */}
+              <hr className="border-border/50 my-8" />
               <h2 id="try-rubric" className="text-2xl font-bold mt-12 mb-4 text-foreground">Try the Rubric</h2>
               <p>The AVS Rubric is free and live at <Link to="/" className="text-primary hover:underline font-semibold">valuetempo.com</Link>.</p>
               <p>It evaluates only what buyers can see publicly.</p>
