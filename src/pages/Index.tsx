@@ -154,6 +154,13 @@ const Index = () => {
     description: "Identifies trust gaps, ranks by severity, and recommends what to fix first."
   }];
   return <div className="min-h-screen bg-background relative overflow-hidden">
+      <SEOHead
+        title="AVS Rubric Agent — Score Your AI Trust Infrastructure"
+        description="Get an instant, evidence-backed assessment of your AI product's trust infrastructure across 8 dimensions. Case studies show closing trust gaps drives 2–7% ARR uplift."
+        canonicalUrl="https://valuetempo.lovable.app/"
+        publishedDate="2026-01-01"
+        tags={["AVS Rubric", "AI trust", "trust infrastructure", "revenue quality", "SaaS"]}
+      />
       {/* Background effects */}
       <div className="absolute inset-0 bg-gradient-to-b from-primary/5 via-transparent to-accent/5 pointer-events-none" />
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[800px] bg-primary/10 rounded-full blur-3xl opacity-20 pointer-events-none" />
