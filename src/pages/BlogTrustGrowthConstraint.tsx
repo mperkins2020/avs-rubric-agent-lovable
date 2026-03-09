@@ -101,7 +101,7 @@ export default function BlogTrustGrowthConstraint() {
 
               <hr className="border-border/50 my-8" />
 
-              <h2 className="text-2xl font-bold text-foreground">The retention data is the loudest warning sign.</h2>
+              <h2 id="retention-data" className="text-2xl font-bold text-foreground">The retention data is the loudest warning sign.</h2>
 
               <p>Kyle Poyar and Chart Mogul looked at retention across 3,500 software companies. Benchmarks:</p>
 
