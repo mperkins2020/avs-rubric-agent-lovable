@@ -152,7 +152,7 @@ export default function BlogVibecoding() {
               <p className="font-semibold">Garbage in still equals garbage out.</p>
 
               {/* Lesson 3 */}
-              <h3 className="text-xl font-bold mt-8 mb-2 text-foreground">3. AI Assessments Must Surface Uncertainty</h3>
+              <h3 id="lesson-uncertainty" className="text-xl font-bold mt-8 mb-2 text-foreground">3. AI Assessments Must Surface Uncertainty</h3>
               <p>One of the most common questions about the rubric is: "Isn't this subjective?"</p>
               <p>The real issue is that a score without confidence is misleading.</p>
               <p>Early versions produced a simple 0–2 score per dimension. That looked clean, but it hid a critical problem: the system sometimes had very little evidence to justify that score.</p>
