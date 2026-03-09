@@ -280,8 +280,43 @@ const FAQ = () => {
   const productFaqs = numberedFaqs.filter((f) => f.category === "product-growth");
   const revopsFaqs = numberedFaqs.filter((f) => f.category === "cfo-revops");
 
+  const faqJsonLdData = faqs.map((faq) => ({
+    question: faq.question,
+    answer: faq.category === "product-growth"
+      ? {
+          "We have great messaging. Isn't this just a copywriting audit?": "No. The AVS Rubric scores whether buyers can safely infer how your system behaves before adoption, not how persuasive your copy is. The difference: 'Usage-based pricing' is messaging. Showing that 1,000 API calls = $2.50, with workflow examples, documented overage behavior, and configurable budget caps is trust infrastructure.",
+          "Shouldn't you test the actual product, not just the website?": "The AVS Rubric intentionally evaluates pre-adoption legibility. Most revenue friction happens before deep product usage — long sales cycles, discount pressure, procurement objections, champions struggling to defend adoption internally. We measure whether rational buyers can understand your value unit, cost drivers, limit behavior, and risk allocation using only publicly observable signals.",
+          "We have analytics, funnels, and surveys. What does this add?": "Your internal data shows what committed customers do. AVS shows what the market can confidently infer before committing. Revenue fragility often appears when internal data looks healthy but external signals create uncertainty.",
+          "This feels subjective. How can I trust the scores?": "AVS makes subjectivity explicit and bounded. Every assessment separates Score (0-100%), Confidence (High/Medium/Low), and Uncertainty labels. Instead of implying certainty, AVS defaults conservatively when evidence is missing and labels low confidence explicitly.",
+          "Why not use customer reviews or social sentiment?": "Social sentiment measures reaction after experience. AVS evaluates expectations before commitment. Many buyers never post publicly and simply don't convert or quietly negotiate discounts.",
+          "Our metrics look fine. When would this matter?": "Trust erosion happens before metrics degrade. AVS surfaces the problem at Week 1. Internal metrics catch it at Week 21.",
+          "Can't I just use ChatGPT or Claude to analyze my website?": "General-purpose AI generates opinions. AVS produces structured, repeatable assessments with fixed dimensions, evidence citations, confidence calibration, and defensible assessment artifacts.",
+          "This sounds like marketing analysis. How is it different?": "Marketing analysis evaluates persuasion and positioning. AVS evaluates economic legibility and trust structure — value unit clarity, cost driver transparency, risk boundary explicitness, safety rail configurability.",
+          "How is this actionable? I can't just fix a website.": "AVS identifies where your system isn't legible enough for the market to trust. Actions map to product roadmap, pricing policy, documentation strategy — not copywriting.",
+        }[faq.question] || faq.question
+      : {
+          "We have Stripe, billing analytics, and a data warehouse. Why this?": "Your systems measure what customers did after committing. AVS measures whether your commercial system is legible enough to prevent surprises before commitment.",
+          "Public info is just marketing. Why does it matter for revenue?": "Buyers make risk judgments based on what they can infer externally. Missing signals create longer sales cycles, discount pressure, expansion hesitation, and surprise churn.",
+          "This seems subjective. I need auditability.": "AVS is conservative and repeatable by design: fixed dimensions, explicit evidence thresholds, separate confidence scoring. Every score includes direct quotes, source URLs, and confidence labels.",
+          "How does this reduce churn or improve NRR?": "AVS surfaces expectation and predictability gaps early, which reduces surprise-driven churn. Clear cost forecasting enables confident expansion.",
+          "We do customer health scoring. Isn't that enough?": "Health scoring is downstream (detects problems after they exist). AVS is upstream (prevents problems from forming).",
+          "What's the ROI? What decisions does this change?": "AVS improves revenue quality by making expectation and predictability risks visible before they appear in churn data. Specific ROI includes reducing discount rates, compressing sales cycles, and lifting NRR.",
+          "Won't this just tell us to rewrite the website?": "No. The action is structural, not cosmetic. AVS outputs a prioritization lens for product, pricing, and policy clarity.",
+          "How is this different from ChatGPT reviewing our site?": "ChatGPT produces conversational output. AVS produces structured, evidence-backed assessments with explicit uncertainty labeling — creating a defensible artifact for leadership review.",
+          "Why export a PDF if you don't store data?": "Finance and operations decisions require shareable artifacts. PDF enables leadership review without login, internal sharing, version control, and annotation.",
+        }[faq.question] || faq.question,
+  }));
+
   return (
     <div className="min-h-screen bg-background relative overflow-hidden">
+      <SEOHead
+        title="AVS Rubric FAQ — Frequently Asked Questions"
+        description="Find answers about the AVS Rubric for Product & Growth leaders and CFO & RevOps teams. Learn how AVS evaluates trust infrastructure, reduces churn, and improves revenue quality."
+        canonicalUrl="https://valuetempo.lovable.app/resources/faq"
+        publishedDate="2026-01-15"
+        tags={["FAQ", "AVS Rubric", "trust infrastructure", "revenue quality"]}
+      />
+      <FAQJsonLd faqs={faqJsonLdData} />
       <div className="absolute inset-0 bg-gradient-to-b from-primary/5 via-transparent to-accent/5 pointer-events-none" />
 
       {/* Header */}
