@@ -71,6 +71,11 @@ export default function BlogVibecoding() {
                 <p className="text-lg md:text-xl text-muted-foreground">A build-in-public note on what broke, what worked, and what vibecoding an AI product taught me about reliability, production readiness, and trust infrastructure.</p>
               </div>
 
+              <div className="rounded-xl border border-primary/30 bg-primary/5 p-5 mb-8">
+                <p className="text-sm font-semibold text-primary uppercase tracking-wide mb-2">TL;DR</p>
+                <p className="text-foreground/90 leading-relaxed">I vibecoded an AI scoring tool using Lovable and Claude Code. It shipped fast but failed on reliability — the same company got different scores on repeat runs. Fixing it required separating evidence collection from scoring, treating prompts as business logic, and building trust infrastructure (confidence labels, uncertainty flags, evidence citations). Five key lessons: (1) prompts are business logic, not glue code; (2) data quality matters more than model choice; (3) surface uncertainty instead of hiding it; (4) prototype-to-production is a full rebuild; (5) reliability is the product, not the feature. The AVS Rubric now scores trust infrastructure across 8 dimensions for AI-native SaaS companies.</p>
+              </div>
+
               <div className="space-y-6 text-foreground/90 leading-relaxed">
               <p>I vibecoded an AI tool to score the trust infrastructure of AI startups.</p>
               <p>It looked great.</p>

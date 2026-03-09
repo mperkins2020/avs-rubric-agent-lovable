@@ -68,6 +68,11 @@ export default function BlogTrustGrowthConstraint() {
                 <p className="text-lg md:text-xl text-muted-foreground">A practical way to make value, usage, and cost feel predictable</p>
               </div>
 
+              <div className="rounded-xl border border-primary/30 bg-primary/5 p-5 mb-8">
+                <p className="text-sm font-semibold text-primary uppercase tracking-wide mb-2">TL;DR</p>
+                <p className="text-foreground/90 leading-relaxed">In AI-native products, pricing drift becomes trust drift. When your monetization system keeps changing but your value system stays fuzzy, customers experience randomness — killing exploration, habit, and expansion. The fix isn't better pricing; it's a legible value system that defines your value unit, maps cost drivers to workflows, sets safety rails, and aligns with enterprise buying patterns. The AVS (Autonomous Value Scoring) Rubric evaluates this trust infrastructure across 8 dimensions, replacing guesswork with a shared, evidence-backed operating cadence. Case studies show closing these trust gaps drives 2–7% ARR uplift.</p>
+              </div>
+
               <div className="space-y-6 text-foreground/90 leading-relaxed">
               <p>This is the year AI stops getting graded on "capabilities" and starts getting graded on economic value. Less demo magic, more measurable impact. Less "we added AI," more "what did it actually change in the workflow?"</p>
 
