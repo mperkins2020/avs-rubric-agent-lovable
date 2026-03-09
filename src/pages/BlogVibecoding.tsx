@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { ResourcesDropdown } from "@/components/ResourcesDropdown";
 import { BlogTOC, TocItem } from "@/components/BlogTOC";
 import { AVSSystemDiagram } from "@/components/AVSSystemDiagram";
+import { SEOHead } from "@/components/SEOHead";
 
 const tocSections: TocItem[] = [
   { id: "rubric-failed", label: "The Rubric Failed Its First Test" },

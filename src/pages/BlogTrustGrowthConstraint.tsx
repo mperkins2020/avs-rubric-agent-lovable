@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { ResourcesDropdown } from "@/components/ResourcesDropdown";
 import avsArchitecture from "@/assets/avs-system-architecture.png";
 import { BlogTOC, TocItem } from "@/components/BlogTOC";
+import { SEOHead } from "@/components/SEOHead";
 
 const tocSections: TocItem[] = [
   { id: "value-system", label: "What I Mean by Value System" },
