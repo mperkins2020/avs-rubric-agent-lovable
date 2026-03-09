@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { Sparkles, ArrowLeft, ArrowRight, CheckCircle, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ResourcesDropdown } from "@/components/ResourcesDropdown";
+import { SEOHead } from "@/components/SEOHead";
 
 function Section({ children, className = "" }: { children: React.ReactNode; className?: string }) {
   return (
@@ -23,6 +24,13 @@ export default function CaseStudyClay() {
 
   return (
     <div className="min-h-screen bg-background">
+      <SEOHead
+        title="Clay AVS Case Study — Trust Infrastructure Analysis"
+        description="AVS Rubric analysis of Clay's trust infrastructure. Evaluating value unit clarity, cost driver transparency, safety rails, and enterprise readiness across 8 dimensions."
+        canonicalUrl="https://valuetempo.lovable.app/resources/case-studies/clay"
+        publishedDate="2026-02-15"
+        tags={["Clay", "case study", "AVS Rubric", "trust infrastructure", "AI SaaS"]}
+      />
       {/* Header */}
       <header className="border-b border-border/50 bg-background/80 backdrop-blur-sm sticky top-0 z-40">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">

@@ -3,6 +3,7 @@ import { Footer } from "@/components/Footer";
 import { ArrowLeft, ChevronDown, Layers, Target, DollarSign, Shield, Users, BookOpen, BarChart3, Lightbulb, List, X } from "lucide-react";
 import { Link } from "react-router-dom";
 import { ResourcesDropdown } from "@/components/ResourcesDropdown";
+import { SEOHead } from "@/components/SEOHead";
 import { Button } from "@/components/ui/button";
 import { useState, useEffect, useRef } from "react";
 import {
@@ -58,6 +59,13 @@ const Methodology = () => {
 
   return (
     <div className="min-h-screen bg-background relative overflow-hidden">
+      <SEOHead
+        title="AVS Rubric Methodology — How We Score Trust Infrastructure"
+        description="The AVS Rubric evaluates AI products across 8 trust dimensions using a four-layer Trust Stack hierarchy. Learn about our scoring system, confidence labels, and evidence-based methodology."
+        canonicalUrl="https://valuetempo.lovable.app/methodology"
+        publishedDate="2026-01-15"
+        tags={["methodology", "AVS Rubric", "trust stack", "scoring system", "AI evaluation"]}
+      />
       <div className="absolute inset-0 bg-gradient-to-b from-primary/5 via-transparent to-accent/5 pointer-events-none" />
 
       {/* Header */}

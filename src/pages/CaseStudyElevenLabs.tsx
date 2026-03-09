@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { Sparkles, ArrowLeft, ArrowRight, CheckCircle, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ResourcesDropdown } from "@/components/ResourcesDropdown";
+import { SEOHead } from "@/components/SEOHead";
 
 function Section({ children, className = "" }: {children: React.ReactNode;className?: string;}) {
   return (
@@ -23,6 +24,13 @@ export default function CaseStudyElevenLabs() {
 
   return (
     <div className="min-h-screen bg-background">
+      <SEOHead
+        title="ElevenLabs AVS Case Study — The 75% Problem"
+        description="AVS Rubric analysis of ElevenLabs: when strong fundamentals meet predictability gaps. Trust score 75% across 8 dimensions of AI trust infrastructure."
+        canonicalUrl="https://valuetempo.lovable.app/resources/case-studies/elevenlabs"
+        publishedDate="2026-02-15"
+        tags={["ElevenLabs", "case study", "AVS Rubric", "trust infrastructure", "voice AI"]}
+      />
       {/* Header */}
       <header className="border-b border-border/50 bg-background/80 backdrop-blur-sm sticky top-0 z-40">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
