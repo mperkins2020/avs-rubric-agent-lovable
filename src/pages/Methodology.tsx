@@ -3,6 +3,7 @@ import { Footer } from "@/components/Footer";
 import { ArrowLeft, ChevronDown, Layers, Target, DollarSign, Shield, Users, BookOpen, BarChart3, Lightbulb, List, X } from "lucide-react";
 import { Link } from "react-router-dom";
 import { ResourcesDropdown } from "@/components/ResourcesDropdown";
+import { SEOHead } from "@/components/SEOHead";
 import { Button } from "@/components/ui/button";
 import { useState, useEffect, useRef } from "react";
 import {
