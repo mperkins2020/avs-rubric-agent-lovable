@@ -134,7 +134,7 @@ export default function BlogTrustGrowthConstraint() {
 
               <hr className="border-border/50 my-8" />
 
-              <h2 className="text-2xl font-bold text-foreground">Why the Adaptive Value System (AVS) exists</h2>
+              <h2 id="why-avs" className="text-2xl font-bold text-foreground">Why the Adaptive Value System (AVS) exists</h2>
 
               <p>Most AI native teams feel like they are building a plane while they are flying it. They are trying to steer growth while:</p>
 
