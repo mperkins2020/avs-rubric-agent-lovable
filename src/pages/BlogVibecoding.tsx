@@ -125,6 +125,7 @@ export default function BlogVibecoding() {
               <p>If customers cannot identify your value unit, cost drivers, controls for monthly spending and token allocation, no amount of security documentation will close enterprise deals.</p>
 
               {/* Five Things I Learned */}
+              <hr className="border-border/50 my-8" />
               <h2 id="five-lessons" className="text-2xl font-bold mt-12 mb-4 text-foreground">Five Things I Learned Vibecoding an AI Product</h2>
               <p>I built the first version using <strong>Lovable</strong>. The speed-to-done was impressive. After I uploaded a product requirements document, a working product with a nicely designed UI appeared in less than an hour.</p>
               <p>But sooner or later we all realize that shipping a prototype and building something reliable are two very different problems.</p>
