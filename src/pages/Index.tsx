@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import ValueTempoLogo from "@/assets/ValueTempo_Logo.png";
 import { ResourcesDropdown } from "@/components/ResourcesDropdown";
+import { SEOHead } from "@/components/SEOHead";
 import {
   Dialog,
   DialogContent,
