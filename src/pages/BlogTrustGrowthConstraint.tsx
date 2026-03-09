@@ -35,10 +35,12 @@ export default function BlogTrustGrowthConstraint() {
             <Link to="/">
               <img alt="ValueTempo" className="h-8" src="/lovable-uploads/87678626-e604-46ee-90b6-9ab9b6380322.png" />
             </Link>
-            <Button variant="outline" size="sm" className="gap-2 hidden sm:flex">
-              <Sparkles className="w-4 h-4" />
-              AVS Rubric
-            </Button>
+            <Link to="/#url-input">
+              <Button variant="outline" size="sm" className="gap-2 hidden sm:flex">
+                <Sparkles className="w-4 h-4" />
+                AVS Rubric
+              </Button>
+            </Link>
           </div>
           <nav className="hidden md:flex items-center gap-6">
             <Link to="/methodology" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Methodology</Link>
