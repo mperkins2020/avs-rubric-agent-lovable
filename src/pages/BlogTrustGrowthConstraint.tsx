@@ -55,6 +55,8 @@ export default function BlogTrustGrowthConstraint() {
               <p className="text-lg md:text-xl text-muted-foreground">A practical way to make value, usage, and cost feel predictable</p>
             </div>
 
+            <BlogTOC sections={tocSections} />
+
             <div className="space-y-6 text-foreground/90 leading-relaxed">
               <p>This is the year AI stops getting graded on "capabilities" and starts getting graded on economic value. Less demo magic, more measurable impact. Less "we added AI," more "what did it actually change in the workflow?"</p>
 

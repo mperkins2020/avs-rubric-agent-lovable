@@ -57,6 +57,8 @@ export default function BlogVibecoding() {
               <p className="text-lg md:text-xl text-muted-foreground">A build-in-public note on what broke, what worked, and what vibecoding an AI product taught me about reliability, production readiness, and trust infrastructure.</p>
             </div>
 
+            <BlogTOC sections={tocSections} />
+
             <div className="space-y-6 text-foreground/90 leading-relaxed">
               <p>I vibecoded an AI tool to score the trust infrastructure of AI startups.</p>
               <p>It looked great.</p>
