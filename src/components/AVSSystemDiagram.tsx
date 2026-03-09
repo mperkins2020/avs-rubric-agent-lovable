@@ -27,7 +27,7 @@ const signalItems = [
   { icon: Settings, label: "Admin controls" },
   { icon: Wallet, label: "Spend limits" },
   { icon: ClipboardList, label: "Audit logs" },
-  { icon: HelpCircle, label: "Help documentation" },
+  { icon: HelpCircle, label: "Help docs" },
 ];
 
 const evidenceItems = [
