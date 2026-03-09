@@ -40,24 +40,27 @@ export default function BlogTrustGrowthConstraint() {
       </header>
 
       <main className="container mx-auto px-4 py-12 md:py-20">
-        <div className="max-w-3xl mx-auto">
-          <Link to="/resources/blog" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors mb-8">
-            <ArrowLeft className="w-4 h-4" /> Back to Blog
-          </Link>
+        <div className="flex gap-10 max-w-6xl mx-auto">
+          {/* Sticky TOC — desktop only */}
+          <BlogTOC sections={tocSections} variant="sidebar" />
 
-          <motion.article initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="prose prose-invert max-w-none">
-            <div className="mb-8">
-              <div className="flex items-center gap-2 text-sm text-muted-foreground mb-4">
-                <Calendar className="w-4 h-4" />
-                <time>February 2026</time>
+          {/* Main content */}
+          <div className="flex-1 max-w-3xl">
+            <Link to="/resources/blog" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors mb-8">
+              <ArrowLeft className="w-4 h-4" /> Back to Blog
+            </Link>
+
+            <motion.article initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="prose prose-invert max-w-none">
+              <div className="mb-8">
+                <div className="flex items-center gap-2 text-sm text-muted-foreground mb-4">
+                  <Calendar className="w-4 h-4" />
+                  <time>February 2026</time>
+                </div>
+                <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold leading-tight mb-3">Trust is the new growth constraint in AI</h1>
+                <p className="text-lg md:text-xl text-muted-foreground">A practical way to make value, usage, and cost feel predictable</p>
               </div>
-              <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold leading-tight mb-3">Trust is the new growth constraint in AI</h1>
-              <p className="text-lg md:text-xl text-muted-foreground">A practical way to make value, usage, and cost feel predictable</p>
-            </div>
 
-            <BlogTOC sections={tocSections} />
-
-            <div className="space-y-6 text-foreground/90 leading-relaxed">
+              <div className="space-y-6 text-foreground/90 leading-relaxed">
               <p>This is the year AI stops getting graded on "capabilities" and starts getting graded on economic value. Less demo magic, more measurable impact. Less "we added AI," more "what did it actually change in the workflow?"</p>
 
               <p>And that shift has a sharp consequence for operators: <strong>pricing drift becomes trust drift.</strong> If your monetization system keeps changing but your value system stays fuzzy, customers do not experience iteration. They experience randomness. Randomness kills exploration, habit, and expansion.</p>
