@@ -43,24 +43,27 @@ export default function BlogVibecoding() {
       </header>
 
       <main className="container mx-auto px-4 py-12 md:py-20">
-        <div className="max-w-3xl mx-auto">
-          <Link to="/resources/blog" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors mb-8">
-            <ArrowLeft className="w-4 h-4" /> Back to Blog
-          </Link>
+        <div className="flex gap-10 max-w-6xl mx-auto">
+          {/* Sticky TOC — desktop only */}
+          <BlogTOC sections={tocSections} variant="sidebar" />
 
-          <motion.article initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="prose prose-invert max-w-none">
-            <div className="mb-8">
-              <div className="flex items-center gap-2 text-sm text-muted-foreground mb-4">
-                <Calendar className="w-4 h-4" />
-                <time>March 2026</time>
+          {/* Main content */}
+          <div className="flex-1 max-w-3xl">
+            <Link to="/resources/blog" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors mb-8">
+              <ArrowLeft className="w-4 h-4" /> Back to Blog
+            </Link>
+
+            <motion.article initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="prose prose-invert max-w-none">
+              <div className="mb-8">
+                <div className="flex items-center gap-2 text-sm text-muted-foreground mb-4">
+                  <Calendar className="w-4 h-4" />
+                  <time>March 2026</time>
+                </div>
+                <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold leading-tight mb-3">What I Learned Vibecoding an AI Startup Tool using Lovable + Claude Code</h1>
+                <p className="text-lg md:text-xl text-muted-foreground">A build-in-public note on what broke, what worked, and what vibecoding an AI product taught me about reliability, production readiness, and trust infrastructure.</p>
               </div>
-              <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold leading-tight mb-3">What I Learned Vibecoding an AI Startup Tool using Lovable + Claude Code</h1>
-              <p className="text-lg md:text-xl text-muted-foreground">A build-in-public note on what broke, what worked, and what vibecoding an AI product taught me about reliability, production readiness, and trust infrastructure.</p>
-            </div>
 
-            <BlogTOC sections={tocSections} />
-
-            <div className="space-y-6 text-foreground/90 leading-relaxed">
+              <div className="space-y-6 text-foreground/90 leading-relaxed">
               <p>I vibecoded an AI tool to score the trust infrastructure of AI startups.</p>
               <p>It looked great.</p>
               <p>Then I ran the same company through it twice and got two different scores.</p>
