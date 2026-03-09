@@ -110,7 +110,7 @@ export default function BlogVibecoding() {
                     <p className="font-bold text-foreground text-base">Operational Controls</p>
                     <div className="flex flex-wrap justify-center gap-x-4 gap-y-1 mt-1">
                       <span className="text-sm text-muted-foreground">Safety Rails</span>
-                      <span className="text-sm text-muted-foreground">Overages &amp; Risk</span>
+                      <span className="text-sm text-muted-foreground">Overage Controls</span>
                       <span className="text-sm text-muted-foreground">Pools &amp; Packaging</span>
                     </div>
                   </div>
