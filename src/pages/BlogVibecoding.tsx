@@ -192,7 +192,7 @@ export default function BlogVibecoding() {
               <p className="font-semibold">Vibecoding makes it easy to build quickly. Production readiness requires a different mindset.</p>
 
               {/* Lesson 5 */}
-              <h3 className="text-xl font-bold mt-8 mb-2 text-foreground">5. Reliability Matters: AI Is Probabilistic</h3>
+              <h3 id="lesson-reliability" className="text-xl font-bold mt-8 mb-2 text-foreground">5. Reliability Matters: AI Is Probabilistic</h3>
               <p>Another subtle issue appeared early. Running the same company through the rubric twice could produce slightly different scores.</p>
               <p>That is not surprising once you remember that LLMs are probabilistic systems.</p>
               <p>The solution was to stop treating model output as ground truth and instead treat it as a noisy signal that needs stabilization.</p>
