@@ -88,6 +88,60 @@ export default function BlogVibecoding() {
               <p>For context, the rubric evaluates eight dimensions organized into four layers.</p>
               <p className="font-semibold text-primary">The idea is simple: gaps at the foundation cascade upward.</p>
 
+              {/* Trust Infrastructure Stack Infographic */}
+              <div className="my-10 max-w-2xl mx-auto">
+                <p className="text-center text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-6">AI Trust Infrastructure Stack</p>
+                <div className="flex flex-col gap-0">
+                  {/* Layer 4 - Top */}
+                  <div className="relative bg-gradient-to-r from-amber-500/15 to-amber-600/10 border border-amber-500/30 rounded-t-2xl px-6 py-5 text-center">
+                    <div className="flex items-center justify-center gap-2 mb-1">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-amber-500"><path d="M12 2 2 7l10 5 10-5-10-5Z"/><path d="m2 17 10 5 10-5"/><path d="m2 12 10 5 10-5"/></svg>
+                      <span className="text-[10px] font-bold uppercase tracking-widest text-amber-500/80">Layer 4</span>
+                    </div>
+                    <p className="font-bold text-foreground text-base">Enterprise Readiness</p>
+                    <p className="text-sm text-muted-foreground">Buyer &amp; Budget Alignment</p>
+                  </div>
+                  {/* Layer 3 */}
+                  <div className="relative bg-gradient-to-r from-violet-500/15 to-violet-600/10 border-x border-violet-500/30 px-6 py-5 text-center">
+                    <div className="flex items-center justify-center gap-2 mb-1">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-violet-500"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+                      <span className="text-[10px] font-bold uppercase tracking-widest text-violet-500/80">Layer 3</span>
+                    </div>
+                    <p className="font-bold text-foreground text-base">Operational Controls</p>
+                    <div className="flex flex-wrap justify-center gap-x-4 gap-y-1 mt-1">
+                      <span className="text-sm text-muted-foreground">Safety Rails</span>
+                      <span className="text-sm text-muted-foreground">Overages &amp; Risk</span>
+                      <span className="text-sm text-muted-foreground">Pools &amp; Packaging</span>
+                    </div>
+                  </div>
+                  {/* Layer 2 */}
+                  <div className="relative bg-gradient-to-r from-sky-500/15 to-sky-600/10 border-x border-sky-500/30 px-6 py-5 text-center">
+                    <div className="flex items-center justify-center gap-2 mb-1">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-sky-500"><line x1="12" x2="12" y1="2" y2="22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                      <span className="text-[10px] font-bold uppercase tracking-widest text-sky-500/80">Layer 2</span>
+                    </div>
+                    <p className="font-bold text-foreground text-base">Pricing Architecture</p>
+                    <div className="flex flex-wrap justify-center gap-x-4 gap-y-1 mt-1">
+                      <span className="text-sm text-muted-foreground">Value Unit</span>
+                      <span className="text-sm text-muted-foreground">Cost Driver Mapping</span>
+                    </div>
+                  </div>
+                  {/* Layer 1 - Foundation */}
+                  <div className="relative bg-gradient-to-r from-emerald-500/15 to-emerald-600/10 border border-emerald-500/30 rounded-b-2xl px-6 py-5 text-center">
+                    <div className="flex items-center justify-center gap-2 mb-1">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-emerald-500"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>
+                      <span className="text-[10px] font-bold uppercase tracking-widest text-emerald-500/80">Layer 1 — Foundation</span>
+                    </div>
+                    <p className="font-bold text-foreground text-base">Product Clarity</p>
+                    <div className="flex flex-wrap justify-center gap-x-4 gap-y-1 mt-1">
+                      <span className="text-sm text-muted-foreground">Product North Star</span>
+                      <span className="text-sm text-muted-foreground">ICP &amp; Job Clarity</span>
+                    </div>
+                  </div>
+                </div>
+                <p className="text-center text-xs text-muted-foreground/60 mt-3 italic">Gaps at the foundation cascade upward</p>
+              </div>
+
               <h3 className="text-xl font-bold mt-8 mb-2 text-foreground">Layer 1: Product Clarity</h3>
               <p>Who is this product for, and what outcome are they paying for?</p>
               <ul className="list-disc pl-6 space-y-1">
