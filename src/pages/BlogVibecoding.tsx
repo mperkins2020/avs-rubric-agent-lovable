@@ -286,7 +286,7 @@ export default function BlogVibecoding() {
               <p>But diagnosing that through public evidence is significantly harder. That capability is still being developed.</p>
 
               {/* CTA */}
-              <h2 className="text-2xl font-bold mt-12 mb-4 text-foreground">Try the Rubric</h2>
+              <h2 id="try-rubric" className="text-2xl font-bold mt-12 mb-4 text-foreground">Try the Rubric</h2>
               <p>The AVS Rubric is free and live at <Link to="/" className="text-primary hover:underline font-semibold">valuetempo.com</Link>.</p>
               <p>It evaluates only what buyers can see publicly.</p>
               <p>Running your own product through it can be surprisingly revealing.</p>

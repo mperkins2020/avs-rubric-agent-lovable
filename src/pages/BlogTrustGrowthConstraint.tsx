@@ -232,7 +232,7 @@ export default function BlogTrustGrowthConstraint() {
 
               <hr className="border-border/50 my-8" />
 
-              <h2 className="text-2xl font-bold text-foreground">The takeaway</h2>
+              <h2 id="takeaway" className="text-2xl font-bold text-foreground">The takeaway</h2>
 
               <div className="bg-muted/30 border border-border/50 rounded-xl p-6 my-6">
                 <p className="text-lg font-semibold text-foreground mb-2">Belief starts the value loop. Trust sustains it. Habit compounds it.</p>
