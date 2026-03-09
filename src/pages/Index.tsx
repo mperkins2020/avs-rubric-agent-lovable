@@ -297,7 +297,7 @@ const Index = () => {
           </p>
 
           {/* URL Input */}
-          <div className="flex justify-center mb-16">
+          <div id="url-input" className="flex justify-center mb-16 scroll-mt-24">
             <URLInput onSubmit={handleSubmit} isLoading={isLoading} />
           </div>
 
