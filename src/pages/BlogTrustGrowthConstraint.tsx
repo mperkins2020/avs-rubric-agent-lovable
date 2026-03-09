@@ -172,7 +172,7 @@ export default function BlogTrustGrowthConstraint() {
 
               <hr className="border-border/50 my-8" />
 
-              <h2 className="text-2xl font-bold text-foreground">What AVS replaces: the manual operating pattern that creates drift</h2>
+              <h2 id="avs-replaces" className="text-2xl font-bold text-foreground">What AVS replaces: the manual operating pattern that creates drift</h2>
 
               <p>AVS does not replace tools. It replaces the quarter-late, manual process of connecting monetization changes to behavior, trust, and margin outcomes. It gives operators a shared map, makes leading signals observable week to week, and turns learning into a repeatable cadence across product, finance, infra, and GTM.</p>
 
