@@ -3,6 +3,8 @@ import { ArrowLeft } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import ValueTempoLogo from "@/assets/ValueTempo_Logo.png";
+import { FAQJsonLd } from "@/components/FAQJsonLd";
+import { SEOHead } from "@/components/SEOHead";
 const FAQCFORevOps = () => {
   const faqs = [{
     question: "We already have Stripe, billing, cohorts, and a data warehouse. Why do we need this?",
@@ -82,6 +84,14 @@ Here is why:
 Example: A CFO can forward the report to GTM, Product, and CS and align on risks without exposing internal dashboards.`
   }];
   return <div className="min-h-screen bg-background relative overflow-hidden">
+      <SEOHead
+        title="AVS Rubric FAQ for CFO & RevOps"
+        description="How the AVS Rubric helps CFOs and RevOps teams surface expectation gaps, reduce churn, improve NRR, and create auditable revenue quality assessments."
+        canonicalUrl="https://valuetempo.lovable.app/resources/faq/cfo-revops"
+        publishedDate="2026-01-15"
+        tags={["FAQ", "CFO", "RevOps", "AVS Rubric", "churn", "NRR"]}
+      />
+      <FAQJsonLd faqs={faqs.map(f => ({ question: f.question, answer: f.answer }))} />
       {/* Background effects */}
       <div className="absolute inset-0 bg-gradient-to-b from-primary/5 via-transparent to-accent/5 pointer-events-none" />
 

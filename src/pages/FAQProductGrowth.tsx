@@ -3,6 +3,8 @@ import { ArrowLeft, Layers, MessageSquare, Heart } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import ValueTempoLogo from "@/assets/ValueTempo_Logo.png";
+import { FAQJsonLd } from "@/components/FAQJsonLd";
+import { SEOHead } from "@/components/SEOHead";
 const FAQProductGrowth = () => {
   const faqs = [{
     question: "Belief is mostly shaped by the words we use on the website. Isn't this just copy and messaging?",
@@ -79,6 +81,14 @@ The rubric narrows the problem to concrete system gaps: Value unit ambiguity, wo
 Example: If the assessment surfaces workflow cutover risk, the action is not "rewrite copy." The action is: clarify the "done" state, reduce manual cleanup, expose finishing paths, add guardrails so users don't hedge back to old tools. That's a product and system decision, not prescribing a landing page change.`
   }];
   return <div className="min-h-screen bg-background relative overflow-hidden">
+      <SEOHead
+        title="AVS Rubric FAQ for Product & Growth Leaders"
+        description="How the AVS Rubric helps product and growth leaders evaluate pre-adoption legibility, surface trust gaps, and prioritize structural fixes that drive expansion."
+        canonicalUrl="https://valuetempo.lovable.app/resources/faq/product-growth"
+        publishedDate="2026-01-15"
+        tags={["FAQ", "product", "growth", "AVS Rubric", "trust gaps", "legibility"]}
+      />
+      <FAQJsonLd faqs={faqs.map(f => ({ question: f.question, answer: f.answer }))} />
       {/* Background effects */}
       <div className="absolute inset-0 bg-gradient-to-b from-primary/5 via-transparent to-accent/5 pointer-events-none" />
 
