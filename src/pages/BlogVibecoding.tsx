@@ -138,7 +138,7 @@ export default function BlogVibecoding() {
               <p className="font-semibold">They effectively become application logic written in natural language.</p>
 
               {/* Lesson 2 */}
-              <h3 className="text-xl font-bold mt-8 mb-2 text-foreground">2. Data Collection Quality Matters More Than the Model</h3>
+              <h3 id="lesson-data" className="text-xl font-bold mt-8 mb-2 text-foreground">2. Data Collection Quality Matters More Than the Model</h3>
               <p>Early versions simply scraped the first N links from a website.</p>
               <p>That meant help center articles crowded out the pages that actually mattered.</p>
               <p>The fix was a link prioritization layer that weighted paths like:</p>
