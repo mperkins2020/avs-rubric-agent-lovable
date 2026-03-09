@@ -262,6 +262,7 @@ export default function BlogTrustGrowthConstraint() {
               <p className="text-sm text-muted-foreground mt-3">Get your AVS assessment in 60 seconds</p>
             </div>
           </motion.article>
+          </div>
         </div>
       </main>
       <Footer />
