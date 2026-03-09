@@ -77,7 +77,7 @@ export default function BlogVibecoding() {
               </div>
 
               <div className="space-y-6 text-foreground/90 leading-relaxed">
-              <p>I vibecoded an AI tool to score the trust infrastructure of AI startups.</p>
+              <p>I vibecoded an <a href="https://valuetempo.com" target="_blank" rel="noopener noreferrer" className="text-primary underline hover:text-primary/80">AI scoring tool</a> to score the trust infrastructure of AI startups.</p>
               <p>It looked great.</p>
               <p>Then I ran the same company through it twice and got two different scores.</p>
               <p>That's when I realized the hard part of building AI products today isn't shipping them. It's making the results reliable enough to trust.</p>
