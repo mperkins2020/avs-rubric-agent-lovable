@@ -86,6 +86,7 @@ export default function BlogVibecoding() {
               <p className="font-semibold">Lesson one: AI evaluation systems are harder to make reliable than they appear.</p>
 
               {/* Trust Infrastructure */}
+              <hr className="border-border/50 my-8" />
               <h2 id="trust-infrastructure" className="text-2xl font-bold mt-12 mb-4 text-foreground">The Trust Infrastructure the Rubric Measures</h2>
               <p>For context, the rubric evaluates eight dimensions organized into four layers.</p>
               <p className="font-semibold text-primary">The idea is simple: gaps at the foundation cascade upward.</p>
