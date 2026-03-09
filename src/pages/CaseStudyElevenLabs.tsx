@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { Sparkles, ArrowLeft, ArrowRight, CheckCircle, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ResourcesDropdown } from "@/components/ResourcesDropdown";
+import { SEOHead } from "@/components/SEOHead";
 
 function Section({ children, className = "" }: {children: React.ReactNode;className?: string;}) {
   return (
