@@ -209,7 +209,7 @@ export default function BlogVibecoding() {
               <p className="font-semibold">LLM output must be surrounded by deterministic guardrails to behave like production-grade software.</p>
 
               {/* Production-Grade */}
-              <h2 className="text-2xl font-bold mt-12 mb-4 text-foreground">What It Took to Make the Rubric Production-Grade</h2>
+              <h2 id="production-grade" className="text-2xl font-bold mt-12 mb-4 text-foreground">What It Took to Make the Rubric Production-Grade</h2>
               <p>Shipping fast with Lovable created technical debt that needed to be addressed.</p>
               <p>But interestingly, the hardest production problems were <strong>not model problems</strong>. They were infrastructure problems.</p>
               <p>Five things mattered most.</p>
