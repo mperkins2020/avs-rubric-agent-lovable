@@ -125,7 +125,7 @@ export default function BlogVibecoding() {
               <p>Here are the lessons that mattered most to me.</p>
 
               {/* Lesson 1 */}
-              <h3 className="text-xl font-bold mt-8 mb-2 text-foreground">1. Your Prompt Becomes Your Business Logic</h3>
+              <h3 id="lesson-prompt" className="text-xl font-bold mt-8 mb-2 text-foreground">1. Your Prompt Becomes Your Business Logic</h3>
               <p>The scoring rubric lives inside the edge function prompt.</p>
               <p>Every nuance about how trust infrastructure is evaluated exists as natural-language instructions to the model.</p>
               <p>That includes rules like:</p>
