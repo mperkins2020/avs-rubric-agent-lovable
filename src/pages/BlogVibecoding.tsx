@@ -304,8 +304,9 @@ export default function BlogVibecoding() {
               <p>It evaluates only what buyers can see publicly.</p>
               <p>Running your own product through it can be surprisingly revealing.</p>
               <p>And if you're building an AI product yourself, I'd be curious what it finds.</p>
-            </div>
-          </motion.article>
+              </div>
+            </motion.article>
+          </div>
         </div>
       </main>
       <Footer />
