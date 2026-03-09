@@ -126,7 +126,7 @@ export default function BlogTrustGrowthConstraint() {
 
               <hr className="border-border/50 my-8" />
 
-              <h2 className="text-2xl font-bold text-foreground">How strong value systems show up in the wild</h2>
+              <h2 id="strong-value" className="text-2xl font-bold text-foreground">How strong value systems show up in the wild</h2>
 
               <p>ZoomInfo's CEO, Henry Schuck, shared a simple truth: their best AI ROI did not come from flashy demos. It came from "boring AI" embedded into repeatable workflows at scale, like daily prioritization, more relevant outreach, calls into usable data, and faster engineering execution.</p>
 
