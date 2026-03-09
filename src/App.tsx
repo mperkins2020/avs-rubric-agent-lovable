@@ -17,6 +17,7 @@ import CaseStudyElevenLabs from "./pages/CaseStudyElevenLabs";
 import CaseStudyClay from "./pages/CaseStudyClay";
 import Blog from "./pages/Blog";
 import BlogTrustGrowthConstraint from "./pages/BlogTrustGrowthConstraint";
+import BlogVibecoding from "./pages/BlogVibecoding";
 
 const queryClient = new QueryClient();
 
