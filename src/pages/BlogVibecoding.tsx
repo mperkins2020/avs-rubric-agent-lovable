@@ -175,7 +175,7 @@ export default function BlogVibecoding() {
               <p className="font-semibold">Ironically, the system became more trustworthy once it started admitting what it didn't know.</p>
 
               {/* Lesson 4 */}
-              <h3 className="text-xl font-bold mt-8 mb-2 text-foreground">4. Vibecoding Makes Prototypes Fast. Production Requires Discipline.</h3>
+              <h3 id="lesson-production" className="text-xl font-bold mt-8 mb-2 text-foreground">4. Vibecoding Makes Prototypes Fast. Production Requires Discipline.</h3>
               <p>Lovable made it possible to ship a working pipeline incredibly quickly.</p>
               <p>Scraping → analysis → UI rendering → PDF export all appeared within a few sessions.</p>
               <p>But moving from prototype to production exposed a completely different set of problems.</p>
