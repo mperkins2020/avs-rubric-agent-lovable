@@ -68,6 +68,7 @@ export default function BlogVibecoding() {
               <p>Over the past few weeks I ran the rubric across 50+ AI-native SaaS companies, which learned several unexpected failure modes.</p>
 
               {/* The Rubric Failed Its First Test */}
+              <hr className="border-border/50 my-8" />
               <h2 id="rubric-failed" className="text-2xl font-bold mt-12 mb-4 text-foreground">The Rubric Failed Its First Test</h2>
               <p>The AVS Rubric exists to answer one question:</p>
               <p className="text-lg font-semibold text-primary">Does your AI product expose enough trust infrastructure for growth to compound?</p>
