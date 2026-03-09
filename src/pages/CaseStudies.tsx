@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import { Sparkles, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ResourcesDropdown } from "@/components/ResourcesDropdown";
+import { SEOHead } from "@/components/SEOHead";
 
 interface CaseStudyEntry {
   slug: string;
