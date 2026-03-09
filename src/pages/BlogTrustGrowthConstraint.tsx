@@ -76,7 +76,7 @@ export default function BlogTrustGrowthConstraint() {
 
               <hr className="border-border/50 my-8" />
 
-              <h2 className="text-2xl font-bold text-foreground mt-10">What I mean by "value system."</h2>
+              <h2 id="value-system" className="text-2xl font-bold text-foreground mt-10">What I mean by "value system."</h2>
 
               <p>Your value system is how your company:</p>
 
