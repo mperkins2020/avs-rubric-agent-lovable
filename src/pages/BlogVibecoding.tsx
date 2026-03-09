@@ -139,7 +139,7 @@ export default function BlogVibecoding() {
                     </div>
                   </div>
                 </div>
-                <p className="text-center text-xs text-muted-foreground/60 mt-3 italic">Gaps at the foundation cascade upward</p>
+                <p className="text-center text-sm font-semibold text-muted-foreground mt-3 tracking-wide">Trust gaps cascade upward ↑</p>
               </div>
 
               <h3 className="text-xl font-bold mt-8 mb-2 text-foreground">Layer 1: Product Clarity</h3>
