@@ -195,7 +195,7 @@ export default function BlogTrustGrowthConstraint() {
 
               <hr className="border-border/50 my-8" />
 
-              <h2 className="text-2xl font-bold text-foreground">AVS as the economic trust layer</h2>
+              <h2 id="trust-layer" className="text-2xl font-bold text-foreground">AVS as the economic trust layer</h2>
 
               <p>Trust in an AI product has many layers: predictable outputs, recoverable failures, clear uncertainty, aligned expectations, and low-friction workflows.</p>
 
