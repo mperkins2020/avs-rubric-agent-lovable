@@ -260,7 +260,7 @@ export default function BlogVibecoding() {
               <p className="font-semibold">A reminder that sometimes the biggest production issues come from the least interesting parts of the stack.</p>
 
               {/* Bigger Idea */}
-              <h2 className="text-2xl font-bold mt-12 mb-4 text-foreground">The Bigger Idea Behind the Rubric</h2>
+              <h2 id="bigger-idea" className="text-2xl font-bold mt-12 mb-4 text-foreground">The Bigger Idea Behind the Rubric</h2>
               <p>The rubric is based on the <strong>Adaptive Value System (AVS)</strong>.</p>
               <p>AVS is a framework for aligning four forces inside AI-native products:</p>
               <ul className="list-disc pl-6 space-y-2">
