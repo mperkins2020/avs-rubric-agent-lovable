@@ -15,7 +15,7 @@ export function SEOHead({
   title,
   description,
   canonicalUrl,
-  ogImage = "https://valuetempo.lovable.app/lovable-uploads/87678626-e604-46ee-90b6-9ab9b6380322.png",
+  ogImage = "https://valuetempo.lovable.app/ValueTempo_Logo.png",
   publishedDate,
   modifiedDate,
   authorName = "ValueTempo",
@@ -98,7 +98,7 @@ export function SEOHead({
         url: "https://valuetempo.lovable.app",
         logo: {
           "@type": "ImageObject",
-          url: "https://valuetempo.lovable.app/lovable-uploads/87678626-e604-46ee-90b6-9ab9b6380322.png",
+          url: "https://valuetempo.lovable.app/ValueTempo_Logo.png",
         },
       },
       mainEntityOfPage: {

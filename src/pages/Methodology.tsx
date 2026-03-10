@@ -1,4 +1,5 @@
 import { motion, AnimatePresence } from "framer-motion";
+import ValueTempoLogo from "@/assets/ValueTempo_Logo.png";
 import { Footer } from "@/components/Footer";
 import { ArrowLeft, ChevronDown, Layers, Target, DollarSign, Shield, Users, BookOpen, BarChart3, Lightbulb, List, X } from "lucide-react";
 import { Link } from "react-router-dom";
@@ -73,7 +74,7 @@ const Methodology = () => {
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Link to="/">
-              <img alt="ValueTempo" className="h-8" src="/lovable-uploads/05acbf98-b629-4a57-bf8d-5a8ffb90eb87.png" />
+              <img alt="ValueTempo" className="h-8" src={ValueTempoLogo} />
             </Link>
             <Link to="/">
               <Button variant="outline" size="sm" className="gap-2">AVS Rubric</Button>

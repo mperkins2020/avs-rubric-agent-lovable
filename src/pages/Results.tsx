@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect } from "react";
+import ValueTempoLogo from "@/assets/ValueTempo_Logo.png";
 import { Footer } from "@/components/Footer";
 import { useLocation, Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -302,7 +303,7 @@ export default function Results() {
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Link to="/">
-              <img alt="ValueTempo" className="h-8" src="/lovable-uploads/87678626-e604-46ee-90b6-9ab9b6380322.png" />
+              <img alt="ValueTempo" className="h-8" src={ValueTempoLogo} />
             </Link>
             <Button variant="outline" size="sm" className="gap-2">
               <Sparkles className="w-4 h-4" />
