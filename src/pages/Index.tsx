@@ -290,7 +290,7 @@ const Index = () => {
           </h1>
 
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto mb-4">
-            Our open rubric scores your AI product across 8 trust dimensions in under a minute — so you know exactly where to improve.
+            Our open rubric analyzes your AI product across 8 trust dimensions in under a minute — so you know exactly where to improve.
           </p>
           <p className="text-sm font-medium text-primary/80 max-w-xl mx-auto mb-12">
             Case studies show closing trust gaps drives 2–7% ARR uplift
