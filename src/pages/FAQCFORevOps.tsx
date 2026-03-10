@@ -100,7 +100,7 @@ Example: A CFO can forward the report to GTM, Product, and CS and align on risks
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Link to="/">
-              <img alt="ValueTempo" className="h-8" src="/lovable-uploads/5ba26099-86b5-4b34-8056-62c0f9a3cd7f.png" />
+              <img alt="ValueTempo" className="h-8" src={ValueTempoLogo} />
             </Link>
             <Link to="/">
               <Button variant="outline" size="sm" className="gap-2">
