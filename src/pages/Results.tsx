@@ -303,7 +303,7 @@ export default function Results() {
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Link to="/">
-              <img alt="ValueTempo" className="h-8" src={ValueTempoLogo} />
+              <img alt="ValueTempo" className="h-10" src={ValueTempoLogo} />
             </Link>
             <Button variant="outline" size="sm" className="gap-2">
               <Sparkles className="w-4 h-4" />
