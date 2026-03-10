@@ -119,7 +119,7 @@ export default function Auth() {
             <img
               alt="ValueTempo"
               className="h-8 mx-auto mb-6"
-              src="/lovable-uploads/87678626-e604-46ee-90b6-9ab9b6380322.png"
+              src={ValueTempoLogo}
             />
           </Link>
           <h1 className="text-2xl font-bold">
