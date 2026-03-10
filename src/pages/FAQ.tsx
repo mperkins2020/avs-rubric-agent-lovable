@@ -325,7 +325,7 @@ const FAQ = () => {
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Link to="/">
-              <img alt="ValueTempo" className="h-8" src="/lovable-uploads/7944ca33-ab21-48b0-8553-efe2f2835d0c.png" />
+              <img alt="ValueTempo" className="h-8" src={ValueTempoLogo} />
             </Link>
             <Link to="/">
               <Button variant="outline" size="sm" className="gap-2">
