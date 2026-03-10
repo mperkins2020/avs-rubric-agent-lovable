@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import ValueTempoLogo from "@/assets/ValueTempo_Logo.png";
 import { motion } from "framer-motion";
 import { Sparkles, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";

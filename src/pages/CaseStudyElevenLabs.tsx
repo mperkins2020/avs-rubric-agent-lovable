@@ -1,4 +1,5 @@
 import { Link, useNavigate } from "react-router-dom";
+import ValueTempoLogo from "@/assets/ValueTempo_Logo.png";
 import { Footer } from "@/components/Footer";
 import { motion } from "framer-motion";
 import { Sparkles, ArrowLeft, ArrowRight, CheckCircle, AlertTriangle } from "lucide-react";

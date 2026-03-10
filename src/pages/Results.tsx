@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect } from "react";
+import ValueTempoLogo from "@/assets/ValueTempo_Logo.png";
 import { Footer } from "@/components/Footer";
 import { useLocation, Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
