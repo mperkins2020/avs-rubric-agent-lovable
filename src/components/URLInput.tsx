@@ -59,7 +59,7 @@ export function URLInput({ onSubmit, isLoading = false }: URLInputProps) {
             </div>
             <Input
               type="text"
-              placeholder="Enter company URL (e.g., stripe.com)"
+              placeholder="Enter your product URL (e.g. lovable.dev)"
               value={url}
               onChange={(e) => {
                 setUrl(e.target.value);
