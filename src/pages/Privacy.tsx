@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import ValueTempoLogo from "@/assets/ValueTempo_Logo.png";
+import ValueTempoLogo from "@/assets/ValueTempo_Logo_main.png";
 import { Footer } from "@/components/Footer";
 import { ArrowLeft, Shield } from "lucide-react";
 import { Link } from "react-router-dom";
