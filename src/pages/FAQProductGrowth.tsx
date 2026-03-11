@@ -2,7 +2,7 @@ import { motion } from "framer-motion";
 import { ArrowLeft, Layers, MessageSquare, Heart } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import ValueTempoLogo from "@/assets/ValueTempo_Logo.png";
+import ValueTempoLogo from "@/assets/ValueTempo_Logo_main.png";
 import { FAQJsonLd } from "@/components/FAQJsonLd";
 import { SEOHead } from "@/components/SEOHead";
 const FAQProductGrowth = () => {
