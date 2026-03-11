@@ -59,7 +59,7 @@ export function URLInput({ onSubmit, isLoading = false }: URLInputProps) {
             </div>
             <Input
               type="text"
-              placeholder="Enter company URL (e.g., stripe.com)"
+              placeholder="Enter your product URL (e.g. lovable.dev)"
               value={url}
               onChange={(e) => {
                 setUrl(e.target.value);
@@ -78,7 +78,7 @@ export function URLInput({ onSubmit, isLoading = false }: URLInputProps) {
                 <Loader2 className="w-5 h-5 animate-spin" />
               ) : (
                 <>
-                  Analyze
+                  Analysis
                   <ArrowRight className="w-5 h-5 ml-2" />
                 </>
               )}
@@ -98,7 +98,7 @@ export function URLInput({ onSubmit, isLoading = false }: URLInputProps) {
       )}
 
       <p className="mt-3 text-xs text-muted-foreground/60 text-center">
-        Free to use · 3 analyses per week per account
+        Free · 3 analyses per week · ~20 seconds
       </p>
     </form>
   );
