@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import ValueTempoLogo from "@/assets/ValueTempo_Logo.png";
+import ValueTempoLogo from "@/assets/ValueTempo_Logo_main.png";
 import { Footer } from "@/components/Footer";
 import { motion } from "framer-motion";
 import { ArrowLeft, Search, ExternalLink } from "lucide-react";
@@ -325,7 +325,7 @@ const FAQ = () => {
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Link to="/">
-              <img alt="ValueTempo" className="h-10" src={ValueTempoLogo} />
+              <img alt="ValueTempo" className="h-[72px]" src={ValueTempoLogo} />
             </Link>
             <Link to="/">
               <Button variant="outline" size="sm" className="gap-2">

@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import ValueTempoLogo from "@/assets/ValueTempo_Logo.png";
+import ValueTempoLogo from "@/assets/ValueTempo_Logo_main.png";
 import { useNavigate, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -118,7 +118,7 @@ export default function Auth() {
           <Link to="/">
             <img
               alt="ValueTempo"
-              className="h-10 mx-auto mb-6"
+              className="h-[72px] mx-auto mb-6"
               src={ValueTempoLogo}
             />
           </Link>

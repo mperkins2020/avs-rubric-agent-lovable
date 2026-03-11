@@ -2,7 +2,7 @@ import { motion } from "framer-motion";
 import { ArrowLeft } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import ValueTempoLogo from "@/assets/ValueTempo_Logo.png";
+import ValueTempoLogo from "@/assets/ValueTempo_Logo_main.png";
 import { FAQJsonLd } from "@/components/FAQJsonLd";
 import { SEOHead } from "@/components/SEOHead";
 const FAQCFORevOps = () => {
@@ -100,7 +100,7 @@ Example: A CFO can forward the report to GTM, Product, and CS and align on risks
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Link to="/">
-              <img alt="ValueTempo" className="h-10" src={ValueTempoLogo} />
+              <img alt="ValueTempo" className="h-[72px]" src={ValueTempoLogo} />
             </Link>
             <Link to="/">
               <Button variant="outline" size="sm" className="gap-2">

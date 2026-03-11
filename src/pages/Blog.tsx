@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import ValueTempoLogo from "@/assets/ValueTempo_Logo.png";
+import ValueTempoLogo from "@/assets/ValueTempo_Logo_main.png";
 import { Footer } from "@/components/Footer";
 import { motion } from "framer-motion";
 import { Sparkles } from "lucide-react";
@@ -13,7 +13,7 @@ export default function Blog() {
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Link to="/">
-              <img alt="ValueTempo" className="h-10" src={ValueTempoLogo} />
+              <img alt="ValueTempo" className="h-[72px]" src={ValueTempoLogo} />
             </Link>
             <Button variant="outline" size="sm" className="gap-2 hidden sm:flex">
               <Sparkles className="w-4 h-4" />

@@ -1,5 +1,5 @@
 import { Link, useNavigate } from "react-router-dom";
-import ValueTempoLogo from "@/assets/ValueTempo_Logo.png";
+import ValueTempoLogo from "@/assets/ValueTempo_Logo_main.png";
 import { Footer } from "@/components/Footer";
 import { motion } from "framer-motion";
 import { Sparkles, ArrowLeft, ArrowRight, CheckCircle, AlertTriangle } from "lucide-react";
@@ -37,7 +37,7 @@ export default function CaseStudyClay() {
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Link to="/">
-              <img alt="ValueTempo" className="h-10" src={ValueTempoLogo} />
+              <img alt="ValueTempo" className="h-[72px]" src={ValueTempoLogo} />
             </Link>
             <Link to="/#url-input">
               <Button variant="outline" size="sm" className="gap-2 hidden sm:flex">
