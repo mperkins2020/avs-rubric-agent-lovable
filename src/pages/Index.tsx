@@ -170,7 +170,7 @@ const Index = () => {
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Link to="/">
-              <img alt="ValueTempo" className="h-[72px]" src={ValueTempoLogo} />
+              <img alt="ValueTempo" className="h-8" src={ValueTempoLogo} />
             </Link>
             <Button variant="outline" size="sm" className="gap-2 hidden sm:flex">
               <Sparkles className="w-4 h-4" />
@@ -399,7 +399,7 @@ const Index = () => {
         <DialogContent className="sm:max-w-md">
           <div className="space-y-6">
             <div className="text-center">
-              <img alt="ValueTempo" className="h-[72px] mx-auto mb-4" src={ValueTempoLogo} />
+              <img alt="ValueTempo" className="h-8 mx-auto mb-4" src={ValueTempoLogo} />
               <h2 className="text-xl font-bold">{authIsLogin ? "Sign in to analyze" : "Create account"}</h2>
               <p className="text-sm text-muted-foreground mt-1">
                 {authIsLogin ? "Sign in to run your analysis" : "Sign up to get started — 3 analyses per week"}
