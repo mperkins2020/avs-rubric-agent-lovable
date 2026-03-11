@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import ValueTempoLogo from "@/assets/ValueTempo_Logo.png";
+import ValueTempoLogo from "@/assets/ValueTempo_Logo_main.png";
 import { useNavigate, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
