@@ -15,7 +15,7 @@ const Privacy = () => {
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Link to="/">
-              <img alt="ValueTempo" className="h-[72px]" src={ValueTempoLogo} />
+              <img alt="ValueTempo" className="h-8" src={ValueTempoLogo} />
             </Link>
             <Link to="/">
               <Button variant="outline" size="sm" className="gap-2">
