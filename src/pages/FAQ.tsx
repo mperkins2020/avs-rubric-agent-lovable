@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import ValueTempoLogo from "@/assets/ValueTempo_Logo.png";
+import ValueTempoLogo from "@/assets/ValueTempo_Logo_main.png";
 import { Footer } from "@/components/Footer";
 import { motion } from "framer-motion";
 import { ArrowLeft, Search, ExternalLink } from "lucide-react";
