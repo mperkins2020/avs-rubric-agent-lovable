@@ -118,7 +118,7 @@ export default function Auth() {
           <Link to="/">
             <img
               alt="ValueTempo"
-              className="h-10 mx-auto mb-6"
+              className="h-[72px] mx-auto mb-6"
               src={ValueTempoLogo}
             />
           </Link>

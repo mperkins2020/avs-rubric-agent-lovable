@@ -399,7 +399,7 @@ const Index = () => {
         <DialogContent className="sm:max-w-md">
           <div className="space-y-6">
             <div className="text-center">
-              <img alt="ValueTempo" className="h-10 mx-auto mb-4" src={ValueTempoLogo} />
+              <img alt="ValueTempo" className="h-[72px] mx-auto mb-4" src={ValueTempoLogo} />
               <h2 className="text-xl font-bold">{authIsLogin ? "Sign in to analyze" : "Create account"}</h2>
               <p className="text-sm text-muted-foreground mt-1">
                 {authIsLogin ? "Sign in to run your analysis" : "Sign up to get started — 3 analyses per week"}
