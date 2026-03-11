@@ -280,20 +280,13 @@ const Index = () => {
         y: 0
       }} className="text-center max-w-4xl mx-auto mb-12">
 
-          <p className="text-base font-semibold uppercase tracking-widest text-muted-foreground mb-4">
-            Trust is the new growth constraint in AI
-          </p>
-
           <h1 id="hero" className="text-3xl sm:text-4xl md:text-6xl font-bold mb-4 leading-tight">
-            Close Trust Gaps{" "}
-            <span className="gradient-text">Faster</span>
+            Find the Trust Gaps in Your{" "}
+            <span className="gradient-text">AI Product</span>
           </h1>
 
-          <p className="text-xl text-muted-foreground max-w-2xl mx-auto mb-4">
-            Our open rubric analyzes your AI product across 8 trust dimensions in under a minute — so you know exactly where to improve.
-          </p>
-          <p className="text-sm font-medium text-primary/80 max-w-xl mx-auto mb-12">
-            Case studies show closing trust gaps drives 2–7% ARR uplift
+          <p className="text-xl text-muted-foreground max-w-2xl mx-auto mb-12">
+            Paste your product URL to reveal gaps in product clarity, cost predictability, operational controls, and enterprise readiness.
           </p>
 
           {/* URL Input */}
