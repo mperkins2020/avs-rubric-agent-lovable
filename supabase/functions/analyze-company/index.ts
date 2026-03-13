@@ -1429,7 +1429,7 @@ Deno.serve(async (req) => {
       }
     }
 
-    const { pages, url, insiderAnswers, previousScores }: AnalyzeRequest = await req.json();
+    const { pages, url, insiderAnswers, previousScores, existingProfile }: AnalyzeRequest = await req.json();
 
     // Input size validation (DoS protection)
     if (insiderAnswers && typeof insiderAnswers === 'object') {
