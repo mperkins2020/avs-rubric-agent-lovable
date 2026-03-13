@@ -1394,7 +1394,11 @@ Deno.serve(async (req) => {
     const isAdmin = adminCheck === true;
     console.log('Admin check for', userId, ':', isAdmin);
 
-    if (!isAdmin) {
+    // Parse request body early to check if this is a re-run
+    const { pages, url, insiderAnswers, previousScores, existingProfile }: AnalyzeRequest = await req.json();
+    const isRerun = !!(previousScores && previousScores.length > 0);
+
+    if (!isAdmin && !isRerun) {
       const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
 
       // Check by user_id
@@ -1428,6 +1432,8 @@ Deno.serve(async (req) => {
           );
         }
       }
+    } else if (isRerun) {
+      console.log('Skipping rate limit for evidence re-run');
     }
 
     const { pages, url, insiderAnswers, previousScores, existingProfile }: AnalyzeRequest = await req.json();
