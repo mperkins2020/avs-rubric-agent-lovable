@@ -2323,13 +2323,15 @@ ${truncatedContent}`;
       }
     }
 
-    // Record scan usage for rate limiting
-    try {
-      await supabaseAdmin
-        .from('scan_usage')
-        .insert({ user_id: userId, email: userEmail, scanned_url: url });
-    } catch (usageErr) {
-      console.error('Failed to record scan usage (non-fatal):', usageErr);
+    // Record scan usage for rate limiting (skip for evidence re-runs)
+    if (!isRerun) {
+      try {
+        await supabaseAdmin
+          .from('scan_usage')
+          .insert({ user_id: userId, email: userEmail, scanned_url: url });
+      } catch (usageErr) {
+        console.error('Failed to record scan usage (non-fatal):', usageErr);
+      }
     }
 
     return new Response(
