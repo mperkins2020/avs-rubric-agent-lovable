@@ -73,7 +73,7 @@ export default function BlogClayPricing() {
 
               <div className="rounded-xl border border-primary/30 bg-primary/5 p-5 mb-8">
                 <p className="text-sm font-semibold text-primary uppercase tracking-wide mb-2">TL;DR</p>
-                <p className="text-foreground/90 leading-relaxed">Clay announced a major pricing overhaul. The architecture improved. But when the AVS Trust Rubric evaluated the new pricing page, the score dropped from 81% to 75%. That drop is not a failure signal — it is a buyer signal, because the score reflects the first place buyers look: the pricing page. When the right documentation was surfaced, the score jumped to 94%. The gap between 75% and 94% is the distance between documentation and discovery.</p>
+                <p className="text-foreground/90 leading-relaxed">AI pricing works when buyers can predict value, usage, and cost before committing.<br/>This article analyzes Clay's new pricing architecture using the AVS Trust Rubric and shows why AI pricing systems now require three layers: economic architecture, pricing observability, and trust surface distribution.</p>
               </div>
 
               <div className="space-y-6 text-foreground/90 leading-relaxed">
