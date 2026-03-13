@@ -17,6 +17,7 @@ interface AnalyzeRequest {
   url: string;
   insiderAnswers?: Record<string, string>;
   previousScores?: Array<{ dimension: string; score: number; confidence: number }>;
+  existingProfile?: Record<string, unknown>;
 }
 
 const ANALYSIS_VERSION = '2026-03-08-ai-native-ns2-v2';
