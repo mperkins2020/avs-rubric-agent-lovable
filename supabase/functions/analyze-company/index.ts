@@ -17,6 +17,7 @@ interface AnalyzeRequest {
   url: string;
   insiderAnswers?: Record<string, string>;
   previousScores?: Array<{ dimension: string; score: number; confidence: number }>;
+  existingProfile?: Record<string, unknown>;
 }
 
 const ANALYSIS_VERSION = '2026-03-08-ai-native-ns2-v2';
@@ -1393,7 +1394,11 @@ Deno.serve(async (req) => {
     const isAdmin = adminCheck === true;
     console.log('Admin check for', userId, ':', isAdmin);
 
-    if (!isAdmin) {
+    // Parse request body early to check if this is a re-run
+    const { pages, url, insiderAnswers, previousScores, existingProfile }: AnalyzeRequest = await req.json();
+    const isRerun = !!(previousScores && previousScores.length > 0);
+
+    if (!isAdmin && !isRerun) {
       const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
 
       // Check by user_id
@@ -1427,9 +1432,10 @@ Deno.serve(async (req) => {
           );
         }
       }
+    } else if (isRerun) {
+      console.log('Skipping rate limit for evidence re-run');
     }
 
-    const { pages, url, insiderAnswers, previousScores }: AnalyzeRequest = await req.json();
 
     // Input size validation (DoS protection)
     if (insiderAnswers && typeof insiderAnswers === 'object') {
@@ -1769,11 +1775,17 @@ Deno.serve(async (req) => {
       costDriver: evidenceDigest.costDriver.length,
     });
 
-    // Step 1: Extract company profile
-    console.log('Extracting company profile...');
-    const profileContent = `Analyze this website content from ${url}:\n\n${truncatedContent}`;
-    const companyProfile = await callLovableAI(COMPANY_PROFILE_PROMPT, profileContent) as Record<string, unknown>;
-    console.log('Company profile extracted:', companyProfile.companyName);
+    // Step 1: Extract company profile (skip on re-runs if client provides existing profile)
+    let companyProfile: Record<string, unknown>;
+    if (isRerun && existingProfile && existingProfile.companyName) {
+      console.log('Reusing existing company profile for re-run:', existingProfile.companyName);
+      companyProfile = existingProfile;
+    } else {
+      console.log('Extracting company profile...');
+      const profileContent = `Analyze this website content from ${url}:\n\n${truncatedContent}`;
+      companyProfile = await callLovableAI(COMPANY_PROFILE_PROMPT, profileContent) as Record<string, unknown>;
+      console.log('Company profile extracted:', companyProfile.companyName);
+    }
 
     // Step 2: Score against rubric
     console.log('Scoring against AVS rubric...');
@@ -2311,13 +2323,15 @@ ${truncatedContent}`;
       }
     }
 
-    // Record scan usage for rate limiting
-    try {
-      await supabaseAdmin
-        .from('scan_usage')
-        .insert({ user_id: userId, email: userEmail, scanned_url: url });
-    } catch (usageErr) {
-      console.error('Failed to record scan usage (non-fatal):', usageErr);
+    // Record scan usage for rate limiting (skip for evidence re-runs)
+    if (!isRerun) {
+      try {
+        await supabaseAdmin
+          .from('scan_usage')
+          .insert({ user_id: userId, email: userEmail, scanned_url: url });
+      } catch (usageErr) {
+        console.error('Failed to record scan usage (non-fatal):', usageErr);
+      }
     }
 
     return new Response(

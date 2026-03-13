@@ -95,6 +95,7 @@ export const scraperApi = {
     options?: { 
       insiderAnswers?: Record<string, string>; 
       previousScores?: Array<{ dimension: string; score: number; confidence: number }>;
+      existingProfile?: Record<string, unknown>;
     }
   ): Promise<AnalysisResult> {
     try {
@@ -104,6 +105,7 @@ export const scraperApi = {
           url,
           insiderAnswers: options?.insiderAnswers,
           previousScores: options?.previousScores,
+          existingProfile: options?.existingProfile,
         },
       });
 

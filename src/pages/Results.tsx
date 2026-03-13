@@ -143,6 +143,7 @@ export default function Results() {
       const result = await scraperApi.analyzeCompany(pages, url, {
         insiderAnswers: answers,
         previousScores,
+        existingProfile: companyProfile as unknown as Record<string, unknown>,
       });
 
       if (result.success && result.rubricScore && result.observability) {
@@ -232,6 +233,7 @@ export default function Results() {
 
       const result = await scraperApi.analyzeCompany(allPages, url, {
         previousScores,
+        existingProfile: companyProfile as unknown as Record<string, unknown>,
       });
 
       if (result.success && result.rubricScore && result.observability) {
