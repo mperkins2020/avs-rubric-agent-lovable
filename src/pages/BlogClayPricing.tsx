@@ -395,25 +395,29 @@ They illustrate a broader shift happening across AI software.</p>
 
                 <h2 id="what-this-signals" className="text-2xl font-bold text-foreground">What This Signals for AI SaaS Pricing</h2>
 
-                <p>Clay is not alone in this transition. Companies like PostHog, Replicate, and Modal have followed a similar arc.</p>
-                <p>Usage pricing appears first.<br/>Predictability tooling follows.<br/>Only later do observability surfaces mature enough to change buyer behavior.</p>
+                <p>Clay is not alone in this dynamic. PostHog, Replicate, and Modal have followed similar arcs. First usage pricing appears. Then predictability tooling improves. Then observability surfaces mature enough to change buyer behavior.</p>
 
                 <div className="bg-muted/30 border border-border/50 rounded-xl p-6 my-8">
                   <p className="font-semibold text-foreground mb-3">Three structural shifts are emerging across AI software:</p>
                   <ol className="list-decimal pl-6 space-y-3 text-foreground/90">
-                    <li><strong>Usage pricing is becoming the default. </strong><br/>AI workloads scale with compute, inference, and automation steps, not seat count.</li>
+                    <li><strong>Usage pricing is becoming the default.</strong>Companies that once priced data are increasingly pricing workflows.
+                    </li>
                     <li><strong>Value units are moving up the stack.</strong> Companies that once priced data are now pricing workflows.</li>
-                    <li>Pricing signals that live only in documentation cannot build buyer confidence during evaluation.</li>
+                    <li><strong>Discoverability is becoming part of the pricing system.</strong> Documentation that exists but is not surfaced cannot build buyer confidence.</li>
                   </ol>
                 </div>
 
-                <p>Clay's new pricing architecture reflects where the platform creates value.</p>
-                <p>The observability infrastructure largely exists.</p>
-                <p className="font-semibold text-foreground">But the final layer still determines how buyers experience the system: where pricing signals appear during evaluation.</p>
-                <p>The gap between Clay's 75% and 94% scores is not a product gap.</p>
-                <p>It is the distance between documentation and discovery.</p>
+                <p>The architecture now reflects where Clay creates value. 
+The observability infrastructure largely exists.</p>
+                <p>Many AI-native companies operate inside that same gap today.
+
+
+Most would likely score somewhere between 40% and 70% on these signals.</p>
+                <p className="font-semibold text-foreground">
+</p>
+                <p>In Clay's case, the difference between the 75% score and the 94% score is not a product gap. It is the distance between documentation and discovery.</p>
                 <p>Many AI-native companies are operating inside that same gap today.</p>
-                <p>&nbsp;</p>
+                <p className="text-muted-foreground">Most AI-native products today would score somewhere between 40% and 70% on these signals.</p>
 
                 <hr className="border-border/50 my-8" />
 
