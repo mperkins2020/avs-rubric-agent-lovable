@@ -93,7 +93,7 @@ export default function BlogClayPricing() {
                   <table className="w-full border-collapse text-sm">
                     <thead>
                       <tr className="border-b border-border/50">
-                        <th className="text-left py-3 px-4 text-foreground font-semibold">Layer</th>
+                        <th className="text-left py-3 px-4 text-foreground font-semibold w-28">Layer</th>
                         <th className="text-left py-3 px-4 text-foreground font-semibold">Category</th>
                         <th className="text-left py-3 px-4 text-foreground font-semibold">Dimensions</th>
                       </tr>
