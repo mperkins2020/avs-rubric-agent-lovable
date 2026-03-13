@@ -18,6 +18,7 @@ import CaseStudyClay from "./pages/CaseStudyClay";
 import Blog from "./pages/Blog";
 import BlogTrustGrowthConstraint from "./pages/BlogTrustGrowthConstraint";
 import BlogVibecoding from "./pages/BlogVibecoding";
+import BlogClayPricing from "./pages/BlogClayPricing";
 
 const queryClient = new QueryClient();
 
