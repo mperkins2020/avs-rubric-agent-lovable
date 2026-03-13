@@ -1436,7 +1436,6 @@ Deno.serve(async (req) => {
       console.log('Skipping rate limit for evidence re-run');
     }
 
-    const { pages, url, insiderAnswers, previousScores, existingProfile }: AnalyzeRequest = await req.json();
 
     // Input size validation (DoS protection)
     if (insiderAnswers && typeof insiderAnswers === 'object') {
