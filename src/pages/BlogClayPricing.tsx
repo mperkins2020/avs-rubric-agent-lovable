@@ -10,17 +10,17 @@ import { SEOHead } from "@/components/SEOHead";
 import { AVSSystemDiagram } from "@/components/AVSSystemDiagram";
 
 const tocSections: TocItem[] = [
-  { id: "what-avs-measures", label: "What the AVS Trust Rubric Measures" },
-  { id: "three-stages", label: "The Three Stages of AI Pricing" },
-  { id: "what-changed", label: "What Changed in Clay's Pricing" },
-  { id: "run-one", label: "Run One: February Pricing — 81%" },
-  { id: "run-two", label: "Run Two: March Pricing — 75%" },
-  { id: "run-three", label: "Run Three: Right Material Surfaced — 94%" },
-  { id: "score-arc", label: "What the Score Arc Tells Founders" },
-  { id: "recommended-focus", label: "Recommended Focus" },
-  { id: "first-two-fixes", label: "First Two Fixes" },
-  { id: "what-this-signals", label: "What This Signals for AI SaaS" },
-];
+{ id: "what-avs-measures", label: "What the AVS Trust Rubric Measures" },
+{ id: "three-stages", label: "The Three Stages of AI Pricing" },
+{ id: "what-changed", label: "What Changed in Clay's Pricing" },
+{ id: "run-one", label: "Run One: February Pricing — 81%" },
+{ id: "run-two", label: "Run Two: March Pricing — 75%" },
+{ id: "run-three", label: "Run Three: Right Material Surfaced — 94%" },
+{ id: "score-arc", label: "What the Score Arc Tells Founders" },
+{ id: "recommended-focus", label: "Recommended Focus" },
+{ id: "first-two-fixes", label: "First Two Fixes" },
+{ id: "what-this-signals", label: "What This Signals for AI SaaS" }];
+
 
 export default function BlogClayPricing() {
   return (
@@ -30,8 +30,8 @@ export default function BlogClayPricing() {
         description="Clay announced a major pricing overhaul. The architecture improved. But the AVS Trust Rubric score dropped from 81% to 75%. That drop is a buyer signal."
         canonicalUrl="https://valuetempo.lovable.app/resources/blog/clay-pricing-three-layers"
         publishedDate="2026-03-13"
-        tags={["AI pricing", "Clay", "AVS", "trust surfaces", "case study", "pricing architecture"]}
-      />
+        tags={["AI pricing", "Clay", "AVS", "trust surfaces", "case study", "pricing architecture"]} />
+      
       <header className="border-b border-border/50 bg-background/80 backdrop-blur-sm sticky top-0 z-40">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
@@ -133,7 +133,7 @@ export default function BlogClayPricing() {
                 <h2 id="three-stages" className="text-2xl font-bold text-foreground">The Three Stages of The AI Pricing System</h2>
 
                 <p>Clay's pricing change also highlights a broader structural shift happening across AI software.</p>
-                <p>The AI pricing trust stack now operates across three stages:</p>
+                <p>The AI pricing system now operates across three stages:</p>
 
                 <div className="space-y-4 my-6">
                   <div className="bg-muted/20 border border-border/40 rounded-lg p-5">
@@ -170,7 +170,7 @@ export default function BlogClayPricing() {
 
                 <h2 id="what-changed" className="text-2xl font-bold text-foreground">What Changed in Clay's Pricing</h2>
 
-                <p>Clay's pricing overhaul improved architecture and observability. But the third stage still shapes how buyers experience the pricing model.</p>
+                <p>Clay's pricing overhaul improved architecture and observability. But the third stage still shapes how buyers experience the new pricing model.</p>
                 <p>Clay's previous model priced everything through credits — data enrichment lookups, AI research steps, automation logic, outbound execution. One unit for every job the platform performed.</p>
                 <p>That worked when Clay was primarily a data enrichment tool.</p>
                 <p>It stopped working when Clay evolved into a full GTM automation system.</p>
@@ -444,6 +444,6 @@ export default function BlogClayPricing() {
         </div>
       </main>
       <Footer />
-    </div>
-  );
+    </div>);
+
 }
