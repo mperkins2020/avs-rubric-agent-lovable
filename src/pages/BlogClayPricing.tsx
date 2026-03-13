@@ -417,7 +417,7 @@ The observability infrastructure largely exists.</p>
 </p>
                 <p>In Clay's case, the difference between the 75% score and the 94% score is not a product gap. It is the distance between documentation and discovery.</p>
                 <p>Many AI-native companies are operating inside that same gap today.</p>
-                <p className="text-muted-foreground">Most AI-native products today would score somewhere between 40% and 70% on these signals.</p>
+                <p className="text-muted-foreground">Most would score somewhere between 40% and 70% on these signals.</p>
 
                 <hr className="border-border/50 my-8" />
 
