@@ -126,6 +126,7 @@ export default function BlogClayPricing() {
                 <p>Each dimension scores 0–2, with a confidence label reflecting how much public evidence the rubric can find.</p>
                 <p>The score is not the destination. It reveals which signals buyers can easily reach and which signals require effort to find or even understand.</p>
                 <p className="font-semibold text-foreground">The score does not measure product quality. It measures how easily buyers can infer value, usage, and cost before committing.</p>
+                <p>The AVS rubric evaluates trust infrastructure across four internal layers. But when buyers experience pricing during evaluation, those signals typically appear through three observable stages.</p>
 
                 <hr className="border-border/50 my-8" />
 
