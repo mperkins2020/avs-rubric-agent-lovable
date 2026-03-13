@@ -1775,11 +1775,17 @@ Deno.serve(async (req) => {
       costDriver: evidenceDigest.costDriver.length,
     });
 
-    // Step 1: Extract company profile
-    console.log('Extracting company profile...');
-    const profileContent = `Analyze this website content from ${url}:\n\n${truncatedContent}`;
-    const companyProfile = await callLovableAI(COMPANY_PROFILE_PROMPT, profileContent) as Record<string, unknown>;
-    console.log('Company profile extracted:', companyProfile.companyName);
+    // Step 1: Extract company profile (skip on re-runs if client provides existing profile)
+    let companyProfile: Record<string, unknown>;
+    if (isRerun && existingProfile && existingProfile.companyName) {
+      console.log('Reusing existing company profile for re-run:', existingProfile.companyName);
+      companyProfile = existingProfile;
+    } else {
+      console.log('Extracting company profile...');
+      const profileContent = `Analyze this website content from ${url}:\n\n${truncatedContent}`;
+      companyProfile = await callLovableAI(COMPANY_PROFILE_PROMPT, profileContent) as Record<string, unknown>;
+      console.log('Company profile extracted:', companyProfile.companyName);
+    }
 
     // Step 2: Score against rubric
     console.log('Scoring against AVS rubric...');
