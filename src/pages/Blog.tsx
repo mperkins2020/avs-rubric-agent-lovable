@@ -34,6 +34,14 @@ export default function Blog() {
           </motion.div>
 
           <div className="space-y-6">
+            <Link to="/resources/blog/clay-pricing-three-layers" className="block group">
+              <motion.article initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }} className="bg-muted/20 border border-border/40 rounded-xl p-6 hover:border-primary/40 transition-colors">
+                <p className="text-sm text-muted-foreground mb-2">March 2026</p>
+                <h2 className="text-xl md:text-2xl font-bold group-hover:text-primary transition-colors mb-2">Why AI Pricing Requires Three Layers: Architecture, Observability, and Trust</h2>
+                <p className="text-muted-foreground">A Clay case study — the architecture improved, but the AVS Trust Rubric score dropped from 81% to 75%. The gap between 75% and 94% is the distance between documentation and discovery.</p>
+              </motion.article>
+            </Link>
+
             <Link to="/resources/blog/vibecoding-ai-startup-tool" className="block group">
               <motion.article initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="bg-muted/20 border border-border/40 rounded-xl p-6 hover:border-primary/40 transition-colors">
                 <p className="text-sm text-muted-foreground mb-2">March 2026</p>
