@@ -120,7 +120,7 @@ export default function BlogVibecoding() {
                 <li>Ideal Customers & Job Clarity</li>
               </ul>
 
-              <h3 className="text-xl font-bold mt-8 mb-2 text-foreground">Layer 2: Pricing Architecture</h3>
+              <h3 className="text-xl font-bold mt-8 mb-2 text-foreground">Layer 2: Economic Architecture</h3>
               <p>Can customers understand what they pay for and why?</p>
               <ul className="list-disc pl-6 space-y-1">
                 <li>Value Unit</li>

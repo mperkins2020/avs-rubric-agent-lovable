@@ -75,7 +75,7 @@ const layers = [
   },
   {
     num: 2,
-    title: "Pricing Architecture",
+    title: "Economic Architecture",
     items: ["Value Unit", "Cost Driver Mapping"],
     gradient: "from-sky-500/20 to-sky-600/10",
     border: "border-sky-500/30",
