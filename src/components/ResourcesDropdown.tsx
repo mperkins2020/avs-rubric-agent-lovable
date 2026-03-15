@@ -14,9 +14,9 @@ interface ResourcesDropdownProps {
 }
 
 const items = [
-  { label: "Case Studies", to: "/resources/case-studies", icon: FileText },
-  { label: "Blog", to: "/resources/blog", icon: BookOpen },
-  { label: "FAQ", to: "/faq", icon: HelpCircle },
+  { label: "Case Studies", to: "https://www.valuetempo.com/resources/case-studies", icon: FileText },
+  { label: "Blog", to: "https://www.valuetempo.com/resources/blog", icon: BookOpen },
+  { label: "FAQ", to: "https://www.valuetempo.com/faq", icon: HelpCircle },
 ];
 
 export function ResourcesDropdown({ onNavigate, mobile = false }: ResourcesDropdownProps) {
@@ -29,15 +29,15 @@ export function ResourcesDropdown({ onNavigate, mobile = false }: ResourcesDropd
           Resources
         </div>
         {items.map((item) => (
-          <Link
+          <a
             key={item.to}
-            to={item.to}
+            href={item.to}
             onClick={onNavigate}
             className="flex items-center gap-2 px-6 py-2 rounded-lg text-sm text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors"
           >
             <item.icon className="w-4 h-4" />
             {item.label}
-          </Link>
+          </a>
         ))}
       </div>
     );
@@ -55,11 +55,13 @@ export function ResourcesDropdown({ onNavigate, mobile = false }: ResourcesDropd
         {items.map((item) => (
           <DropdownMenuItem
             key={item.to}
-            onClick={() => { navigate(item.to); onNavigate?.(); }}
+            asChild
             className="flex items-center gap-2 cursor-pointer"
           >
-            <item.icon className="w-4 h-4" />
-            {item.label}
+            <a href={item.to} onClick={() => onNavigate?.()}>
+              <item.icon className="w-4 h-4" />
+              {item.label}
+            </a>
           </DropdownMenuItem>
         ))}
       </DropdownMenuContent>

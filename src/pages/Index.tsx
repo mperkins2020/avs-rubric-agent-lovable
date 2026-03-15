@@ -74,6 +74,21 @@ const Index = () => {
     }
   }, [status, companyProfile, rubricScore, observability, pages, navigate]);
 
+  // Read ?scan= query parameter on mount (from www.valuetempo.com redirect)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const scanUrl = params.get('scan');
+    if (scanUrl) {
+      window.history.replaceState({}, '', window.location.pathname);
+      if (session) {
+        startScan(scanUrl);
+      } else {
+        setPendingUrl(scanUrl);
+        setShowAuthModal(true);
+      }
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   // Scroll to hash on mount
   useEffect(() => {
     if (window.location.hash) {
@@ -181,9 +196,9 @@ const Index = () => {
             </span>
           </div>
           <nav className="hidden md:flex items-center gap-6">
-            <Link to="/methodology" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+            <a href="https://www.valuetempo.com/methodology" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
               Methodology
-            </Link>
+            </a>
             <ResourcesDropdown />
             {session ? (
               <Button variant="ghost" size="sm" onClick={signOut} className="gap-1 text-muted-foreground hover:text-foreground">
@@ -237,13 +252,12 @@ const Index = () => {
                 </button>
               </div>
               <nav className="flex flex-col gap-1 px-3 py-4 flex-1">
-                <Link
-                  to="/methodology"
-                  onClick={() => setMobileMenuOpen(false)}
+                <a
+                  href="https://www.valuetempo.com/methodology"
                   className="flex items-center px-3 py-2.5 rounded-lg text-sm text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors"
                 >
                   Methodology
-                </Link>
+                </a>
                 <ResourcesDropdown mobile onNavigate={() => setMobileMenuOpen(false)} />
               </nav>
               <div className="px-3 py-4 border-t border-border/50">

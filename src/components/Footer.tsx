@@ -9,9 +9,9 @@ export function Footer() {
         <div className="flex flex-wrap items-center justify-center gap-4 text-sm text-muted-foreground">
           <span>© 2026 ValueTempo. All rights reserved.</span>
           <span className="hidden sm:inline text-border">|</span>
-          <Link to="/privacy" className="hover:text-foreground transition-colors">
+          <a href="https://www.valuetempo.com/privacy" className="hover:text-foreground transition-colors">
             Privacy Policy
-          </Link>
+          </a>
           <span className="hidden sm:inline text-border">|</span>
           <a
             href="mailto:info@valuetempo.com"
