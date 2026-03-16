@@ -108,8 +108,9 @@ async function callAI(userContent: string, temperature: number): Promise<object>
   }
 }
 
+// deno-lint-ignore no-explicit-any
 async function executeTemperatureJob(
-  supabaseAdmin: ReturnType<typeof createClient>,
+  supabaseAdmin: any,
   rowId: string,
   domainKey: string,
   temperature: number,
