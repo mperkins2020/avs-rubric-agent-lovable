@@ -439,6 +439,7 @@ const Index = () => {
                             redirectTo: `${window.location.origin}/reset-password`,
                           });
                           if (error) throw error;
+                          setAuthResetSent(true);
                           toast.success("Password reset link sent — check your email.");
                         } catch (err: unknown) {
                           toast.error(err instanceof Error ? err.message : "Could not send reset email");
