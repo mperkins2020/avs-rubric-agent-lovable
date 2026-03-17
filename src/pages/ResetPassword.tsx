@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
@@ -9,33 +10,100 @@ import ValueTempoLogo from "@/assets/ValueTempo_Logo_main.png";
 
 export default function ResetPassword() {
   const navigate = useNavigate();
+  const { session } = useAuth();
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [isRecovery, setIsRecovery] = useState(false);
+  const [linkError, setLinkError] = useState<string | null>(null);
 
   useEffect(() => {
-    // Check URL hash for recovery token (type=recovery)
-    const hash = window.location.hash;
-    if (hash && hash.includes("type=recovery")) {
+    if (session) {
       setIsRecovery(true);
+      setLinkError(null);
     }
+  }, [session]);
 
-    // Also check if there's already a session (user arrived via recovery link)
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) {
-        setIsRecovery(true);
+  useEffect(() => {
+    let isActive = true;
+
+    const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ""));
+    const searchParams = new URLSearchParams(window.location.search);
+    const recoveryType = searchParams.get("type") ?? hashParams.get("type");
+    const tokenHash = searchParams.get("token_hash");
+    const authCode = searchParams.get("code");
+    const hasRecoveryTokens = Boolean(hashParams.get("access_token")) || Boolean(hashParams.get("refresh_token"));
+    const isRecoveryLink = recoveryType === "recovery" || hasRecoveryTokens || Boolean(tokenHash) || Boolean(authCode);
+
+    const markRecoveryReady = () => {
+      if (!isActive) return;
+      setIsRecovery(true);
+      setLinkError(null);
+      if (window.location.hash || window.location.search) {
+        window.history.replaceState({}, document.title, window.location.pathname);
+      }
+    };
+
+    const markRecoveryError = (message: string) => {
+      if (!isActive) return;
+      setLinkError(message);
+    };
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, nextSession) => {
+      if (event === "PASSWORD_RECOVERY" || (isRecoveryLink && nextSession)) {
+        markRecoveryReady();
       }
     });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event) => {
-        if (event === "PASSWORD_RECOVERY") {
-          setIsRecovery(true);
-        }
+    const timeoutId = window.setTimeout(async () => {
+      if (!isActive) return;
+      const { data: { session: pendingSession } } = await supabase.auth.getSession();
+      if (!pendingSession) {
+        markRecoveryError("This reset link is invalid or has expired.");
       }
-    );
-    return () => subscription.unsubscribe();
+    }, 3000);
+
+    const resolveRecovery = async () => {
+      try {
+        if (!isRecoveryLink) {
+          const { data: { session: existingSession } } = await supabase.auth.getSession();
+          if (existingSession) {
+            markRecoveryReady();
+            return;
+          }
+          markRecoveryError("This reset link is missing recovery data.");
+          return;
+        }
+
+        if (recoveryType === "recovery" && tokenHash) {
+          const { error } = await supabase.auth.verifyOtp({
+            type: "recovery",
+            token_hash: tokenHash,
+          });
+          if (error) throw error;
+        } else if (authCode) {
+          const { error } = await supabase.auth.exchangeCodeForSession(authCode);
+          if (error) throw error;
+        }
+
+        const { data: { session: recoverySession } } = await supabase.auth.getSession();
+        if (recoverySession) {
+          markRecoveryReady();
+        }
+      } catch (err: unknown) {
+        markRecoveryError(
+          err instanceof Error ? err.message : "This reset link is invalid or has expired.",
+        );
+      }
+    };
+
+    void resolveRecovery();
+
+    return () => {
+      isActive = false;
+      window.clearTimeout(timeoutId);
+      subscription.unsubscribe();
+    };
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -68,11 +136,19 @@ export default function ResetPassword() {
           <Link to="/">
             <img alt="ValueTempo" className="h-8 mx-auto mb-6" src={ValueTempoLogo} />
           </Link>
-          <h1 className="text-2xl font-bold">Verifying reset link…</h1>
+          <h1 className="text-2xl font-bold">
+            {linkError ? "Reset link unavailable" : "Verifying reset link…"}
+          </h1>
           <p className="text-sm text-muted-foreground">
-            If the link is valid you'll be prompted to set a new password momentarily.
+            {linkError ?? "If the link is valid you'll be prompted to set a new password momentarily."}
           </p>
-          <Loader2 className="w-6 h-6 animate-spin mx-auto text-primary" />
+          {linkError ? (
+            <Button asChild variant="outline" className="w-full sm:w-auto">
+              <Link to="/auth">Back to sign in</Link>
+            </Button>
+          ) : (
+            <Loader2 className="w-6 h-6 animate-spin mx-auto text-primary" />
+          )}
         </div>
       </div>
     );
