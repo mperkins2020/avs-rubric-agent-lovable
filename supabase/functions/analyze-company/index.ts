@@ -52,6 +52,7 @@ EVIDENCE QUALITY RULES (MANDATORY — apply before scoring every dimension):
 4. Confidence should reflect the QUALITY and SPECIFICITY of evidence, not just its presence. A pricing page with detailed tier breakdowns = high reliability (0.8+). A homepage with vague feature bullets = low reliability (0.3-0.4).
 5. If the only evidence for a subtest comes from boilerplate, navigation, or footer content, that subtest FAILS.
 6. When the same fact appears on multiple pages, count it once — do not inflate confidence by repetition.
+7. TIER ATTRIBUTION: When citing plan-specific features, policies, or constraints, name the EXACT plan tier the evidence belongs to (e.g., "Team plan allows custom overage pricing for seats over 20"). Never generalize a tier-specific feature to a different tier. If a feature applies to multiple tiers, list each tier explicitly. Enterprise "custom pricing" is NOT the same as a Team plan's seat overage policy.
 
 For each of the 8 dimensions below, provide:
 - score: 0 (not present), 1 (emerging), or 2 (strong)
