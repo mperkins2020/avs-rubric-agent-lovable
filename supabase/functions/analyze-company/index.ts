@@ -20,7 +20,7 @@ interface AnalyzeRequest {
   existingProfile?: Record<string, unknown>;
 }
 
-const ANALYSIS_VERSION = '2026-03-17-anti-hallucination-v1';
+const ANALYSIS_VERSION = '2026-03-17-pricing-fix-v2';
 
 const COMPANY_PROFILE_PROMPT = `You are an expert business analyst. Analyze the following website content and extract a company profile.
 
@@ -1831,6 +1831,11 @@ Since these are insider-only inputs, scores should remain the same as previous u
 ` : ''}` : ''}
 
 HIGH-SIGNAL EVIDENCE DIGEST (prioritized snippets from public pages):
+
+IMPORTANT — PRICING PAGE VERIFICATION:
+The following URLs were successfully scraped and their content is included below. If any of these URLs contain "/pricing", "/plans", or "/billing", then a public pricing page EXISTS. You MUST NOT claim "no public pricing page" or recommend "publish a pricing page" if such a URL was scraped. Instead, analyze the actual content from that page.
+Scraped URLs: ${selectedUrls.join(', ')}
+
 - Product north star candidates:
 ${evidenceDigest.northStar.length > 0 ? evidenceDigest.northStar.map((item) => `  - ${item}`).join('\n') : '  - None captured'}
 - Cost driver mapping candidates:
@@ -2172,6 +2177,58 @@ ${truncatedContent}`;
         uncertaintyReasons,
       };
     });
+
+    // ── Post-LLM contradiction fix: pricing page existence ─────────────
+    // If we scraped a pricing page, the LLM MUST NOT claim "no pricing page"
+    const scrapedPricingUrl = selectedUrls.find(u => /\/(pricing|plans?|billing)\b/i.test(u));
+    if (scrapedPricingUrl) {
+      const pricingContradictionPatterns = [
+        /no\s+public\s+pricing\s+page/i,
+        /there(?:'s| is)\s+no\s+(?:public\s+)?pricing\s+page/i,
+        /(?:publish|create|add)\s+(?:a\s+)?(?:detailed\s+)?pricing\s+page/i,
+        /pricing\s+page\s+(?:does not|doesn't)\s+exist/i,
+        /absence\s+of\s+(?:a\s+)?(?:public\s+)?pricing/i,
+        /no\s+pricing\s+(?:page|information)\s+(?:to|was|is|could)\s+/i,
+      ];
+
+      for (const dim of dimensionScores) {
+        for (const pattern of pricingContradictionPatterns) {
+          if (pattern.test(dim.rationale)) {
+            console.warn(`CONTRADICTION FIX: "${dim.dimension}" claimed no pricing page, but ${scrapedPricingUrl} was scraped. Correcting rationale.`);
+            dim.rationale = dim.rationale.replace(pattern, `the pricing page at ${scrapedPricingUrl} shows`);
+          }
+        }
+      }
+
+      // Also fix strengths, weaknesses, and recommendedFocus
+      const weaknesses = (rubricData.weaknesses || []) as Array<{ whatIsMissingOrUnclear?: string; whyItMatters?: string }>;
+      for (const w of weaknesses) {
+        for (const pattern of pricingContradictionPatterns) {
+          if (w.whatIsMissingOrUnclear && pattern.test(w.whatIsMissingOrUnclear)) {
+            w.whatIsMissingOrUnclear = w.whatIsMissingOrUnclear.replace(pattern, `the pricing page at ${scrapedPricingUrl} shows`);
+          }
+        }
+      }
+
+      const focus = rubricData.recommendedFocus as { focusArea?: string; why?: string; firstTwoActions?: string[] } | null;
+      if (focus) {
+        for (const pattern of pricingContradictionPatterns) {
+          if (focus.focusArea && pattern.test(focus.focusArea)) {
+            focus.focusArea = focus.focusArea.replace(pattern, 'enhance the existing pricing page');
+          }
+          if (focus.why && pattern.test(focus.why)) {
+            focus.why = focus.why.replace(pattern, `the pricing page at ${scrapedPricingUrl} exists but`);
+          }
+          if (focus.firstTwoActions) {
+            focus.firstTwoActions = focus.firstTwoActions.map(a =>
+              pricingContradictionPatterns.some(p => p.test(a))
+                ? a.replace(pattern, 'enhance the existing pricing page')
+                : a
+            );
+          }
+        }
+      }
+    }
 
     const totalScore = dimensionScores.reduce((sum, d) => sum + d.score, 0);
     const maxScore = dimensionScores.length * 2;
