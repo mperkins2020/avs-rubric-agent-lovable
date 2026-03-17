@@ -47,6 +47,7 @@ const Index = () => {
   const [authPassword, setAuthPassword] = useState("");
   const [authIsLogin, setAuthIsLogin] = useState(true);
   const [authLoading, setAuthLoading] = useState(false);
+  const [authResetSent, setAuthResetSent] = useState(false);
   const {
     status,
     statusMessage,
