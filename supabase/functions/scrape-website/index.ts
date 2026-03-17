@@ -275,14 +275,25 @@ async function scrapePage(apiKey: string, pageUrl: string): Promise<ScrapedPage 
     const wantStructuredJson = isPricingPage(pageUrl);
     console.log('Scraping:', pageUrl, needsFullContent ? '(full)' : '(main)', hasAccordions ? '(+html)' : '', wantStructuredJson ? '(+json)' : '');
 
-    const formats: (string | { type: string; schema: unknown; prompt?: string })[] = ['markdown'];
+    // Build formats as string array per Firecrawl v1 REST API
+    const formats: string[] = ['markdown'];
     if (hasAccordions) formats.push('html', 'rawHtml');
+    if (wantStructuredJson) formats.push('json');
+
+    // Build request body — jsonOptions is a top-level param, NOT inside formats array
+    const requestBody: Record<string, unknown> = {
+      url: pageUrl,
+      formats,
+      onlyMainContent: !needsFullContent,
+      ...(hasAccordions ? { waitFor: 3000 } : {}),
+    };
+
+    // Firecrawl v1 uses jsonOptions for structured extraction
     if (wantStructuredJson) {
-      formats.push({
-        type: 'json',
+      requestBody.jsonOptions = {
         schema: pricingJsonSchema,
         prompt: 'Extract ALL pricing plans, tiers, features, usage limits, overage policies, refund policies, cost drivers, trial details, and discounts from this page. Include exact prices, exact limits, and exact conditions. Do not infer or guess — only extract what is explicitly stated.',
-      });
+      };
     }
 
     const response = await fetch('https://api.firecrawl.dev/v1/scrape', {
@@ -291,12 +302,7 @@ async function scrapePage(apiKey: string, pageUrl: string): Promise<ScrapedPage 
         'Authorization': `Bearer ${apiKey}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        url: pageUrl,
-        formats,
-        onlyMainContent: !needsFullContent,
-        ...(hasAccordions ? { waitFor: 3000 } : {}),
-      }),
+      body: JSON.stringify(requestBody),
     });
 
     let pageData: FirecrawlScrapeResponse & { data?: { json?: Record<string, unknown> } };
