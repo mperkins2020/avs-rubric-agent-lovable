@@ -20,7 +20,7 @@ interface AnalyzeRequest {
   existingProfile?: Record<string, unknown>;
 }
 
-const ANALYSIS_VERSION = '2026-03-08-ai-native-ns2-v2';
+const ANALYSIS_VERSION = '2026-03-17-anti-hallucination-v1';
 
 const COMPANY_PROFILE_PROMPT = `You are an expert business analyst. Analyze the following website content and extract a company profile.
 
@@ -1199,8 +1199,11 @@ THE 8 DIMENSIONS:
 
 
 
+
 CRITICAL OUTPUT RULES:
 - Keep rationale to 1-2 sentences max per dimension. Each rationale MUST reference a specific page URL or section (e.g., "Pricing page shows...") — never cite footers, nav items, or copyright notices.
+- ANTI-HALLUCINATION: Your rationale MUST only describe pricing constructs that are EXPLICITLY present in the scraped content. Do NOT assert that a company uses credits, tokens, usage-based pricing, rollovers, top-ups, or any other model unless you can point to a specific quote from the evidence. If the company uses flat-rate seat-based pricing, say so. If cost drivers are not publicly documented, say "not publicly documented" — do NOT fabricate a model.
+- REFUND/TERMS COMPLETENESS: When analyzing terms, refund, or cancellation policies, cite ALL material conditions found on the page — not just the first one. If a refund policy has multiple conditions (e.g., processing fees, pro-rata charges, trial conversion rules), list each one.
 - Keep observed arrays to max 3 items per dimension. Each observed item MUST be a concrete, specific fact from page content — NOT from footers, navigation, cookie banners, or boilerplate. If you cannot find 3 quality observations, include fewer rather than padding with weak evidence.
 - Keep uncertaintyReasons to max 2 items per dimension.
 - Do NOT include facts[] or raw data in the output JSON. Only include the scored results.
@@ -1979,12 +1982,12 @@ ${truncatedContent}`;
     );
 
     // Generic safety net helper: if LLM scored 0 but we have sufficient digest evidence, floor at 1
+    // IMPORTANT: Preserves the AI's original rationale to avoid fabricating pricing constructs
     const applyDigestFloor = (
       dimension: { dimension: string; score: number; confidence: number; notObservable: boolean; rationale: string; observed: string[]; sourceEvidence?: Array<{ url: string; snippet: string }>; uncertaintyReasons: string[]; missingInsiderPrompts?: Array<{ question: string; fieldPaths: string[] }> },
       digestBucket: string[],
       minEvidence: number,
       floorConfidence: number,
-      floorRationale: string,
       uncertaintyNote: string,
     ) => {
       const observed = Array.isArray(dimension.observed) ? [...dimension.observed] : [];
@@ -1998,7 +2001,10 @@ ${truncatedContent}`;
           score: 1,
           confidence: Math.max(Number(dimension.confidence) || 0, floorConfidence),
           notObservable: false,
-          rationale: floorRationale,
+          // Preserve AI's rationale — append safety net note instead of replacing
+          rationale: dimension.rationale
+            ? `${dimension.rationale} [Score floored to 1 based on ${digestBucket.length} public evidence signals.]`
+            : `Score floored to 1 based on ${digestBucket.length} public evidence signals found in scraped pages.`,
           observed: mergedObserved,
           sourceEvidence: mergedSourceEvidence,
           uncertaintyReasons: [...uncertaintyReasons, uncertaintyNote].slice(0, 2),
@@ -2048,14 +2054,12 @@ ${truncatedContent}`;
       // === ICP and job clarity ===
       if (dimension.dimension === 'ICP and job clarity') {
         return applyDigestFloor(dimension, evidenceDigest.icpJob, 2, 0.5,
-          'Public pages describe target users, use cases, and workflows, supporting emerging ICP and job clarity even though explicit non-fit boundaries and detailed success states are not publicly stated.',
           'Explicit non-fit criteria and testable success states are not fully public.');
       }
 
       // === Buyer and budget alignment ===
       if (dimension.dimension === 'Buyer and budget alignment') {
         return applyDigestFloor(dimension, evidenceDigest.buyerBudget, 2, 0.5,
-          'Public pricing pages show tier structures, payment options, and enterprise features, supporting emerging buyer and budget alignment even though segment-level approval readiness details are incomplete.',
           'Segment-specific approval readiness and commercial terms details are not fully documented on public pages.');
       }
 
@@ -2114,7 +2118,10 @@ ${truncatedContent}`;
             score: 1,
             confidence: Math.max(Number(dimension.confidence) || 0, hasExplicitCreditFaqSignals ? 0.65 : 0.5),
             notObservable: false,
-            rationale: 'The pricing surface explicitly defines usage-linked economics (credits, usage-based Cloud + AI, task-level credit examples, rollovers/top-ups), which is enough for emerging cost-driver mapping even if detailed formulas are not publicly documented.',
+            // Preserve AI's rationale — do NOT fabricate pricing constructs
+            rationale: dimension.rationale
+              ? `${dimension.rationale} [Score floored to 1 based on ${evidenceDigest.costDriver.length} cost-driver evidence signals.]`
+              : `Score floored to 1 based on ${evidenceDigest.costDriver.length} cost-driver evidence signals found in scraped pages.`,
             observed: mergedObserved,
             sourceEvidence: mergedSourceEvidence,
             uncertaintyReasons: [...uncertaintyReasons, 'Driver formulas and p50/p95 workflow cost estimates remain non-public.'].slice(0, 2),
@@ -2143,21 +2150,18 @@ ${truncatedContent}`;
       // === Pools and packaging ===
       if (dimension.dimension === 'Pools and packaging') {
         return applyDigestFloor(dimension, evidenceDigest.poolsPackaging, 2, 0.5,
-          'Public pricing pages show tier structures, included allowances, and add-on/top-up options, supporting emerging pools and packaging even though detailed pool scope and allocation rules are not fully public.',
           'Pool scope, allocation mode, and rollover rules are not fully documented on public pages.');
       }
 
       // === Overages and risk allocation ===
       if (dimension.dimension === 'Overages and risk allocation') {
         return applyDigestFloor(dimension, evidenceDigest.overagesRisk, 2, 0.45,
-          'Public pages reference overage behavior, spending limits, or cap mechanisms, supporting emerging risk allocation even though detailed dispute processes and tail protection are not fully documented.',
           'Detailed dispute/refund processes, grace buffers, and spike protection mechanisms are not publicly documented.');
       }
 
       // === Safety rails and trust surfaces ===
       if (dimension.dimension === 'Safety rails and trust surfaces') {
         return applyDigestFloor(dimension, evidenceDigest.safetyRails, 2, 0.4,
-          'Public pages reference usage dashboards, alerts, admin controls, or rate limits, supporting emerging safety rails even though in-product control details are not publicly visible.',
           'Most safety rails (budget caps, kill switches, admin controls) are typically in-product and not publicly documented.');
       }
 
