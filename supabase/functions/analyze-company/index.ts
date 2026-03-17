@@ -20,7 +20,7 @@ interface AnalyzeRequest {
   existingProfile?: Record<string, unknown>;
 }
 
-const ANALYSIS_VERSION = '2026-03-17-evidence-quality-v4';
+const ANALYSIS_VERSION = '2026-03-17-discovery-fix-v5';
 
 const COMPANY_PROFILE_PROMPT = `You are an expert business analyst. Analyze the following website content and extract a company profile.
 
@@ -1571,9 +1571,9 @@ Deno.serve(async (req) => {
       return line
         .replace(/!\[[^\]]*\]\([^\)]+\)/g, '')
         .replace(/\[([^\]]+)\]\([^\)]+\)/g, '$1')
-        // Remove malformed markdown fragments like [Global coverage\\ or [text without closing bracket
-        .replace(/\[[^\]]*\\{1,2}$/g, '')
-        .replace(/\[[^\]]*$/g, '')
+        // Remove malformed markdown fragments: [text\\ or [text without closing ]
+        .replace(/\[[^\]\n]*\\{1,2}/g, '')
+        .replace(/- \[[^\]\n]{0,50}$/g, '')
         .replace(/[>#*_`|]+/g, ' ')
         .replace(/\s+/g, ' ')
         .trim();

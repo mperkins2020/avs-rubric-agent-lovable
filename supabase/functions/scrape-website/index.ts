@@ -230,6 +230,20 @@ function scoreUrl(link: string, baseHost: string, communityUrlSet: Set<string>):
       score += 700;
     }
   }
+
+  // HIGH-VALUE CONTENT BOOST: pricing/billing keywords anywhere in the path
+  // (catches /faqs/pricing, /resources/pricing, /info/plans, etc.)
+  if (/\/(pricing|billing|plans?|credits|subscription)\b/i.test(path) && !highIntentPaths.has(path)) {
+    score += 800;
+  }
+
+  // Feature/product pages — moderate boost for evidence quality
+  if (/\/features?\//i.test(path)) score += 200;
+
+  // COMPARE PAGE CAP: diminish value after first 2 compare pages are selected
+  // (handled by dedup in selection, but lower base score to let evidence pages win)
+  if (/\/compare\b|\/vs-/i.test(path)) score -= 200;
+
   return score;
 }
 
@@ -712,7 +726,17 @@ Deno.serve(async (req) => {
         .map((link: string) => ({ link, score: scoreUrl(link, baseHost, communityUrlSet) }))
         .sort((a, b) => b.score - a.score || a.link.localeCompare(b.link));
 
-      const priorityLinks = scoredLinks.map(({ link }) => link).slice(0, safeMaxPages - 1);
+      // Cap compare/vs pages to max 2 to preserve slots for evidence-rich pages
+      let compareCount = 0;
+      const priorityLinks: string[] = [];
+      for (const { link } of scoredLinks) {
+        if (priorityLinks.length >= safeMaxPages - 1) break;
+        if (/\/compare\b|\/vs-/i.test(link)) {
+          compareCount++;
+          if (compareCount > 2) continue;
+        }
+        priorityLinks.push(link);
+      }
       console.log(`Selected ${priorityLinks.length} verified pages to scrape (0 blind probes)`);
       console.log('Priority links:', priorityLinks);
 
