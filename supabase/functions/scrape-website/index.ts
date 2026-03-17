@@ -178,6 +178,8 @@ const exclusionPatterns = [
   /\/(wp-content|wp-admin|wp-includes|wp-json)\//i,
   /\/dashboard\b/i,
   /\/(login|signup|sign-up|sign-in|register|cart|checkout)\b/i,
+  // Exclude deep legal subpages (addenda, old terms, biometric notices) — low evidence value
+  /\/legal\/(?!$)[^/]+/i,
 ];
 
 const fullContentPatterns = [
