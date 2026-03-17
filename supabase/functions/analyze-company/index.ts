@@ -1199,8 +1199,11 @@ THE 8 DIMENSIONS:
 
 
 
+
 CRITICAL OUTPUT RULES:
 - Keep rationale to 1-2 sentences max per dimension. Each rationale MUST reference a specific page URL or section (e.g., "Pricing page shows...") — never cite footers, nav items, or copyright notices.
+- ANTI-HALLUCINATION: Your rationale MUST only describe pricing constructs that are EXPLICITLY present in the scraped content. Do NOT assert that a company uses credits, tokens, usage-based pricing, rollovers, top-ups, or any other model unless you can point to a specific quote from the evidence. If the company uses flat-rate seat-based pricing, say so. If cost drivers are not publicly documented, say "not publicly documented" — do NOT fabricate a model.
+- REFUND/TERMS COMPLETENESS: When analyzing terms, refund, or cancellation policies, cite ALL material conditions found on the page — not just the first one. If a refund policy has multiple conditions (e.g., processing fees, pro-rata charges, trial conversion rules), list each one.
 - Keep observed arrays to max 3 items per dimension. Each observed item MUST be a concrete, specific fact from page content — NOT from footers, navigation, cookie banners, or boilerplate. If you cannot find 3 quality observations, include fewer rather than padding with weak evidence.
 - Keep uncertaintyReasons to max 2 items per dimension.
 - Do NOT include facts[] or raw data in the output JSON. Only include the scored results.
