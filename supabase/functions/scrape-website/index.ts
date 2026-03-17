@@ -726,7 +726,17 @@ Deno.serve(async (req) => {
         .map((link: string) => ({ link, score: scoreUrl(link, baseHost, communityUrlSet) }))
         .sort((a, b) => b.score - a.score || a.link.localeCompare(b.link));
 
-      const priorityLinks = scoredLinks.map(({ link }) => link).slice(0, safeMaxPages - 1);
+      // Cap compare/vs pages to max 2 to preserve slots for evidence-rich pages
+      let compareCount = 0;
+      const priorityLinks: string[] = [];
+      for (const { link } of scoredLinks) {
+        if (priorityLinks.length >= safeMaxPages - 1) break;
+        if (/\/compare\b|\/vs-/i.test(link)) {
+          compareCount++;
+          if (compareCount > 2) continue;
+        }
+        priorityLinks.push(link);
+      }
       console.log(`Selected ${priorityLinks.length} verified pages to scrape (0 blind probes)`);
       console.log('Priority links:', priorityLinks);
 
