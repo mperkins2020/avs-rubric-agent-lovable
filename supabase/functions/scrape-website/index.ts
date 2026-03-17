@@ -332,8 +332,8 @@ async function scrapePage(apiKey: string, pageUrl: string): Promise<ScrapedPage 
       console.log(`Structured JSON extracted for ${pageUrl}:`, JSON.stringify(json).slice(0, 500));
 
       const sections: string[] = [];
-      sections.push('## Structured Pricing Data (Machine-Extracted)');
-
+      sections.push('## Structured Pricing Data (Machine-Extracted — NOT direct quotes)');
+      sections.push('> NOTE: The data below was extracted by an AI model and may contain paraphrases or inferences. Do NOT cite these as direct quotes. Use only as supplementary context for scoring.');
       if (json.valueUnit) sections.push(`**Value Unit**: ${json.valueUnit}`);
       if (json.hasFreeTier !== undefined) sections.push(`**Free Tier**: ${json.hasFreeTier ? 'Yes' : 'No'}`);
       if (json.hasTrial !== undefined) sections.push(`**Trial Available**: ${json.hasTrial ? 'Yes' : 'No'}`);
