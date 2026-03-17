@@ -175,7 +175,12 @@ export default function Auth() {
                       setResetSent(true);
                       toast.success("Password reset link sent — check your email.");
                     } catch (err: unknown) {
-                      toast.error(err instanceof Error ? err.message : "Could not send reset email");
+                      const msg = err instanceof Error ? err.message : "";
+                      if (msg.toLowerCase().includes("rate limit")) {
+                        toast.error("Too many attempts — please wait a minute and try again.");
+                      } else {
+                        toast.error(msg || "Could not send reset email");
+                      }
                     }
                   }}
                 >
