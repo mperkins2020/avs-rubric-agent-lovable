@@ -358,7 +358,8 @@ export default function Results() {
               onDimensionClick={handleDimensionClick}
             />
 
-
+            {/* Evidence Sources */}
+            <EvidenceSourcesPanel pages={pages} />
 
 
             {/* Strengths & Weaknesses */}
