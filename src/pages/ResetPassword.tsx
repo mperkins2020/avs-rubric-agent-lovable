@@ -8,6 +8,24 @@ import { toast } from "sonner";
 import { Loader2, Lock } from "lucide-react";
 import ValueTempoLogo from "@/assets/ValueTempo_Logo_main.png";
 
+const getRecoveryErrorMessage = (rawMessage?: string | null, rawCode?: string | null) => {
+  const message = rawMessage?.replace(/\+/g, " ").trim();
+  const code = rawCode?.toLowerCase();
+  const normalizedMessage = message?.toLowerCase();
+
+  if (
+    code === "otp_expired" ||
+    code === "access_denied" ||
+    normalizedMessage?.includes("expired") ||
+    normalizedMessage?.includes("one-time token not found") ||
+    normalizedMessage?.includes("invalid")
+  ) {
+    return "This reset link has expired or has already been used. Please request a new one.";
+  }
+
+  return message || "This reset link is invalid or has expired.";
+};
+
 export default function ResetPassword() {
   const navigate = useNavigate();
   const { session } = useAuth();
@@ -30,10 +48,21 @@ export default function ResetPassword() {
     const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ""));
     const searchParams = new URLSearchParams(window.location.search);
     const recoveryType = searchParams.get("type") ?? hashParams.get("type");
-    const tokenHash = searchParams.get("token_hash");
-    const authCode = searchParams.get("code");
-    const hasRecoveryTokens = Boolean(hashParams.get("access_token")) || Boolean(hashParams.get("refresh_token"));
-    const isRecoveryLink = recoveryType === "recovery" || hasRecoveryTokens || Boolean(tokenHash) || Boolean(authCode);
+    const tokenHash = searchParams.get("token_hash") ?? hashParams.get("token_hash");
+    const authCode = searchParams.get("code") ?? hashParams.get("code");
+    const accessToken = searchParams.get("access_token") ?? hashParams.get("access_token");
+    const refreshToken = searchParams.get("refresh_token") ?? hashParams.get("refresh_token");
+    const authError = searchParams.get("error_description") ?? hashParams.get("error_description") ?? searchParams.get("message") ?? hashParams.get("message");
+    const authErrorCode = searchParams.get("error_code") ?? hashParams.get("error_code") ?? searchParams.get("error");
+    const hasRecoveryTokens = Boolean(accessToken) && Boolean(refreshToken);
+    const isRecoveryLink =
+      recoveryType === "recovery" ||
+      hasRecoveryTokens ||
+      Boolean(tokenHash) ||
+      Boolean(authCode) ||
+      Boolean(authError) ||
+      Boolean(authErrorCode);
+    const recoveryErrorMessage = getRecoveryErrorMessage(authError, authErrorCode);
 
     const markRecoveryReady = () => {
       if (!isActive) return;
@@ -59,9 +88,9 @@ export default function ResetPassword() {
       if (!isActive) return;
       const { data: { session: pendingSession } } = await supabase.auth.getSession();
       if (!pendingSession) {
-        markRecoveryError("This reset link is invalid or has expired.");
+        markRecoveryError(recoveryErrorMessage);
       }
-    }, 3000);
+    }, 5000);
 
     const resolveRecovery = async () => {
       try {
@@ -75,7 +104,13 @@ export default function ResetPassword() {
           return;
         }
 
-        if (recoveryType === "recovery" && tokenHash) {
+        if (hasRecoveryTokens && accessToken && refreshToken) {
+          const { error } = await supabase.auth.setSession({
+            access_token: accessToken,
+            refresh_token: refreshToken,
+          });
+          if (error) throw error;
+        } else if (recoveryType === "recovery" && tokenHash) {
           const { error } = await supabase.auth.verifyOtp({
             type: "recovery",
             token_hash: tokenHash,
@@ -84,15 +119,21 @@ export default function ResetPassword() {
         } else if (authCode) {
           const { error } = await supabase.auth.exchangeCodeForSession(authCode);
           if (error) throw error;
+        } else if (authError || authErrorCode) {
+          markRecoveryError(recoveryErrorMessage);
+          return;
         }
 
         const { data: { session: recoverySession } } = await supabase.auth.getSession();
         if (recoverySession) {
           markRecoveryReady();
+          return;
         }
+
+        markRecoveryError(recoveryErrorMessage);
       } catch (err: unknown) {
         markRecoveryError(
-          err instanceof Error ? err.message : "This reset link is invalid or has expired.",
+          getRecoveryErrorMessage(err instanceof Error ? err.message : null, authErrorCode),
         );
       }
     };

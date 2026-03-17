@@ -161,13 +161,18 @@ export default function Auth() {
               {isLogin && (
                 <button
                   type="button"
-                  className="text-xs text-primary hover:underline"
+                  className="text-xs text-primary hover:underline disabled:pointer-events-none disabled:opacity-60"
+                  disabled={sendingReset}
                   onClick={async () => {
+                    if (sendingReset) return;
+
                     const trimmedEmail = email.trim().toLowerCase();
                     if (!trimmedEmail) {
                       toast.error("Enter your email first, then click Forgot password.");
                       return;
                     }
+
+                    setSendingReset(true);
                     try {
                       const { error } = await supabase.auth.resetPasswordForEmail(trimmedEmail, {
                         redirectTo: `${window.location.origin}/reset-password`,
@@ -182,10 +187,12 @@ export default function Auth() {
                       } else {
                         toast.error(msg || "Could not send reset email");
                       }
+                    } finally {
+                      setSendingReset(false);
                     }
                   }}
                 >
-                  Forgot password?
+                  {sendingReset ? "Sending…" : "Forgot password?"}
                 </button>
               )}
             </div>
