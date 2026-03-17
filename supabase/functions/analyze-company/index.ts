@@ -1831,6 +1831,11 @@ Since these are insider-only inputs, scores should remain the same as previous u
 ` : ''}` : ''}
 
 HIGH-SIGNAL EVIDENCE DIGEST (prioritized snippets from public pages):
+
+IMPORTANT — PRICING PAGE VERIFICATION:
+The following URLs were successfully scraped and their content is included below. If any of these URLs contain "/pricing", "/plans", or "/billing", then a public pricing page EXISTS. You MUST NOT claim "no public pricing page" or recommend "publish a pricing page" if such a URL was scraped. Instead, analyze the actual content from that page.
+Scraped URLs: ${selectedUrls.join(', ')}
+
 - Product north star candidates:
 ${evidenceDigest.northStar.length > 0 ? evidenceDigest.northStar.map((item) => `  - ${item}`).join('\n') : '  - None captured'}
 - Cost driver mapping candidates:
