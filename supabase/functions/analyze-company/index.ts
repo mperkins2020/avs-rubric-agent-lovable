@@ -1982,12 +1982,12 @@ ${truncatedContent}`;
     );
 
     // Generic safety net helper: if LLM scored 0 but we have sufficient digest evidence, floor at 1
+    // IMPORTANT: Preserves the AI's original rationale to avoid fabricating pricing constructs
     const applyDigestFloor = (
       dimension: { dimension: string; score: number; confidence: number; notObservable: boolean; rationale: string; observed: string[]; sourceEvidence?: Array<{ url: string; snippet: string }>; uncertaintyReasons: string[]; missingInsiderPrompts?: Array<{ question: string; fieldPaths: string[] }> },
       digestBucket: string[],
       minEvidence: number,
       floorConfidence: number,
-      floorRationale: string,
       uncertaintyNote: string,
     ) => {
       const observed = Array.isArray(dimension.observed) ? [...dimension.observed] : [];
@@ -2001,7 +2001,10 @@ ${truncatedContent}`;
           score: 1,
           confidence: Math.max(Number(dimension.confidence) || 0, floorConfidence),
           notObservable: false,
-          rationale: floorRationale,
+          // Preserve AI's rationale — append safety net note instead of replacing
+          rationale: dimension.rationale
+            ? `${dimension.rationale} [Score floored to 1 based on ${digestBucket.length} public evidence signals.]`
+            : `Score floored to 1 based on ${digestBucket.length} public evidence signals found in scraped pages.`,
           observed: mergedObserved,
           sourceEvidence: mergedSourceEvidence,
           uncertaintyReasons: [...uncertaintyReasons, uncertaintyNote].slice(0, 2),
