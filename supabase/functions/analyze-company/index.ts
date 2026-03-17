@@ -2178,6 +2178,58 @@ ${truncatedContent}`;
       };
     });
 
+    // ── Post-LLM contradiction fix: pricing page existence ─────────────
+    // If we scraped a pricing page, the LLM MUST NOT claim "no pricing page"
+    const scrapedPricingUrl = selectedUrls.find(u => /\/(pricing|plans?|billing)\b/i.test(u));
+    if (scrapedPricingUrl) {
+      const pricingContradictionPatterns = [
+        /no\s+public\s+pricing\s+page/i,
+        /there(?:'s| is)\s+no\s+(?:public\s+)?pricing\s+page/i,
+        /(?:publish|create|add)\s+(?:a\s+)?(?:detailed\s+)?pricing\s+page/i,
+        /pricing\s+page\s+(?:does not|doesn't)\s+exist/i,
+        /absence\s+of\s+(?:a\s+)?(?:public\s+)?pricing/i,
+        /no\s+pricing\s+(?:page|information)\s+(?:to|was|is|could)\s+/i,
+      ];
+
+      for (const dim of dimensionScores) {
+        for (const pattern of pricingContradictionPatterns) {
+          if (pattern.test(dim.rationale)) {
+            console.warn(`CONTRADICTION FIX: "${dim.dimension}" claimed no pricing page, but ${scrapedPricingUrl} was scraped. Correcting rationale.`);
+            dim.rationale = dim.rationale.replace(pattern, `the pricing page at ${scrapedPricingUrl} shows`);
+          }
+        }
+      }
+
+      // Also fix strengths, weaknesses, and recommendedFocus
+      const weaknesses = (rubricData.weaknesses || []) as Array<{ whatIsMissingOrUnclear?: string; whyItMatters?: string }>;
+      for (const w of weaknesses) {
+        for (const pattern of pricingContradictionPatterns) {
+          if (w.whatIsMissingOrUnclear && pattern.test(w.whatIsMissingOrUnclear)) {
+            w.whatIsMissingOrUnclear = w.whatIsMissingOrUnclear.replace(pattern, `the pricing page at ${scrapedPricingUrl} shows`);
+          }
+        }
+      }
+
+      const focus = rubricData.recommendedFocus as { focusArea?: string; why?: string; firstTwoActions?: string[] } | null;
+      if (focus) {
+        for (const pattern of pricingContradictionPatterns) {
+          if (focus.focusArea && pattern.test(focus.focusArea)) {
+            focus.focusArea = focus.focusArea.replace(pattern, 'enhance the existing pricing page');
+          }
+          if (focus.why && pattern.test(focus.why)) {
+            focus.why = focus.why.replace(pattern, `the pricing page at ${scrapedPricingUrl} exists but`);
+          }
+          if (focus.firstTwoActions) {
+            focus.firstTwoActions = focus.firstTwoActions.map(a =>
+              pricingContradictionPatterns.some(p => p.test(a))
+                ? a.replace(pattern, 'enhance the existing pricing page')
+                : a
+            );
+          }
+        }
+      }
+    }
+
     const totalScore = dimensionScores.reduce((sum, d) => sum + d.score, 0);
     const maxScore = dimensionScores.length * 2;
 
