@@ -2156,7 +2156,6 @@ ${truncatedContent}`;
       // === Overages and risk allocation ===
       if (dimension.dimension === 'Overages and risk allocation') {
         return applyDigestFloor(dimension, evidenceDigest.overagesRisk, 2, 0.45,
-          'Public pages reference overage behavior, spending limits, or cap mechanisms, supporting emerging risk allocation even though detailed dispute processes and tail protection are not fully documented.',
           'Detailed dispute/refund processes, grace buffers, and spike protection mechanisms are not publicly documented.');
       }
 
