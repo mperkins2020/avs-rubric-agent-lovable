@@ -157,11 +157,20 @@ export function exportToPDF({ companyProfile, rubricScore, observability }: Expo
   doc.text("Dimension Scores", 20, yPos);
   yPos += 8;
 
+  // Helper: clean internal floor notes from rationales for customer-facing output
+  const cleanRationale = (rationale: string): string => {
+    // Remove "[Score floored to X based on N public evidence signals.]" and similar internal notes
+    return rationale
+      .replace(/\s*\[Score floored to \d+ based on \d+ public evidence signals?\.\]\s*/gi, "")
+      .replace(/\s*\[Score floored[^\]]*\]\s*/gi, "")
+      .trim();
+  };
+
   const dimensionTableData = rubricScore.dimensionScores.map((dim) => [
     dim.dimension,
     dim.notObservable ? "N/O" : `${dim.score}/2`,
     `${Math.round(dim.confidence * 100)}%`,
-    dim.rationale,
+    cleanRationale(dim.rationale),
   ]);
 
   autoTable(doc, {
@@ -193,6 +202,99 @@ export function exportToPDF({ companyProfile, rubricScore, observability }: Expo
   });
 
   yPos = (doc as jsPDFWithAutoTable).lastAutoTable.finalY + 15;
+
+  // Detailed Dimension Breakdowns — evidence + uncertainty per dimension
+  rubricScore.dimensionScores.forEach((dim) => {
+    const hasEvidence = dim.sourceEvidence && dim.sourceEvidence.length > 0;
+    const hasObserved = dim.observed && dim.observed.length > 0;
+    const hasUncertainty = dim.uncertaintyReasons && dim.uncertaintyReasons.length > 0;
+
+    // Skip dimensions with no detail to add
+    if (!hasEvidence && !hasObserved && !hasUncertainty) return;
+
+    checkPageBreak(40);
+
+    // Dimension header
+    doc.setFontSize(11);
+    doc.setTextColor(...getScoreColor(dim.score));
+    doc.text(`${dim.dimension}  (${dim.notObservable ? "N/O" : dim.score + "/2"})`, 20, yPos);
+    yPos += 6;
+
+    // Evidence citations
+    if (hasEvidence) {
+      doc.setFontSize(8);
+      doc.setTextColor(...COLORS.dark);
+      doc.text("Evidence:", 22, yPos);
+      yPos += 4;
+
+      dim.sourceEvidence!.forEach((ev) => {
+        checkPageBreak(12);
+        doc.setFontSize(7);
+        doc.setTextColor(...COLORS.primary);
+        const urlText = doc.splitTextToSize(ev.url, pageWidth - 50);
+        doc.textWithLink(urlText[0], 26, yPos, { url: ev.url });
+        yPos += 4;
+
+        if (ev.snippet) {
+          doc.setTextColor(...COLORS.muted);
+          doc.setFont("helvetica", "italic");
+          const snippetLines = doc.splitTextToSize(`"${ev.snippet}"`, pageWidth - 55);
+          snippetLines.forEach((line: string) => {
+            checkPageBreak(4);
+            doc.text(line, 28, yPos);
+            yPos += 3.5;
+          });
+          doc.setFont("helvetica", "normal");
+          yPos += 1;
+        }
+      });
+      yPos += 2;
+    } else if (hasObserved) {
+      doc.setFontSize(8);
+      doc.setTextColor(...COLORS.dark);
+      doc.text("Observations:", 22, yPos);
+      yPos += 4;
+
+      dim.observed.forEach((obs) => {
+        checkPageBreak(6);
+        doc.setFontSize(7);
+        doc.setTextColor(...COLORS.muted);
+        const obsLines = doc.splitTextToSize(`• ${obs}`, pageWidth - 50);
+        obsLines.forEach((line: string) => {
+          doc.text(line, 26, yPos);
+          yPos += 3.5;
+        });
+      });
+      yPos += 2;
+    }
+
+    // Uncertainty factors
+    if (hasUncertainty) {
+      doc.setFontSize(8);
+      doc.setTextColor(...COLORS.dark);
+      const uncertaintyLabel = dim.confidence >= 0.7
+        ? "Uncertainty factors:"
+        : dim.confidence >= 0.4
+          ? "Why confidence is not higher:"
+          : "Why confidence is low:";
+      doc.text(uncertaintyLabel, 22, yPos);
+      yPos += 4;
+
+      dim.uncertaintyReasons.forEach((reason) => {
+        checkPageBreak(6);
+        doc.setFontSize(7);
+        doc.setTextColor(...COLORS.muted);
+        const reasonLines = doc.splitTextToSize(`• ${reason}`, pageWidth - 50);
+        reasonLines.forEach((line: string) => {
+          doc.text(line, 26, yPos);
+          yPos += 3.5;
+        });
+      });
+      yPos += 2;
+    }
+
+    yPos += 5;
+  });
 
   // Strengths Section
   checkPageBreak(50);
