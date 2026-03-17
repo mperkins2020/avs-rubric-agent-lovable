@@ -2054,7 +2054,6 @@ ${truncatedContent}`;
       // === ICP and job clarity ===
       if (dimension.dimension === 'ICP and job clarity') {
         return applyDigestFloor(dimension, evidenceDigest.icpJob, 2, 0.5,
-          'Public pages describe target users, use cases, and workflows, supporting emerging ICP and job clarity even though explicit non-fit boundaries and detailed success states are not publicly stated.',
           'Explicit non-fit criteria and testable success states are not fully public.');
       }
 
