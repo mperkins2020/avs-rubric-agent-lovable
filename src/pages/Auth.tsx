@@ -35,6 +35,7 @@ export default function Auth() {
   const [loading, setLoading] = useState(false);
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
   const turnstileRef = useRef<TurnstileInstance>(null);
+  const [resetSent, setResetSent] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -171,6 +172,7 @@ export default function Auth() {
                         redirectTo: `${window.location.origin}/reset-password`,
                       });
                       if (error) throw error;
+                      setResetSent(true);
                       toast.success("Password reset link sent — check your email.");
                     } catch (err: unknown) {
                       toast.error(err instanceof Error ? err.message : "Could not send reset email");
@@ -191,6 +193,13 @@ export default function Auth() {
               required
             />
           </div>
+
+          {resetSent && isLogin && (
+            <div className="rounded-md bg-primary/10 border border-primary/20 px-4 py-3 text-sm text-foreground flex items-start gap-2">
+              <Mail className="w-4 h-4 mt-0.5 shrink-0 text-primary" />
+              <span>We sent a reset link to <strong>{email.trim().toLowerCase()}</strong>. Check your inbox (and spam) and click the link to set a new password.</span>
+            </div>
+          )}
 
           {!isLogin && (
             <div className="flex justify-center">

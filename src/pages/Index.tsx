@@ -47,6 +47,7 @@ const Index = () => {
   const [authPassword, setAuthPassword] = useState("");
   const [authIsLogin, setAuthIsLogin] = useState(true);
   const [authLoading, setAuthLoading] = useState(false);
+  const [authResetSent, setAuthResetSent] = useState(false);
   const {
     status,
     statusMessage,
@@ -438,6 +439,7 @@ const Index = () => {
                             redirectTo: `${window.location.origin}/reset-password`,
                           });
                           if (error) throw error;
+                          setAuthResetSent(true);
                           toast.success("Password reset link sent — check your email.");
                         } catch (err: unknown) {
                           toast.error(err instanceof Error ? err.message : "Could not send reset email");
@@ -450,6 +452,12 @@ const Index = () => {
                 </div>
                 <Input id="auth-password" type="password" placeholder="••••••••" value={authPassword} onChange={(e) => setAuthPassword(e.target.value)} minLength={6} required />
               </div>
+              {authResetSent && authIsLogin && (
+                <div className="rounded-md bg-primary/10 border border-primary/20 px-4 py-3 text-sm text-foreground flex items-start gap-2">
+                  <Mail className="w-4 h-4 mt-0.5 shrink-0 text-primary" />
+                  <span>We sent a reset link to <strong>{authEmail.trim().toLowerCase()}</strong>. Check your inbox (and spam) and click the link to set a new password.</span>
+                </div>
+              )}
               <Button type="submit" className="w-full gap-2" disabled={authLoading}>
                 {authLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <ArrowRight className="w-4 h-4" />}
                 {authIsLogin ? "Sign in" : "Sign up"}
