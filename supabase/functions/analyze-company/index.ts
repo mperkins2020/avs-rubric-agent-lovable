@@ -53,6 +53,8 @@ EVIDENCE QUALITY RULES (MANDATORY — apply before scoring every dimension):
 5. If the only evidence for a subtest comes from boilerplate, navigation, or footer content, that subtest FAILS.
 6. When the same fact appears on multiple pages, count it once — do not inflate confidence by repetition.
 7. TIER ATTRIBUTION: When citing plan-specific features, policies, or constraints, name the EXACT plan tier the evidence belongs to (e.g., "Team plan allows custom overage pricing for seats over 20"). Never generalize a tier-specific feature to a different tier. If a feature applies to multiple tiers, list each tier explicitly. Enterprise "custom pricing" is NOT the same as a Team plan's seat overage policy.
+8. LEGAL vs PRODUCT EVIDENCE: Privacy policies, biometric notices, data processing addenda, and compliance legal pages describe COMPANY obligations to regulators — NOT customer-facing safety rails or admin controls. Do NOT cite legal compliance language (e.g., "monitor usage of our Service") as evidence for Safety rails, budget caps, or trust surfaces. Safety rails evidence must come from product pages, pricing pages, docs, or trust centers — not legal boilerplate.
+9. STRUCTURED DATA CAVEAT: Sections labeled "Machine-Extracted — NOT direct quotes" contain AI-paraphrased data. Use them as scoring context but do NOT cite their text as direct quotes in sourceEvidence. Always prefer the original markdown content for direct citations.
 
 For each of the 8 dimensions below, provide:
 - score: 0 (not present), 1 (emerging), or 2 (strong)
