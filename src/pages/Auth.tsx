@@ -36,6 +36,7 @@ export default function Auth() {
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
   const turnstileRef = useRef<TurnstileInstance>(null);
   const [resetSent, setResetSent] = useState(false);
+  const [sendingReset, setSendingReset] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
