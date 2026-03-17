@@ -1569,6 +1569,9 @@ Deno.serve(async (req) => {
       return line
         .replace(/!\[[^\]]*\]\([^\)]+\)/g, '')
         .replace(/\[([^\]]+)\]\([^\)]+\)/g, '$1')
+        // Remove malformed markdown fragments like [Global coverage\\ or [text without closing bracket
+        .replace(/\[[^\]]*\\{1,2}$/g, '')
+        .replace(/\[[^\]]*$/g, '')
         .replace(/[>#*_`|]+/g, ' ')
         .replace(/\s+/g, ' ')
         .trim();
