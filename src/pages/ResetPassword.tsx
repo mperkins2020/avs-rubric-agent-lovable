@@ -58,53 +58,17 @@ export default function ResetPassword() {
     const timeoutId = window.setTimeout(async () => {
       if (!isActive) return;
       const { data: { session: pendingSession } } = await supabase.auth.getSession();
-      if (!pendingSession && !isRecovery) {
+      if (!pendingSession) {
         markRecoveryError("This reset link is invalid or has expired.");
       }
     }, 3000);
-
-    const resolveRecovery = async () => {
-      try {
-        if (!isRecoveryLink) {
-          const { data: { session: existingSession } } = await supabase.auth.getSession();
-          if (existingSession) {
-            markRecoveryReady();
-            return;
-          }
-          markRecoveryError("This reset link is missing recovery data.");
-          return;
-        }
-
-        if (recoveryType === "recovery" && tokenHash) {
-          const { error } = await supabase.auth.verifyOtp({
-            type: "recovery",
-            token_hash: tokenHash,
-          });
-          if (error) throw error;
-        } else if (authCode) {
-          const { error } = await supabase.auth.exchangeCodeForSession(authCode);
-          if (error) throw error;
-        }
-
-        const { data: { session: recoverySession } } = await supabase.auth.getSession();
-        if (recoverySession) {
-          markRecoveryReady();
-        }
-      } catch (err: unknown) {
-        markRecoveryError(
-          err instanceof Error ? err.message : "This reset link is invalid or has expired.",
-        );
-      }
-    };
-
-    void resolveRecovery();
-
+...
     return () => {
       isActive = false;
       window.clearTimeout(timeoutId);
       subscription.unsubscribe();
     };
-  }, [isRecovery]);
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
