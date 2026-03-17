@@ -2074,18 +2074,23 @@ ${truncatedContent}`;
         const mergedObserved = [...observed, ...evidenceDigest.valueUnit, ...evidenceDigest.costDriver].slice(0, 5);
         const mergedSourceEvidence = normalizeSourceEvidence(sourceEvidence, mergedObserved);
 
-        if (hasExplicitCreditFaqSignals && dimension.score === 0) {
+        // Generic floor: if LLM scored 0 but we have ≥2 value unit evidence signals
+        // (e.g. credits named, scoped, described on FAQ/pricing), floor to 1
+        // and move metering granularity gap to uncertainty
+        if (dimension.score === 0 && (evidenceDigest.valueUnit.length >= 2 || hasExplicitCreditFaqSignals)) {
           return {
             ...dimension,
             score: 1,
-            confidence: Math.max(Number(dimension.confidence) || 0, 0.65),
+            confidence: Math.max(Number(dimension.confidence) || 0, hasExplicitCreditFaqSignals ? 0.65 : 0.55),
             notObservable: false,
-            rationale: 'Public FAQ evidence clearly defines credits as a billable unit and shows concrete task/message credit examples, which supports an emerging value unit even though full deterministic metering details are still incomplete.',
+            rationale: dimension.rationale
+              ? `${dimension.rationale} [Score floored to 1 based on ${evidenceDigest.valueUnit.length} value-unit evidence signals — unit is named and scoped but full metering determinism is not publicly verifiable.]`
+              : `Score floored to 1 based on ${evidenceDigest.valueUnit.length} value-unit evidence signals found in scraped pages.`,
             observed: mergedObserved,
             sourceEvidence: mergedSourceEvidence,
             uncertaintyReasons: [
               ...uncertaintyReasons.filter((reason) => !/audit|visibility|breakdown/i.test(reason)),
-              'Detailed deterministic metering rules (rounding, attribution boundaries, and edge-case counting) are still not fully public.',
+              'Detailed metering granularity (rounding, attribution, edge-case counting) is not fully public — this is a 1→2 gap, not a 0 condition.',
             ].slice(0, 2),
           };
         }
