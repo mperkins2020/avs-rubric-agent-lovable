@@ -2150,7 +2150,6 @@ ${truncatedContent}`;
       // === Pools and packaging ===
       if (dimension.dimension === 'Pools and packaging') {
         return applyDigestFloor(dimension, evidenceDigest.poolsPackaging, 2, 0.5,
-          'Public pricing pages show tier structures, included allowances, and add-on/top-up options, supporting emerging pools and packaging even though detailed pool scope and allocation rules are not fully public.',
           'Pool scope, allocation mode, and rollover rules are not fully documented on public pages.');
       }
 
