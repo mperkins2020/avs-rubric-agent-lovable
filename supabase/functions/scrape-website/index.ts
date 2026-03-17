@@ -230,15 +230,60 @@ function scoreUrl(link: string, baseHost: string, communityUrlSet: Set<string>):
   return score;
 }
 
+// ─── Pricing JSON schema for structured extraction ─────────────────────────
+const pricingJsonSchema = {
+  type: "object",
+  properties: {
+    plans: {
+      type: "array",
+      items: {
+        type: "object",
+        properties: {
+          name: { type: "string", description: "Plan or tier name" },
+          price: { type: "string", description: "Price as displayed (e.g. '$49/mo', 'Custom', 'Free')" },
+          billingPeriod: { type: "string", description: "monthly, annual, or custom" },
+          currency: { type: "string", description: "ISO currency code e.g. USD" },
+          features: { type: "array", items: { type: "string" }, description: "List of included features" },
+          limits: { type: "array", items: { type: "string" }, description: "Usage limits or caps (e.g. '100 credits/mo', '5 seats')" },
+          overagePolicy: { type: "string", description: "What happens when limits are exceeded" },
+        },
+      },
+    },
+    valueUnit: { type: "string", description: "The primary billable unit (e.g. 'seat', 'credit', 'API call', 'GB')" },
+    hasFreeTier: { type: "boolean" },
+    hasTrial: { type: "boolean" },
+    trialDetails: { type: "string", description: "Trial duration and conditions" },
+    refundPolicy: { type: "string", description: "Full refund policy including conditions, fees, and exceptions" },
+    enterprisePricing: { type: "string", description: "How enterprise/custom pricing works" },
+    costDrivers: {
+      type: "array",
+      items: { type: "string" },
+      description: "All factors that affect cost (e.g. 'number of users', 'storage used', 'API calls')",
+    },
+    discounts: { type: "array", items: { type: "string" }, description: "Available discounts (annual, volume, etc.)" },
+  },
+};
+
+const isPricingPage = (url: string): boolean =>
+  /\/(pricing|plans?|billing|subscription|credits|cost|packages)\b/i.test(url);
+
 // ─── Scrape a single page via Firecrawl ────────────────────────────────────
 async function scrapePage(apiKey: string, pageUrl: string): Promise<ScrapedPage | null> {
   try {
     const needsFullContent = fullContentPatterns.some(p => p.test(pageUrl));
     const hasAccordions = /\/(pricing|faq|plans?|credits)\b/i.test(pageUrl);
-    console.log('Scraping:', pageUrl, needsFullContent ? '(full)' : '(main)', hasAccordions ? '(+html)' : '');
+    const wantStructuredJson = isPricingPage(pageUrl);
+    console.log('Scraping:', pageUrl, needsFullContent ? '(full)' : '(main)', hasAccordions ? '(+html)' : '', wantStructuredJson ? '(+json)' : '');
 
-    const formats: string[] = ['markdown'];
+    const formats: (string | { type: string; schema: unknown; prompt?: string })[] = ['markdown'];
     if (hasAccordions) formats.push('html', 'rawHtml');
+    if (wantStructuredJson) {
+      formats.push({
+        type: 'json',
+        schema: pricingJsonSchema,
+        prompt: 'Extract ALL pricing plans, tiers, features, usage limits, overage policies, refund policies, cost drivers, trial details, and discounts from this page. Include exact prices, exact limits, and exact conditions. Do not infer or guess — only extract what is explicitly stated.',
+      });
+    }
 
     const response = await fetch('https://api.firecrawl.dev/v1/scrape', {
       method: 'POST',
@@ -254,7 +299,7 @@ async function scrapePage(apiKey: string, pageUrl: string): Promise<ScrapedPage 
       }),
     });
 
-    let pageData: FirecrawlScrapeResponse;
+    let pageData: FirecrawlScrapeResponse & { data?: { json?: Record<string, unknown> } };
     try {
       pageData = JSON.parse(await response.text());
     } catch {
@@ -269,6 +314,55 @@ async function scrapePage(apiKey: string, pageUrl: string): Promise<ScrapedPage 
 
     console.log('Successfully scraped:', pageUrl);
     let finalMarkdown = pageData.data.markdown || '';
+
+    // ── Append structured JSON pricing data ──────────────────────────────
+    if (wantStructuredJson && pageData.data.json) {
+      const json = pageData.data.json;
+      console.log(`Structured JSON extracted for ${pageUrl}:`, JSON.stringify(json).slice(0, 500));
+
+      const sections: string[] = [];
+      sections.push('## Structured Pricing Data (Machine-Extracted)');
+
+      if (json.valueUnit) sections.push(`**Value Unit**: ${json.valueUnit}`);
+      if (json.hasFreeTier !== undefined) sections.push(`**Free Tier**: ${json.hasFreeTier ? 'Yes' : 'No'}`);
+      if (json.hasTrial !== undefined) sections.push(`**Trial Available**: ${json.hasTrial ? 'Yes' : 'No'}`);
+      if (json.trialDetails) sections.push(`**Trial Details**: ${json.trialDetails}`);
+      if (json.refundPolicy) sections.push(`**Refund Policy**: ${json.refundPolicy}`);
+      if (json.enterprisePricing) sections.push(`**Enterprise Pricing**: ${json.enterprisePricing}`);
+
+      const plans = json.plans as Array<Record<string, unknown>> | undefined;
+      if (plans && Array.isArray(plans) && plans.length > 0) {
+        sections.push('\n### Plans');
+        for (const plan of plans) {
+          const planLines: string[] = [];
+          planLines.push(`#### ${plan.name || 'Unnamed Plan'}`);
+          if (plan.price) planLines.push(`- **Price**: ${plan.price}`);
+          if (plan.billingPeriod) planLines.push(`- **Billing**: ${plan.billingPeriod}`);
+          const features = plan.features as string[] | undefined;
+          if (features && Array.isArray(features) && features.length > 0) {
+            planLines.push(`- **Features**: ${features.join('; ')}`);
+          }
+          const limits = plan.limits as string[] | undefined;
+          if (limits && Array.isArray(limits) && limits.length > 0) {
+            planLines.push(`- **Limits**: ${limits.join('; ')}`);
+          }
+          if (plan.overagePolicy) planLines.push(`- **Overage Policy**: ${plan.overagePolicy}`);
+          sections.push(planLines.join('\n'));
+        }
+      }
+
+      const costDrivers = json.costDrivers as string[] | undefined;
+      if (costDrivers && Array.isArray(costDrivers) && costDrivers.length > 0) {
+        sections.push(`\n### Cost Drivers\n${costDrivers.map(d => `- ${d}`).join('\n')}`);
+      }
+
+      const discounts = json.discounts as string[] | undefined;
+      if (discounts && Array.isArray(discounts) && discounts.length > 0) {
+        sections.push(`\n### Discounts\n${discounts.map(d => `- ${d}`).join('\n')}`);
+      }
+
+      finalMarkdown += '\n\n---\n\n' + sections.join('\n\n');
+    }
 
     // Extract accordion/table content from HTML
     if (hasAccordions && (pageData.data.rawHtml || pageData.data.html)) {
