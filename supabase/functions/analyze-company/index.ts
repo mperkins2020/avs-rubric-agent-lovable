@@ -2060,7 +2060,6 @@ ${truncatedContent}`;
       // === Buyer and budget alignment ===
       if (dimension.dimension === 'Buyer and budget alignment') {
         return applyDigestFloor(dimension, evidenceDigest.buyerBudget, 2, 0.5,
-          'Public pricing pages show tier structures, payment options, and enterprise features, supporting emerging buyer and budget alignment even though segment-level approval readiness details are incomplete.',
           'Segment-specific approval readiness and commercial terms details are not fully documented on public pages.');
       }
 
