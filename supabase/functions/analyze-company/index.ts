@@ -2162,7 +2162,6 @@ ${truncatedContent}`;
       // === Safety rails and trust surfaces ===
       if (dimension.dimension === 'Safety rails and trust surfaces') {
         return applyDigestFloor(dimension, evidenceDigest.safetyRails, 2, 0.4,
-          'Public pages reference usage dashboards, alerts, admin controls, or rate limits, supporting emerging safety rails even though in-product control details are not publicly visible.',
           'Most safety rails (budget caps, kill switches, admin controls) are typically in-product and not publicly documented.');
       }
 
