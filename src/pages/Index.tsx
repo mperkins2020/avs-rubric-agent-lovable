@@ -48,6 +48,7 @@ const Index = () => {
   const [authIsLogin, setAuthIsLogin] = useState(true);
   const [authLoading, setAuthLoading] = useState(false);
   const [authResetSent, setAuthResetSent] = useState(false);
+  const [authSendingReset, setAuthSendingReset] = useState(false);
   const {
     status,
     statusMessage,
@@ -427,13 +428,18 @@ const Index = () => {
                   {authIsLogin && (
                     <button
                       type="button"
-                      className="text-xs text-primary hover:underline"
+                      className="text-xs text-primary hover:underline disabled:pointer-events-none disabled:opacity-60"
+                      disabled={authSendingReset}
                       onClick={async () => {
+                        if (authSendingReset) return;
+
                         const trimmedEmail = authEmail.trim().toLowerCase();
                         if (!trimmedEmail) {
                           toast.error("Enter your email first, then click Forgot password.");
                           return;
                         }
+
+                        setAuthSendingReset(true);
                         try {
                           const { error } = await supabase.auth.resetPasswordForEmail(trimmedEmail, {
                             redirectTo: `${window.location.origin}/reset-password`,
@@ -448,10 +454,12 @@ const Index = () => {
                           } else {
                             toast.error(msg || "Could not send reset email");
                           }
+                        } finally {
+                          setAuthSendingReset(false);
                         }
                       }}
                     >
-                      Forgot password?
+                      {authSendingReset ? "Sending…" : "Forgot password?"}
                     </button>
                   )}
                 </div>
