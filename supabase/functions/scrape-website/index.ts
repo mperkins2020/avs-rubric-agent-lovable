@@ -305,7 +305,7 @@ async function scrapePage(apiKey: string, pageUrl: string): Promise<ScrapedPage 
       body: JSON.stringify(requestBody),
     });
 
-    let pageData: FirecrawlScrapeResponse & { data?: { json?: Record<string, unknown> } };
+    let pageData: FirecrawlScrapeResponse & { data?: { json?: Record<string, unknown>; llm_extraction?: Record<string, unknown> } };
     try {
       pageData = JSON.parse(await response.text());
     } catch {
@@ -322,8 +322,10 @@ async function scrapePage(apiKey: string, pageUrl: string): Promise<ScrapedPage 
     let finalMarkdown = pageData.data.markdown || '';
 
     // ── Append structured JSON pricing data ──────────────────────────────
-    if (wantStructuredJson && pageData.data.json) {
-      const json = pageData.data.json;
+    // Firecrawl v1 returns structured extraction in llm_extraction or json
+    const extractedJson = pageData.data.llm_extraction || pageData.data.json;
+    if (wantStructuredJson && extractedJson) {
+      const json = extractedJson;
       console.log(`Structured JSON extracted for ${pageUrl}:`, JSON.stringify(json).slice(0, 500));
 
       const sections: string[] = [];
