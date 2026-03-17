@@ -19,6 +19,7 @@ import Blog from "./pages/Blog";
 import BlogTrustGrowthConstraint from "./pages/BlogTrustGrowthConstraint";
 import BlogVibecoding from "./pages/BlogVibecoding";
 import BlogClayPricing from "./pages/BlogClayPricing";
+import ResetPassword from "./pages/ResetPassword";
 
 const queryClient = new QueryClient();
 
@@ -32,6 +33,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 const AppRoutes = () => (
   <Routes>
     <Route path="/auth" element={<Auth />} />
+    <Route path="/reset-password" element={<ResetPassword />} />
     <Route path="/" element={<Index />} />
     <Route path="/results" element={<ProtectedRoute><Results /></ProtectedRoute>} />
     <Route path="/methodology" element={<Methodology />} />
