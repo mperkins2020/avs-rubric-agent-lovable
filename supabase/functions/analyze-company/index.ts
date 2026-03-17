@@ -2118,7 +2118,10 @@ ${truncatedContent}`;
             score: 1,
             confidence: Math.max(Number(dimension.confidence) || 0, hasExplicitCreditFaqSignals ? 0.65 : 0.5),
             notObservable: false,
-            rationale: 'The pricing surface explicitly defines usage-linked economics (credits, usage-based Cloud + AI, task-level credit examples, rollovers/top-ups), which is enough for emerging cost-driver mapping even if detailed formulas are not publicly documented.',
+            // Preserve AI's rationale — do NOT fabricate pricing constructs
+            rationale: dimension.rationale
+              ? `${dimension.rationale} [Score floored to 1 based on ${evidenceDigest.costDriver.length} cost-driver evidence signals.]`
+              : `Score floored to 1 based on ${evidenceDigest.costDriver.length} cost-driver evidence signals found in scraped pages.`,
             observed: mergedObserved,
             sourceEvidence: mergedSourceEvidence,
             uncertaintyReasons: [...uncertaintyReasons, 'Driver formulas and p50/p95 workflow cost estimates remain non-public.'].slice(0, 2),
