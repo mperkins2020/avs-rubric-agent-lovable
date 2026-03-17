@@ -398,13 +398,7 @@ const Index = () => {
             </div>
           </TooltipProvider>
         </motion.div>
-              </div>
-              {authResetSent && authIsLogin && (
-                <div className="rounded-md bg-primary/10 border border-primary/20 px-4 py-3 text-sm text-foreground flex items-start gap-2">
-                  <Mail className="w-4 h-4 mt-0.5 shrink-0 text-primary" />
-                  <span>We sent a reset link to <strong>{authEmail.trim().toLowerCase()}</strong>. Check your inbox (and spam) and click the link to set a new password.</span>
-                </div>
-              )}
+      </div>
 
       <Footer />
 
