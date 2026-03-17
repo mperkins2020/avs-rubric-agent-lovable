@@ -205,7 +205,8 @@ function isShallowSameDomainPath(link: string, baseHost: string): boolean {
     const u = new URL(link);
     if (u.hostname.replace(/^www\./, '') !== baseHost) return false;
     const segs = u.pathname.replace(/\/$/, '').split('/').filter(Boolean);
-    return segs.length >= 1 && segs.length <= 2;
+    // Allow up to 3 segments for feature/product pages (e.g. /features/data-orchestration)
+    return segs.length >= 1 && segs.length <= 3;
   } catch { return false; }
 }
 
