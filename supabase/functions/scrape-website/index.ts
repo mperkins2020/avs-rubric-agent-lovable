@@ -64,19 +64,16 @@ function isUnsafeUrl(urlString: string): string | null {
     return 'Invalid URL format';
   }
 
-  // Only allow http/https
   if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
     return 'Only http and https URLs are allowed';
   }
 
   const hostname = parsed.hostname.toLowerCase();
 
-  // Block localhost and loopback
   if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1' || hostname === '0.0.0.0') {
     return 'Internal URLs are not allowed';
   }
 
-  // Block private IP ranges
   const privateRanges = [
     /^10\./,
     /^172\.(1[6-9]|2[0-9]|3[0-1])\./,
@@ -89,7 +86,6 @@ function isUnsafeUrl(urlString: string): string | null {
     return 'Internal URLs are not allowed';
   }
 
-  // Block metadata endpoints
   if (hostname === 'metadata.google.internal' || hostname.endsWith('.internal')) {
     return 'Internal URLs are not allowed';
   }
@@ -97,8 +93,265 @@ function isUnsafeUrl(urlString: string): string | null {
   return null;
 }
 
+// ─── Helper: call Firecrawl /map ───────────────────────────────────────────
+async function mapDomain(apiKey: string, url: string, limit = 200, includeSubdomains = false): Promise<string[]> {
+  try {
+    const response = await fetch('https://api.firecrawl.dev/v1/map', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ url, limit, includeSubdomains }),
+    });
+    const text = await response.text();
+    const data: FirecrawlMapResponse = JSON.parse(text);
+    if (response.ok && data.success && data.links) {
+      return data.links;
+    }
+  } catch (e) {
+    console.warn(`Map failed for ${url}:`, e);
+  }
+  return [];
+}
+
+// ─── URL scoring & helpers ─────────────────────────────────────────────────
+
+const priorityPatterns = [
+  /\/pricing\b/i,
+  /\/plans?\b/i,
+  /\/billing\b/i,
+  /\/subscription\b/i,
+  /\/usage\b/i,
+  /\/about\b/i,
+  /\/features?\b/i,
+  /\/products?\b/i,
+  /\/solutions?\b/i,
+  /\/security\b/i,
+  /\/trust\b/i,
+  /\/compliance\b/i,
+  /\/enterprise\b/i,
+  /\/platform\b/i,
+  /\/integrations?\b/i,
+  /\/how-it-works\b/i,
+  /\/use-cases?\b/i,
+  /\/customers?\b/i,
+  /\/case-stud/i,
+  /\/resources?\b/i,
+  /\/why-/i,
+  /\/compare/i,
+  /\/vs-/i,
+  /\/docs\b/i,
+  /\/help\b/i,
+  /\/help-center\b/i,
+  /\/knowledge-base\b/i,
+  /\/faq\b/i,
+  /\/support\b/i,
+  /\/api\b/i,
+  /\/developers?\b/i,
+  /\/changelog\b/i,
+  /\/updates\b/i,
+  /\/release-notes\b/i,
+  /\/status\b/i,
+  /\/terms\b/i,
+  /\/legal\b/i,
+  /\/privacy\b/i,
+  /\/credits\b/i,
+  /overage/i,
+  /calculator/i,
+  /fair.?use/i,
+  /rate.?limit/i,
+  /quota/i,
+  /metering/i,
+];
+
+const highIntentPaths = new Set([
+  '/pricing', '/plans', '/plan', '/billing', '/usage',
+  '/subscription', '/features', '/feature', '/product',
+  '/products', '/solutions',
+]);
+
+const exclusionPatterns = [
+  /\.(pdf|zip|png|jpg|jpeg|gif|svg|css|js|woff|woff2|ttf|eot)$/i,
+  /\/(blog|news|press|careers|jobs|cookie|author|tag|category)\//i,
+  /\/(blog|news|press|careers|jobs|cookie|author|tag|category)$/i,
+  /\/(wp-content|wp-admin|wp-includes|wp-json)\//i,
+  /\/dashboard\b/i,
+  /\/(login|signup|sign-up|sign-in|register|cart|checkout)\b/i,
+];
+
+const fullContentPatterns = [
+  /\/pricing\b/i, /\/plans?\b/i, /\/billing\b/i,
+  /\/faq\b/i, /\/help\b/i, /\/support\b/i,
+  /\/trust\b/i, /\/security\b/i, /\/credits\b/i, /\/usage\b/i,
+];
+
+const helpSubdomains = ['help', 'support', 'docs', 'developer', 'developers', 'kb', 'knowledge', 'community'];
+
+function getNormalizedPath(link: string): string {
+  try { return new URL(link).pathname.replace(/\/$/, '').toLowerCase() || '/'; }
+  catch { return '/'; }
+}
+
+function isSameDomain(link: string, baseHost: string): boolean {
+  try { return new URL(link).hostname.replace(/^www\./, '') === baseHost; }
+  catch { return false; }
+}
+
+function isShallowSameDomainPath(link: string, baseHost: string): boolean {
+  try {
+    const u = new URL(link);
+    if (u.hostname.replace(/^www\./, '') !== baseHost) return false;
+    const segs = u.pathname.replace(/\/$/, '').split('/').filter(Boolean);
+    return segs.length >= 1 && segs.length <= 2;
+  } catch { return false; }
+}
+
+function isSubdomainUrl(link: string): boolean {
+  return new RegExp(`^https?://(${helpSubdomains.join('|')})\\.`, 'i').test(link);
+}
+
+function scoreUrl(link: string, baseHost: string, communityUrlSet: Set<string>): number {
+  const path = getNormalizedPath(link);
+  const sameDomain = isSameDomain(link, baseHost);
+  let score = 0;
+
+  if (communityUrlSet.has(link)) score += 1000;
+  if (sameDomain && highIntentPaths.has(path)) score += 900;
+  if (sameDomain && isShallowSameDomainPath(link, baseHost)) score += 500;
+  if (priorityPatterns.some(p => p.test(link))) score += 250;
+  if (isSubdomainUrl(link)) {
+    score += 100;
+    // Extra boost for credit/pricing paths on docs subdomains
+    if (/\/(plans-and-credits|credits|pricing|billing|usage|subscription)\b/i.test(path)) {
+      score += 700;
+    }
+  }
+  return score;
+}
+
+// ─── Scrape a single page via Firecrawl ────────────────────────────────────
+async function scrapePage(apiKey: string, pageUrl: string): Promise<ScrapedPage | null> {
+  try {
+    const needsFullContent = fullContentPatterns.some(p => p.test(pageUrl));
+    const hasAccordions = /\/(pricing|faq|plans?|credits)\b/i.test(pageUrl);
+    console.log('Scraping:', pageUrl, needsFullContent ? '(full)' : '(main)', hasAccordions ? '(+html)' : '');
+
+    const formats: string[] = ['markdown'];
+    if (hasAccordions) formats.push('html', 'rawHtml');
+
+    const response = await fetch('https://api.firecrawl.dev/v1/scrape', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        url: pageUrl,
+        formats,
+        onlyMainContent: !needsFullContent,
+        ...(hasAccordions ? { waitFor: 3000 } : {}),
+      }),
+    });
+
+    let pageData: FirecrawlScrapeResponse;
+    try {
+      pageData = JSON.parse(await response.text());
+    } catch {
+      console.log('Non-JSON response for:', pageUrl);
+      return null;
+    }
+
+    if (!response.ok || !pageData.success || !pageData.data) {
+      console.log('Failed to scrape (page may not exist):', pageUrl);
+      return null;
+    }
+
+    console.log('Successfully scraped:', pageUrl);
+    let finalMarkdown = pageData.data.markdown || '';
+
+    // Extract accordion/table content from HTML
+    if (hasAccordions && (pageData.data.rawHtml || pageData.data.html)) {
+      const html = pageData.data.rawHtml || pageData.data.html || '';
+      const extractedTexts: string[] = [];
+      const seenExtracted = new Set<string>();
+
+      const pushExtracted = (value: string) => {
+        const plainText = value
+          .replace(/<[^>]+>/g, ' ')
+          .replace(/&nbsp;/g, ' ')
+          .replace(/&amp;/g, '&')
+          .replace(/\s+/g, ' ')
+          .trim();
+        if (plainText.length < 30) return;
+        const normalized = plainText.slice(0, 420);
+        if (seenExtracted.has(normalized)) return;
+        seenExtracted.add(normalized);
+        extractedTexts.push(normalized);
+      };
+
+      const accordionContentRegex = /<(?:div|section|p|span|li|details)[^>]*(?:data-(?:state|radix|orientation)|role="region"|aria-labelledby|aria-controls|accordion|collapse)[^>]*>([\s\S]*?)<\/(?:div|section|p|span|li|details)>/gi;
+      let match;
+      while ((match = accordionContentRegex.exec(html)) !== null) {
+        pushExtracted(match[1]);
+      }
+
+      const tableRowRegex = /<tr[^>]*>([\s\S]*?)<\/tr>/gi;
+      while ((match = tableRowRegex.exec(html)) !== null) {
+        const rowHtml = match[1];
+        const cells = Array.from(rowHtml.matchAll(/<t[hd][^>]*>([\s\S]*?)<\/t[hd]>/gi))
+          .map((cellMatch) => cellMatch[1].replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim())
+          .filter(Boolean);
+        if (cells.length >= 2) pushExtracted(cells.join(' | '));
+      }
+
+      // Targeted "What is a credit?" FAQ extraction
+      const creditFaqIndex = html.toLowerCase().indexOf('what is a credit?');
+      if (creditFaqIndex >= 0) {
+        const creditFaqSegment = html.slice(creditFaqIndex, creditFaqIndex + 18000)
+          .replace(/<script[\s\S]*?<\/script>/gi, ' ')
+          .replace(/<style[\s\S]*?<\/style>/gi, ' ')
+          .replace(/<[^>]+>/g, ' ')
+          .replace(/\s+/g, ' ')
+          .trim();
+
+        const targetedFaqSignals: Array<{ pattern: RegExp; snippet: string }> = [
+          { pattern: /default\s*mode\s*:\s*credits\s+vary\s+based\s+on\s+task\s+complexity/i, snippet: 'Default Mode: credits vary based on task complexity' },
+          { pattern: /chat\s*mode\s*:\s*1\s+credit\s+per\s+message/i, snippet: 'Chat Mode: 1 credit per message' },
+          { pattern: /you\s+can\s+see\s+the\s+cost\s+of\s+each\s+message[\s\S]{0,120}(?:three\s+dots?|message\s+history)/i, snippet: 'Message history exposes exact credits used per message (three-dots menu).' },
+          { pattern: /make\s+the\s+button\s+gray[\s\S]{0,120}(?:0\.50|0,50)/i, snippet: 'Prompt example: "Make the button gray" maps to 0.50 credits' },
+          { pattern: /remove\s+the\s+footer[\s\S]{0,120}(?:0\.90|0,90)/i, snippet: 'Prompt example: "Remove the footer" maps to 0.90 credits' },
+          { pattern: /add\s+authentication\s+with\s+sign\s+up\s+and\s+login[\s\S]{0,180}(?:1\.20|1,20)/i, snippet: 'Prompt example: "Add authentication with sign up and login" maps to 1.20 credits' },
+          { pattern: /build\s+me\s+a\s+landing\s+page,?\s+use\s+images[\s\S]{0,180}(?:1\.70|1,70)/i, snippet: 'Prompt example: "Build me a landing page, use images" maps to 1.70 credits' },
+        ];
+
+        for (const signal of targetedFaqSignals) {
+          if (signal.pattern.test(creditFaqSegment)) {
+            pushExtracted(signal.snippet);
+          }
+        }
+      }
+
+      if (extractedTexts.length > 0) {
+        console.log(`Extracted ${extractedTexts.length} accordion/table sections from HTML for: ${pageUrl}`);
+        finalMarkdown += '\n\n---\n\n## FAQ / Accordion Content\n\n' + extractedTexts.join('\n\n');
+      }
+    }
+
+    return {
+      url: pageUrl,
+      title: pageData.data.metadata?.title || pageUrl,
+      markdown: finalMarkdown,
+      metadata: { description: pageData.data.metadata?.description },
+    };
+  } catch (err) {
+    console.error(`Failed to scrape ${pageUrl}:`, err);
+    return null;
+  }
+}
+
+// ─── Main handler ──────────────────────────────────────────────────────────
 Deno.serve(async (req) => {
-  // Handle CORS preflight
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -114,7 +367,7 @@ Deno.serve(async (req) => {
     }
     console.log('Authenticated user:', auth.userId);
 
-    // Rate limit: 3 scrapes per week per user (mirrors analyze-company)
+    // Rate limit: 3 scrapes per week per user
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL')!,
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
@@ -165,7 +418,6 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Enforce URL length limit
     if (url.length > 2048) {
       return new Response(
         JSON.stringify({ success: false, error: 'URL exceeds maximum length of 2048 characters' }),
@@ -173,7 +425,6 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Enforce maxPages limit
     const safeMaxPages = Math.min(Math.max(1, maxPages), 25);
 
     const apiKey = Deno.env.get('FIRECRAWL_API_KEY');
@@ -191,7 +442,7 @@ Deno.serve(async (req) => {
       formattedUrl = `https://${formattedUrl}`;
     }
 
-    // Validate URL safety (SSRF protection)
+    // SSRF protection
     const unsafeReason = isUnsafeUrl(formattedUrl);
     if (unsafeReason) {
       return new Response(
@@ -201,20 +452,19 @@ Deno.serve(async (req) => {
     }
 
     console.log('Starting scrape for URL:', formattedUrl);
-    console.log('Include subpages:', includeSubpages);
-    console.log('Max pages:', maxPages);
 
     const pages: ScrapedPage[] = [];
+    const urlObj = new URL(formattedUrl);
+    const baseHost = urlObj.hostname.replace(/^www\./, '');
+    const domainParts = baseHost.split('.');
+    const registrableDomain = domainParts.length >= 2 ? domainParts.slice(-2).join('.') : baseHost;
 
-    // Step 1: Scrape the main page
-    // Determine if the submitted URL itself is a high-value page needing full content
-    const mainPageFullContentPatterns = [
-      /\/pricing\b/i, /\/plans?\b/i, /\/billing\b/i, /\/faq\b/i,
-      /\/help\b/i, /\/support\b/i, /\/trust\b/i, /\/security\b/i,
-      /\/credits\b/i, /\/usage\b/i,
-    ];
-    const mainNeedsFullContent = mainPageFullContentPatterns.some(p => p.test(formattedUrl));
+    // ═══════════════════════════════════════════════════════════════════════
+    // STEP 1: Scrape the main page
+    // ═══════════════════════════════════════════════════════════════════════
+    const mainNeedsFullContent = fullContentPatterns.some(p => p.test(formattedUrl));
     console.log('Scraping main page...', mainNeedsFullContent ? '(full content)' : '(main only)');
+
     const mainPageResponse = await fetch('https://api.firecrawl.dev/v1/scrape', {
       method: 'POST',
       headers: {
@@ -230,15 +480,11 @@ Deno.serve(async (req) => {
 
     let mainPageData: FirecrawlScrapeResponse;
     try {
-      const mainPageText = await mainPageResponse.text();
-      mainPageData = JSON.parse(mainPageText);
+      mainPageData = JSON.parse(await mainPageResponse.text());
     } catch {
       console.error('Firecrawl returned non-JSON response, status:', mainPageResponse.status);
       return new Response(
-        JSON.stringify({ 
-          success: false, 
-          error: 'The website could not be reached. Please check the URL and try again.' 
-        }),
+        JSON.stringify({ success: false, error: 'The website could not be reached. Please check the URL and try again.' }),
         { status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -246,45 +492,77 @@ Deno.serve(async (req) => {
     if (!mainPageResponse.ok || !mainPageData.success) {
       console.error('Failed to scrape main page:', mainPageData);
       return new Response(
-        JSON.stringify({ 
-          success: false, 
-          error: 'Failed to scrape the main page. Please check the URL and try again.' 
-        }),
+        JSON.stringify({ success: false, error: 'Failed to scrape the main page. Please check the URL and try again.' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    const mainPage = mainPageData.data;
-    if (mainPage) {
+    if (mainPageData.data) {
       pages.push({
         url: formattedUrl,
-        title: mainPage.metadata?.title || 'Home',
-        markdown: mainPage.markdown || '',
+        title: mainPageData.data.metadata?.title || 'Home',
+        markdown: mainPageData.data.markdown || '',
         metadata: {
-          description: mainPage.metadata?.description,
-          keywords: mainPage.metadata?.keywords,
+          description: mainPageData.data.metadata?.description,
+          keywords: mainPageData.data.metadata?.keywords,
         },
       });
     }
 
     console.log('Main page scraped successfully');
 
-    // Step 2: If subpages are requested, find and scrape relevant pages
+    // ═══════════════════════════════════════════════════════════════════════
+    // STEP 2: MAP-FIRST DISCOVERY — only discover URLs that actually exist
+    // ═══════════════════════════════════════════════════════════════════════
     if (includeSubpages && safeMaxPages > 1) {
-      console.log('Mapping website for subpages...');
-      
-      // Parse base URL for constructing fallback URLs
-      const urlObj = new URL(formattedUrl);
-      const baseUrl = `${urlObj.protocol}//${urlObj.host}`;
-      const domainForLookup = urlObj.hostname.replace(/^www\./, '');
+      // Phase 1a: Map the main domain (with subdomains)
+      console.log('Phase 1a: Mapping main domain...');
+      const mainMapLinks = await mapDomain(apiKey, formattedUrl, 300, true);
+      console.log(`Main domain map: ${mainMapLinks.length} URLs discovered`);
 
-      // Load community-submitted evidence URLs for this domain
+      // Phase 1b: Check if main map already covers docs/help subdomains
+      const discoveredSubdomains = new Set<string>();
+      for (const link of mainMapLinks) {
+        try {
+          const h = new URL(link).hostname.replace(/^www\./, '');
+          if (h !== baseHost) discoveredSubdomains.add(h);
+        } catch { /* skip */ }
+      }
+
+      // Only map subdomains that weren't already discovered
+      const subdomainsToProbe = helpSubdomains
+        .map(sub => `${sub}.${registrableDomain}`)
+        .filter(sub => !discoveredSubdomains.has(sub));
+
+      let subdomainMapLinks: string[] = [];
+      if (subdomainsToProbe.length > 0) {
+        // Map at most 2 high-value subdomains (docs + help are most common)
+        const priorityProbes = subdomainsToProbe
+          .sort((a, b) => {
+            const order = ['docs', 'help', 'support', 'developer'];
+            const aIdx = order.findIndex(o => a.startsWith(o));
+            const bIdx = order.findIndex(o => b.startsWith(o));
+            return (aIdx === -1 ? 99 : aIdx) - (bIdx === -1 ? 99 : bIdx);
+          })
+          .slice(0, 2);
+
+        console.log(`Phase 1b: Mapping ${priorityProbes.length} undiscovered subdomains:`, priorityProbes);
+        const subMapResults = await Promise.all(
+          priorityProbes.map(sub => mapDomain(apiKey, `https://${sub}`, 100, false))
+        );
+        subdomainMapLinks = subMapResults.flat();
+        console.log(`Subdomain maps: ${subdomainMapLinks.length} URLs discovered`);
+      } else {
+        console.log('Phase 1b: Skipped — all subdomains already discovered via main map');
+      }
+
+      // Load community-submitted evidence URLs
       let communityUrls: string[] = [];
       try {
         const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
         const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
         const ceResponse = await fetch(
-          `${supabaseUrl}/rest/v1/community_evidence?url_domain=eq.${encodeURIComponent(domainForLookup)}&select=evidence_url&order=created_at.desc&limit=20`,
+          `${supabaseUrl}/rest/v1/community_evidence?url_domain=eq.${encodeURIComponent(baseHost)}&select=evidence_url&order=created_at.desc&limit=20`,
           {
             headers: {
               'Authorization': `Bearer ${supabaseKey}`,
@@ -297,416 +575,50 @@ Deno.serve(async (req) => {
           const ceData = await ceResponse.json();
           communityUrls = (ceData || []).map((r: { evidence_url: string }) => r.evidence_url);
           if (communityUrls.length > 0) {
-            console.log(`Found ${communityUrls.length} community evidence URLs for ${domainForLookup}`);
+            console.log(`Found ${communityUrls.length} community evidence URLs`);
           }
         }
       } catch (ceErr) {
         console.error('Failed to load community evidence (non-fatal):', ceErr);
       }
 
-      // Common high-value page paths to try as fallbacks — economic surfaces first
-      const commonPaths = [
-        '/pricing',
-        '/about',
-        '/features',
-        '/product',
-        '/solutions',
-        '/platform',
-        '/enterprise',
-        '/security',
-        '/trust',
-        '/integrations',
-        '/customers',
-        '/use-cases',
-        '/how-it-works',
-        '/docs',
-        '/help',
-        '/help-center',
-        '/knowledge-base',
-        '/faq',
-        '/support',
-        '/api',
-        '/developers',
-        '/billing',
-        '/usage',
-        '/usage-limits',
-        '/credits',
-        '/subscription',
-        '/plans',
-        '/blog',
-        '/changelog',
-        '/updates',
-        '/release-notes',
-        '/status',
-        '/terms',
-        '/legal',
-        '/privacy',
-      ];
-
-      // Detect common help/docs subdomains
-      const helpSubdomains = ['help', 'support', 'docs', 'developer', 'developers', 'kb', 'knowledge', 'community'];
-      const rootDomain = urlObj.hostname.replace(/^www\./, '');
-      // Extract the registrable domain (e.g., elevenlabs.io from www.elevenlabs.io)
-      const domainParts = rootDomain.split('.');
-      const registrableDomain = domainParts.length >= 2 ? domainParts.slice(-2).join('.') : rootDomain;
-
-      const subdomainUrls: string[] = [];
-      const docsSubpaths = ['/pricing', '/introduction', '/introduction/plans-and-credits', '/getting-started', '/overview', '/guides', '/api-reference', '/quickstart'];
-      for (const sub of helpSubdomains) {
-        const subRoot = `https://${sub}.${registrableDomain}`;
-        subdomainUrls.push(subRoot);
-        // Add common docs subpaths for docs/help subdomains
-        if (['docs', 'help', 'support', 'developer', 'developers', 'kb'].includes(sub)) {
-          for (const subpath of docsSubpaths) {
-            subdomainUrls.push(subRoot + subpath);
-          }
-        }
-      }
-      
-      const mapResponse = await fetch('https://api.firecrawl.dev/v1/map', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${apiKey}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          url: formattedUrl,
-          limit: 200,
-          includeSubdomains: true,
-        }),
-      });
-
-      let mapData: FirecrawlMapResponse = { success: false };
-      try {
-        const mapText = await mapResponse.text();
-        mapData = JSON.parse(mapText);
-      } catch {
-        console.warn('Map endpoint returned non-JSON, skipping subpage discovery');
-      }
-      let allLinks: string[] = [];
-
-      if (mapResponse.ok && mapData.success && mapData.links) {
-        console.log(`Found ${mapData.links.length} links from map`);
-        allLinks = mapData.links;
-      }
-      
-      // Add fallback URLs that might not be in the sitemap
-      const fallbackUrls = commonPaths.map(path => baseUrl + path);
-      console.log('Adding fallback URLs for common pages');
-      
-      // Combine and score candidates (avoid insertion-order bias toward docs subdomains)
-      const combinedLinks = [...new Set([...communityUrls, ...fallbackUrls, ...subdomainUrls, ...allLinks])];
-      console.log(`Total combined links: ${combinedLinks.length} (${communityUrls.length} community, ${subdomainUrls.length} subdomain probes)`);
-
-      // Filter for high-value pages
-      const priorityPatterns = [
-        /\/pricing\b/i,
-        /\/plans?\b/i,
-        /\/billing\b/i,
-        /\/subscription\b/i,
-        /\/usage\b/i,
-        /\/about\b/i,
-        /\/features?\b/i,
-        /\/products?\b/i,
-        /\/solutions?\b/i,
-        /\/security\b/i,
-        /\/trust\b/i,
-        /\/compliance\b/i,
-        /\/enterprise\b/i,
-        /\/platform\b/i,
-        /\/integrations?\b/i,
-        /\/how-it-works\b/i,
-        /\/use-cases?\b/i,
-        /\/customers?\b/i,
-        /\/case-stud/i,
-        /\/resources?\b/i,
-        /\/why-/i,
-        /\/compare/i,
-        /\/vs-/i,
-        /\/docs\b/i,
-        /\/help\b/i,
-        /\/help-center\b/i,
-        /\/knowledge-base\b/i,
-        /\/faq\b/i,
-        /\/support\b/i,
-        /\/api\b/i,
-        /\/developers?\b/i,
-        /\/changelog\b/i,
-        /\/updates\b/i,
-        /\/release-notes\b/i,
-        /\/status\b/i,
-        /\/terms\b/i,
-        /\/legal\b/i,
-        /\/privacy\b/i,
-        /\/credits\b/i,
-        // Billing/usage-related keyword patterns
-        /overage/i,
-        /caps?\b/i,
-        /alerts?\b/i,
-        /calculator/i,
-        /fair.?use/i,
-        /rate.?limit/i,
-        /quota/i,
-        /metering/i,
-        /cost/i,
-        /spend/i,
-      ];
-
-      // Match ALL pages under help/docs subdomains (not just roots)
-      const subdomainPattern = new RegExp(`^https?://(${helpSubdomains.join('|')})\\.`, 'i');
-
-      const highIntentMainDomainPaths = new Set([
-        '/pricing',
-        '/plans',
-        '/plan',
-        '/billing',
-        '/usage',
-        '/subscription',
-        '/features',
-        '/feature',
-        '/product',
-        '/products',
-        '/solutions',
-      ]);
-
-      // Check if a URL is a shallow path (1-2 segments) on the main domain
-      // These are almost always top-level product, feature, or use-case pages
-      const isShallowSameDomainPath = (link: string): boolean => {
-        try {
-          const linkUrl = new URL(link);
-          const linkHost = linkUrl.hostname.replace(/^www\./, '');
-          const baseHost = urlObj.hostname.replace(/^www\./, '');
-          if (linkHost !== baseHost) return false;
-          // Count path segments (ignore trailing slash)
-          const pathSegments = linkUrl.pathname.replace(/\/$/, '').split('/').filter(Boolean);
-          return pathSegments.length >= 1 && pathSegments.length <= 2;
-        } catch {
-          return false;
-        }
-      };
-
-      const getNormalizedPath = (link: string): string => {
-        try {
-          return new URL(link).pathname.replace(/\/$/, '').toLowerCase() || '/';
-        } catch {
-          return '/';
-        }
-      };
-
-      const isSameDomain = (link: string): boolean => {
-        try {
-          return new URL(link).hostname.replace(/^www\./, '') === urlObj.hostname.replace(/^www\./, '');
-        } catch {
-          return false;
-        }
-      };
-
-      // Exclusion patterns - removed terms/legal/changelog from exclusion since they're now priority
-      const exclusionPatterns = [
-        /\.(pdf|zip|png|jpg|jpeg|gif|svg|css|js|woff|woff2|ttf|eot)$/i,
-        /\/(blog|news|press|careers|jobs|cookie|author|tag|category)\//i,
-        /\/(blog|news|press|careers|jobs|cookie|author|tag|category)$/i,
-        /\/(wp-content|wp-admin|wp-includes|wp-json)\//i,
-        /\/dashboard\b/i,
-        /\/(login|signup|sign-up|sign-in|register|cart|checkout)\b/i,
-      ];
-
-      // Community evidence URLs bypass priority filtering (they're pre-validated as useful)
+      // ═════════════════════════════════════════════════════════════════════
+      // STEP 3: SCORE & SELECT — only from discovered + community URLs
+      // ═════════════════════════════════════════════════════════════════════
       const communityUrlSet = new Set(communityUrls);
-      const scoredLinks = combinedLinks
-        .filter((link: string) => {
-          if (exclusionPatterns.some(pattern => pattern.test(link))) return false;
-          if (link === formattedUrl || link === formattedUrl + '/') return false;
+      // All candidates come from actual discovery — no blind fallback probes
+      const allDiscovered = [...new Set([...mainMapLinks, ...subdomainMapLinks, ...communityUrls])];
+      console.log(`Total discovered URLs: ${allDiscovered.length}`);
 
+      const scoredLinks = allDiscovered
+        .filter((link: string) => {
+          if (exclusionPatterns.some(p => p.test(link))) return false;
+          if (link === formattedUrl || link === formattedUrl + '/') return false;
+          // Community URLs always pass
           if (communityUrlSet.has(link)) return true;
-          if (isShallowSameDomainPath(link)) return true;
-          if (priorityPatterns.some(pattern => pattern.test(link))) return true;
-          if (subdomainPattern.test(link)) return true;
+          // Shallow same-domain paths (high-value top-level pages)
+          if (isShallowSameDomainPath(link, baseHost)) return true;
+          // Keyword match
+          if (priorityPatterns.some(p => p.test(link))) return true;
+          // Subdomain pages
+          if (isSubdomainUrl(link)) return true;
           return false;
         })
-        .map((link: string) => {
-          const path = getNormalizedPath(link);
-          const sameDomain = isSameDomain(link);
-          const shallowMainDomain = sameDomain && isShallowSameDomainPath(link);
-          const highIntentMainDomain = sameDomain && highIntentMainDomainPaths.has(path);
-          const keywordMatch = priorityPatterns.some(pattern => pattern.test(link));
-          const docsSubdomain = subdomainPattern.test(link);
-          const docsCreditOrPricingPath = docsSubdomain && /\/(plans-and-credits|credits|pricing|billing|usage|subscription)\b/i.test(path);
-
-          let score = 0;
-          if (communityUrlSet.has(link)) score += 1000;
-          if (highIntentMainDomain) score += 900;
-          if (shallowMainDomain) score += 500;
-          if (keywordMatch) score += 250;
-          if (docsSubdomain) score += 100;
-          if (docsCreditOrPricingPath) score += 700;
-
-          return { link, score };
-        })
+        .map((link: string) => ({ link, score: scoreUrl(link, baseHost, communityUrlSet) }))
         .sort((a, b) => b.score - a.score || a.link.localeCompare(b.link));
 
       const priorityLinks = scoredLinks.map(({ link }) => link).slice(0, safeMaxPages - 1);
-
-      console.log(`Selected ${priorityLinks.length} priority pages to scrape`);
+      console.log(`Selected ${priorityLinks.length} verified pages to scrape (0 blind probes)`);
       console.log('Priority links:', priorityLinks);
 
-      // Pages where FAQ / accordion content is critical — scrape full page
-      const fullContentPatterns = [
-        /\/pricing\b/i,
-        /\/plans?\b/i,
-        /\/billing\b/i,
-        /\/faq\b/i,
-        /\/help\b/i,
-        /\/support\b/i,
-        /\/trust\b/i,
-        /\/security\b/i,
-        /\/credits\b/i,
-        /\/usage\b/i,
-      ];
-
-      // Scrape each priority page (in parallel for speed)
-      const scrapePromises = priorityLinks.map(async (pageUrl: string) => {
-        try {
-          // Use full page content for pages likely to have FAQ/accordion sections
-          const needsFullContent = fullContentPatterns.some(p => p.test(pageUrl));
-          // Pages with accordions need waitFor + html to capture hidden content
-          const hasAccordions = /\/(pricing|faq|plans?|credits)\b/i.test(pageUrl);
-          console.log('Scraping:', pageUrl, needsFullContent ? '(full content)' : '(main only)', hasAccordions ? '(+html for accordions)' : '');
-          
-          const formats: string[] = ['markdown'];
-          if (hasAccordions) formats.push('html', 'rawHtml');
-          
-          const pageResponse = await fetch('https://api.firecrawl.dev/v1/scrape', {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${apiKey}`,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              url: pageUrl,
-              formats,
-              onlyMainContent: !needsFullContent,
-              ...(hasAccordions ? { waitFor: 3000 } : {}),
-            }),
-          });
-
-          let pageData: FirecrawlScrapeResponse;
-          try {
-            const pageText = await pageResponse.text();
-            pageData = JSON.parse(pageText);
-          } catch {
-            console.log('Non-JSON response for:', pageUrl);
-            return null;
-          }
-
-          if (pageResponse.ok && pageData.success && pageData.data) {
-            console.log('Successfully scraped:', pageUrl);
-            
-            let finalMarkdown = pageData.data.markdown || '';
-            
-            // If HTML was fetched for accordion pages, extract text from hidden accordion content
-            // and append it to the markdown so the analysis engine can see it
-            if (hasAccordions && (pageData.data.rawHtml || pageData.data.html)) {
-              const html = pageData.data.rawHtml || pageData.data.html || '';
-              const extractedTexts: string[] = [];
-              const seenExtracted = new Set<string>();
-
-              const pushExtracted = (value: string) => {
-                const plainText = value
-                  .replace(/<[^>]+>/g, ' ')
-                  .replace(/&nbsp;/g, ' ')
-                  .replace(/&amp;/g, '&')
-                  .replace(/\s+/g, ' ')
-                  .trim();
-
-                if (plainText.length < 30) return;
-                const normalized = plainText.slice(0, 420);
-                if (seenExtracted.has(normalized)) return;
-                seenExtracted.add(normalized);
-                extractedTexts.push(normalized);
-              };
-
-              // Extract text from accordion/collapsible elements that markdown may have missed
-              const accordionContentRegex = /<(?:div|section|p|span|li|details)[^>]*(?:data-(?:state|radix|orientation)|role="region"|aria-labelledby|aria-controls|accordion|collapse)[^>]*>([\s\S]*?)<\/(?:div|section|p|span|li|details)>/gi;
-              let match;
-              while ((match = accordionContentRegex.exec(html)) !== null) {
-                pushExtracted(match[1]);
-              }
-
-              // Extract table rows (critical for pricing credit examples often rendered in FAQ accordions)
-              const tableRowRegex = /<tr[^>]*>([\s\S]*?)<\/tr>/gi;
-              while ((match = tableRowRegex.exec(html)) !== null) {
-                const rowHtml = match[1];
-                const cells = Array.from(rowHtml.matchAll(/<t[hd][^>]*>([\s\S]*?)<\/t[hd]>/gi))
-                  .map((cellMatch) => cellMatch[1]
-                    .replace(/<[^>]+>/g, ' ')
-                    .replace(/\s+/g, ' ')
-                    .trim())
-                  .filter(Boolean);
-
-                if (cells.length >= 2) {
-                  pushExtracted(cells.join(' | '));
-                }
-              }
-
-              // Targeted capture for "What is a credit?" FAQ content block and task-cost examples
-              const creditFaqIndex = html.toLowerCase().indexOf('what is a credit?');
-              if (creditFaqIndex >= 0) {
-                const creditFaqSegment = html.slice(creditFaqIndex, creditFaqIndex + 18000)
-                  .replace(/<script[\s\S]*?<\/script>/gi, ' ')
-                  .replace(/<style[\s\S]*?<\/style>/gi, ' ')
-                  .replace(/<[^>]+>/g, ' ')
-                  .replace(/\s+/g, ' ')
-                  .trim();
-
-                const targetedFaqSignals: Array<{ pattern: RegExp; snippet: string }> = [
-                  { pattern: /default\s*mode\s*:\s*credits\s+vary\s+based\s+on\s+task\s+complexity/i, snippet: 'Default Mode: credits vary based on task complexity' },
-                  { pattern: /chat\s*mode\s*:\s*1\s+credit\s+per\s+message/i, snippet: 'Chat Mode: 1 credit per message' },
-                  { pattern: /you\s+can\s+see\s+the\s+cost\s+of\s+each\s+message[\s\S]{0,120}(?:three\s+dots?|message\s+history)/i, snippet: 'Message history exposes exact credits used per message (three-dots menu).' },
-                  { pattern: /make\s+the\s+button\s+gray[\s\S]{0,120}(?:0\.50|0,50)/i, snippet: 'Prompt example: “Make the button gray” maps to 0.50 credits' },
-                  { pattern: /remove\s+the\s+footer[\s\S]{0,120}(?:0\.90|0,90)/i, snippet: 'Prompt example: “Remove the footer” maps to 0.90 credits' },
-                  { pattern: /add\s+authentication\s+with\s+sign\s+up\s+and\s+login[\s\S]{0,180}(?:1\.20|1,20)/i, snippet: 'Prompt example: “Add authentication with sign up and login” maps to 1.20 credits' },
-                  { pattern: /build\s+me\s+a\s+landing\s+page,?\s+use\s+images[\s\S]{0,180}(?:1\.70|1,70)/i, snippet: 'Prompt example: “Build me a landing page, use images” maps to 1.70 credits' },
-                ];
-
-                for (const signal of targetedFaqSignals) {
-                  if (signal.pattern.test(creditFaqSegment)) {
-                    pushExtracted(signal.snippet);
-                  }
-                }
-              }
-
-              if (extractedTexts.length > 0) {
-                console.log(`Extracted ${extractedTexts.length} accordion/table sections from HTML for: ${pageUrl}`);
-                finalMarkdown += '\n\n---\n\n## FAQ / Accordion Content\n\n' + extractedTexts.join('\n\n');
-              }
-            }
-            
-            return {
-              url: pageUrl,
-              title: pageData.data.metadata?.title || pageUrl,
-              markdown: finalMarkdown,
-              metadata: {
-                description: pageData.data.metadata?.description,
-              },
-            };
-          } else {
-            console.log('Failed to scrape (page may not exist):', pageUrl);
-            return null;
-          }
-        } catch (pageError) {
-          console.error(`Failed to scrape ${pageUrl}:`, pageError);
-          return null;
-        }
-      });
-
+      // ═════════════════════════════════════════════════════════════════════
+      // STEP 4: TARGETED SCRAPE — only verified URLs
+      // ═════════════════════════════════════════════════════════════════════
+      const scrapePromises = priorityLinks.map(pageUrl => scrapePage(apiKey, pageUrl));
       const scrapedPages = await Promise.all(scrapePromises);
-      
-      // Add successfully scraped pages
+
       for (const page of scrapedPages) {
-        if (page) {
-          pages.push(page);
-        }
+        if (page) pages.push(page);
       }
     }
 
@@ -725,10 +637,7 @@ Deno.serve(async (req) => {
   } catch (error) {
     console.error('Error in scrape-website:', error);
     return new Response(
-      JSON.stringify({ 
-        success: false, 
-        error: 'An unexpected error occurred. Please try again.' 
-      }),
+      JSON.stringify({ success: false, error: 'An unexpected error occurred. Please try again.' }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
