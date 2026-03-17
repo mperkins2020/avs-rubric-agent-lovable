@@ -15,6 +15,19 @@ export default function ResetPassword() {
   const [isRecovery, setIsRecovery] = useState(false);
 
   useEffect(() => {
+    // Check URL hash for recovery token (type=recovery)
+    const hash = window.location.hash;
+    if (hash && hash.includes("type=recovery")) {
+      setIsRecovery(true);
+    }
+
+    // Also check if there's already a session (user arrived via recovery link)
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) {
+        setIsRecovery(true);
+      }
+    });
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event) => {
         if (event === "PASSWORD_RECOVERY") {
