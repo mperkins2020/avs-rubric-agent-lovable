@@ -421,7 +421,33 @@ const Index = () => {
                 </div>
               </div>
               <div className="space-y-2">
-                <label className="text-sm font-medium" htmlFor="auth-password">Password</label>
+                <div className="flex items-center justify-between">
+                  <label className="text-sm font-medium" htmlFor="auth-password">Password</label>
+                  {authIsLogin && (
+                    <button
+                      type="button"
+                      className="text-xs text-primary hover:underline"
+                      onClick={async () => {
+                        const trimmedEmail = authEmail.trim().toLowerCase();
+                        if (!trimmedEmail) {
+                          toast.error("Enter your email first, then click Forgot password.");
+                          return;
+                        }
+                        try {
+                          const { error } = await supabase.auth.resetPasswordForEmail(trimmedEmail, {
+                            redirectTo: `${window.location.origin}/reset-password`,
+                          });
+                          if (error) throw error;
+                          toast.success("Password reset link sent — check your email.");
+                        } catch (err: unknown) {
+                          toast.error(err instanceof Error ? err.message : "Could not send reset email");
+                        }
+                      }}
+                    >
+                      Forgot password?
+                    </button>
+                  )}
+                </div>
                 <Input id="auth-password" type="password" placeholder="••••••••" value={authPassword} onChange={(e) => setAuthPassword(e.target.value)} minLength={6} required />
               </div>
               <Button type="submit" className="w-full gap-2" disabled={authLoading}>
