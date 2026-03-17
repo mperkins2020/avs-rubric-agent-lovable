@@ -20,7 +20,7 @@ interface AnalyzeRequest {
   existingProfile?: Record<string, unknown>;
 }
 
-const ANALYSIS_VERSION = '2026-03-17-value-unit-floor-v3';
+const ANALYSIS_VERSION = '2026-03-17-evidence-quality-v4';
 
 const COMPANY_PROFILE_PROMPT = `You are an expert business analyst. Analyze the following website content and extract a company profile.
 
