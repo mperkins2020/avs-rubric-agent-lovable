@@ -19,6 +19,7 @@ import Blog from "./pages/Blog";
 import BlogTrustGrowthConstraint from "./pages/BlogTrustGrowthConstraint";
 import BlogVibecoding from "./pages/BlogVibecoding";
 import BlogClayPricing from "./pages/BlogClayPricing";
+import BlogEngineTuning from "./pages/BlogEngineTuning";
 import ResetPassword from "./pages/ResetPassword";
 
 const queryClient = new QueryClient();
