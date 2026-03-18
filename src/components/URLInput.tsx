@@ -98,7 +98,7 @@ export function URLInput({ onSubmit, isLoading = false }: URLInputProps) {
       )}
 
       <p className="mt-3 text-xs text-muted-foreground/60 text-center">
-        Free · 3 analyses per week · ~20 seconds
+        Free · 3 analyses per week · ~1 minute
       </p>
     </form>
   );
