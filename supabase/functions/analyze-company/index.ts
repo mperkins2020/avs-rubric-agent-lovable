@@ -20,7 +20,7 @@ interface AnalyzeRequest {
   existingProfile?: Record<string, unknown>;
 }
 
-const ANALYSIS_VERSION = '2026-03-17-discovery-fix-v5';
+const ANALYSIS_VERSION = '2026-03-17-evidence-cleanup-v6';
 
 const COMPANY_PROFILE_PROMPT = `You are an expert business analyst. Analyze the following website content and extract a company profile.
 
@@ -1962,14 +1962,19 @@ ${truncatedContent}`;
             .filter((item): item is { url?: unknown; snippet?: unknown } => typeof item === 'object' && item !== null)
             .map((item) => ({
               url: typeof item.url === 'string' ? item.url.trim() : '',
-              snippet: typeof item.snippet === 'string' ? item.snippet.trim() : '',
+              snippet: typeof item.snippet === 'string' ? cleanEvidenceLine(item.snippet).trim() : '',
             }))
             .filter((item) => item.url.length > 0 && item.snippet.length > 0)
         : [];
 
       const fromObserved = observedEntries
         .map(parseSourceEvidenceFromObserved)
-        .filter((item): item is SourceEvidence => item !== null);
+        .filter((item): item is SourceEvidence => item !== null)
+        .map((item) => ({
+          ...item,
+          snippet: cleanEvidenceLine(item.snippet).trim(),
+        }))
+        .filter((item) => item.snippet.length > 0);
 
       const seen = new Set<string>();
       const merged: SourceEvidence[] = [];
@@ -2095,7 +2100,7 @@ ${truncatedContent}`;
             sourceEvidence: mergedSourceEvidence,
             uncertaintyReasons: [
               ...uncertaintyReasons.filter((reason) => !/audit|visibility|breakdown/i.test(reason)),
-              'Detailed metering granularity (rounding, attribution, edge-case counting) is not fully public — this is a 1→2 gap, not a 0 condition.',
+              'Detailed metering granularity (rounding, attribution, and edge-case counting) is not fully public. This limits confidence but does not negate the presence of a named billable unit.',
             ].slice(0, 2),
           };
         }
