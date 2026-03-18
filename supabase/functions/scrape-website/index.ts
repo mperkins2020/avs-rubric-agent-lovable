@@ -180,6 +180,17 @@ const exclusionPatterns = [
   /\/(login|signup|sign-up|sign-in|register|cart|checkout)\b/i,
   // Exclude deep legal subpages (addenda, old terms, biometric notices) — low evidence value
   /\/legal\/(?!$)[^/]+/i,
+  // Template/gallery pages — contain template metadata, not actual pricing terms
+  /\/template-categor(y|ies)\b/i,
+  /\/templates?\//i,
+  // Sitemap XML files — no content value
+  /\/sitemap[^/]*\.xml\b/i,
+  // Event/launch pages — marketing, not pricing surfaces
+  /\/events?\//i,
+  /\/events?\b$/i,
+  /\/webinars?\b/i,
+  // Single integration pages — parent /integrations is sufficient
+  /\/integrations\/[^/]+$/i,
 ];
 
 const fullContentPatterns = [
