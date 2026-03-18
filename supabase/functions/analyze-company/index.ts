@@ -2100,7 +2100,7 @@ ${truncatedContent}`;
             sourceEvidence: mergedSourceEvidence,
             uncertaintyReasons: [
               ...uncertaintyReasons.filter((reason) => !/audit|visibility|breakdown/i.test(reason)),
-              'Detailed metering granularity (rounding, attribution, edge-case counting) is not fully public — this is a 1→2 gap, not a 0 condition.',
+              'Detailed metering granularity (rounding, attribution, and edge-case counting) is not fully public. This limits confidence but does not negate the presence of a named billable unit.',
             ].slice(0, 2),
           };
         }
