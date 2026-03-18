@@ -1962,14 +1962,19 @@ ${truncatedContent}`;
             .filter((item): item is { url?: unknown; snippet?: unknown } => typeof item === 'object' && item !== null)
             .map((item) => ({
               url: typeof item.url === 'string' ? item.url.trim() : '',
-              snippet: typeof item.snippet === 'string' ? item.snippet.trim() : '',
+              snippet: typeof item.snippet === 'string' ? cleanEvidenceLine(item.snippet).trim() : '',
             }))
             .filter((item) => item.url.length > 0 && item.snippet.length > 0)
         : [];
 
       const fromObserved = observedEntries
         .map(parseSourceEvidenceFromObserved)
-        .filter((item): item is SourceEvidence => item !== null);
+        .filter((item): item is SourceEvidence => item !== null)
+        .map((item) => ({
+          ...item,
+          snippet: cleanEvidenceLine(item.snippet).trim(),
+        }))
+        .filter((item) => item.snippet.length > 0);
 
       const seen = new Set<string>();
       const merged: SourceEvidence[] = [];
