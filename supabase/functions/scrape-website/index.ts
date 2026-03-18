@@ -409,12 +409,14 @@ async function scrapePage(apiKey: string, pageUrl: string): Promise<ScrapedPage 
       const seenExtracted = new Set<string>();
 
       const pushExtracted = (value: string) => {
-        const plainText = value
-          .replace(/<[^>]+>/g, ' ')
-          .replace(/&nbsp;/g, ' ')
-          .replace(/&amp;/g, '&')
-          .replace(/\s+/g, ' ')
-          .trim();
+        const plainText = sanitizeEvidenceText(
+          value
+            .replace(/<[^>]+>/g, ' ')
+            .replace(/&nbsp;/g, ' ')
+            .replace(/&amp;/g, '&')
+            .replace(/\s+/g, ' ')
+            .trim()
+        );
         if (plainText.length < 30) return;
         const normalized = plainText.slice(0, 420);
         if (seenExtracted.has(normalized)) return;
