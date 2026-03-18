@@ -284,6 +284,24 @@ const pricingJsonSchema = {
 const isPricingPage = (url: string): boolean =>
   /\/(pricing|plans?|billing|subscription|credits|cost|packages)\b/i.test(url);
 
+const sanitizeEvidenceText = (value: string): string =>
+  value
+    .replace(/!\[[^\]]*\]\([^\)]+\)/g, ' ')
+    .replace(/\[([^\]]+)\]\([^\)]+\)/g, '$1')
+    .replace(/\[[^\]\n]*\\{1,2}/g, ' ')
+    .replace(/\[[^\]\n]*(?=\s|$)/g, ' ')
+    .replace(/[>#*_`|]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+const sanitizeEvidenceList = (values: unknown): string[] =>
+  Array.isArray(values)
+    ? values
+        .filter((value): value is string => typeof value === 'string')
+        .map((value) => sanitizeEvidenceText(value))
+        .filter((value) => value.length >= 3)
+    : [];
+
 // ─── Scrape a single page via Firecrawl ────────────────────────────────────
 async function scrapePage(apiKey: string, pageUrl: string): Promise<ScrapedPage | null> {
   try {
@@ -292,12 +310,10 @@ async function scrapePage(apiKey: string, pageUrl: string): Promise<ScrapedPage 
     const wantStructuredJson = isPricingPage(pageUrl);
     console.log('Scraping:', pageUrl, needsFullContent ? '(full)' : '(main)', hasAccordions ? '(+html)' : '', wantStructuredJson ? '(+json)' : '');
 
-    // Build formats as string array per Firecrawl v1 REST API
     const formats: string[] = ['markdown'];
     if (hasAccordions) formats.push('html', 'rawHtml');
     if (wantStructuredJson) formats.push('json');
 
-    // Build request body — jsonOptions is a top-level param, NOT inside formats array
     const requestBody: Record<string, unknown> = {
       url: pageUrl,
       formats,
@@ -305,7 +321,6 @@ async function scrapePage(apiKey: string, pageUrl: string): Promise<ScrapedPage 
       ...(hasAccordions ? { waitFor: 3000 } : {}),
     };
 
-    // Firecrawl v1 uses jsonOptions for structured extraction
     if (wantStructuredJson) {
       requestBody.jsonOptions = {
         schema: pricingJsonSchema,
@@ -336,10 +351,8 @@ async function scrapePage(apiKey: string, pageUrl: string): Promise<ScrapedPage 
     }
 
     console.log('Successfully scraped:', pageUrl);
-    let finalMarkdown = pageData.data.markdown || '';
+    let finalMarkdown = sanitizeEvidenceText(pageData.data.markdown || '');
 
-    // ── Append structured JSON pricing data ──────────────────────────────
-    // Firecrawl v1 returns structured extraction in llm_extraction or json
     const extractedJson = pageData.data.llm_extraction || pageData.data.json;
     if (wantStructuredJson && extractedJson) {
       const json = extractedJson;
@@ -348,41 +361,41 @@ async function scrapePage(apiKey: string, pageUrl: string): Promise<ScrapedPage 
       const sections: string[] = [];
       sections.push('## Structured Pricing Data (Machine-Extracted — NOT direct quotes)');
       sections.push('> NOTE: The data below was extracted by an AI model and may contain paraphrases or inferences. Do NOT cite these as direct quotes. Use only as supplementary context for scoring.');
-      if (json.valueUnit) sections.push(`**Value Unit**: ${json.valueUnit}`);
+      if (json.valueUnit) sections.push(`**Value Unit**: ${sanitizeEvidenceText(String(json.valueUnit))}`);
       if (json.hasFreeTier !== undefined) sections.push(`**Free Tier**: ${json.hasFreeTier ? 'Yes' : 'No'}`);
       if (json.hasTrial !== undefined) sections.push(`**Trial Available**: ${json.hasTrial ? 'Yes' : 'No'}`);
-      if (json.trialDetails) sections.push(`**Trial Details**: ${json.trialDetails}`);
-      if (json.refundPolicy) sections.push(`**Refund Policy**: ${json.refundPolicy}`);
-      if (json.enterprisePricing) sections.push(`**Enterprise Pricing**: ${json.enterprisePricing}`);
+      if (json.trialDetails) sections.push(`**Trial Details**: ${sanitizeEvidenceText(String(json.trialDetails))}`);
+      if (json.refundPolicy) sections.push(`**Refund Policy**: ${sanitizeEvidenceText(String(json.refundPolicy))}`);
+      if (json.enterprisePricing) sections.push(`**Enterprise Pricing**: ${sanitizeEvidenceText(String(json.enterprisePricing))}`);
 
       const plans = json.plans as Array<Record<string, unknown>> | undefined;
       if (plans && Array.isArray(plans) && plans.length > 0) {
         sections.push('\n### Plans');
         for (const plan of plans) {
           const planLines: string[] = [];
-          planLines.push(`#### ${plan.name || 'Unnamed Plan'}`);
-          if (plan.price) planLines.push(`- **Price**: ${plan.price}`);
-          if (plan.billingPeriod) planLines.push(`- **Billing**: ${plan.billingPeriod}`);
-          const features = plan.features as string[] | undefined;
-          if (features && Array.isArray(features) && features.length > 0) {
+          planLines.push(`#### ${sanitizeEvidenceText(String(plan.name || 'Unnamed Plan'))}`);
+          if (plan.price) planLines.push(`- **Price**: ${sanitizeEvidenceText(String(plan.price))}`);
+          if (plan.billingPeriod) planLines.push(`- **Billing**: ${sanitizeEvidenceText(String(plan.billingPeriod))}`);
+          const features = sanitizeEvidenceList(plan.features);
+          if (features.length > 0) {
             planLines.push(`- **Features**: ${features.join('; ')}`);
           }
-          const limits = plan.limits as string[] | undefined;
-          if (limits && Array.isArray(limits) && limits.length > 0) {
+          const limits = sanitizeEvidenceList(plan.limits);
+          if (limits.length > 0) {
             planLines.push(`- **Limits**: ${limits.join('; ')}`);
           }
-          if (plan.overagePolicy) planLines.push(`- **Overage Policy**: ${plan.overagePolicy}`);
+          if (plan.overagePolicy) planLines.push(`- **Overage Policy**: ${sanitizeEvidenceText(String(plan.overagePolicy))}`);
           sections.push(planLines.join('\n'));
         }
       }
 
-      const costDrivers = json.costDrivers as string[] | undefined;
-      if (costDrivers && Array.isArray(costDrivers) && costDrivers.length > 0) {
+      const costDrivers = sanitizeEvidenceList(json.costDrivers);
+      if (costDrivers.length > 0) {
         sections.push(`\n### Cost Drivers\n${costDrivers.map(d => `- ${d}`).join('\n')}`);
       }
 
-      const discounts = json.discounts as string[] | undefined;
-      if (discounts && Array.isArray(discounts) && discounts.length > 0) {
+      const discounts = sanitizeEvidenceList(json.discounts);
+      if (discounts.length > 0) {
         sections.push(`\n### Discounts\n${discounts.map(d => `- ${d}`).join('\n')}`);
       }
 
