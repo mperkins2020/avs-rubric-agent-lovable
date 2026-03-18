@@ -19,6 +19,7 @@ import Blog from "./pages/Blog";
 import BlogTrustGrowthConstraint from "./pages/BlogTrustGrowthConstraint";
 import BlogVibecoding from "./pages/BlogVibecoding";
 import BlogClayPricing from "./pages/BlogClayPricing";
+import BlogEngineTuning from "./pages/BlogEngineTuning";
 import ResetPassword from "./pages/ResetPassword";
 
 const queryClient = new QueryClient();
@@ -48,6 +49,7 @@ const AppRoutes = () => (
     <Route path="/resources/blog/trust-growth-constraint" element={<BlogTrustGrowthConstraint />} />
     <Route path="/resources/blog/vibecoding-ai-startup-tool" element={<BlogVibecoding />} />
     <Route path="/resources/blog/clay-pricing-three-layers" element={<BlogClayPricing />} />
+    <Route path="/resources/blog/engine-tuning-evidence-quality" element={<BlogEngineTuning />} />
     <Route path="*" element={<NotFound />} />
   </Routes>
 );
