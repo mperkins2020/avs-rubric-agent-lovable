@@ -49,7 +49,8 @@ const AppRoutes = () => (
     <Route path="/resources/blog/trust-growth-constraint" element={<BlogTrustGrowthConstraint />} />
     <Route path="/resources/blog/vibecoding-ai-startup-tool" element={<BlogVibecoding />} />
     <Route path="/resources/blog/clay-pricing-three-layers" element={<BlogClayPricing />} />
-    <Route path="/resources/blog/engine-tuning-evidence-quality" element={<BlogEngineTuning />} />
+    <Route path="/resources/blog/stable-score-unstable-evidence" element={<BlogEngineTuning />} />
+    <Route path="/resources/blog/engine-tuning-evidence-quality" element={<Navigate to="/resources/blog/stable-score-unstable-evidence" replace />} />
     <Route path="*" element={<NotFound />} />
   </Routes>
 );

@@ -34,11 +34,11 @@ export default function Blog() {
           </motion.div>
 
           <div className="space-y-6">
-            <Link to="/resources/blog/engine-tuning-evidence-quality" className="block group">
+            <Link to="/resources/blog/stable-score-unstable-evidence" className="block group">
               <motion.article initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }} className="bg-muted/20 border border-border/40 rounded-xl p-6 hover:border-primary/40 transition-colors">
                 <p className="text-sm text-muted-foreground mb-2">March 2026</p>
-                <h2 className="text-xl md:text-2xl font-bold group-hover:text-primary transition-colors mb-2">Seven Versions of the Same Scan: Tuning an AI Scoring Engine in Public</h2>
-                <p className="text-muted-foreground">A build-in-public log of what broke when we ran the AVS Rubric against real companies — evidence contamination, citation artifacts, and the URL filtering patterns that fixed them.</p>
+                <h2 className="text-xl md:text-2xl font-bold group-hover:text-primary transition-colors mb-2">A Stable Score Can Still Hide Unstable Evidence</h2>
+                <p className="text-muted-foreground">What hardening AVS Rubric across Beautiful.ai, Hex.tech, and ZoomInfo taught me about evidence integrity, trust infrastructure, and building an AI-native diagnostic founders can trust.</p>
               </motion.article>
             </Link>
 
