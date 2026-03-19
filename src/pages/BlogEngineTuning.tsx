@@ -9,27 +9,28 @@ import { BlogTOC, TocItem } from "@/components/BlogTOC";
 import { SEOHead } from "@/components/SEOHead";
 
 const tocSections: TocItem[] = [
-  { id: "what-broke", label: "What Broke This Week" },
-  { id: "evidence-contamination", label: "Evidence Contamination" },
-  { id: "citation-artifacts", label: "Citation Artifacts" },
-  { id: "url-filtering", label: "The URL Filtering Fix" },
-  { id: "compare-page-slots", label: "Compare Page Slot Reservation" },
-  { id: "structured-extraction", label: "Structured Extraction Traps" },
-  { id: "pdf-truncation", label: "PDF Truncation" },
-  { id: "what-we-deferred", label: "What We Deferred" },
-  { id: "design-principle", label: "The Design Principle" },
-  { id: "try-rubric", label: "Try the Rubric" },
+  { id: "real-problem", label: "Evidence Integrity, Not Scoring" },
+  { id: "pattern-early", label: "The Pattern Showed Up Early" },
+  { id: "beautiful-ai", label: "Beautiful.ai Made It Clear" },
+  { id: "worst-errors", label: "Worst Errors Looked Legitimate" },
+  { id: "structured-extraction", label: "Structured Extraction Trap" },
+  { id: "small-artifacts", label: "Small Artifacts, Big Impact" },
+  { id: "low-signal-pages", label: "Low-Signal Page Crowding" },
+  { id: "biggest-gains", label: "Pipeline Over Model" },
+  { id: "restraint", label: "Restraint Over Rushing" },
+  { id: "auditable-evidence", label: "Auditable Evidence" },
+  { id: "trustworthy-evidence", label: "The Real Bar" },
 ];
 
 export default function BlogEngineTuning() {
   return (
     <div className="min-h-screen bg-background">
       <SEOHead
-        title="Seven Versions of the Same Scan: Tuning an AI Scoring Engine in Public"
-        description="A build-in-public log of what broke when we ran the AVS Rubric against real companies — evidence contamination, citation artifacts, and the URL filtering patterns that fixed them."
-        canonicalUrl="https://valuetempo.lovable.app/resources/blog/engine-tuning-evidence-quality"
-        publishedDate="2026-03-18"
-        tags={["build in public", "AI scoring", "evidence quality", "trust infrastructure", "AVS Rubric"]}
+        title="A Stable Score Can Still Hide Unstable Evidence"
+        description="What hardening AVS Rubric across Beautiful.ai, Hex.tech, and ZoomInfo taught me about evidence integrity, trust infrastructure, and building an AI-native diagnostic founders can trust."
+        canonicalUrl="https://valuetempo.lovable.app/resources/blog/stable-score-unstable-evidence"
+        publishedDate="2026-03-19"
+        tags={["build in public", "evidence integrity", "trust infrastructure", "AVS Rubric", "AI-native diagnostic"]}
       />
       <header className="border-b border-border/50 bg-background/80 backdrop-blur-sm sticky top-0 z-40">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
@@ -53,10 +54,8 @@ export default function BlogEngineTuning() {
 
       <main className="container mx-auto px-4 py-12 md:py-20">
         <div className="flex gap-10 max-w-6xl mx-auto">
-          {/* Sticky TOC — desktop only */}
           <BlogTOC sections={tocSections} variant="sidebar" />
 
-          {/* Main content */}
           <div className="flex-1 max-w-3xl">
             <Link to="/resources/blog" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors mb-8">
               <ArrowLeft className="w-4 h-4" /> Back to Blog
@@ -68,138 +67,164 @@ export default function BlogEngineTuning() {
                   <Calendar className="w-4 h-4" />
                   <time>March 2026</time>
                 </div>
-                <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold leading-tight mb-3">Seven Versions of the Same Scan: Tuning an AI Scoring Engine in Public</h1>
-                <p className="text-lg md:text-xl text-muted-foreground">A build-in-public log of what broke when we ran the AVS Rubric against real companies — and the systematic fixes that improved evidence quality without changing the model.</p>
+                <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold leading-tight mb-3">A Stable Score Can Still Hide Unstable Evidence</h1>
+                <p className="text-lg md:text-xl text-muted-foreground">What hardening AVS Rubric across three companies taught me about building an AI-native trust infrastructure diagnostic</p>
               </div>
 
               <div className="rounded-xl border border-primary/30 bg-primary/5 p-5 mb-8">
                 <p className="text-sm font-semibold text-primary uppercase tracking-wide mb-2">TL;DR</p>
-                <p className="text-foreground/90 leading-relaxed">We ran the AVS Rubric against ZoomInfo, Beautiful.ai, and Hex.tech — then manually audited every version. Seven iterations of ZoomInfo alone revealed three systematic failure classes: evidence contamination from non-pricing pages, persistent citation artifacts from malformed markdown, and wasted crawl slots on irrelevant URLs. None of these were model problems. They were all data quality problems. The fixes were URL exclusion filters, evidence sanitization regex, and structured extraction guardrails. The scoring model never changed. The evidence pipeline changed six times.</p>
+                <p className="text-foreground/90 leading-relaxed">Hardening the AVS Rubric across Beautiful.ai, Hex.tech, and ZoomInfo revealed that reliability is the visible outcome but evidence integrity is the underlying condition. Stable scores can hide unstable evidence. The biggest gains came from the evidence pipeline — not the model. Structured extraction multiplies both signal and noise. And the bar for an AI-native trust diagnostic is not interesting output — it is trustworthy evidence.</p>
               </div>
 
               <div className="space-y-6 text-foreground/90 leading-relaxed">
-              <p>Last week I wrote about <Link to="/resources/blog/vibecoding-ai-startup-tool" className="text-primary underline hover:text-primary/80">what I learned vibecoding an AI scoring tool</Link>. One of the key lessons was that data quality matters more than model choice.</p>
-              <p>This week proved it.</p>
-              <p>We ran the rubric against three companies — ZoomInfo, Beautiful.ai, and Hex.tech — and manually audited every scoring dimension across multiple versions. What we found was not a model accuracy problem. It was an evidence pipeline problem.</p>
-              <p className="font-semibold">The same model, given cleaner evidence, produced dramatically better scores.</p>
+                <p>Trust in AI-native products is one of the harder problems to diagnose — and one of the most expensive to ignore. A trust gap can open before buyers ever try the product, and widen further before churn shows up in the performance data. That's because buyers often cannot predict how the product will behave, what they will pay, or whether value will match their spend — from the company's public surface alone.</p>
 
-              {/* What Broke */}
-              <hr className="border-border/50 my-8" />
-              <h2 id="what-broke" className="text-2xl font-bold mt-12 mb-4 text-foreground">What Broke This Week</h2>
-              <p>Three failure classes appeared across all scanned companies:</p>
-              <ul className="list-disc pl-6 space-y-2">
-                <li><strong>Evidence contamination</strong> — non-pricing pages being treated as pricing evidence</li>
-                <li><strong>Citation artifacts</strong> — malformed markdown fragments surviving into evidence blocks and PDF exports</li>
-                <li><strong>Wasted crawl slots</strong> — irrelevant pages consuming slots that should go to high-signal pages</li>
-              </ul>
-              <p>Each of these persisted across multiple versions because they were not obvious from reading model output. They only became visible through manual, line-by-line auditing of the evidence trail.</p>
+                <p>The Adaptive Value System (AVS) Rubric exists to diagnose whether that trust infrastructure is visible before the gap slows growth.</p>
 
-              {/* Evidence Contamination */}
-              <hr className="border-border/50 my-8" />
-              <h2 id="evidence-contamination" className="text-2xl font-bold mt-12 mb-4 text-foreground">Evidence Contamination: When the Wrong Page Becomes the Source of Truth</h2>
-              <p>The most damaging failure was evidence contamination.</p>
-              <p>In the Beautiful.ai scan, a template category page (<code className="bg-muted/50 px-1.5 py-0.5 rounded text-sm">/template-categories/plans-strategies</code>) was being used as primary evidence in four scoring dimensions: Cost driver mapping, Pools and packaging, Overages, and Safety rails.</p>
-              <p>The problem: this page contains template metadata, not Beautiful.ai's actual pricing terms.</p>
-              <p>The structured JSON extractor — designed to pull pricing facts from pricing pages — parsed the template page's metadata fields. It found structured fields labeled "Refund Policy," "Overage Policy," and "Limits." Those fields existed because the page described a template about plans, not because it documented Beautiful.ai's own plans.</p>
-              <p>The most damaging instance was the refund policy. The template page returned:</p>
-              <div className="bg-muted/30 border border-border/40 rounded-lg p-4 text-sm italic">
-                "No refunds after the billing cycle has commenced"
-              </div>
-              <p>Beautiful.ai's actual pricing page says the opposite for annual plans — partial refunds are available within 24 hours.</p>
-              <p className="font-semibold">A direct factual contradiction, introduced entirely by the evidence pipeline, not the model.</p>
-              <p>This is the same class of error we saw earlier with ZoomInfo, where deep legal subpages (biometric notices, data processing addenda) were contaminating the Safety Rails dimension with compliance language that had nothing to do with product trust infrastructure.</p>
+                <p>Last week I wrote about <Link to="/resources/blog/vibecoding-ai-startup-tool" className="text-primary underline hover:text-primary/80">vibecoding the first version of AVS Rubric using Lovable and Claude Code</Link>. The core lesson was simple: shipping fast was not the hard part. Making the output reliable enough to trust was.</p>
 
-              {/* Citation Artifacts */}
-              <hr className="border-border/50 my-8" />
-              <h2 id="citation-artifacts" className="text-2xl font-bold mt-12 mb-4 text-foreground">Citation Artifacts: The Parser Bug That Survived Five Versions</h2>
-              <p>A malformed citation — <code className="bg-muted/50 px-1.5 py-0.5 rounded text-sm">[Global coverage\\</code> — appeared in ZoomInfo's evidence blocks across four consecutive versions (V2 through V5).</p>
-              <p>The fragment was a broken markdown link that survived the scraper's initial text processing, made it through the model's analysis passes, and rendered in both the UI and PDF exports as a visible artifact.</p>
-              <p>The root cause: the scraper was not sanitizing unclosed brackets and escaped backslashes from the raw markdown before passing content to the analysis engine.</p>
-              <p>The fix was a sanitization layer applied at two points:</p>
-              <ul className="list-disc pl-6 space-y-2">
-                <li><strong>In the scraper</strong> — stripping malformed markdown before content reaches the model</li>
-                <li><strong>In the analysis engine</strong> — normalizing evidence text after the model returns structured results</li>
-              </ul>
-              <p>The regex is simple:</p>
-              <div className="bg-muted/30 border border-border/40 rounded-lg p-4 font-mono text-sm">
-                {`/\\[[^\\]\\n]*\\\\{1,2}/g  → strip broken [text\\\\`}<br />
-                {`/[>#*_\`|]+/g           → strip markdown formatting`}
-              </div>
-              <p>But finding where to apply it required tracing the data flow from scraper output through three model passes to final rendering.</p>
-              <p className="font-semibold">Parser bugs in AI systems are uniquely hard to detect because the output still reads naturally — the model works around the artifact.</p>
+                <p>This week pushed that lesson further.</p>
 
-              {/* URL Filtering */}
-              <hr className="border-border/50 my-8" />
-              <h2 id="url-filtering" className="text-2xl font-bold mt-12 mb-4 text-foreground">The URL Filtering Fix</h2>
-              <p>The evidence contamination and wasted-slot problems both pointed to the same root cause: insufficient URL filtering in the crawl pipeline.</p>
-              <p>The scraper already excluded obvious noise — blog posts, career pages, login pages, static assets. But three new categories needed exclusion:</p>
+                <p>As I hardened the rubric across Beautiful.ai, Hex.tech, and ZoomInfo, the pattern became clear: reliability was only the visible problem. <strong>Evidence integrity was the deeper one.</strong></p>
 
-              <h3 className="text-xl font-bold mt-8 mb-2 text-foreground">Template and gallery pages</h3>
-              <p>Pages like <code className="bg-muted/50 px-1.5 py-0.5 rounded text-sm">/template-categories/</code> and <code className="bg-muted/50 px-1.5 py-0.5 rounded text-sm">/templates/</code> contain metadata about templates, not the product's own pricing or policies. When the structured JSON extractor encounters these pages, it faithfully extracts their metadata — which happens to have the same field names as real pricing data.</p>
+                <p>What changed this week was not just the output. It was the discipline around how I checked it. Each iteration followed the same loop: inspect the evidence trail, classify the failure, fix the earliest point in the pipeline, then rerun the same company set to check for regressions. Tools like Lovable and Claude Code sped up parts of that work, but they did not define correctness. I still had to decide what counted as valid commercial evidence, what should be excluded, and which contradictions mattered enough to change the score.</p>
 
-              <h3 className="text-xl font-bold mt-8 mb-2 text-foreground">Sitemap XML and event pages</h3>
-              <p>Hex.tech's scan included <code className="bg-muted/50 px-1.5 py-0.5 rounded text-sm">/sitemap-0.xml</code> and <code className="bg-muted/50 px-1.5 py-0.5 rounded text-sm">/events/fall-2025-launch</code> — neither contains pricing signals. These consumed two of 15 available crawl slots that could have gone to comparison pages or solutions pages with stronger ICP evidence.</p>
+                <p>That is where AVS Rubric started to feel like more than a scoring tool. It started to feel like the category ValueTempo is building toward: an <strong>AI-native trust infrastructure diagnostic</strong>.</p>
 
-              <h3 className="text-xl font-bold mt-8 mb-2 text-foreground">Single integration pages</h3>
-              <p>Pages like <code className="bg-muted/50 px-1.5 py-0.5 rounded text-sm">/product/integrations/mariadb</code> document one specific database connector. The parent <code className="bg-muted/50 px-1.5 py-0.5 rounded text-sm">/integrations</code> page is sufficient. Individual connector pages add no pricing signal and waste crawl budget.</p>
+                {/* The real problem */}
+                <hr className="border-border/50 my-8" />
+                <h2 id="real-problem" className="text-2xl font-bold mt-12 mb-4 text-foreground">The real problem was not scoring accuracy, it was evidence integrity</h2>
+                <p>Here is what I learned this week:</p>
+                <ul className="list-disc pl-6 space-y-2">
+                  <li>stable scores can hide unstable evidence quality</li>
+                  <li>the biggest failures happened before scoring, not during scoring</li>
+                  <li>structured extraction is a force multiplier, it multiplies both signal and noise</li>
+                  <li>some of the worst errors came from pages that looked legitimate, not obviously broken</li>
+                  <li>the most important fixes happened in the evidence pipeline, not in the model</li>
+                </ul>
+                <p className="font-semibold">Reliability is the visible outcome. Evidence integrity is the underlying condition.</p>
 
-              <p>The fix adds six new exclusion patterns to the scraper's URL scoring logic. These are purely additive filters — they don't change how evidence is parsed or scored, they only prevent junk pages from consuming crawl slots.</p>
+                {/* Pattern showed up early */}
+                <hr className="border-border/50 my-8" />
+                <h2 id="pattern-early" className="text-2xl font-bold mt-12 mb-4 text-foreground">The pattern showed up before the sample got big</h2>
+                <p>I tested successive rubric versions across Beautiful.ai, Hex.tech, and ZoomInfo because I wanted different kinds of public surfaces.</p>
+                <p>The pattern showed up faster than I expected.</p>
+                <p>Across all three, the same failure classes kept recurring: evidence contamination from the wrong source pages, citation and export artifacts that weakened trust in the output, and wasted crawl attention on low-signal pages that crowded out the pages that mattered.</p>
+                <p>The examples were different. The failure class was the same.</p>
+                <p>In ZoomInfo's first version, developer API documentation was included as pricing evidence — technically from ZoomInfo's domain, clearly product-related, but describing integration patterns for developers rather than commercial terms for buyers.</p>
+                <p>In Hex's earliest version, several citations in the evidence set didn't resolve to real pages. They passed surface-level inspection, but the confidence scores they supported couldn't be independently verified.</p>
+                <p>In Beautiful.ai, a single missing source — the pricing page dropped from the evidence set in one version — simultaneously collapsed three dimension scores and generated a recommendation to publish a pricing page that already existed.</p>
+                <p>Different companies. Different surfaces. Same upstream problem: the evidence entering the system did not deserve to be reasoned over.</p>
+                <p>Beautiful.ai became the clearest lens for this post — its score progression made the deeper problem easiest to see.</p>
 
-              {/* Compare Page Slots */}
-              <hr className="border-border/50 my-8" />
-              <h2 id="compare-page-slots" className="text-2xl font-bold mt-12 mb-4 text-foreground">Compare Page Slot Reservation</h2>
-              <p>An earlier version of the ZoomInfo scan included five competitor comparison pages. These pages contained the only public surface where ZoomInfo's credit model was described in contrast to competitors.</p>
-              <p>A later version had none. The comparison pages had been crowded out by other high-scoring URLs.</p>
-              <p>The fix reserves up to two crawl slots specifically for comparison pages (<code className="bg-muted/50 px-1.5 py-0.5 rounded text-sm">/compare</code> or <code className="bg-muted/50 px-1.5 py-0.5 rounded text-sm">/vs-</code> paths). If a site has no comparison pages, all slots go to other evidence pages. No slots are wasted.</p>
-              <p>This is a good example of a tension in evidence collection: the scraper needs to be both comprehensive (catch all page types) and disciplined (not let one category dominate).</p>
+                {/* Beautiful.ai */}
+                <hr className="border-border/50 my-8" />
+                <h2 id="beautiful-ai" className="text-2xl font-bold mt-12 mb-4 text-foreground">Beautiful.ai made the hidden problem easiest to see</h2>
+                <p>Across eight successive scans, Beautiful.ai became the clearest case study for one uncomfortable truth: <strong>the headline score can stay stable while the trustworthiness of the evidence changes materially</strong>.</p>
+                <p>In seven of eight runs, Beautiful.ai held at 11/16 (68%).</p>
+                <p>That sounds stable. It was not.</p>
+                <p>Those eight runs were not identical reruns on a frozen system. Each one reflected a successive fix to the rubric, while the same evolving diagnostic was being tested across multiple companies. And under that apparently stable score, the evidence changed materially:</p>
+                <ul className="list-disc pl-6 space-y-2">
+                  <li>early runs still carried weak or misleading commercial logic</li>
+                  <li>one run dropped a key pricing source and destabilized multiple dimensions</li>
+                  <li>a later run pulled in a legitimate-looking page that contradicted the actual refund policy</li>
+                  <li>only the final run resolved all tracked issues at the same time</li>
+                </ul>
+                <p>That was the real lesson. Not that the number changed dramatically — most of the time, it did not. <strong>The real lesson was that a stable score can still hide unstable evidence.</strong></p>
 
-              {/* Structured Extraction Traps */}
-              <hr className="border-border/50 my-8" />
-              <h2 id="structured-extraction" className="text-2xl font-bold mt-12 mb-4 text-foreground">Structured Extraction Traps</h2>
-              <p>The structured JSON extraction phase was designed to improve pricing accuracy. For pages matching pricing URL patterns, the scraper requests a schema-validated JSON format capturing plans, prices, limits, overage policies, and refund rules.</p>
-              <p>This works well on actual pricing pages. But when applied to a template category page, the extractor treats the template's metadata as if it were the company's own pricing terms.</p>
-              <p>The lesson: <strong>structured extraction amplifies the signal quality of whatever page it's pointed at</strong>. If the page is wrong, the extraction makes the error worse, not better, because the output looks more authoritative.</p>
-              <p>The Beautiful.ai template page produced clean, well-structured JSON with confident field values. It looked more reliable than the actual pricing page's markdown. The model understandably preferred the structured data.</p>
-              <p className="font-semibold">Structured extraction is a force multiplier. It multiplies both signal and noise.</p>
+                {/* Worst errors */}
+                <hr className="border-border/50 my-8" />
+                <h2 id="worst-errors" className="text-2xl font-bold mt-12 mb-4 text-foreground">The worst errors came from pages that looked legitimate</h2>
+                <p>The most damaging failures were not obvious hallucinations.</p>
+                <p>They were pages that looked structured, clean, and trustworthy, but were not the right source of truth.</p>
+                <p><strong>ZoomInfo: Legal page misread as product evidence</strong></p>
+                <p>ZoomInfo's biometric data privacy notice — a compliance document — was pulled into the evidence set and interpreted as a customer-facing safety rail. It was structured, official-looking, and clearly from ZoomInfo's domain. But it described regulatory obligations, not product capabilities. The rubric scored a safety rail that didn't exist from a buyer's perspective.</p>
+                <p><strong>Hex: A citation with no URL</strong></p>
+                <p>A "Structured Pricing Data" source appeared in Hex's Cost Driver Mapping rationale — formatted like a real citation, labeled as structured data, specific enough to seem authoritative. It had no traceable URL. The evidence looked more rigorous than it was because structured formatting signals reliability.</p>
+                <p>That kind of error is worse than obvious noise. Obvious noise gets ignored. Clean but wrong evidence gets trusted. That asymmetry is what makes evidence contamination the hardest class of failure to catch. That is why evidence contamination became the most important failure class to fix.</p>
 
-              {/* PDF Truncation */}
-              <hr className="border-border/50 my-8" />
-              <h2 id="pdf-truncation" className="text-2xl font-bold mt-12 mb-4 text-foreground">PDF Truncation</h2>
-              <p>A smaller but professionally embarrassing bug: the Value Unit confidence note ended mid-sentence in the PDF export.</p>
-              <div className="bg-muted/30 border border-border/40 rounded-lg p-4 text-sm italic">
-                "Detailed metering granularity (rounding, attribution, edge-case counting) is not fully public — this is a"
-              </div>
-              <p>The truncation was caused by Unicode characters (arrows, special punctuation) that the PDF renderer could not handle, causing it to silently stop rendering at that point.</p>
-              <p>The fix replaced Unicode arrows with PDF-safe ASCII text. A two-line change that would have been impossible to find without manually reviewing the exported PDF.</p>
+                {/* Structured extraction */}
+                <hr className="border-border/50 my-8" />
+                <h2 id="structured-extraction" className="text-2xl font-bold mt-12 mb-4 text-foreground">Structured extraction made the right pages more useful, and the wrong pages more dangerous</h2>
+                <p>This was the most important technical lesson:</p>
+                <p className="font-semibold">Structured extraction is a force multiplier. It multiplies both signal and noise.</p>
+                <p>When it points at the right page, it helps. Plans, limits, refund rules, overage behavior, and packaging logic become easier to compare and reason over.</p>
+                <p>When it points at the wrong page, it makes the error worse. The bad source becomes more legible, more confident, and more persuasive than it deserves to be.</p>
+                <p>That changed how I think about the system.</p>
+                <p>The hard problem is not just better scoring logic. It is upstream:</p>
+                <p className="font-semibold">Does the evidence entering the system deserve to be reasoned over at all?</p>
 
-              {/* What We Deferred */}
-              <hr className="border-border/50 my-8" />
-              <h2 id="what-we-deferred" className="text-2xl font-bold mt-12 mb-4 text-foreground">What We Deferred (And Why)</h2>
-              <p>Two issues remain open:</p>
-              <p><strong>Refund processing fee extraction.</strong> Beautiful.ai's pricing page states that all refunds are subject to a processing fee. This fact has not been captured in any of seven versions. The gap is a prompt-level issue — the extraction instructions don't specifically target processing fee clauses. Fixing this means adjusting prompt instructions that affect all scans, which carries regression risk across other companies.</p>
-              <p><strong>Confidence calibration drift.</strong> Hex.tech's Cost Driver Mapping confidence dropped from 60% to 50% to 40% across three versions, despite the evidence base improving. This appears to be calibration drift in the 3-pass voting system rather than a measured confidence reduction based on new negative evidence. Addressing this requires broader testing across multiple companies.</p>
-              <p>Both were deferred intentionally. The principle: <strong>ship the low-risk, high-value fix first</strong> (URL filtering), then re-scan to establish a new baseline before touching higher-risk layers (prompt instructions, calibration parameters).</p>
+                {/* Small artifacts */}
+                <hr className="border-border/50 my-8" />
+                <h2 id="small-artifacts" className="text-2xl font-bold mt-12 mb-4 text-foreground">Small evidence artifacts weakened trust in the whole diagnostic</h2>
+                <p>A second class of failures came from citation hygiene and rendering artifacts.</p>
+                <p>These were not glamorous bugs. A malformed citation fragment. A note that exported badly. A formatting issue that made the evidence trail look less reliable than it was.</p>
+                <p>But that is why they mattered.</p>
+                <p>If the diagnostic claims to be evidence-based, the evidence presentation layer is not cosmetic. It is part of the product.</p>
+                <p>A founder or GTM leader should not have to wonder whether a strange citation artifact means the reasoning is sloppy too. Clean evidence presentation is part of what makes a diagnostic trustworthy enough to act on.</p>
 
-              {/* Design Principle */}
-              <hr className="border-border/50 my-8" />
-              <h2 id="design-principle" className="text-2xl font-bold mt-12 mb-4 text-foreground">The Design Principle</h2>
-              <p>Every fix this week followed the same pattern:</p>
-              <ol className="list-decimal pl-6 space-y-2">
-                <li>Manual audit of evidence trail (not just scores)</li>
-                <li>Classify the failure (data quality vs. model accuracy vs. rendering)</li>
-                <li>Fix at the earliest point in the pipeline</li>
-                <li>Verify the fix doesn't introduce regressions</li>
-              </ol>
-              <p>Most of what we fixed this week was not about making the model smarter. It was about making the evidence pipeline more disciplined.</p>
-              <p className="font-semibold">The model was already good enough. The data reaching it was not.</p>
-              <p>This is, I suspect, the central lesson of building production AI systems: the quality ceiling is set by your data pipeline, not your model.</p>
+                {/* Low-signal pages */}
+                <hr className="border-border/50 my-8" />
+                <h2 id="low-signal-pages" className="text-2xl font-bold mt-12 mb-4 text-foreground">Low-signal pages quietly crowded out the pages that mattered</h2>
+                <p>The third recurring failure was quieter, but just as important.</p>
+                <p>Low-signal pages were taking attention away from higher-signal surfaces like pricing, FAQ, billing, solutions, enterprise pages, and comparison pages.</p>
+                <p>This was not just an efficiency problem.</p>
+                <p>It changed what the rubric was able to see, and therefore what it was able to score.</p>
+                <p>That was a reminder that evidence collection is not neutral. It shapes the diagnostic long before the model starts reasoning.</p>
 
-              {/* CTA */}
-              <hr className="border-border/50 my-8" />
-              <h2 id="try-rubric" className="text-2xl font-bold mt-12 mb-4 text-foreground">Try the Rubric</h2>
-              <p>The AVS Rubric is free and live at <Link to="/" className="text-primary hover:underline font-semibold">valuetempo.com</Link>.</p>
-              <p>Every improvement described here is already in production. If you ran a scan last week, try running it again — the evidence quality is measurably better.</p>
-              <p>And if you spot something the rubric gets wrong, that feedback is exactly what drives the next iteration.</p>
+                {/* Biggest gains */}
+                <hr className="border-border/50 my-8" />
+                <h2 id="biggest-gains" className="text-2xl font-bold mt-12 mb-4 text-foreground">The biggest gains came from the evidence pipeline, not the model</h2>
+                <p>The most important improvements this week did not come from making the model smarter.</p>
+                <p>They came from making the evidence pipeline more disciplined.</p>
+                <p>The fixes fell into four buckets:</p>
+                <ul className="list-disc pl-6 space-y-2">
+                  <li>excluding low-signal and misleading pages earlier</li>
+                  <li>validating source quality before structured extraction gets trusted</li>
+                  <li>cleaning evidence artifacts before they leak into the final diagnostic</li>
+                  <li>manually auditing the evidence trail instead of trusting the final score alone</li>
+                </ul>
+                <p>That last point mattered more than I expected.</p>
+                <p>Some of the worst failures would have passed if I had only looked at the final score and rationale. They became obvious only when I reviewed the evidence trail line by line.</p>
+                <p>That is the kind of work that does not look dramatic from the outside, but it is where reliability gets built.</p>
+
+                {/* Restraint */}
+                <hr className="border-border/50 my-8" />
+                <h2 id="restraint" className="text-2xl font-bold mt-12 mb-4 text-foreground">Restraint improved the diagnostic more than another rushed fix would have</h2>
+                <p>One thing I do not want this story to become is performance theater, where every unresolved issue gets framed as progress.</p>
+                <p>That is not discipline. That is thrashing.</p>
+                <p>Some issues were deliberately deferred — not because they do not matter, but because fixing them without a broader baseline in place would have introduced new variance rather than reducing it.</p>
+                <p>Not every bug deserves an immediate fix. Some deserve to be isolated, documented, and left untouched until lower-risk improvements establish a cleaner baseline.</p>
+                <p>That restraint made the diagnostic better.</p>
+
+                {/* Auditable evidence */}
+                <hr className="border-border/50 my-8" />
+                <h2 id="auditable-evidence" className="text-2xl font-bold mt-12 mb-4 text-foreground">Trust infrastructure diagnostics need auditable evidence, not just plausible output</h2>
+                <p>This is the broader point behind the week's work.</p>
+                <p>ValueTempo is not trying to produce another generic AI output.</p>
+                <p>The ambition is narrower and more useful: to build an <strong>AI-native trust infrastructure diagnostic</strong> that helps founders and GTM leaders see whether their publicly observable signals make their product legible enough to support growth.</p>
+                <p>That is a different question from:</p>
+                <ul className="list-disc pl-6 space-y-2">
+                  <li>is our pricing page good</li>
+                  <li>how do we compare to competitors</li>
+                  <li>what does an answer engine say about us</li>
+                </ul>
+                <p>The real question is:</p>
+                <p className="font-semibold">Can a buyer predict how this product behaves, what it may cost, and where the risk sits, before they commit more attention, budget, or trust?</p>
+                <p>That is what trust infrastructure is about.</p>
+                <p>And this week made one thing clear to me:</p>
+                <p>If the evidence base is weak, the diagnostic may still sound smart. It just does not deserve to be trusted.</p>
+
+                {/* The real bar */}
+                <hr className="border-border/50 my-8" />
+                <h2 id="trustworthy-evidence" className="text-2xl font-bold mt-12 mb-4 text-foreground">The bar is no longer interesting output. It is trustworthy evidence.</h2>
+                <p>This week's lesson was simple: stable numbers are not enough. The real bar is evidence integrity.</p>
+                <p>That is the difference between an AI output that sounds smart and a diagnostic a founder or GTM leader can use.</p>
+                <p>If your pricing, limits, usage model, or enterprise trust surfaces are hard for a buyer to piece together from your public surface, that is not just a messaging problem.</p>
+                <p>It is a trust infrastructure problem.</p>
+                <p>That is the problem AVS Rubric is designed to make legible.</p>
+                <p>If you want to see how the diagnostic evaluates trust infrastructure across the Trust Stack, start with the <Link to="/methodology" className="text-primary hover:underline font-semibold">methodology page</Link>.</p>
+                <p>If you want to pressure test your own public surface, run the rubric on your own product at <Link to="/" className="text-primary hover:underline font-semibold">app.valuetempo.com</Link>.</p>
               </div>
             </motion.article>
           </div>

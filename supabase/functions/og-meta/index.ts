@@ -46,9 +46,9 @@ const PAGE_META: Record<string, PageMeta> = {
     title: 'Why AI Pricing Requires Three Layers — A Clay Case Study',
     description: "Clay announced a major pricing overhaul. The architecture improved. But the AVS Trust Rubric score dropped from 81% to 75%. That drop is a buyer signal.",
   },
-  '/resources/blog/engine-tuning-evidence-quality': {
-    title: 'Seven Versions of the Same Scan: Tuning an AI Scoring Engine in Public',
-    description: 'A build-in-public log of what broke when we ran the AVS Rubric against real companies — evidence contamination, citation artifacts, and the URL filtering patterns that fixed them.',
+  '/resources/blog/stable-score-unstable-evidence': {
+    title: 'A Stable Score Can Still Hide Unstable Evidence',
+    description: 'What hardening AVS Rubric across Beautiful.ai, Hex.tech, and ZoomInfo taught me about evidence integrity, trust infrastructure, and building an AI-native diagnostic founders can trust.',
   },
 };
 
