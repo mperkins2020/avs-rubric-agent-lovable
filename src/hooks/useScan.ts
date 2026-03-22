@@ -72,8 +72,13 @@ export function useScan() {
       });
 
       // Step 2: Analyze company
+      // Pass Fix 2 unresolved metadata so analyze-company can apply confidence penalty
       console.log('Starting analysis...');
-      const analysisResult = await scraperApi.analyzeCompany(scrapeResult.pages, url);
+      const analysisResult = await scraperApi.analyzeCompany(scrapeResult.pages, url, {
+        unresolvedPageCount: scrapeResult.unresolvedPageCount,
+        totalQueuedCount: scrapeResult.totalQueuedCount,
+        confirmedMissUrls: scrapeResult.confirmedMissUrls,
+      });
 
       if (!analysisResult.success) {
         updateState({

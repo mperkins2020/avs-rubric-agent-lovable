@@ -17,6 +17,10 @@ export interface ScrapeResult {
   pages?: ScrapedPage[];
   totalPages?: number;
   error?: string;
+  // Fix 2: Pre-Scoring Validation Layer metadata from scrape-website
+  unresolvedPageCount?: number;
+  totalQueuedCount?: number;
+  confirmedMissUrls?: string[];
 }
 
 export interface AnalysisResult {
@@ -90,22 +94,29 @@ export const scraperApi = {
    * Analyze scraped pages to extract company profile and rubric score
    */
   async analyzeCompany(
-    pages: ScrapedPage[], 
-    url: string, 
-    options?: { 
-      insiderAnswers?: Record<string, string>; 
+    pages: ScrapedPage[],
+    url: string,
+    options?: {
+      insiderAnswers?: Record<string, string>;
       previousScores?: Array<{ dimension: string; score: number; confidence: number }>;
       existingProfile?: Record<string, unknown>;
+      // Fix 2: unresolved metadata forwarded from scrape result
+      unresolvedPageCount?: number;
+      totalQueuedCount?: number;
+      confirmedMissUrls?: string[];
     }
   ): Promise<AnalysisResult> {
     try {
       const { data, error } = await supabase.functions.invoke('analyze-company', {
-        body: { 
-          pages, 
+        body: {
+          pages,
           url,
           insiderAnswers: options?.insiderAnswers,
           previousScores: options?.previousScores,
           existingProfile: options?.existingProfile,
+          unresolvedPageCount: options?.unresolvedPageCount,
+          totalQueuedCount: options?.totalQueuedCount,
+          confirmedMissUrls: options?.confirmedMissUrls,
         },
       });
 
@@ -144,8 +155,12 @@ export const scraperApi = {
       };
     }
 
-    // Step 2: Analyze
-    const analysisResult = await this.analyzeCompany(scrapeResult.pages, url);
+    // Step 2: Analyze — forward Fix 2 unresolved metadata
+    const analysisResult = await this.analyzeCompany(scrapeResult.pages, url, {
+      unresolvedPageCount: scrapeResult.unresolvedPageCount,
+      totalQueuedCount: scrapeResult.totalQueuedCount,
+      confirmedMissUrls: scrapeResult.confirmedMissUrls,
+    });
     
     if (!analysisResult.success) {
       return analysisResult;

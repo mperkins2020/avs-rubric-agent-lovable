@@ -599,6 +599,12 @@ Deno.serve(async (req) => {
     console.log('Starting scrape for URL:', formattedUrl);
 
     const pages: ScrapedPage[] = [];
+    // Fix 2: Pre-Scoring Validation Layer — metadata declared here so they are
+    // in scope for the final response regardless of whether includeSubpages is set.
+    let fix2UnresolvedPageCount = 0;
+    let fix2TotalQueuedCount = 0;
+    let fix2ConfirmedMissUrls: string[] = [];
+
     const urlObj = new URL(formattedUrl);
     const baseHost = urlObj.hostname.replace(/^www\./, '');
     const domainParts = baseHost.split('.');
@@ -763,13 +769,219 @@ Deno.serve(async (req) => {
       console.log('Priority links:', priorityLinks);
 
       // ═════════════════════════════════════════════════════════════════════
+      // Fix 1: Pricing Page Secondary Pass
+      // After URL selection, find the pricing page among priorityLinks (or
+      // already-queued pages), scrape it first to get its HTML, then parse
+      // the HTML for modal/tab/plan query-param links, FAQ fragment anchors,
+      // and in-FAQ hyperlinks. Queue newly discovered URLs at priority +1200.
+      // ═════════════════════════════════════════════════════════════════════
+
+      // Identify the pricing page candidate from selected links
+      const pricingPageUrl = priorityLinks.find(u => isPricingPage(u)) ?? null;
+
+      // Extract secondary URLs from pricing page HTML before the main scrape
+      let secondaryPricingUrls: string[] = [];
+      if (pricingPageUrl) {
+        console.log('Fix 1: Fetching pricing page for secondary pass link extraction:', pricingPageUrl);
+        try {
+          const pricingHtmlResponse = await fetch('https://api.firecrawl.dev/v1/scrape', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${apiKey}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              url: pricingPageUrl,
+              formats: ['html', 'rawHtml'],
+              onlyMainContent: false,
+              waitFor: 3000,
+            }),
+          });
+
+          if (pricingHtmlResponse.ok) {
+            let pricingHtmlData: FirecrawlScrapeResponse;
+            try {
+              pricingHtmlData = JSON.parse(await pricingHtmlResponse.text());
+            } catch {
+              pricingHtmlData = { success: false };
+            }
+
+            if (pricingHtmlData.success && pricingHtmlData.data) {
+              const html = pricingHtmlData.data.rawHtml || pricingHtmlData.data.html || '';
+              const alreadyQueued = new Set([...priorityLinks, formattedUrl]);
+              const discovered: string[] = [];
+
+              // Modal trigger URLs: ?modal=*, ?tab=*, ?plan=* in href attributes
+              const modalQueryRegex = /href=["']([^"']*\?(?:modal|tab|plan)=[^"'#\s]+)['"]/gi;
+              let mMatch;
+              while ((mMatch = modalQueryRegex.exec(html)) !== null) {
+                try {
+                  const resolved = new URL(mMatch[1], pricingPageUrl).href;
+                  if (!alreadyQueued.has(resolved) && isSameDomain(resolved, baseHost)) {
+                    discovered.push(resolved);
+                  }
+                } catch { /* skip invalid */ }
+              }
+
+              // FAQ anchor fragment links: #faq-*, #credits, #compute, #billing
+              const faqFragmentRegex = /href=["']([^"']*#(?:faq-[^\s"']+|credits|compute|billing))['"]/gi;
+              let faqMatch;
+              while ((faqMatch = faqFragmentRegex.exec(html)) !== null) {
+                try {
+                  const resolved = new URL(faqMatch[1], pricingPageUrl).href;
+                  if (!alreadyQueued.has(resolved) && isSameDomain(resolved, baseHost)) {
+                    discovered.push(resolved);
+                  }
+                } catch { /* skip invalid */ }
+              }
+
+              // In-FAQ hyperlinks inside .faq, .accordion, .collapsible, [data-faq] containers
+              // pointing to same-domain non-template subpages
+              const faqContainerRegex = /<(?:div|section|details)[^>]*(?:class|id|data-faq)[^>]*(?:faq|accordion|collapsible)[^>]*>[\s\S]*?<\/(?:div|section|details)>/gi;
+              let containerMatch;
+              while ((containerMatch = faqContainerRegex.exec(html)) !== null) {
+                const containerHtml = containerMatch[0];
+                const inFaqLinkRegex = /href=["']([^"']+)['"]/gi;
+                let linkMatch;
+                while ((linkMatch = inFaqLinkRegex.exec(containerHtml)) !== null) {
+                  const href = linkMatch[1];
+                  if (href.startsWith('#') || href.startsWith('javascript:') || href.startsWith('mailto:')) continue;
+                  try {
+                    const resolved = new URL(href, pricingPageUrl).href;
+                    if (!alreadyQueued.has(resolved) &&
+                        isSameDomain(resolved, baseHost) &&
+                        !exclusionPatterns.some(p => p.test(resolved)) &&
+                        !/\/templates?\//i.test(resolved)) {
+                      discovered.push(resolved);
+                    }
+                  } catch { /* skip invalid */ }
+                }
+              }
+
+              // Deduplicate and limit secondary pass results
+              const uniqueDiscovered = [...new Set(discovered)].slice(0, 5);
+              secondaryPricingUrls = uniqueDiscovered;
+
+              if (secondaryPricingUrls.length > 0) {
+                console.log(`Fix 1: Found ${secondaryPricingUrls.length} secondary pricing URLs:`, secondaryPricingUrls);
+              } else {
+                console.log('Fix 1: No secondary pricing URLs discovered');
+              }
+            }
+          }
+        } catch (fix1Err) {
+          console.warn('Fix 1: Secondary pricing pass failed (non-fatal):', fix1Err);
+        }
+      }
+
+      // ═════════════════════════════════════════════════════════════════════
       // STEP 4: TARGETED SCRAPE — only verified URLs
       // ═════════════════════════════════════════════════════════════════════
-      const scrapePromises = priorityLinks.map(pageUrl => scrapePage(apiKey, pageUrl));
+
+      // Build the final URL list: priority links + secondary pricing URLs (deduplicated)
+      const alreadyInPriority = new Set(priorityLinks);
+      const extraUrls = secondaryPricingUrls.filter(u => !alreadyInPriority.has(u));
+      const allUrlsToScrape = [...priorityLinks, ...extraUrls];
+
+      const scrapePromises = allUrlsToScrape.map(pageUrl => scrapePage(apiKey, pageUrl));
       const scrapedPages = await Promise.all(scrapePromises);
 
-      for (const page of scrapedPages) {
-        if (page) pages.push(page);
+      // ═════════════════════════════════════════════════════════════════════
+      // Fix 2: Pre-Scoring Validation Layer
+      // Count resolved vs unresolved pages. If ≥30% unresolved, attempt one
+      // retry pass per unresolved URL with URL variant fallbacks (strip slash,
+      // www toggle, http/https swap). Attach unresolved metadata to response.
+      // ═════════════════════════════════════════════════════════════════════
+
+      const resolvedPages: ScrapedPage[] = [];
+      const unresolvedUrls: string[] = [];
+
+      for (let i = 0; i < allUrlsToScrape.length; i++) {
+        const page = scrapedPages[i];
+        if (page) {
+          resolvedPages.push(page);
+        } else {
+          unresolvedUrls.push(allUrlsToScrape[i]);
+        }
+      }
+
+      fix2TotalQueuedCount = allUrlsToScrape.length;
+      const unresolvedRate = fix2TotalQueuedCount > 0 ? unresolvedUrls.length / fix2TotalQueuedCount : 0;
+
+      let additionalRetryPages: ScrapedPage[] = [];
+
+      if (unresolvedRate >= 0.30 && unresolvedUrls.length > 0) {
+        console.warn(
+          `Fix 2: High unresolved rate (${Math.round(unresolvedRate * 100)}%) for ${baseHost} on ${new Date().toISOString()}. ` +
+          `Unresolved URLs: ${unresolvedUrls.join(', ')}`
+        );
+
+        // Retry each unresolved URL with variant fallbacks
+        const retryPromises = unresolvedUrls.map(async (failedUrl): Promise<ScrapedPage | null> => {
+          const variants: string[] = [];
+
+          // Variant 1: strip trailing slash
+          const withoutSlash = failedUrl.replace(/\/$/, '');
+          if (withoutSlash !== failedUrl) variants.push(withoutSlash);
+
+          // Variant 2: add trailing slash
+          const withSlash = failedUrl.endsWith('/') ? failedUrl : failedUrl + '/';
+          if (!variants.includes(withSlash)) variants.push(withSlash);
+
+          // Variant 3: add/remove www
+          try {
+            const u = new URL(failedUrl);
+            if (u.hostname.startsWith('www.')) {
+              variants.push(failedUrl.replace(`://${u.hostname}`, `://${u.hostname.replace(/^www\./, '')}`));
+            } else {
+              variants.push(failedUrl.replace(`://${u.hostname}`, `://www.${u.hostname}`));
+            }
+          } catch { /* skip */ }
+
+          // Variant 4: try http if https failed (and vice versa)
+          if (failedUrl.startsWith('https://')) {
+            variants.push(failedUrl.replace(/^https:\/\//, 'http://'));
+          } else if (failedUrl.startsWith('http://')) {
+            variants.push(failedUrl.replace(/^http:\/\//, 'https://'));
+          }
+
+          // Try each variant in order, stopping on first success
+          for (const variant of variants) {
+            const result = await scrapePage(apiKey, variant);
+            if (result) {
+              console.log(`Fix 2: Retry succeeded for ${failedUrl} via variant ${variant}`);
+              return result;
+            }
+          }
+
+          return null;
+        });
+
+        const retryResults = await Promise.all(retryPromises);
+
+        for (let i = 0; i < retryResults.length; i++) {
+          const retried = retryResults[i];
+          if (retried) {
+            additionalRetryPages.push(retried);
+          } else {
+            fix2ConfirmedMissUrls.push(unresolvedUrls[i]);
+          }
+        }
+
+        console.log(`Fix 2: Retry complete. ${additionalRetryPages.length} recovered, ${fix2ConfirmedMissUrls.length} confirmed misses.`);
+      } else {
+        // Under 30% threshold — confirmed misses = all unresolved (no retry needed)
+        fix2ConfirmedMissUrls = unresolvedUrls;
+      }
+
+      fix2UnresolvedPageCount = fix2ConfirmedMissUrls.length;
+
+      // Add all resolved and retry-recovered pages to the pages array
+      for (const page of resolvedPages) {
+        pages.push(page);
+      }
+      for (const page of additionalRetryPages) {
+        pages.push(page);
       }
     }
 
@@ -781,6 +993,9 @@ Deno.serve(async (req) => {
         url: formattedUrl,
         pages,
         totalPages: pages.length,
+        unresolvedPageCount: fix2UnresolvedPageCount,
+        totalQueuedCount: fix2TotalQueuedCount,
+        confirmedMissUrls: fix2ConfirmedMissUrls,
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );

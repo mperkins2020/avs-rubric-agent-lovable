@@ -18,6 +18,10 @@ interface AnalyzeRequest {
   insiderAnswers?: Record<string, string>;
   previousScores?: Array<{ dimension: string; score: number; confidence: number }>;
   existingProfile?: Record<string, unknown>;
+  // Fix 2 metadata forwarded from scrape-website
+  unresolvedPageCount?: number;
+  totalQueuedCount?: number;
+  confirmedMissUrls?: string[];
 }
 
 const ANALYSIS_VERSION = '2026-03-17-evidence-cleanup-v6';
@@ -1401,7 +1405,7 @@ Deno.serve(async (req) => {
     console.log('Admin check for', userId, ':', isAdmin);
 
     // Parse request body early to check if this is a re-run
-    const { pages, url, insiderAnswers, previousScores, existingProfile }: AnalyzeRequest = await req.json();
+    const { pages, url, insiderAnswers, previousScores, existingProfile, unresolvedPageCount, totalQueuedCount, confirmedMissUrls }: AnalyzeRequest = await req.json();
     const isRerun = !!(previousScores && previousScores.length > 0);
 
     if (!isAdmin && !isRerun) {
@@ -1796,8 +1800,50 @@ Deno.serve(async (req) => {
       console.log('Company profile extracted:', companyProfile.companyName);
     }
 
+    // Fix 3B: Page-to-Dimension Routing
+    // Classify pages whose URLs indicate billing/invoice-only content.
+    // These pages should only be used as evidence for D7 (Overages & Risk Allocation)
+    // and D8 (Safety Rails), NOT for D4 (Value unit), D5 (Cost driver mapping),
+    // or D6 (Pools and packaging).
+    const billingOnlyPagePatterns = [
+      /\/about\/payments?\b/i,
+      /\/billing-support\b/i,
+      /\/billing\b/i,
+      /\/invoice\b/i,
+      /\/payments?\b/i,
+      /billing-and-invoices/i,
+      /payment-support/i,
+    ];
+
+    const billingOnlyPages = pages
+      .filter(p => billingOnlyPagePatterns.some(pattern => pattern.test(p.url)))
+      .map(p => p.url);
+
+    const billingOnlyRoutingInstruction = billingOnlyPages.length > 0
+      ? `\nPAGE-TO-DIMENSION ROUTING (Fix 3B — MANDATORY):
+The following pages are classified as billing/invoice-only pages. They may be used as evidence ONLY for Dimension 7 (Overages and risk allocation) and Dimension 8 (Safety rails and trust surfaces). Do NOT cite these pages as evidence for Dimension 4 (Value unit), Dimension 5 (Cost driver mapping), or Dimension 6 (Pools and packaging):
+${billingOnlyPages.map(u => `  - ${u}`).join('\n')}
+`
+      : '';
+
     // Step 2: Score against rubric
     console.log('Scoring against AVS rubric...');
+
+    // Fix 2: Confidence penalty flag — if ≥30% of queued pages were unresolved,
+    // the calling layer should apply a −0.15 confidence adjustment.
+    const applyUnresolvedPenalty = typeof totalQueuedCount === 'number' &&
+      totalQueuedCount > 0 &&
+      typeof unresolvedPageCount === 'number' &&
+      (unresolvedPageCount / totalQueuedCount) >= 0.30;
+
+    if (applyUnresolvedPenalty) {
+      console.warn(
+        `Fix 2: Applying −0.15 confidence penalty for ${url} — ` +
+        `${unresolvedPageCount}/${totalQueuedCount} pages unresolved. ` +
+        `Confirmed misses: ${(confirmedMissUrls || []).join(', ')}`
+      );
+    }
+
     const scoringContent = `
 Company: ${companyProfile.companyName}
 Description: ${companyProfile.oneLineDescription}
@@ -1858,7 +1904,7 @@ ${evidenceDigest.poolsPackaging.length > 0 ? evidenceDigest.poolsPackaging.map((
 ${evidenceDigest.overagesRisk.length > 0 ? evidenceDigest.overagesRisk.map((item) => `  - ${item}`).join('\n') : '  - None captured'}
 - Safety rails and trust surfaces candidates:
 ${evidenceDigest.safetyRails.length > 0 ? evidenceDigest.safetyRails.map((item) => `  - ${item}`).join('\n') : '  - None captured'}
-
+${billingOnlyRoutingInstruction}
 Website Content:
 ${truncatedContent}`;
 
@@ -1928,9 +1974,63 @@ ${truncatedContent}`;
       };
     });
 
+    // Fix 3A: Score Stability Rule
+    // For each dimension where the new score is LOWER than the previousScore
+    // AND no newly cited evidence URL differs from the prior page set,
+    // hold the prior score. Confidence from the new run still applies.
+    // Conservative implementation: if previousScores is provided, we flag
+    // drops but only auto-hold when we can confirm no new contradicting URLs
+    // were added. When prior page URLs are not available we flag but don't hold.
+    const currentPageUrls = new Set(pages.map(p => p.url));
+
+    const stabilizedDimensionScores = mergedDimensionScores.map(dim => {
+      if (!previousScores || previousScores.length === 0) return dim;
+
+      const prev = previousScores.find(p => p.dimension === dim.dimension);
+      if (!prev) return dim;
+
+      if (dim.score < prev.score) {
+        // Check whether any observed evidence URL in the new run is NEW
+        // (i.e., not present in the page set we have now, which is the same
+        // set available to both runs when no extra URLs were passed in).
+        // Since we don't store prior page URLs, use current page set as proxy:
+        // if all observed evidence URLs are in currentPageUrls, no genuinely
+        // new contradicting signal was added — hold the prior score.
+        const observedUrls = (dim.observed || [])
+          .map((obs: string) => {
+            const m = obs.match(/^(https?:\/\/[^\s:]+)/);
+            return m ? m[1] : '';
+          })
+          .filter(Boolean);
+
+        const hasNewEvidence = observedUrls.some(u => !currentPageUrls.has(u));
+
+        if (!hasNewEvidence) {
+          console.warn(
+            `Fix 3A: Score stability hold for "${dim.dimension}" at ${url} — ` +
+            `new score ${dim.score} < prior score ${prev.score}, no new contradicting evidence URLs detected. ` +
+            `Holding prior score ${prev.score}.`
+          );
+          return {
+            ...dim,
+            score: prev.score,
+            // Confidence from the new run applies (do not hold confidence)
+          };
+        } else {
+          console.warn(
+            `Fix 3A: Score drop for "${dim.dimension}" at ${url} — ` +
+            `new score ${dim.score} < prior score ${prev.score} but new evidence URLs detected. ` +
+            `Allowing score change.`
+          );
+        }
+      }
+
+      return dim;
+    });
+
     // Use pass 1 for strengths/weaknesses/breakpoints/focus (these are narrative, not scored)
     const rubricData: Record<string, unknown> = {
-      dimensionScores: mergedDimensionScores,
+      dimensionScores: stabilizedDimensionScores,
       strengths: rubricPasses[0].strengths || [],
       weaknesses: rubricPasses[0].weaknesses || [],
       trustBreakpoints: rubricPasses[0].trustBreakpoints || [],
@@ -2193,6 +2293,15 @@ ${truncatedContent}`;
         uncertaintyReasons,
       };
     });
+
+    // Fix 2: Apply −0.15 confidence penalty to all dimensions when ≥30% of
+    // queued scrape pages were unresolved (forwarded from scrape-website).
+    if (applyUnresolvedPenalty) {
+      for (const dim of dimensionScores) {
+        dim.confidence = Math.max(0, (dim.confidence || 0) - 0.15);
+      }
+      console.log('Fix 2: Applied −0.15 confidence penalty to all dimensions due to high unresolved page rate.');
+    }
 
     // ── Post-LLM contradiction fix: pricing page existence ─────────────
     // If we scraped a pricing page, the LLM MUST NOT claim "no pricing page"

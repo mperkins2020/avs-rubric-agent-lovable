@@ -149,3 +149,27 @@ describe('scraperApi.fullScan()', () => {
     expect(result.error).toBe('Site unreachable');
   });
 });
+
+/*
+ * CHANGE LOG — updated for Fix 1/2/3 evidence pipeline fixes:
+ *
+ * ScrapeResult interface (scraper.ts):
+ *   - Added optional fields: unresolvedPageCount, totalQueuedCount, confirmedMissUrls
+ *     (Fix 2: Pre-Scoring Validation Layer metadata passed from scrape-website to
+ *     analyze-company so the confidence −0.15 penalty can be applied there)
+ *   - All new fields are optional, so existing test mocks that return
+ *     { success: true, pages: [...], totalPages: 1 } remain valid without modification.
+ *
+ * analyzeCompany() options (scraper.ts):
+ *   - Added optional options fields: unresolvedPageCount, totalQueuedCount, confirmedMissUrls
+ *   - No positional parameter changes; existing call sites with no options object
+ *     continue to work unchanged.
+ *
+ * fullScan() (scraper.ts):
+ *   - Now forwards unresolvedPageCount/totalQueuedCount/confirmedMissUrls from
+ *     scrapeResult into analyzeCompany options.
+ *   - Existing test for fullScan (scraping failure) unaffected because the mock
+ *     returns { success: false } before analyzeCompany is ever called.
+ *
+ * No existing assertions were changed or removed.
+ */
