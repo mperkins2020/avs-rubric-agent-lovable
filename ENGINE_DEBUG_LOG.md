@@ -4,7 +4,7 @@
 **Usage:** When a report produces a questionable result, log it here. Run `Scan the debug log for recurring patterns` periodically to surface systemic issues.
 **Related:** See ENGINE_DEBUG_HISTORY.md for backfilled history from git.
 
-**Entries:** 7 | **Last updated:** March 22, 2026
+**Entries:** 9 | **Last updated:** March 22, 2026
 
 ---
 
@@ -29,6 +29,69 @@
 <!-- Newest first. To add an entry, copy the template below and fill it in. -->
 
 <!-- Next entry goes here -->
+
+---
+
+### Entry 009 — March 22, 2026
+
+| Field | Value |
+|-------|-------|
+| Company | Relevance AI (relevance.ai) |
+| Version | V2 (post-fix) |
+| Dimension | Value Unit, Cost Driver Mapping, Buyer & Budget Alignment (improved); Pools & Packaging, Overages & Risk (unchanged) |
+| Score | 10/16 (63%) — Established Stage |
+| Score Delta vs V1 | +19 percentage points (44% → 63%) |
+| Pages Analyzed | 4 (relevance.ai/pricing, docs.relevance.ai, cdn.relevanceai.com/images/customerstories/eftsure-logo-2.webp, relevance.ai) |
+| Root Cause | Partially resolved — canonical path probing fix correctly surfaced pricing page |
+| Caught By | Score comparison V1 → V2 |
+| Status | Resolved. V2 is valid baseline. Remaining gaps reflect genuine non-disclosure by Relevance AI, not pipeline misses. |
+
+**Dimension Changes V1 → V2:**
+
+- **Value Unit:** 0/2 → 1/2 — pricing page confirmed Actions + vendor credits as primary units
+- **Cost Driver Mapping:** 0/2 → 1/2 — pricing page provided Actions/month and Vendor Credits/month limits per tier
+- **Buyer & Budget Alignment:** 1/2 → 2/2 — pricing page confirmed Free/Pro/Team/Enterprise tier structure with SSO, RBAC, custom implementation for Enterprise
+
+**Dimensions Unchanged V1 → V2:**
+
+- **Pools & Packaging:** held at 1/2 — rollover mentioned but reset cadence and top-up rules not publicly detailed
+- **Overages & Risk:** held at 1/2 — overage policy explicitly stated as "None specified" on pricing page — accurate, not a pipeline miss
+
+**Note on CDN URL in Pages Analyzed:**
+`cdn.relevanceai.com/images/customerstories/eftsure-logo-2.webp` appeared in the pages list. Image/CDN asset URLs should be filtered from the queue before scraping — they cannot contribute evidence and consume a page slot. See Known Failure Modes.
+
+**Root Cause Detail:**
+Canonical path probing fix correctly constructed `relevance.ai/pricing` despite it being absent from the sitemap. Confirmed working. Remaining dimension gaps (Value Unit 1/2, Overages & Risk 1/2) reflect deliberate non-disclosure by Relevance AI — accurate scoring, not a pipeline miss. The "Overage Policy: None specified" on their pricing page is the correct scoring input for Overages & Risk.
+
+**Pattern Tag:** `post-fix-baseline`, `genuine-non-disclosure`, `cdn-url-slot-contamination`, `overage-policy-none-specified`
+
+---
+
+### Entry 008 — March 22, 2026
+
+| Field | Value |
+|-------|-------|
+| Company | Relevance AI (relevanceai.com) |
+| Version | V1 |
+| Dimension | N/A — report not generated |
+| Score | Not completed — runtime error on scoring pass |
+| Pages Analyzed | Pipeline failed before report generated |
+| Root Cause | pipeline_miss — two simultaneous failure modes |
+| Caught By | Manual review — pricing page absence identified in logs before report completed |
+| Status | Both issues fixed. See Entry 009 for rerun results. |
+
+**Root Cause Detail:**
+
+**(A) Pricing page miss — sitemap exclusion + wrong page selected.** `relevanceai.com/pricing` was not returned by Firecrawl's `/map` API because the page is absent from the site's sitemap. The scraper selected `/agent-templates-tasks/pricing-optimization-ai-agents` instead — a page that matched the keyword "pricing" but is not the actual pricing page. Root cause: the forced pricing pattern had nothing to match when `/pricing` was not in the map results.
+
+**(B) Runtime 500 error.** A transient connection reset on the 3rd scoring pass caused full function failure.
+
+**Resolution:**
+
+1. **Canonical path probing** — if `/pricing`, `/plans`, or `/billing` are not found in map results, the scraper now constructs and directly attempts to scrape these paths. This is a new fix class beyond the existing secondary pass logic and applies to any company whose pricing page is excluded from their sitemap.
+2. **Retry logic with exponential backoff** added to `callLovableAI` (up to 2 retries) to handle transient network errors on the scoring pass.
+
+**Pattern Tag:** `pricing-page-sitemap-excluded`, `wrong-page-keyword-match`, `transient-500-scoring-pass`
 
 ---
 
@@ -224,6 +287,9 @@ Recurring pipeline failure patterns identified across production runs. Each row 
 | Pricing page present but not used for scoring (priority override failure) | Fixed — pricing forced to highest priority Round 6 |
 | 404/Not Found pages appearing in Pages Analyzed list | Fixed — 404 filter added Round 3 |
 | FAQ deep link extraction scoping errors (too broad or wrong DOM region) | Fixed Round 6 — anchor to pricing page FAQ regions, follow ≥2 path segment URLs only |
+| Pricing page excluded from sitemap — keyword match selects wrong page | Fixed — canonical path probing added. If `/pricing`, `/plans`, `/billing` absent from map results, scraper constructs and probes directly. |
+| Transient network error on scoring pass causes full function 500 | Fixed — retry logic with exponential backoff added to `callLovableAI` (up to 2 retries). |
+| Image/CDN URLs queued as pages (e.g., .webp, .png, .jpg, .gif, .svg, cdn.* subdomains) | New — observed in Relevance AI V2. Image files and CDN asset URLs consume page slots and contribute no evidence. Filter before queue entry. Fix not yet deployed. |
 
 ---
 
@@ -238,6 +304,8 @@ These are locked reference scores for companies that have been fully validated. 
 | Hex.tech | Overall | 100% | 76% | Post-V2 score after modal and FAQ anchor links added. V1 63% was pipeline miss. |
 | Miro.com | Overall | 69% (11/16) | 64% | V2 post-fix. Pricing page present. Score reflects genuine partial observability — AI credit metering not publicly documented. Valid baseline. Follow-up recommended to check FAQ deep links on pricing page. |
 | ZoomInfo.com | Value Unit | 1/2 | 50% | V1 is authoritative. Seats and credits confirmed on `/faqs/pricing`. V2 regression to 0/2 was a Score Stability failure. Credit metering detail and audit surfaces not publicly documented — this is why confidence is medium, not high. |
+| Relevance AI | Overall | 63% (10/16) | 64% | V2 post-fix. 4 pages. Pricing page present via canonical path probing. Remaining gaps (Value Unit 1/2, overage policy) reflect deliberate non-disclosure — accurate, not pipeline misses. |
+| Relevance AI | Overages & Risk | 1/2 | 45% | Pricing page explicitly states "Overage Policy: None specified." Score is accurate. Do not adjust upward without new public evidence of an actual overage policy. |
 
 ---
 
