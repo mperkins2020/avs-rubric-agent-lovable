@@ -4,7 +4,7 @@
 **Usage:** When a report produces a questionable result, log it here. Run `Scan the debug log for recurring patterns` periodically to surface systemic issues.
 **Related:** See ENGINE_DEBUG_HISTORY.md for backfilled history from git.
 
-**Entries:** 13 | **Last updated:** March 23, 2026
+**Entries:** 14 | **Last updated:** March 24, 2026
 
 ---
 
@@ -19,7 +19,7 @@
 | confidence_miscalc | 0 | — |
 | prompt_drift | 1 | ICP and Job Clarity (D2) |
 | pipeline_miss | 9 | Value Unit, Cost Driver Mapping, Safety/Trust, Overages & Risk |
-| contamination | 3 | Pricing Transparency, Enterprise/Compliance (D7/D8) |
+| contamination | 4 | Pricing Transparency, Enterprise/Compliance (D7/D8) |
 | other | 0 | — |
 
 ---
@@ -29,6 +29,76 @@
 <!-- Newest first. To add an entry, copy the template below and fill it in. -->
 
 <!-- Next entry goes here -->
+
+---
+
+### Entry 014 — March 24, 2026
+
+| Field | Value |
+|-------|-------|
+| Companies | Replit, AirOps, Cursor, Lovable, Deepnote |
+| Version | Various — cross-run observation |
+| Dimension | All dimensions affected indirectly — zero-signal pages consuming slots that high-signal pages would otherwise fill |
+| Root Cause | contamination — four new URL contamination failure classes identified across five reports |
+| Caught By | Manual review of Pages Analyzed lists across reports |
+| Status | Partially fixed. w3.org and CDN/image URLs resolved by `bb6e4ec`. Four new patterns open — see below. |
+
+**Already fixed by `bb6e4ec` (`isEvidenceEligible()`):**
+
+The following URL types observed in these reports are resolved as of commit `bb6e4ec` and should no longer appear in evidence sets:
+
+| URL example | Fix mechanism |
+|---|---|
+| `http://w3.org/2000/svg` (Replit, AirOps, Lovable) | External domain filter |
+| `http://w3.org/1999/xlink` (AirOps) | External domain filter |
+| `cdn.prod.website-files.com/...lottieflow.json` (AirOps) | `cdn.` subdomain prefix filter |
+| `d3gk2c5xim1je2.cloudfront.net/...caret-right.svg` (Lovable) | External domain filter |
+| `lovable.dev/img/opengraph-image.png` (Lovable) | `.png` extension filter |
+
+If any of these appear in post-`bb6e4ec` runs, treat as a regression in the filter.
+
+---
+
+**New failure pattern A — `@username` user-generated content paths (Replit)**
+
+`replit.com/@03aurika23/Banana-Delivery-Bot` is an individual user's project page hosted on Replit's domain — not Replit's own product or pricing content. The current random-slug filter (`/^-[a-z0-9]{10,}$/i`) catches gamma-style slugs but not the `@username` path pattern common to platforms that host user content at their root domain (Replit, HuggingFace, GitHub, etc.).
+
+Fix: in `isEvidenceEligible()`, reject any URL whose path contains a segment that starts with `@`.
+
+---
+
+**New failure pattern B — Malformed URL from HTML entity encoding (Lovable, AirOps)**
+
+`https://d3gk2c5xim1je2.cloudfront.net/v7.1.0/solid/caret-right.svg&quot;);` — the trailing `&quot;);` is an HTML-encoded double quote followed by CSS closing syntax. This was extracted from an HTML-encoded `background-image: url(&quot;...&quot;)` declaration in inline CSS or an SVG attribute. The URL was never a real navigable link — the extractor pulled it from raw text.
+
+The same class of malformed extraction produces the w3.org namespace URLs: SVG `xmlns` attributes (`xmlns="http://www.w3.org/2000/svg"`) are being scraped as if they were hyperlinks.
+
+Fix: before any extracted URL enters the queue, validate that it: (1) parses cleanly as a URL with no trailing `"`, `>`, `)`, or HTML entities (`&quot;`, `&amp;`, `&#`), and (2) uses `http` or `https` scheme only. Reject silently on failure.
+
+---
+
+**New failure pattern C — Changelog over-representation (Cursor)**
+
+3 of 16 slots consumed by changelog pages: `/en-US/changelog`, `/changelog/0-1-7`, `/changelog/0-10-6-nightly`. Individual versioned changelog entries document release notes — they contain no pricing, packaging, overage, or trust evidence. Two sub-issues:
+
+1. **No per-category slot cap on `/changelog/*`.** The URL scorer does not penalize versioned changelog entries, so multiple versions fill the queue alongside each other.
+2. **Locale variant not deduplicated.** `/en-US/changelog` is the same content as `/changelog` with a locale prefix. Locale prefixes (`/en/`, `/en-US/`, `/fr/`, `/de/`, etc.) are not stripped before deduplication, so both are treated as distinct pages and both are fetched.
+
+Fix: (1) cap `/changelog/*` at 1 slot total; (2) strip locale prefixes before URL deduplication and scoring.
+
+---
+
+**New failure pattern D — Docs path over-representation without keyword gating (Deepnote)**
+
+9 of 10 `/docs/*` slots consumed by zero-signal pages: AI feature guides (`/docs/ai-analysis`, `/docs/ai-code-completion`), integration connectors (`/docs/amazon-s3`, `/docs/bigquery-oauth`), usage policy (`/docs/acceptable-use-policy`), and education tools (`/docs/auto-grading-solutions`). Only `/docs/billing-alerts-and-limits` is relevant.
+
+`/docs/` is a mixed-signal path — it cannot be capped globally or deprioritized entirely because `/docs/billing*`, `/docs/credits*`, `/docs/usage-limits*` are often the highest-signal pages in the evidence set (see Clay university link, Entry 005). The scorer currently treats all `/docs/*` URLs as equal.
+
+Fix: within `/docs/*`, apply a two-tier scoring split:
+- **Boost** paths containing: `billing`, `credits`, `usage`, `limits`, `pricing`, `plans`, `overage`, `trust`, `security`, `compliance`, `soc`, `gdpr`, `hipaa`, `data-privacy`
+- **Cap at 2 slots** all `/docs/*` paths that do not match any of the above keywords
+
+**Pattern Tag:** `at-username-ugc`, `malformed-url-html-entity`, `changelog-slot-saturation`, `locale-variant-not-deduped`, `docs-path-no-keyword-gating`
 
 ---
 
@@ -444,6 +514,11 @@ Recurring pipeline failure patterns identified across production runs. Each row 
 | Customer story page over-representation — `/customers/*` pages saturate queue with near-zero D4–D8 signal | Open — observed: Beautiful.ai, 5 of 13 slots consumed by customer stories. No per-category page cap exists. Fix: apply a max-2 slot cap for `/customers/*`, `/case-studies/*`, and equivalent testimonial paths. |
 | Text fragment anchor URLs not deduplicated — `#:~:text=` fragments produce functionally identical content to the base URL but consume a separate slot | Open — observed: Beautiful.ai `/customers/adweek#:~:text=Caroline...` duplicated `/customers/adweek`. Fix: strip `#:~:text=` before deduplication check. |
 | Low-signal support articles from legitimate subdomains entering queue — `support.*` help articles about non-pricing topics (e.g., account deletion) pass domain filter but have zero evidence value | Open — observed: Beautiful.ai `support.beautiful.ai/hc/.../Delete-Account`. Fix: deprioritize or cap support subdomain articles that don't match billing/pricing/trust keyword patterns. |
+| `@username` user-generated content paths entering queue (e.g., replit.com/@user/project-name) | Open — observed: Replit. Fix: reject any URL path segment starting with `@` in `isEvidenceEligible()`. |
+| Malformed URLs from HTML entity encoding entering queue — `&quot;);` suffix, w3.org xmlns attributes scraped as hyperlinks | Open — observed: Lovable, AirOps. Fix: validate extracted URLs parse cleanly with no trailing HTML entities or CSS syntax; reject non-http/https schemes. |
+| Changelog over-representation — versioned `/changelog/x-y-z` entries consuming multiple slots with zero pricing/trust signal | Open — observed: Cursor (3 of 16 slots). Fix: cap `/changelog/*` at 1 slot total. |
+| Locale variant paths not deduplicated — `/en-US/page` and `/page` treated as distinct URLs | Open — observed: Cursor `/en-US/changelog` vs `/changelog`. Fix: strip locale prefixes (`/en/`, `/en-US/`, `/fr/`, etc.) before deduplication. |
+| `/docs/*` over-representation without keyword gating — integration and feature docs consuming slots ahead of billing/limits docs | Open — observed: Deepnote (9 of 10 docs slots zero-signal; only `/docs/billing-alerts-and-limits` relevant). Fix: boost `/docs/*billing*`, `/docs/*credits*`, `/docs/*limits*`, `/docs/*security*` etc.; cap non-matching `/docs/*` at 2 slots. |
 
 ---
 
