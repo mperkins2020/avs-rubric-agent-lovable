@@ -4,7 +4,7 @@
 **Usage:** When a report produces a questionable result, log it here. Run `Scan the debug log for recurring patterns` periodically to surface systemic issues.
 **Related:** See ENGINE_DEBUG_HISTORY.md for backfilled history from git.
 
-**Entries:** 12 | **Last updated:** March 23, 2026
+**Entries:** 13 | **Last updated:** March 23, 2026
 
 ---
 
@@ -19,7 +19,7 @@
 | confidence_miscalc | 0 | — |
 | prompt_drift | 1 | ICP and Job Clarity (D2) |
 | pipeline_miss | 9 | Value Unit, Cost Driver Mapping, Safety/Trust, Overages & Risk |
-| contamination | 2 | Pricing Transparency, Enterprise/Compliance (D7/D8) |
+| contamination | 3 | Pricing Transparency, Enterprise/Compliance (D7/D8) |
 | other | 0 | — |
 
 ---
@@ -29,6 +29,55 @@
 <!-- Newest first. To add an entry, copy the template below and fill it in. -->
 
 <!-- Next entry goes here -->
+
+---
+
+### Entry 013 — March 23, 2026
+
+| Field | Value |
+|-------|-------|
+| Company | Beautiful.ai (beautiful.ai) |
+| Version | V1 |
+| Dimension | D4 Cost Driver Mapping, D5 Overages & Risk, D6 Safety Rails & Trust, D7 Pricing Transparency, D8 Enterprise/Compliance — all scored 1/2 |
+| Score | 11/16 (69%) — Established Stage |
+| Pages Analyzed | 13 |
+| Root Cause | contamination — T2 at scale: 10 of 13 slots consumed by low-signal pages, all five 1/2 dimensions scored off a single page |
+| Caught By | Manual review — evidence citations show `/pricing` as sole source for D3–D8 |
+| Status | Open. Three new failure patterns identified. No fix deployed. |
+
+**Evidence concentration finding:**
+All five dimensions scoring 1/2 (D4–D8) are sourced exclusively from `beautiful.ai/pricing`. No corroborating evidence from any other page for any of these dimensions. D1 and D2 additionally cite the root homepage and one customer story. The remaining 10 pages contributed zero scored evidence across all 8 dimensions.
+
+**Slot breakdown — 13 pages fetched:**
+
+| Page | Classification | Signal |
+|------|---------------|--------|
+| `beautiful.ai/pricing` | High-signal | D1–D8 evidence |
+| `beautiful.ai` (root) | High-signal | D1, D2 only |
+| `/customers/cmit-solutions-...` | Customer story | D2 one quote |
+| `/customers/adweek` | Customer story | None |
+| `/customers/adweek#:~:text=Caroline...` | **Duplicate** (text fragment of above) | None |
+| `/customers/camelot` | Customer story | None |
+| `/customers/carbongate` | Customer story | None |
+| `/customers/cvent` | Customer story | None |
+| `/customers` (listing) | Customer index | None |
+| `/compare` | Comparison page | None |
+| `/compare/pitch-alternative` | Comparison page | None |
+| `/pricing-demo` | Demo request page | None |
+| `support.beautiful.ai/hc/.../Delete-Account` | Help article — account deletion | None |
+
+**Three new failure patterns identified:**
+
+**(A) Customer story page over-representation.** 5 of 13 slots consumed by `/customers/*` pages. Customer stories contain testimonials and workflow quotes but have near-zero evidence for D4 (cost drivers), D5 (overages), D6 (safety rails), D7 (pricing transparency), or D8 (compliance). No cap exists on how many customer story pages enter the queue — the URL scorer does not penalize them sufficiently relative to pricing/trust paths.
+
+**(B) Text fragment anchor not deduplicated.** `/customers/adweek#:~:text=Caroline%20explained...` is identical in content to `/customers/adweek` — Firecrawl returns the same markdown for both because the `#:~:text=` fragment is a browser-only scroll hint with no server-side effect. This consumed a page slot as a functional duplicate. The deduplication logic should strip text fragment anchors (`#:~:text=`) before comparing URLs.
+
+**(C) Low-signal support article from legitimate subdomain.** `support.beautiful.ai/hc/en-us/articles/360028561851-Delete-Account` passed the domain filter (subdomain of beautiful.ai) and the evidence eligibility filter. It is a help article about how to delete your account — zero signal for any pricing or trust dimension. A help/support article about account deletion is the lowest-signal page type possible and consumed a slot that a billing FAQ or trust center article could have filled.
+
+**Root Cause Detail:**
+The pipeline has no mechanism to cap over-representation of any single path category. Once `/customers/adweek` scores above threshold, `/customers/adweek#:~:text=...`, `/customers/camelot`, `/customers/carbongate`, and `/customers/cvent` all score similarly and fill the queue. The practical effect: all five 1/2 dimensions have no corroborating evidence beyond a single page, and any gap on `/pricing` becomes unrecoverable.
+
+**Pattern Tag:** `customer-story-slot-saturation`, `text-fragment-duplicate`, `low-signal-support-article`, `single-page-evidence-concentration`
 
 ---
 
@@ -392,6 +441,9 @@ Recurring pipeline failure patterns identified across production runs. Each row 
 | Prompt drift — same evidence set, different score on independent rerun | Open — covered by Fix 3A when active. Currently dormant (see above). Observed: Lovable D2, March 8→15. 2-pass scoring is more susceptible than 3-pass due to reduced majority vote robustness. |
 | Post-fix evidence set shrinkage — page selection changes after fix deployment reduce total pages fetched, dropping high-signal pages | Open — observed: ElevenLabs /security and /trust absent post-`bb6e4ec`. Performance page-count reduction (15→10 default) is likely cause. High-signal paths (/security, /trust, /compliance) should be pinned like /pricing. |
 | Pipeline inconsistency across independent reruns — different pages fetched for same company on separate runs due to Firecrawl map ordering variance | Open — observed: ZoomInfo homepage absent March 23 vs. present March 22. Homepage should be force-pinned to evidence set. Score persistence + Fix 3A injection is secondary mitigation. |
+| Customer story page over-representation — `/customers/*` pages saturate queue with near-zero D4–D8 signal | Open — observed: Beautiful.ai, 5 of 13 slots consumed by customer stories. No per-category page cap exists. Fix: apply a max-2 slot cap for `/customers/*`, `/case-studies/*`, and equivalent testimonial paths. |
+| Text fragment anchor URLs not deduplicated — `#:~:text=` fragments produce functionally identical content to the base URL but consume a separate slot | Open — observed: Beautiful.ai `/customers/adweek#:~:text=Caroline...` duplicated `/customers/adweek`. Fix: strip `#:~:text=` before deduplication check. |
+| Low-signal support articles from legitimate subdomains entering queue — `support.*` help articles about non-pricing topics (e.g., account deletion) pass domain filter but have zero evidence value | Open — observed: Beautiful.ai `support.beautiful.ai/hc/.../Delete-Account`. Fix: deprioritize or cap support subdomain articles that don't match billing/pricing/trust keyword patterns. |
 
 ---
 
