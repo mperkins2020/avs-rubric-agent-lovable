@@ -779,13 +779,21 @@ Deno.serve(async (req) => {
       const isEvidenceEligible = (link: string): boolean => {
         try {
           const parsed = new URL(link);
+          // Scheme filter — only http/https; rejects mailto:, data:, javascript:, etc.
+          if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') return false;
+          // Malformed URL filter — reject URLs with trailing HTML entities or CSS syntax
+          if (/(&quot;|&amp;|&#\d+|[>)'"\\])$/.test(link)) return false;
           const host = parsed.hostname.replace(/^www\./, '');
           // External domain filter — must share the registrable domain
           if (!host.endsWith(registrableDomain) && host !== registrableDomain) return false;
           // CDN subdomain filter
           if (parsed.hostname.startsWith('cdn.')) return false;
           // Asset/image extension filter
-          if (/\.(webp|png|jpg|jpeg|gif|svg|ico|pdf|zip|mp4|mp3|woff|woff2|ttf|eot)$/i.test(parsed.pathname)) return false;
+          if (/\.(webp|png|jpg|jpeg|gif|svg|ico|pdf|zip|mp4|mp3|wav|woff|woff2|ttf|eot|css|js)$/i.test(parsed.pathname)) return false;
+          // Static asset path filter
+          if (/\/(images|assets|static|media|fonts)\//i.test(parsed.pathname)) return false;
+          // @username user-generated content filter (e.g. replit.com/@user/project)
+          if (parsed.pathname.split('/').some(seg => seg.startsWith('@'))) return false;
           // Random-slug user-generated content filter: path ends in -[a-z0-9]{10,} (e.g. gamma.app/docs/-gkzy48h1uj1yr1q)
           const lastSeg = parsed.pathname.split('/').filter(Boolean).pop() || '';
           if (/^-[a-z0-9]{10,}$/i.test(lastSeg)) return false;
@@ -793,13 +801,63 @@ Deno.serve(async (req) => {
         } catch { return false; }
       };
 
+      // Normalise a URL for deduplication: strip #:~:text= fragments and locale prefixes
+      const normaliseForDedup = (link: string): string => {
+        try {
+          const parsed = new URL(link);
+          // Strip text fragment anchors (#:~:text=...) — same HTML document as the base URL
+          parsed.hash = parsed.hash.startsWith('#:~:') ? '' : parsed.hash;
+          // Strip locale path prefixes (/en/, /en-US/, /fr/, /de/, etc.)
+          parsed.pathname = parsed.pathname.replace(/^\/[a-z]{2}(-[A-Z]{2})?\//,  '/');
+          return parsed.toString();
+        } catch { return link; }
+      };
+
       const filteredScoredLinks = scoredLinks.filter(({ link }) => isEvidenceEligible(link));
-      const compareLinks = filteredScoredLinks.filter(({ link }) => /\/compare\b|\/vs-/i.test(link)).map(({ link }) => link);
-      const nonCompareLinks = filteredScoredLinks.filter(({ link }) => !/\/compare\b|\/vs-/i.test(link)).map(({ link }) => link);
-      const reservedCompareSlots = Math.min(2, compareLinks.length);
+
+      // Deduplication after normalisation — removes text fragment and locale variants
+      const seenNormalised = new Set<string>();
+      const dedupedScoredLinks = filteredScoredLinks.filter(({ link }) => {
+        const key = normaliseForDedup(link);
+        if (seenNormalised.has(key)) return false;
+        seenNormalised.add(key);
+        return true;
+      });
+
+      // Per-category slot caps — enforced before final page selection
+      // Prevents low-signal path categories from crowding out high-signal evidence pages
+      const compareLinks: string[] = [];
+      const storyLinks: string[] = [];   // /customers/* + /case-studies/* — 2 slots combined
+      const blogLinks: string[] = [];    // /blog/* — 1 slot
+      const changelogLinks: string[] = []; // /changelog/* — 1 slot
+      const otherLinks: string[] = [];
+
+      for (const { link } of dedupedScoredLinks) {
+        if (/\/compare\b|\/vs-/i.test(link)) {
+          compareLinks.push(link);
+        } else if (/\/(customers|case-studies)\//i.test(link)) {
+          storyLinks.push(link);
+        } else if (/\/blog\//i.test(link)) {
+          blogLinks.push(link);
+        } else if (/\/changelog\//i.test(link)) {
+          changelogLinks.push(link);
+        } else {
+          otherLinks.push(link);
+        }
+      }
+
+      const reservedCompareSlots    = Math.min(2, compareLinks.length);
+      const reservedStorySlots      = Math.min(2, storyLinks.length);
+      const reservedBlogSlots       = Math.min(1, blogLinks.length);
+      const reservedChangelogSlots  = Math.min(1, changelogLinks.length);
+      const reservedLowSignalSlots  = reservedCompareSlots + reservedStorySlots + reservedBlogSlots + reservedChangelogSlots;
+
       const priorityLinks = [
-        ...nonCompareLinks.slice(0, Math.max(0, (safeMaxPages - 1) - reservedCompareSlots)),
+        ...otherLinks.slice(0, Math.max(0, (safeMaxPages - 1) - reservedLowSignalSlots)),
         ...compareLinks.slice(0, reservedCompareSlots),
+        ...storyLinks.slice(0, reservedStorySlots),
+        ...blogLinks.slice(0, reservedBlogSlots),
+        ...changelogLinks.slice(0, reservedChangelogSlots),
       ].slice(0, safeMaxPages - 1);
       console.log(`Selected ${priorityLinks.length} verified pages to scrape (0 blind probes)`);
       console.log('Priority links:', priorityLinks);
