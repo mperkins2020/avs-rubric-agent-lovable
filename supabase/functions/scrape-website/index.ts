@@ -169,6 +169,9 @@ const highIntentPaths = new Set([
   '/pricing', '/plans', '/plan', '/billing', '/usage',
   '/subscription', '/features', '/feature', '/product',
   '/products', '/solutions',
+  // Bundle 2: trust-center path pinning — same priority as /pricing
+  // Observed regression: ElevenLabs /security and /trust dropped after page-count reduction
+  '/security', '/trust', '/compliance', '/privacy',
 ]);
 
 const exclusionPatterns = [
@@ -663,16 +666,21 @@ Deno.serve(async (req) => {
       );
     }
 
-    if (mainPageData.data) {
-      pages.push({
-        url: formattedUrl,
-        title: mainPageData.data.metadata?.title || 'Home',
-        markdown: mainPageData.data.markdown || '',
-        metadata: {
-          description: mainPageData.data.metadata?.description,
-          keywords: mainPageData.data.metadata?.keywords,
-        },
-      });
+    // Bundle 2: homepage always pushed to pages — even if data is unexpectedly null.
+    // The homepage is a mandatory evidence page for D1/D2 (product north star, ICP clarity).
+    // If Firecrawl returns success:true but data:null, we still log the URL so the
+    // evidence set reflects that the homepage was attempted and not silently dropped.
+    pages.push({
+      url: formattedUrl,
+      title: mainPageData.data?.metadata?.title || 'Home',
+      markdown: mainPageData.data?.markdown || '',
+      metadata: {
+        description: mainPageData.data?.metadata?.description,
+        keywords: mainPageData.data?.metadata?.keywords,
+      },
+    });
+    if (!mainPageData.data) {
+      console.warn(`Homepage scrape returned success:true but no data for ${formattedUrl}`);
     }
 
     console.log('Main page scraped successfully');
