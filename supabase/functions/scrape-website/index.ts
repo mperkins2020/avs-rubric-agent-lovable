@@ -329,7 +329,8 @@ async function scrapePage(apiKey: string, pageUrl: string): Promise<ScrapedPage 
       url: pageUrl,
       formats,
       onlyMainContent: !needsFullContent,
-      ...(hasAccordions ? { waitFor: 3000 } : {}),
+      // Perf: 40s budget — reduced from 3000ms; 1500ms sufficient for most accordions
+      ...(hasAccordions ? { waitFor: 1500 } : {}),
     };
 
     if (wantStructuredJson) {
@@ -339,14 +340,26 @@ async function scrapePage(apiKey: string, pageUrl: string): Promise<ScrapedPage 
       };
     }
 
-    const response = await fetch('https://api.firecrawl.dev/v1/scrape', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(requestBody),
-    });
+    // Perf: 40s budget — 7s per-page timeout prevents slow pages from blocking the batch
+    const pageController = new AbortController();
+    const pageTimeout = setTimeout(() => pageController.abort(), 7000);
+    let response: Response;
+    try {
+      response = await fetch('https://api.firecrawl.dev/v1/scrape', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${apiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestBody),
+        signal: pageController.signal,
+      });
+    } catch (fetchErr) {
+      clearTimeout(pageTimeout);
+      console.log('Fetch timed out or failed for:', pageUrl, fetchErr instanceof Error ? fetchErr.message : fetchErr);
+      return null;
+    }
+    clearTimeout(pageTimeout);
 
     let pageData: FirecrawlScrapeResponse & { data?: { json?: Record<string, unknown>; llm_extraction?: Record<string, unknown> } };
     try {
@@ -554,7 +567,8 @@ Deno.serve(async (req) => {
       }
     }
 
-    const { url, includeSubpages = true, maxPages = 15 }: ScrapeRequest = await req.json();
+    // Perf: 40s budget — default reduced from 15 to 10
+    const { url, includeSubpages = true, maxPages = 10 }: ScrapeRequest = await req.json();
 
     if (!url || typeof url !== 'string') {
       return new Response(
@@ -570,7 +584,8 @@ Deno.serve(async (req) => {
       );
     }
 
-    const safeMaxPages = Math.min(Math.max(1, maxPages), 25);
+    // Perf: 40s budget — hard cap reduced from 25 to 15
+    const safeMaxPages = Math.min(Math.max(1, maxPages), 15);
 
     const apiKey = Deno.env.get('FIRECRAWL_API_KEY');
     if (!apiKey) {
@@ -758,8 +773,29 @@ Deno.serve(async (req) => {
         .map((link: string) => ({ link, score: scoreUrl(link, baseHost, communityUrlSet) }))
         .sort((a, b) => b.score - a.score || a.link.localeCompare(b.link));
 
-      const compareLinks = scoredLinks.filter(({ link }) => /\/compare\b|\/vs-/i.test(link)).map(({ link }) => link);
-      const nonCompareLinks = scoredLinks.filter(({ link }) => !/\/compare\b|\/vs-/i.test(link)).map(({ link }) => link);
+      // Perf: 40s budget — URL content-relevance pre-filter applied before batch selection.
+      // Removes external domains, CDN/image assets, and user-generated content slugs
+      // that consume page slots but contribute zero dimension evidence.
+      const isEvidenceEligible = (link: string): boolean => {
+        try {
+          const parsed = new URL(link);
+          const host = parsed.hostname.replace(/^www\./, '');
+          // External domain filter — must share the registrable domain
+          if (!host.endsWith(registrableDomain) && host !== registrableDomain) return false;
+          // CDN subdomain filter
+          if (parsed.hostname.startsWith('cdn.')) return false;
+          // Asset/image extension filter
+          if (/\.(webp|png|jpg|jpeg|gif|svg|ico|pdf|zip|mp4|mp3|woff|woff2|ttf|eot)$/i.test(parsed.pathname)) return false;
+          // Random-slug user-generated content filter: path ends in -[a-z0-9]{10,} (e.g. gamma.app/docs/-gkzy48h1uj1yr1q)
+          const lastSeg = parsed.pathname.split('/').filter(Boolean).pop() || '';
+          if (/^-[a-z0-9]{10,}$/i.test(lastSeg)) return false;
+          return true;
+        } catch { return false; }
+      };
+
+      const filteredScoredLinks = scoredLinks.filter(({ link }) => isEvidenceEligible(link));
+      const compareLinks = filteredScoredLinks.filter(({ link }) => /\/compare\b|\/vs-/i.test(link)).map(({ link }) => link);
+      const nonCompareLinks = filteredScoredLinks.filter(({ link }) => !/\/compare\b|\/vs-/i.test(link)).map(({ link }) => link);
       const reservedCompareSlots = Math.min(2, compareLinks.length);
       const priorityLinks = [
         ...nonCompareLinks.slice(0, Math.max(0, (safeMaxPages - 1) - reservedCompareSlots)),
@@ -769,119 +805,15 @@ Deno.serve(async (req) => {
       console.log('Priority links:', priorityLinks);
 
       // ═════════════════════════════════════════════════════════════════════
-      // Fix 1: Pricing Page Secondary Pass
-      // After URL selection, find the pricing page among priorityLinks (or
-      // already-queued pages), scrape it first to get its HTML, then parse
-      // the HTML for modal/tab/plan query-param links, FAQ fragment anchors,
-      // and in-FAQ hyperlinks. Queue newly discovered URLs at priority +1200.
-      // ═════════════════════════════════════════════════════════════════════
-
-      // Identify the pricing page candidate from selected links
-      const pricingPageUrl = priorityLinks.find(u => isPricingPage(u)) ?? null;
-
-      // Extract secondary URLs from pricing page HTML before the main scrape
-      let secondaryPricingUrls: string[] = [];
-      if (pricingPageUrl) {
-        console.log('Fix 1: Fetching pricing page for secondary pass link extraction:', pricingPageUrl);
-        try {
-          const pricingHtmlResponse = await fetch('https://api.firecrawl.dev/v1/scrape', {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${apiKey}`,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              url: pricingPageUrl,
-              formats: ['html', 'rawHtml'],
-              onlyMainContent: false,
-              waitFor: 3000,
-            }),
-          });
-
-          if (pricingHtmlResponse.ok) {
-            let pricingHtmlData: FirecrawlScrapeResponse;
-            try {
-              pricingHtmlData = JSON.parse(await pricingHtmlResponse.text());
-            } catch {
-              pricingHtmlData = { success: false };
-            }
-
-            if (pricingHtmlData.success && pricingHtmlData.data) {
-              const html = pricingHtmlData.data.rawHtml || pricingHtmlData.data.html || '';
-              const alreadyQueued = new Set([...priorityLinks, formattedUrl]);
-              const discovered: string[] = [];
-
-              // Modal trigger URLs: ?modal=*, ?tab=*, ?plan=* in href attributes
-              const modalQueryRegex = /href=["']([^"']*\?(?:modal|tab|plan)=[^"'#\s]+)['"]/gi;
-              let mMatch;
-              while ((mMatch = modalQueryRegex.exec(html)) !== null) {
-                try {
-                  const resolved = new URL(mMatch[1], pricingPageUrl).href;
-                  if (!alreadyQueued.has(resolved) && isSameDomain(resolved, baseHost)) {
-                    discovered.push(resolved);
-                  }
-                } catch { /* skip invalid */ }
-              }
-
-              // FAQ anchor fragment links: #faq-*, #credits, #compute, #billing
-              const faqFragmentRegex = /href=["']([^"']*#(?:faq-[^\s"']+|credits|compute|billing))['"]/gi;
-              let faqMatch;
-              while ((faqMatch = faqFragmentRegex.exec(html)) !== null) {
-                try {
-                  const resolved = new URL(faqMatch[1], pricingPageUrl).href;
-                  if (!alreadyQueued.has(resolved) && isSameDomain(resolved, baseHost)) {
-                    discovered.push(resolved);
-                  }
-                } catch { /* skip invalid */ }
-              }
-
-              // In-FAQ hyperlinks inside .faq, .accordion, .collapsible, [data-faq] containers
-              // pointing to same-domain non-template subpages
-              const faqContainerRegex = /<(?:div|section|details)[^>]*(?:class|id|data-faq)[^>]*(?:faq|accordion|collapsible)[^>]*>[\s\S]*?<\/(?:div|section|details)>/gi;
-              let containerMatch;
-              while ((containerMatch = faqContainerRegex.exec(html)) !== null) {
-                const containerHtml = containerMatch[0];
-                const inFaqLinkRegex = /href=["']([^"']+)['"]/gi;
-                let linkMatch;
-                while ((linkMatch = inFaqLinkRegex.exec(containerHtml)) !== null) {
-                  const href = linkMatch[1];
-                  if (href.startsWith('#') || href.startsWith('javascript:') || href.startsWith('mailto:')) continue;
-                  try {
-                    const resolved = new URL(href, pricingPageUrl).href;
-                    if (!alreadyQueued.has(resolved) &&
-                        isSameDomain(resolved, baseHost) &&
-                        !exclusionPatterns.some(p => p.test(resolved)) &&
-                        !/\/templates?\//i.test(resolved)) {
-                      discovered.push(resolved);
-                    }
-                  } catch { /* skip invalid */ }
-                }
-              }
-
-              // Deduplicate and limit secondary pass results
-              const uniqueDiscovered = [...new Set(discovered)].slice(0, 5);
-              secondaryPricingUrls = uniqueDiscovered;
-
-              if (secondaryPricingUrls.length > 0) {
-                console.log(`Fix 1: Found ${secondaryPricingUrls.length} secondary pricing URLs:`, secondaryPricingUrls);
-              } else {
-                console.log('Fix 1: No secondary pricing URLs discovered');
-              }
-            }
-          }
-        } catch (fix1Err) {
-          console.warn('Fix 1: Secondary pricing pass failed (non-fatal):', fix1Err);
-        }
-      }
-
-      // ═════════════════════════════════════════════════════════════════════
       // STEP 4: TARGETED SCRAPE — only verified URLs
       // ═════════════════════════════════════════════════════════════════════
 
-      // Build the final URL list: priority links + secondary pricing URLs (deduplicated)
-      const alreadyInPriority = new Set(priorityLinks);
-      const extraUrls = secondaryPricingUrls.filter(u => !alreadyInPriority.has(u));
-      const allUrlsToScrape = [...priorityLinks, ...extraUrls];
+      // Perf: 40s budget — Fix 1 pre-fetch removed. The pricing page is fetched
+      // in the main batch (it already requests HTML via hasAccordions). Secondary
+      // link extraction runs after the batch from the already-scraped markdown.
+      // This eliminates the duplicate sequential Firecrawl call that previously
+      // blocked the main batch from starting.
+      const allUrlsToScrape = [...priorityLinks];
 
       const scrapePromises = allUrlsToScrape.map(pageUrl => scrapePage(apiKey, pageUrl));
       const scrapedPages = await Promise.all(scrapePromises);
@@ -908,9 +840,56 @@ Deno.serve(async (req) => {
       fix2TotalQueuedCount = allUrlsToScrape.length;
       const unresolvedRate = fix2TotalQueuedCount > 0 ? unresolvedUrls.length / fix2TotalQueuedCount : 0;
 
+      // ═════════════════════════════════════════════════════════════════════
+      // Fix 1 (post-batch): Pricing Page Secondary Pass
+      // Perf: 40s budget — extracted from already-scraped pricing page markdown
+      // instead of a separate pre-fetch. Eliminates the duplicate sequential
+      // Firecrawl call. Secondary links extracted from markdown [text](url)
+      // patterns; covers modal/tab/plan params and FAQ fragment anchors.
+      // ═════════════════════════════════════════════════════════════════════
+      const pricingPageUrl = allUrlsToScrape.find(u => isPricingPage(u)) ?? null;
+      if (pricingPageUrl) {
+        const scrapedPricing = resolvedPages.find(p => isPricingPage(p.url));
+        if (scrapedPricing) {
+          const alreadyQueued = new Set([...allUrlsToScrape, formattedUrl]);
+          const discovered: string[] = [];
+          const mdLinkRegex = /\[([^\]]*)\]\(([^)\s]+)\)/g;
+          let mdMatch;
+          while ((mdMatch = mdLinkRegex.exec(scrapedPricing.markdown)) !== null) {
+            const href = mdMatch[2];
+            if (href.startsWith('#') || href.startsWith('javascript:') || href.startsWith('mailto:')) continue;
+            try {
+              const resolved = new URL(href, pricingPageUrl).href;
+              if (alreadyQueued.has(resolved) || !isSameDomain(resolved, baseHost)) continue;
+              if (exclusionPatterns.some(p => p.test(resolved))) continue;
+              // Accept modal/tab/plan params, FAQ fragments, or ≥2-segment docs subpages
+              const parsedHref = new URL(resolved);
+              const isModal = /[?&](modal|tab|plan)=/.test(parsedHref.search);
+              const isFaqAnchor = /^#?(faq-|credits|compute|billing)/i.test(parsedHref.hash);
+              const pathSegs = parsedHref.pathname.split('/').filter(Boolean);
+              const isDocSubpage = pathSegs.length >= 2 && isEvidenceEligible(resolved);
+              if (isModal || isFaqAnchor || isDocSubpage) {
+                discovered.push(resolved);
+                alreadyQueued.add(resolved);
+              }
+            } catch { /* skip invalid */ }
+          }
+          // Perf: 40s budget — cap secondary URLs at 2 (was 5)
+          const secondaryUrls = [...new Set(discovered)].slice(0, 2);
+          if (secondaryUrls.length > 0) {
+            console.log(`Fix 1 (post-batch): Found ${secondaryUrls.length} secondary pricing URLs:`, secondaryUrls);
+            const secondaryResults = await Promise.all(secondaryUrls.map(u => scrapePage(apiKey, u)));
+            secondaryResults.forEach(p => { if (p) resolvedPages.push(p); });
+          } else {
+            console.log('Fix 1 (post-batch): No secondary pricing URLs discovered');
+          }
+        }
+      }
+
       let additionalRetryPages: ScrapedPage[] = [];
 
-      if (unresolvedRate >= 0.30 && unresolvedUrls.length > 0) {
+      // Perf: 40s budget — retry threshold raised from 30% to 50% to reduce costly retry passes
+      if (unresolvedRate >= 0.50 && unresolvedUrls.length > 0) {
         console.warn(
           `Fix 2: High unresolved rate (${Math.round(unresolvedRate * 100)}%) for ${baseHost} on ${new Date().toISOString()}. ` +
           `Unresolved URLs: ${unresolvedUrls.join(', ')}`

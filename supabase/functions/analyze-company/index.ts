@@ -1296,7 +1296,8 @@ async function callLovableAI(systemPrompt: string, userContent: string): Promise
         { role: 'user', content: userContent },
       ],
       temperature: 0.1,
-      max_tokens: 32768,
+      // Perf: 40s budget — reduced from 32768; scoring responses average 10-14k tokens
+      max_tokens: 16384,
       response_format: { type: 'json_object' },
     }),
   });
@@ -1736,7 +1737,8 @@ Deno.serve(async (req) => {
     const prioritizedPages = [...candidatePages]
       .sort((a, b) => scorePagePriority(b) - scorePagePriority(a));
 
-    const MAX_CONTENT_CHARS = 100000;
+    // Perf: 40s budget — reduced from 100000; 60k chars (~15k tokens) is sufficient for 8-dim scoring
+    const MAX_CONTENT_CHARS = 60000;
     let usedChars = 0;
     const selectedBlocks: string[] = [];
     const selectedUrls: string[] = [];
@@ -1908,16 +1910,17 @@ ${billingOnlyRoutingInstruction}
 Website Content:
 ${truncatedContent}`;
 
-    // Step 2b: 3-pass majority vote scoring for consistency
-    console.log('Running 3-pass majority vote scoring...');
+    // Step 2b: 2-pass scoring for consistency
+    // Perf: 40s budget — reduced from 3 parallel passes to 2. Tiebreaker: higher
+    // confidence pass wins. Conservative: if both agree, use that score. If they
+    // disagree, use the pass with higher confidence to determine the final score.
+    console.log('Running 2-pass scoring...');
     const rubricPasses = await Promise.all([
       callLovableAI(RUBRIC_SCORING_PROMPT, scoringContent),
       callLovableAI(RUBRIC_SCORING_PROMPT, scoringContent),
-      callLovableAI(RUBRIC_SCORING_PROMPT, scoringContent),
     ]) as Array<Record<string, unknown>>;
-    console.log('All 3 rubric passes complete');
+    console.log('Both scoring passes complete');
 
-    // Merge: for each dimension, take median score; for ties, use the result from the pass whose score equals the median
     const DIMENSION_NAMES = [
       'Product north star', 'ICP and job clarity', 'Buyer and budget alignment',
       'Value unit', 'Cost driver mapping', 'Pools and packaging',
@@ -1933,45 +1936,41 @@ ${truncatedContent}`;
 
     const pass1Dims = getPassDimensions(rubricPasses[0]);
     const pass2Dims = getPassDimensions(rubricPasses[1]);
-    const pass3Dims = getPassDimensions(rubricPasses[2]);
 
     // Log per-dimension scores across passes for diagnostics
     for (const dimName of DIMENSION_NAMES) {
       const s1 = pass1Dims.find(d => d.dimension === dimName)?.score ?? -1;
       const s2 = pass2Dims.find(d => d.dimension === dimName)?.score ?? -1;
-      const s3 = pass3Dims.find(d => d.dimension === dimName)?.score ?? -1;
-      console.log(`  [3-pass] ${dimName}: ${s1}, ${s2}, ${s3}`);
+      console.log(`  [2-pass] ${dimName}: ${s1}, ${s2}`);
     }
 
-    // Build merged dimension scores using median
+    // Merge: if passes agree, use that score with higher confidence.
+    // If they disagree, use the score from the higher-confidence pass (tiebreaker).
     const mergedDimensionScores = DIMENSION_NAMES.map(dimName => {
       const candidates = [
         pass1Dims.find(d => d.dimension === dimName),
         pass2Dims.find(d => d.dimension === dimName),
-        pass3Dims.find(d => d.dimension === dimName),
       ].filter(Boolean) as typeof pass1Dims;
 
       if (candidates.length === 0) {
         return { dimension: dimName, score: 0, confidence: 0, notObservable: true, rationale: '', observed: [], sourceEvidence: [], uncertaintyReasons: ['No data from any pass'], missingInsiderPrompts: [] };
       }
 
-      // Median score
-      const scores = candidates.map(c => c.score).sort((a, b) => a - b);
-      const medianScore = scores[Math.floor(scores.length / 2)];
+      if (candidates.length === 1) return candidates[0];
 
-      // Pick the candidate whose score equals median (prefer the one with highest confidence)
-      const matchingCandidates = candidates.filter(c => c.score === medianScore);
-      const bestCandidate = matchingCandidates.sort((a, b) => (b.confidence || 0) - (a.confidence || 0))[0];
+      const [c1, c2] = candidates;
+      if (c1.score === c2.score) {
+        // Agreement — use higher confidence candidate, average the confidence values
+        const winner = (c1.confidence || 0) >= (c2.confidence || 0) ? c1 : c2;
+        return {
+          ...winner,
+          confidence: ((c1.confidence || 0) + (c2.confidence || 0)) / 2,
+        };
+      }
 
-      // Median confidence across all passes
-      const confidences = candidates.map(c => c.confidence || 0).sort((a, b) => a - b);
-      const medianConfidence = confidences[Math.floor(confidences.length / 2)];
-
-      return {
-        ...bestCandidate,
-        score: medianScore,
-        confidence: medianConfidence,
-      };
+      // Disagreement — higher confidence pass wins
+      const winner = (c1.confidence || 0) >= (c2.confidence || 0) ? c1 : c2;
+      return winner;
     });
 
     // Fix 3A: Score Stability Rule
