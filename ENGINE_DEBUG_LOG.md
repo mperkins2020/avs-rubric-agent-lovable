@@ -4,7 +4,7 @@
 **Usage:** When a report produces a questionable result, log it here. Run `Scan the debug log for recurring patterns` periodically to surface systemic issues.
 **Related:** See ENGINE_DEBUG_HISTORY.md for backfilled history from git.
 
-**Entries:** 9 | **Last updated:** March 22, 2026
+**Entries:** 12 | **Last updated:** March 23, 2026
 
 ---
 
@@ -17,9 +17,9 @@
 | evidence_gap | 0 | — |
 | gate_misfire | 0 | — |
 | confidence_miscalc | 0 | — |
-| prompt_drift | 0 | — |
-| pipeline_miss | 7 | Value Unit, Cost Driver Mapping, Safety/Trust, Overages & Risk |
-| contamination | 0 | — |
+| prompt_drift | 1 | ICP and Job Clarity (D2) |
+| pipeline_miss | 9 | Value Unit, Cost Driver Mapping, Safety/Trust, Overages & Risk |
+| contamination | 2 | Pricing Transparency, Enterprise/Compliance (D7/D8) |
 | other | 0 | — |
 
 ---
@@ -29,6 +29,102 @@
 <!-- Newest first. To add an entry, copy the template below and fill it in. -->
 
 <!-- Next entry goes here -->
+
+---
+
+### Entry 012 — March 23, 2026
+
+| Field | Value |
+|-------|-------|
+| Company | ZoomInfo.com |
+| Version | V2 → V3 (two independent reruns, March 22 → March 23) |
+| Dimension | Product North Star (D1), ICP & Job Clarity (D2) |
+| Score | V2: not recorded | V3: lower — D1 and D2 dropped |
+| Score Delta | D1 and D2 both regressed between independent reruns |
+| Pages Analyzed | V2: homepage present | V3: homepage absent from evidence set |
+| Root Cause | pipeline_miss — pipeline inconsistency across independent reruns |
+| Caught By | Manual comparison of V2 and V3 page lists |
+| Status | Fix not yet implemented. Fix 3A does not cover this failure class — see Root Cause Detail. |
+
+**Root Cause Detail:**
+ZoomInfo's homepage (`zoominfo.com`) is a primary evidence page for D1 (Product North Star) and D2 (ICP & Job Clarity) — it contains the clearest articulation of the product's purpose, target buyer, and use case framing. In the March 22 run, the homepage appeared in the evidence set and both dimensions scored correctly. In the March 23 rerun (same company, no changes to public site), the homepage was absent from the fetched page list and D1/D2 dropped as a result.
+
+This is a **pipeline inconsistency** failure: Firecrawl's `/map` API does not return a deterministic URL set across independent calls. The homepage ranked below the 10-page cutoff in the March 23 run due to map ordering variance, not any change to the site.
+
+**Why Fix 3A did not fire:** Fix 3A (Score Stability Rule) only activates when `previousScores` is explicitly passed into the `analyze-company` function call. The application makes independent stateless calls — `previousScores` is never populated from a prior run. Fix 3A is structurally dormant for all production runs. Even if Fix 3A had fired, it would only hold the score if zero contradicting evidence appeared — it cannot guarantee the homepage appears in the evidence set.
+
+**Resolution needed:**
+1. **Score persistence** — store last known per-dimension scores and confidence per company in Supabase after each run.
+2. **Score injection** — retrieve and pass stored scores as `previousScores` on subsequent runs for the same company to activate Fix 3A.
+3. **Homepage pinning** — the company root domain URL should be force-added to the evidence set regardless of map results, similar to how `/pricing` was given priority override.
+
+**Pattern Tag:** `pipeline-inconsistency-rerun`, `homepage-absent-map-variance`, `fix-3a-dormant`
+
+---
+
+### Entry 011 — March 23, 2026
+
+| Field | Value |
+|-------|-------|
+| Company | ElevenLabs.io |
+| Version | V2 → V3 (March 6 baseline → March 23 post-fix rerun) |
+| Dimension | Pricing Transparency (D7), Enterprise/Compliance (D8) |
+| Score | V2: higher | V3: lower — D7 and D8 regressed |
+| Score Delta | D7 and D8 both dropped post-fix deployment |
+| Pages Analyzed | V2: 18 pages (including /security and /trust) | V3: 7 pages (/security and /trust absent) |
+| Root Cause | contamination — post-fix evidence set shrinkage; high-signal pages dropped after fix deployment changed page selection |
+| Caught By | Manual page list comparison across runs |
+| Status | Fix not yet identified. Fix 3A wrong failure class — cannot protect against missing pages. |
+
+**Root Cause Detail:**
+The March 6 run (pre-fix) fetched 18 pages including `elevenlabs.io/security` and `elevenlabs.io/trust` — the two highest-signal pages for D7 and D8 respectively. The March 23 rerun (post-fix deployment) fetched only 7 pages and neither `/security` nor `/trust` appeared in the evidence set. D7 and D8 dropped as a direct result.
+
+This is a **post-fix evidence shrinkage** failure. The pipeline fixes deployed between March 6 and March 23 changed how URLs are selected, filtered, and capped:
+- `maxPages` default reduced from 15 → 10 (performance fix `bb6e4ec`)
+- `isEvidenceEligible()` pre-filter added — may be incorrectly excluding `/security` or `/trust` paths
+- Fix 3B page-to-dimension routing changes may be deprioritizing trust-center paths relative to pricing/billing paths
+
+**Why Fix 3A did not fire:** Fix 3A cannot protect against this failure class. The Score Stability Rule only holds a prior score when new evidence is zero-signal. When high-signal pages are *absent from the evidence set entirely*, Fix 3A has no prior-run scores to compare against (same dormancy issue as Entry 012). Even with full Fix 3A activation, a missing `/security` page produces no evidence — Fix 3A would still allow the score to drop because there is no explicit contradiction to block.
+
+**Resolution needed:**
+1. **Trust-center path pinning** — `/security`, `/trust`, `/compliance`, `/privacy` paths should be added to the `highIntentPaths` set with explicit positive scoring weight, not just left to map discovery.
+2. **Investigate `isEvidenceEligible()` filter** — confirm `/security` and `/trust` are not being incorrectly excluded by the domain or path pre-filter.
+3. **Regression test for page count** — before deploying performance page-count reductions, check that anchor high-signal pages (pricing, security, trust) still appear in the post-change evidence set for a known-good company.
+
+**Pattern Tag:** `post-fix-page-shrinkage`, `security-trust-pages-absent`, `fix-3a-wrong-failure-class`, `performance-fix-evidence-regression`
+
+---
+
+### Entry 010 — March 15, 2026
+
+| Field | Value |
+|-------|-------|
+| Company | Lovable.dev |
+| Version | V2 → V3 (March 8 → March 15, two independent runs) |
+| Dimension | ICP & Job Clarity (D2) |
+| Score | V2: D2 = 2/2 | V3: D2 = 1/2 |
+| Score Delta | −1 on D2 only; all other dimensions held |
+| Pages Analyzed | Identical — same 7 pages in both runs |
+| Root Cause | prompt_drift — same evidence set, different score on independent rerun |
+| Caught By | Manual comparison after user noticed overall score change |
+| Status | Fix not yet implemented. Predates Fix 3A. Fix 3A would cover this if score persistence were active — see Root Cause Detail. |
+
+**Root Cause Detail:**
+Both runs analyzed identical pages (7 pages, same URLs, same content — no changes to Lovable's public site between March 8 and March 15). D2 (ICP & Job Clarity) scored 2/2 in the March 8 run and 1/2 in the March 15 run with no change to the evidence set. All other 7 dimensions held.
+
+This is **pure prompt drift** — scoring model instability producing different output from the same input across two calls. The Gemini 2.5 Flash model's response for D2 is non-deterministic at the margin of a 2/2 score. The March 8 run's 3-pass majority vote resolved to 2/2; the March 15 2-pass merge resolved to 1/2.
+
+**Contributing factors:**
+1. The switch from 3-pass → 2-pass scoring (performance fix `bb6e4ec`) reduced majority vote robustness. A 3-pass vote requires 2/3 agreement; 2-pass is a coin flip on disagreements, with confidence as tiebreaker.
+2. D2 is a dimension where LLM inference of buyer clarity from marketing copy is inherently ambiguous — "developer-adjacent" products sit on the 1/2 vs. 2/2 threshold without bright-line evidence.
+
+**Why Fix 3A would cover this (when active):** If `previousScores` were passed, Fix 3A's Score Stability Rule would hold D2 at 2/2 absent contradicting evidence. Prompt drift produces no contradicting evidence — it produces a lower-confidence alternative reading of the same text. Fix 3A is the correct mechanism for this failure class, but it requires score persistence infrastructure to be operational.
+
+**Resolution needed:**
+1. **Score persistence + injection** (same as Entry 012) — activates Fix 3A for all production runs.
+2. **D2 threshold review** — consider whether the D2 subtest rubric has a bright-line at 2/2 that is LLM-interpretable, or whether the threshold is inherently ambiguous for developer-tool products.
+
+**Pattern Tag:** `prompt-drift-same-evidence`, `d2-threshold-ambiguity`, `2-pass-vote-instability`, `fix-3a-dormant`
 
 ---
 
@@ -289,7 +385,13 @@ Recurring pipeline failure patterns identified across production runs. Each row 
 | FAQ deep link extraction scoping errors (too broad or wrong DOM region) | Fixed Round 6 — anchor to pricing page FAQ regions, follow ≥2 path segment URLs only |
 | Pricing page excluded from sitemap — keyword match selects wrong page | Fixed — canonical path probing added. If `/pricing`, `/plans`, `/billing` absent from map results, scraper constructs and probes directly. |
 | Transient network error on scoring pass causes full function 500 | Fixed — retry logic with exponential backoff added to `callLovableAI` (up to 2 retries). |
-| Image/CDN URLs queued as pages (e.g., .webp, .png, .jpg, .gif, .svg, cdn.* subdomains) | New — observed in Relevance AI V2. Image files and CDN asset URLs consume page slots and contribute no evidence. Filter before queue entry. Fix not yet deployed. |
+| Image/CDN URLs queued as pages (e.g., .webp, .png, .jpg, .gif, .svg, cdn.* subdomains) | Fixed — `isEvidenceEligible()` pre-filter deployed `bb6e4ec`. CDN subdomains and binary asset extensions excluded before queue entry. |
+| User-generated content at domain paths consuming page slots (e.g., gamma.app/docs/random-slug, ephemeral customer-created pages) | Fixed — `isEvidenceEligible()` pre-filter deployed `bb6e4ec`. Path segments matching random-slug pattern (`/^-[a-z0-9]{10,}$/i`) excluded. |
+| w3.org/2000/svg and other external domains appearing as evidence URLs | Fixed — `isEvidenceEligible()` pre-filter deployed `bb6e4ec`. Any URL whose host does not match the registrable domain of the target company is excluded. |
+| Fix 3A (Score Stability Rule) operationally dormant — no score persistence or injection mechanism exists | Open — Fix 3A only activates when `previousScores` is explicitly passed. The app never passes `previousScores` (every run is independent/stateless). Requires: (1) store per-dimension scores in Supabase after each run, (2) retrieve and inject on next run for same company. |
+| Prompt drift — same evidence set, different score on independent rerun | Open — covered by Fix 3A when active. Currently dormant (see above). Observed: Lovable D2, March 8→15. 2-pass scoring is more susceptible than 3-pass due to reduced majority vote robustness. |
+| Post-fix evidence set shrinkage — page selection changes after fix deployment reduce total pages fetched, dropping high-signal pages | Open — observed: ElevenLabs /security and /trust absent post-`bb6e4ec`. Performance page-count reduction (15→10 default) is likely cause. High-signal paths (/security, /trust, /compliance) should be pinned like /pricing. |
+| Pipeline inconsistency across independent reruns — different pages fetched for same company on separate runs due to Firecrawl map ordering variance | Open — observed: ZoomInfo homepage absent March 23 vs. present March 22. Homepage should be force-pinned to evidence set. Score persistence + Fix 3A injection is secondary mitigation. |
 
 ---
 
