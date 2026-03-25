@@ -15,13 +15,12 @@ export default {
       center: true,
       padding: "2rem",
       screens: {
-        "2xl": "1400px",
+        "2xl": "1280px",
       },
     },
     extend: {
       fontFamily: {
         sans: ['Inter', 'system-ui', 'sans-serif'],
-        mono: ['JetBrains Mono', 'monospace'],
       },
       colors: {
         border: "hsl(var(--border))",
@@ -77,11 +76,26 @@ export default {
           partial: "hsl(var(--confidence-partial))",
           sparse: "hsl(var(--confidence-sparse))",
         },
+        vt: {
+          violet: "hsl(var(--vt-violet))",
+          cyan: "hsl(var(--vt-cyan))",
+          blue: "hsl(var(--vt-blue))",
+          midnight: "hsl(var(--vt-midnight))",
+          coral: "hsl(var(--vt-coral))",
+          mint: "hsl(var(--vt-mint))",
+        },
       },
       borderRadius: {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
+        "2xl": "24px",
+        "3xl": "28px",
+      },
+      boxShadow: {
+        "vt-sm": "0 4px 14px rgba(11,18,32,0.06)",
+        "vt-md": "0 10px 30px rgba(11,18,32,0.08)",
+        "vt-lg": "0 18px 45px rgba(11,18,32,0.10)",
       },
       keyframes: {
         "accordion-down": {
@@ -91,10 +105,6 @@ export default {
         "accordion-up": {
           from: { height: "var(--radix-accordion-content-height)" },
           to: { height: "0" },
-        },
-        "pulse-glow": {
-          "0%, 100%": { opacity: "0.4" },
-          "50%": { opacity: "1" },
         },
         "slide-up": {
           from: { opacity: "0", transform: "translateY(10px)" },
@@ -108,13 +118,8 @@ export default {
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
-        "pulse-glow": "pulse-glow 2s ease-in-out infinite",
         "slide-up": "slide-up 0.4s ease-out",
         "fade-in": "fade-in 0.3s ease-out",
-      },
-      backgroundImage: {
-        "gradient-radial": "radial-gradient(var(--tw-gradient-stops))",
-        "gradient-primary": "linear-gradient(135deg, hsl(var(--primary)), hsl(var(--accent)))",
       },
     },
   },

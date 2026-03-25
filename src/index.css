@@ -1,43 +1,51 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* AVS Rubric Design System */
+/* ValueTempo Design System — Light-mode-first */
 
 @layer base {
   :root {
-    /* Dark theme by default for professional SaaS feel */
-    --background: 222 47% 6%;
-    --foreground: 210 40% 98%;
+    /* Light theme (default) */
+    --background: 220 33% 97%;       /* #F6F8FC */
+    --foreground: 216 54% 8%;        /* #0B1220 */
 
-    --card: 222 47% 9%;
-    --card-foreground: 210 40% 98%;
+    --card: 0 0% 100%;               /* #FFFFFF */
+    --card-foreground: 216 54% 8%;
 
-    --popover: 222 47% 11%;
-    --popover-foreground: 210 40% 98%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 216 54% 8%;
 
-    --primary: 217 91% 70%;
-    --primary-foreground: 222 47% 6%;
+    --primary: 260 100% 66%;         /* #8C52FF Electric Violet */
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 222 47% 14%;
-    --secondary-foreground: 210 40% 98%;
+    --secondary: 220 33% 95%;        /* #EEF2F8 */
+    --secondary-foreground: 216 54% 8%;
 
-    --muted: 222 47% 14%;
-    --muted-foreground: 215 20% 55%;
+    --muted: 220 33% 95%;
+    --muted-foreground: 220 14% 42%; /* #5B667A */
 
-    --accent: 172 66% 50%;
-    --accent-foreground: 222 47% 6%;
+    --accent: 197 100% 50%;          /* #00C2FF Signal Cyan */
+    --accent-foreground: 216 54% 8%;
 
     --destructive: 0 72% 51%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 222 47% 16%;
-    --input: 222 47% 16%;
-    --ring: 217 91% 60%;
+    --border: 218 25% 85%;           /* #D7DFEA */
+    --input: 218 25% 85%;
+    --ring: 260 100% 66%;
 
-    --radius: 0.75rem;
+    --radius: 1rem;
+
+    /* VT brand colors */
+    --vt-violet: 260 100% 66%;       /* #8C52FF */
+    --vt-cyan: 197 100% 50%;         /* #00C2FF */
+    --vt-blue: 224 100% 65%;         /* #4F7BFF */
+    --vt-midnight: 216 54% 8%;       /* #0B1220 */
+    --vt-coral: 18 100% 64%;         /* #FF7A45 */
+    --vt-mint: 165 87% 54%;          /* #22F0C6 */
 
     /* Score colors */
     --score-high: 142 76% 45%;
@@ -49,29 +57,34 @@
     --confidence-partial: 45 93% 47%;
     --confidence-sparse: 0 72% 51%;
 
-    /* Glass effect */
-    --glass-bg: 222 47% 9% / 0.8;
-    --glass-border: 222 47% 20% / 0.5;
+    /* Section backgrounds */
+    --vt-bg-section: 220 33% 95%;    /* #EEF2F8 */
+
+    /* Text on dark */
+    --vt-text-on-dark: 220 14% 90%;  /* #E5E7EB */
+    --vt-text-on-dark-secondary: 220 9% 64%; /* #9CA3AF */
+
+    /* Dark card */
+    --vt-dark-card: 220 33% 11%;     /* #111827 */
+    --vt-dark-border: 220 18% 17%;   /* #1F2937 */
 
     /* Gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(217 91% 60%), hsl(172 66% 50%));
-    --gradient-hero: linear-gradient(180deg, hsl(222 47% 6%) 0%, hsl(222 47% 10%) 100%);
-    --gradient-card: linear-gradient(145deg, hsl(222 47% 11%), hsl(222 47% 8%));
-    
+    --gradient-primary: linear-gradient(135deg, #00C2FF, #4F7BFF, #8C52FF);
+
     /* Shadows */
-    --shadow-glow: 0 0 60px -12px hsl(217 91% 60% / 0.4);
-    --shadow-card: 0 4px 24px -8px hsl(0 0% 0% / 0.5);
-    --shadow-elevated: 0 8px 32px -8px hsl(0 0% 0% / 0.6);
+    --shadow-sm: 0 4px 14px rgba(11,18,32,0.06);
+    --shadow-md: 0 10px 30px rgba(11,18,32,0.08);
+    --shadow-lg: 0 18px 45px rgba(11,18,32,0.10);
 
     /* Sidebar */
-    --sidebar-background: 222 47% 8%;
-    --sidebar-foreground: 210 40% 98%;
-    --sidebar-primary: 217 91% 60%;
-    --sidebar-primary-foreground: 222 47% 6%;
-    --sidebar-accent: 222 47% 14%;
-    --sidebar-accent-foreground: 210 40% 98%;
-    --sidebar-border: 222 47% 16%;
-    --sidebar-ring: 217 91% 60%;
+    --sidebar-background: 216 54% 8%;
+    --sidebar-foreground: 220 14% 90%;
+    --sidebar-primary: 260 100% 66%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 220 33% 14%;
+    --sidebar-accent-foreground: 220 14% 90%;
+    --sidebar-border: 220 18% 17%;
+    --sidebar-ring: 260 100% 66%;
   }
 }
 
@@ -88,19 +101,20 @@
     @apply bg-background text-foreground antialiased;
     font-family: 'Inter', system-ui, sans-serif;
   }
-
-  .font-mono {
-    font-family: 'JetBrains Mono', monospace;
-  }
 }
 
 @layer components {
-  .glass-card {
-    @apply bg-card/80 backdrop-blur-xl border border-white/5 rounded-xl;
+  .gradient-text {
+    @apply bg-clip-text text-transparent;
+    background-image: var(--gradient-primary);
   }
 
-  .gradient-text {
-    @apply bg-clip-text text-transparent bg-gradient-to-r from-primary to-accent;
+  .gradient-bar {
+    background-image: var(--gradient-primary);
+  }
+
+  .glass-card {
+    @apply bg-card border border-border rounded-[24px] shadow-[var(--shadow-sm)];
   }
 
   .score-badge {
@@ -108,15 +122,15 @@
   }
 
   .score-badge-high {
-    @apply bg-[hsl(var(--score-high)/0.15)] text-[hsl(var(--score-high))] border border-[hsl(var(--score-high)/0.3)];
+    @apply bg-[hsl(var(--score-high)/0.1)] text-[hsl(var(--score-high))] border border-[hsl(var(--score-high)/0.2)];
   }
 
   .score-badge-medium {
-    @apply bg-[hsl(var(--score-medium)/0.15)] text-[hsl(var(--score-medium))] border border-[hsl(var(--score-medium)/0.3)];
+    @apply bg-[hsl(var(--score-medium)/0.1)] text-[hsl(var(--score-medium))] border border-[hsl(var(--score-medium)/0.2)];
   }
 
   .score-badge-low {
-    @apply bg-[hsl(var(--score-low)/0.15)] text-[hsl(var(--score-low))] border border-[hsl(var(--score-low)/0.3)];
+    @apply bg-[hsl(var(--score-low)/0.1)] text-[hsl(var(--score-low))] border border-[hsl(var(--score-low)/0.2)];
   }
 
   .confidence-strong {
@@ -131,7 +145,13 @@
     @apply text-[hsl(var(--confidence-sparse))];
   }
 
-  .glow-primary {
-    box-shadow: var(--shadow-glow);
+  /* Dark anchor sections (hero, footer, CTA bands) */
+  .dark-anchor {
+    background-color: hsl(var(--vt-midnight));
+    color: hsl(var(--vt-text-on-dark));
+  }
+
+  .dark-anchor .text-secondary-content {
+    color: hsl(var(--vt-text-on-dark-secondary));
   }
 }

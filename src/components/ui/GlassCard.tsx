@@ -10,19 +10,18 @@ interface GlassCardProps extends HTMLMotionProps<"div"> {
 const GlassCard = forwardRef<HTMLDivElement, GlassCardProps>(
   ({ className, variant = "default", glow = false, children, ...props }, ref) => {
     const variants = {
-      default: "bg-card/80 backdrop-blur-xl border border-border/50",
-      elevated: "bg-card/90 backdrop-blur-xl border border-border/50 shadow-lg",
+      default: "bg-card border border-border shadow-vt-sm",
+      elevated: "bg-card border border-border shadow-vt-md",
       interactive:
-        "bg-card/80 backdrop-blur-xl border border-border/50 hover:border-primary/30 hover:bg-card/90 transition-all duration-300 cursor-pointer",
+        "bg-card border border-border shadow-vt-sm hover:shadow-vt-md hover:border-primary/30 transition-all duration-200 cursor-pointer",
     };
 
     return (
       <motion.div
         ref={ref}
         className={cn(
-          "rounded-xl",
+          "rounded-3xl",
           variants[variant],
-          glow && "shadow-[0_0_60px_-12px_hsl(var(--primary)/0.4)]",
           className
         )}
         {...props}

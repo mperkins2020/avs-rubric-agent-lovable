@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { URLInput } from "@/components/URLInput";
-import { Sparkles, Shield, Target, Zap, AlertCircle, Info, LogOut, LogIn, Menu, X } from "lucide-react";
+import { Shield, Target, Zap, AlertCircle, LogOut, LogIn, Menu, X } from "lucide-react";
 import { Footer } from "@/components/Footer";
 import { ReportPreviewCarousel } from "@/components/ReportPreviewCarousel";
 import { useScan } from "@/hooks/useScan";
@@ -25,6 +25,40 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+
+const rotatingLines = [
+  "Buyers can't predict what they'll pay.",
+  "Enterprise deals stall at the approval stage.",
+  "Churn starts before the contract ends.",
+];
+
+function RotatingSubhead() {
+  const [index, setIndex] = useState(0);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setIndex((i) => (i + 1) % rotatingLines.length);
+    }, 3500);
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <div className="h-10 flex items-center justify-center mb-10">
+      <AnimatePresence mode="wait">
+        <motion.p
+          key={index}
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -12 }}
+          transition={{ duration: 0.4 }}
+          className="text-lg text-muted-foreground"
+        >
+          {rotatingLines[index]}
+        </motion.p>
+      </AnimatePresence>
+    </div>
+  );
+}
 
 const dimensionDefinitions: Record<string, string> = {
   "Product north star": "Observable outcomes tie to value delivery and predictability.",
@@ -62,21 +96,14 @@ const Index = () => {
   } = useScan();
   const isLoading = status === 'scraping' || status === 'analyzing';
 
-  // Navigate to results when scan completes
   useEffect(() => {
     if (status === 'complete' && companyProfile && rubricScore && observability) {
       navigate("/results", {
-        state: {
-          companyProfile,
-          rubricScore,
-          observability,
-          pages
-        }
+        state: { companyProfile, rubricScore, observability, pages }
       });
     }
   }, [status, companyProfile, rubricScore, observability, pages, navigate]);
 
-  // Read ?scan= query parameter on mount (from www.valuetempo.com redirect)
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const scanUrl = params.get('scan');
@@ -91,7 +118,6 @@ const Index = () => {
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Scroll to hash on mount
   useEffect(() => {
     if (window.location.hash) {
       const id = window.location.hash.slice(1);
@@ -100,15 +126,12 @@ const Index = () => {
     }
   }, []);
 
-  // Show error toast
   useEffect(() => {
     if (status === 'error' && error) {
-      toast.error("Scan Failed", {
-        description: error
-      });
+      toast.error("Scan Failed", { description: error });
     }
   }, [status, error]);
-  // When user signs in while a pending URL exists, start the scan
+
   useEffect(() => {
     if (session && pendingUrl) {
       const url = pendingUrl;
@@ -143,7 +166,6 @@ const Index = () => {
       if (authIsLogin) {
         const { error } = await supabase.auth.signInWithPassword({ email: trimmedEmail, password: authPassword });
         if (error) throw error;
-        // Close modal immediately on successful login (handles case without pendingUrl)
         setShowAuthModal(false);
       } else {
         const { error } = await supabase.auth.signUp({ email: trimmedEmail, password: authPassword, options: { emailRedirectTo: window.location.origin } });
@@ -157,6 +179,7 @@ const Index = () => {
       setAuthLoading(false);
     }
   };
+
   const features = [{
     icon: Target,
     title: "8 Trust Dimensions",
@@ -170,7 +193,9 @@ const Index = () => {
     title: "Instant Analysis",
     description: "Identifies trust gaps, ranks by severity, and recommends what to fix first."
   }];
-  return <div className="min-h-screen bg-background relative overflow-hidden">
+
+  return (
+    <div className="min-h-screen bg-background">
       <SEOHead
         title="AVS Rubric Agent — Score Your AI Trust Infrastructure"
         description="Get an instant, evidence-backed assessment of your AI product's trust infrastructure across 8 dimensions. Case studies show closing trust gaps drives 2–7% ARR uplift."
@@ -178,30 +203,30 @@ const Index = () => {
         publishedDate="2026-01-01"
         tags={["AVS Rubric", "AI trust", "trust infrastructure", "revenue quality", "SaaS"]}
       />
-      {/* Background effects */}
-      <div className="absolute inset-0 bg-gradient-to-b from-primary/5 via-transparent to-accent/5 pointer-events-none" />
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[800px] bg-primary/10 rounded-full blur-3xl opacity-20 pointer-events-none" />
 
-      {/* Header */}
-      <header className="relative z-10 border-b border-border/50 bg-background/80 backdrop-blur-sm">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
+      {/* Navbar */}
+      <header className="sticky top-0 z-30 border-b border-border bg-white/75 backdrop-blur-md">
+        <div className="container mx-auto px-5 md:px-10 h-[72px] flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Link to="/">
               <img alt="ValueTempo" className="h-8" src={ValueTempoLogo} />
             </Link>
-            <Button variant="outline" size="sm" className="gap-2 hidden sm:flex">
-              <Sparkles className="w-4 h-4" />
-              AVS Rubric
-            </Button>
-            <span className="px-2 py-0.5 text-xs font-semibold rounded-full bg-primary/10 text-primary border border-primary/20 hidden sm:inline">
-              Beta
-            </span>
           </div>
           <nav className="hidden md:flex items-center gap-6">
-            <a href="https://www.valuetempo.com/methodology" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+            <a href="https://www.valuetempo.com/methodology" className="text-sm text-foreground hover:text-primary transition-colors">
               Methodology
             </a>
             <ResourcesDropdown />
+            <Button
+              size="sm"
+              className="bg-vt-midnight text-white hover:bg-vt-midnight/90 rounded-[20px] px-5 h-9"
+              onClick={() => {
+                const el = document.getElementById('url-input');
+                el?.scrollIntoView({ behavior: 'smooth' });
+              }}
+            >
+              Analyze
+            </Button>
             {session ? (
               <Button variant="ghost" size="sm" onClick={signOut} className="gap-1 text-muted-foreground hover:text-foreground">
                 <LogOut className="w-4 h-4" />
@@ -214,7 +239,6 @@ const Index = () => {
               </Button>
             )}
           </nav>
-          {/* Mobile hamburger */}
           <button
             className="md:hidden p-2 rounded-md text-muted-foreground hover:text-foreground transition-colors"
             onClick={() => setMobileMenuOpen(true)}
@@ -225,7 +249,7 @@ const Index = () => {
         </div>
       </header>
 
-      {/* Mobile slide-in menu */}
+      {/* Mobile menu */}
       <AnimatePresence>
         {mobileMenuOpen && (
           <>
@@ -233,7 +257,7 @@ const Index = () => {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 z-40 bg-black/50"
+              className="fixed inset-0 z-40 bg-black/30"
               onClick={() => setMobileMenuOpen(false)}
             />
             <motion.div
@@ -241,43 +265,28 @@ const Index = () => {
               animate={{ x: 0 }}
               exit={{ x: "100%" }}
               transition={{ type: "spring", damping: 30, stiffness: 300 }}
-              className="fixed top-0 right-0 z-50 h-full w-72 bg-background border-l border-border/50 flex flex-col"
+              className="fixed top-0 right-0 z-50 h-full w-72 bg-card border-l border-border flex flex-col"
             >
-              <div className="flex items-center justify-between px-5 py-4 border-b border-border/50">
+              <div className="flex items-center justify-between px-5 py-4 border-b border-border">
                 <span className="font-semibold text-sm">Menu</span>
-                <button
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="p-1 rounded-md text-muted-foreground hover:text-foreground transition-colors"
-                  aria-label="Close menu"
-                >
+                <button onClick={() => setMobileMenuOpen(false)} className="p-1 rounded-md text-muted-foreground hover:text-foreground transition-colors" aria-label="Close menu">
                   <X className="w-5 h-5" />
                 </button>
               </div>
               <nav className="flex flex-col gap-1 px-3 py-4 flex-1">
-                <a
-                  href="https://www.valuetempo.com/methodology"
-                  className="flex items-center px-3 py-2.5 rounded-lg text-sm text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors"
-                >
+                <a href="https://www.valuetempo.com/methodology" className="flex items-center px-3 py-2.5 rounded-lg text-sm text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors">
                   Methodology
                 </a>
                 <ResourcesDropdown mobile onNavigate={() => setMobileMenuOpen(false)} />
               </nav>
-              <div className="px-3 py-4 border-t border-border/50">
+              <div className="px-3 py-4 border-t border-border">
                 {session ? (
-                  <button
-                    onClick={() => { signOut(); setMobileMenuOpen(false); }}
-                    className="flex items-center gap-2 w-full px-3 py-2.5 rounded-lg text-sm text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors"
-                  >
-                    <LogOut className="w-4 h-4" />
-                    Sign out
+                  <button onClick={() => { signOut(); setMobileMenuOpen(false); }} className="flex items-center gap-2 w-full px-3 py-2.5 rounded-lg text-sm text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors">
+                    <LogOut className="w-4 h-4" /> Sign out
                   </button>
                 ) : (
-                  <button
-                    onClick={() => { setMobileMenuOpen(false); setShowAuthModal(true); }}
-                    className="flex items-center gap-2 w-full px-3 py-2.5 rounded-lg text-sm text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors"
-                  >
-                    <LogIn className="w-4 h-4" />
-                    Sign in
+                  <button onClick={() => { setMobileMenuOpen(false); setShowAuthModal(true); }} className="flex items-center gap-2 w-full px-3 py-2.5 rounded-lg text-sm text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors">
+                    <LogIn className="w-4 h-4" /> Sign in
                   </button>
                 )}
               </div>
@@ -286,120 +295,123 @@ const Index = () => {
         )}
       </AnimatePresence>
 
-      <div className="relative z-10 container mx-auto px-4 py-16 md:py-24">
-        {/* Hero */}
-        <motion.div initial={{
-        opacity: 0,
-        y: 20
-      }} animate={{
-        opacity: 1,
-        y: 0
-      }} className="text-center max-w-4xl mx-auto mb-12">
+      {/* Hero section */}
+      <section className="py-20 md:py-28">
+        <div className="container mx-auto px-5 md:px-10">
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center max-w-3xl mx-auto">
+            <h1 id="hero" className="text-3xl sm:text-4xl md:text-[56px] font-bold mb-5 leading-[1.15] tracking-tight">
+              <span className="block">Find the Trust Gaps</span>
+              <span className="mt-3 md:mt-4 block">
+                in Your <span className="gradient-text">AI Product</span>
+              </span>
+            </h1>
 
-          <h1 id="hero" className="text-3xl sm:text-4xl md:text-6xl font-bold mb-4 leading-tight">
-            Find the Trust Gaps<br />
-            in Your <span className="gradient-text">AI Product</span>
-          </h1>
+            <RotatingSubhead />
 
-          <p className="text-xl text-muted-foreground max-w-2xl mx-auto mb-12">
-            Paste your product URL to reveal gaps in product clarity, cost predictability, operational controls, and enterprise readiness.
-          </p>
-
-          {/* URL Input */}
-          <div id="url-input" className="flex justify-center mb-16 scroll-mt-24">
-            <URLInput onSubmit={handleSubmit} isLoading={isLoading} />
-          </div>
-
-          {/* Loading state */}
-          {isLoading && <motion.div initial={{
-          opacity: 0
-        }} animate={{
-          opacity: 1
-        }} className="text-center">
-              <div className="inline-flex items-center gap-3 px-4 py-2 rounded-lg bg-secondary/50">
-                <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
-                <span className="text-sm text-muted-foreground">
-                  {statusMessage || 'Processing...'}
-                </span>
-              </div>
-            </motion.div>}
-
-          {/* Error state */}
-          {status === 'error' && error && <motion.div initial={{
-          opacity: 0
-        }} animate={{
-          opacity: 1
-        }} className="text-center mt-4">
-              <div className="inline-flex items-center gap-3 px-4 py-2 rounded-lg bg-destructive/10 border border-destructive/20">
-                <AlertCircle className="w-4 h-4 text-destructive" />
-                <span className="text-sm text-destructive">
-                  {error}
-                </span>
-              </div>
-            </motion.div>}
-        </motion.div>
-
-        {/* Features */}
-        <motion.div initial={{
-        opacity: 0,
-        y: 20
-      }} animate={{
-        opacity: 1,
-        y: 0
-      }} transition={{
-        delay: 0.3
-      }} className="grid md:grid-cols-3 gap-6 max-w-4xl mx-auto">
-          {features.map((feature, i) => <motion.div key={feature.title} initial={{
-          opacity: 0,
-          y: 20
-        }} animate={{
-          opacity: 1,
-          y: 0
-        }} transition={{
-          delay: 0.4 + i * 0.1
-        }} className="p-6 rounded-xl bg-card/50 border border-border/50 backdrop-blur-sm">
-              <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center mb-4">
-                <feature.icon className="w-5 h-5 text-primary" />
-              </div>
-              <h3 className="font-semibold mb-2">{feature.title}</h3>
-              <p className="text-sm text-muted-foreground">
-                {feature.description}
-              </p>
-            </motion.div>)}
-        </motion.div>
-
-        {/* Sample Report Preview - Sliding Carousel */}
-        <ReportPreviewCarousel />
-
-        {/* Rubric dimensions preview */}
-        <motion.div initial={{
-        opacity: 0
-      }} animate={{
-        opacity: 1
-      }} transition={{
-        delay: 0.6
-      }} className="mt-20 text-center">
-          <h2 className="text-lg font-semibold mb-4 text-muted-foreground">
-            Scored across 8 dimensions
-          </h2>
-          <TooltipProvider delayDuration={100}>
-            <div className="flex flex-wrap justify-center gap-2 max-w-3xl mx-auto">
-              {Object.keys(dimensionDefinitions).map(dim => (
-                <Tooltip key={dim}>
-                  <TooltipTrigger asChild>
-                    <span className="px-3 py-1.5 text-xs rounded-full bg-secondary/50 text-muted-foreground border border-border/50 cursor-help hover:bg-secondary/70 transition-colors">
-                      {dim}
-                    </span>
-                  </TooltipTrigger>
-                  <TooltipContent side="top" className="max-w-xs text-center">
-                    <p>{dimensionDefinitions[dim]}</p>
-                  </TooltipContent>
-                </Tooltip>
-              ))}
+            <div id="url-input" className="flex justify-center mb-12 scroll-mt-24">
+              <URLInput onSubmit={handleSubmit} isLoading={isLoading} />
             </div>
-          </TooltipProvider>
-        </motion.div>
-      </div>
+
+            {isLoading && (
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center">
+                <div className="inline-flex items-center gap-3 px-4 py-2 rounded-full bg-secondary border border-border">
+                  <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+                  <span className="text-sm text-muted-foreground">{statusMessage || 'Processing...'}</span>
+                </div>
+              </motion.div>
+            )}
+
+            {status === 'error' && error && (
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center mt-4">
+                <div className="inline-flex items-center gap-3 px-4 py-2 rounded-full bg-destructive/10 border border-destructive/20">
+                  <AlertCircle className="w-4 h-4 text-destructive" />
+                  <span className="text-sm text-destructive">{error}</span>
+                </div>
+              </motion.div>
+            )}
+          </motion.div>
+        </div>
+      </section>
+
+      {/* Three-pillar features */}
+      <section className="py-16 md:py-24 bg-secondary">
+        <div className="container mx-auto px-5 md:px-10">
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="grid md:grid-cols-3 gap-6 max-w-4xl mx-auto">
+            {features.map((feature, i) => (
+              <motion.div
+                key={feature.title}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.4 + i * 0.1 }}
+                className="bg-card border border-border rounded-3xl p-7 shadow-vt-sm hover:shadow-vt-md transition-shadow duration-200"
+              >
+                <div className="w-10 h-10 rounded-xl bg-secondary flex items-center justify-center mb-5">
+                  <feature.icon className="w-5 h-5 text-vt-cyan" />
+                </div>
+                <h3 className="font-semibold text-lg mb-2">{feature.title}</h3>
+                <p className="text-sm text-muted-foreground leading-relaxed">{feature.description}</p>
+              </motion.div>
+            ))}
+          </motion.div>
+        </div>
+      </section>
+
+      {/* Report Preview */}
+      <section className="py-16 md:py-24">
+        <div className="container mx-auto px-5 md:px-10">
+          <ReportPreviewCarousel />
+        </div>
+      </section>
+
+      {/* Dimension chips */}
+      <section className="py-16 md:py-20 bg-secondary">
+        <div className="container mx-auto px-5 md:px-10 text-center">
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.6 }}>
+            <h2 className="text-lg font-semibold mb-6 text-muted-foreground">
+              Scored across 8 dimensions
+            </h2>
+            <TooltipProvider delayDuration={100}>
+              <div className="flex flex-wrap justify-center gap-2 max-w-3xl mx-auto">
+                {Object.keys(dimensionDefinitions).map(dim => (
+                  <Tooltip key={dim}>
+                    <TooltipTrigger asChild>
+                      <span className="px-4 py-2 text-xs rounded-full bg-card text-muted-foreground border border-border cursor-help hover:border-primary/30 transition-colors">
+                        {dim}
+                      </span>
+                    </TooltipTrigger>
+                    <TooltipContent side="top" className="max-w-xs text-center">
+                      <p>{dimensionDefinitions[dim]}</p>
+                    </TooltipContent>
+                  </Tooltip>
+                ))}
+              </div>
+            </TooltipProvider>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* Dark CTA band */}
+      <section className="dark-anchor py-16 md:py-20">
+        <div className="container mx-auto px-5 md:px-10 text-center">
+          <h2 className="text-2xl md:text-3xl font-bold mb-4 text-[hsl(var(--vt-text-on-dark))]">
+            Ready to find your trust gaps?
+          </h2>
+          <p className="text-[hsl(var(--vt-text-on-dark-secondary))] mb-8 max-w-lg mx-auto">
+            Get an instant, evidence-backed assessment of your AI product's trust infrastructure.
+          </p>
+          <Button
+            size="lg"
+            className="bg-white text-vt-midnight hover:bg-white/90 rounded-[20px] px-8 h-12 font-semibold shadow-vt-sm"
+            onClick={() => {
+              const el = document.getElementById('url-input');
+              el?.scrollIntoView({ behavior: 'smooth' });
+            }}
+          >
+            Run My Score
+            <ArrowRight className="w-5 h-5 ml-2" />
+          </Button>
+        </div>
+      </section>
 
       <Footer />
 
@@ -432,13 +444,11 @@ const Index = () => {
                       disabled={authSendingReset}
                       onClick={async () => {
                         if (authSendingReset) return;
-
                         const trimmedEmail = authEmail.trim().toLowerCase();
                         if (!trimmedEmail) {
                           toast.error("Enter your email first, then click Forgot password.");
                           return;
                         }
-
                         setAuthSendingReset(true);
                         try {
                           const { error } = await supabase.auth.resetPasswordForEmail(trimmedEmail, {
@@ -466,12 +476,12 @@ const Index = () => {
                 <Input id="auth-password" type="password" placeholder="••••••••" value={authPassword} onChange={(e) => setAuthPassword(e.target.value)} minLength={6} required />
               </div>
               {authResetSent && authIsLogin && (
-                <div className="rounded-md bg-primary/10 border border-primary/20 px-4 py-3 text-sm text-foreground flex items-start gap-2">
+                <div className="rounded-lg bg-primary/10 border border-primary/20 px-4 py-3 text-sm text-foreground flex items-start gap-2">
                   <Mail className="w-4 h-4 mt-0.5 shrink-0 text-primary" />
                   <span>We sent a reset link to <strong>{authEmail.trim().toLowerCase()}</strong>. Check your inbox (and spam) and click the link to set a new password.</span>
                 </div>
               )}
-              <Button type="submit" className="w-full gap-2" disabled={authLoading}>
+              <Button type="submit" className="w-full gap-2 bg-vt-midnight text-white hover:bg-vt-midnight/90 rounded-[20px] h-11" disabled={authLoading}>
                 {authLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <ArrowRight className="w-4 h-4" />}
                 {authIsLogin ? "Sign in" : "Sign up"}
               </Button>
@@ -485,6 +495,7 @@ const Index = () => {
           </div>
         </DialogContent>
       </Dialog>
-    </div>;
+    </div>
+  );
 };
 export default Index;
