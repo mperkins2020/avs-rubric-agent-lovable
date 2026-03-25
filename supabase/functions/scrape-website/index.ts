@@ -857,14 +857,24 @@ Deno.serve(async (req) => {
       const reservedChangelogSlots  = Math.min(1, changelogLinks.length);
       const reservedLowSignalSlots  = reservedCompareSlots + reservedStorySlots + reservedBlogSlots + reservedChangelogSlots;
 
-      const priorityLinks = [
+      const rawPriorityLinks = [
         ...otherLinks.slice(0, Math.max(0, (safeMaxPages - 1) - reservedLowSignalSlots)),
         ...compareLinks.slice(0, reservedCompareSlots),
         ...storyLinks.slice(0, reservedStorySlots),
         ...blogLinks.slice(0, reservedBlogSlots),
         ...changelogLinks.slice(0, reservedChangelogSlots),
       ].slice(0, safeMaxPages - 1);
-      console.log(`Selected ${priorityLinks.length} verified pages to scrape (0 blind probes)`);
+
+      // Canonical probe: if critical pricing pages weren't discovered by map,
+      // force-add them — they are too important to miss due to map variance.
+      const canonicalProbes = ['/pricing', '/plans', '/billing'];
+      const selectedSet = new Set(rawPriorityLinks.map(l => normaliseForDedup(l)));
+      const missingProbes = canonicalProbes
+        .map(probe => `https://${baseHost}${probe}`)
+        .filter(probeUrl => !selectedSet.has(normaliseForDedup(probeUrl)));
+      const priorityLinks = [...missingProbes, ...rawPriorityLinks].slice(0, safeMaxPages - 1);
+
+      console.log(`Selected ${priorityLinks.length} pages (${missingProbes.length} canonical probes added)`);
       console.log('Priority links:', priorityLinks);
 
       // ═════════════════════════════════════════════════════════════════════
