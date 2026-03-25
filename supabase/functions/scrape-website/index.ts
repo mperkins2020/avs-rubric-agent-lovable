@@ -342,10 +342,10 @@ async function scrapePage(apiKey: string, pageUrl: string): Promise<ScrapedPage 
       };
     }
 
-    // Perf: 40s budget — pricing/accordion pages get 15s (waitFor:3000 + LLM JSON extraction
-    // easily exceeds the 7s flat timeout); regular pages keep 7s to prevent batch stalls.
+    // Perf: 40s budget — pricing/accordion pages get 30s (waitFor:3000 + LLM JSON extraction
+    // easily exceeds 7–15s under real Firecrawl load); regular pages keep 7s to prevent stalls.
     const pageController = new AbortController();
-    const pageTimeoutMs = hasAccordions ? 15000 : 7000;
+    const pageTimeoutMs = hasAccordions ? 30000 : 7000;
     const pageTimeout = setTimeout(() => pageController.abort(), pageTimeoutMs);
     let response: Response;
     try {
