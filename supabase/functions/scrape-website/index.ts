@@ -332,8 +332,7 @@ async function scrapePage(apiKey: string, pageUrl: string): Promise<ScrapedPage 
       url: pageUrl,
       formats,
       onlyMainContent: !needsFullContent,
-      // Perf: 40s budget — reduced from 3000ms; 1500ms sufficient for most accordions
-      ...(hasAccordions ? { waitFor: 1500 } : {}),
+      ...(hasAccordions ? { waitFor: 3000 } : {}),
     };
 
     if (wantStructuredJson) {
@@ -570,8 +569,7 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Perf: 40s budget — default reduced from 15 to 10
-    const { url, includeSubpages = true, maxPages = 10 }: ScrapeRequest = await req.json();
+    const { url, includeSubpages = true, maxPages = 15 }: ScrapeRequest = await req.json();
 
     if (!url || typeof url !== 'string') {
       return new Response(
@@ -587,8 +585,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Perf: 40s budget — hard cap reduced from 25 to 15
-    const safeMaxPages = Math.min(Math.max(1, maxPages), 15);
+    const safeMaxPages = Math.min(Math.max(1, maxPages), 25);
 
     const apiKey = Deno.env.get('FIRECRAWL_API_KEY');
     if (!apiKey) {
@@ -940,8 +937,7 @@ Deno.serve(async (req) => {
               }
             } catch { /* skip invalid */ }
           }
-          // Perf: 40s budget — cap secondary URLs at 2 (was 5)
-          const secondaryUrls = [...new Set(discovered)].slice(0, 2);
+          const secondaryUrls = [...new Set(discovered)].slice(0, 5);
           if (secondaryUrls.length > 0) {
             console.log(`Fix 1 (post-batch): Found ${secondaryUrls.length} secondary pricing URLs:`, secondaryUrls);
             const secondaryResults = await Promise.all(secondaryUrls.map(u => scrapePage(apiKey, u)));
@@ -954,8 +950,7 @@ Deno.serve(async (req) => {
 
       let additionalRetryPages: ScrapedPage[] = [];
 
-      // Perf: 40s budget — retry threshold raised from 30% to 50% to reduce costly retry passes
-      if (unresolvedRate >= 0.50 && unresolvedUrls.length > 0) {
+      if (unresolvedRate >= 0.30 && unresolvedUrls.length > 0) {
         console.warn(
           `Fix 2: High unresolved rate (${Math.round(unresolvedRate * 100)}%) for ${baseHost} on ${new Date().toISOString()}. ` +
           `Unresolved URLs: ${unresolvedUrls.join(', ')}`

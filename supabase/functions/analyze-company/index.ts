@@ -1296,8 +1296,7 @@ async function callLovableAI(systemPrompt: string, userContent: string): Promise
         { role: 'user', content: userContent },
       ],
       temperature: 0.1,
-      // Perf: 40s budget — reduced from 32768; scoring responses average 10-14k tokens
-      max_tokens: 16384,
+      max_tokens: 32768,
       response_format: { type: 'json_object' },
     }),
   });
@@ -1737,8 +1736,7 @@ Deno.serve(async (req) => {
     const prioritizedPages = [...candidatePages]
       .sort((a, b) => scorePagePriority(b) - scorePagePriority(a));
 
-    // Perf: 40s budget — reduced from 100000; 60k chars (~15k tokens) is sufficient for 8-dim scoring
-    const MAX_CONTENT_CHARS = 60000;
+    const MAX_CONTENT_CHARS = 100000;
     let usedChars = 0;
     const selectedBlocks: string[] = [];
     const selectedUrls: string[] = [];
@@ -1911,15 +1909,13 @@ Website Content:
 ${truncatedContent}`;
 
     // Step 2b: 2-pass scoring for consistency
-    // Perf: 40s budget — reduced from 3 parallel passes to 2. Tiebreaker: higher
-    // confidence pass wins. Conservative: if both agree, use that score. If they
-    // disagree, use the pass with higher confidence to determine the final score.
-    console.log('Running 2-pass scoring...');
+    console.log('Running 3-pass scoring...');
     const rubricPasses = await Promise.all([
       callLovableAI(RUBRIC_SCORING_PROMPT, scoringContent),
       callLovableAI(RUBRIC_SCORING_PROMPT, scoringContent),
+      callLovableAI(RUBRIC_SCORING_PROMPT, scoringContent),
     ]) as Array<Record<string, unknown>>;
-    console.log('Both scoring passes complete');
+    console.log('All 3 scoring passes complete');
 
     const DIMENSION_NAMES = [
       'Product north star', 'ICP and job clarity', 'Buyer and budget alignment',
@@ -1936,20 +1932,24 @@ ${truncatedContent}`;
 
     const pass1Dims = getPassDimensions(rubricPasses[0]);
     const pass2Dims = getPassDimensions(rubricPasses[1]);
+    const pass3Dims = getPassDimensions(rubricPasses[2]);
 
     // Log per-dimension scores across passes for diagnostics
     for (const dimName of DIMENSION_NAMES) {
       const s1 = pass1Dims.find(d => d.dimension === dimName)?.score ?? -1;
       const s2 = pass2Dims.find(d => d.dimension === dimName)?.score ?? -1;
-      console.log(`  [2-pass] ${dimName}: ${s1}, ${s2}`);
+      const s3 = pass3Dims.find(d => d.dimension === dimName)?.score ?? -1;
+      console.log(`  [3-pass] ${dimName}: ${s1}, ${s2}, ${s3}`);
     }
 
-    // Merge: if passes agree, use that score with higher confidence.
-    // If they disagree, use the score from the higher-confidence pass (tiebreaker).
+    // Merge: majority vote across 3 passes.
+    // If 2 or 3 passes agree on a score, that score wins (use highest-confidence agreeing pass).
+    // If all 3 disagree, use the highest-confidence pass.
     const mergedDimensionScores = DIMENSION_NAMES.map(dimName => {
       const candidates = [
         pass1Dims.find(d => d.dimension === dimName),
         pass2Dims.find(d => d.dimension === dimName),
+        pass3Dims.find(d => d.dimension === dimName),
       ].filter(Boolean) as typeof pass1Dims;
 
       if (candidates.length === 0) {
@@ -1958,19 +1958,37 @@ ${truncatedContent}`;
 
       if (candidates.length === 1) return candidates[0];
 
-      const [c1, c2] = candidates;
-      if (c1.score === c2.score) {
-        // Agreement — use higher confidence candidate, average the confidence values
-        const winner = (c1.confidence || 0) >= (c2.confidence || 0) ? c1 : c2;
+      // Count votes per score value
+      const scoreCounts = new Map<number, typeof pass1Dims>();
+      for (const c of candidates) {
+        const key = c.score;
+        if (!scoreCounts.has(key)) scoreCounts.set(key, []);
+        scoreCounts.get(key)!.push(c);
+      }
+
+      // Find majority score (2+ votes)
+      let majorityGroup: typeof pass1Dims | null = null;
+      for (const [, group] of scoreCounts) {
+        if (group.length >= 2 && (!majorityGroup || group.length > majorityGroup.length)) {
+          majorityGroup = group;
+        }
+      }
+
+      if (majorityGroup) {
+        // Use highest-confidence pass from the majority group
+        const winner = majorityGroup.reduce((best, c) =>
+          (c.confidence || 0) > (best.confidence || 0) ? c : best
+        );
         return {
           ...winner,
-          confidence: ((c1.confidence || 0) + (c2.confidence || 0)) / 2,
+          confidence: majorityGroup.reduce((sum, c) => sum + (c.confidence || 0), 0) / majorityGroup.length,
         };
       }
 
-      // Disagreement — higher confidence pass wins
-      const winner = (c1.confidence || 0) >= (c2.confidence || 0) ? c1 : c2;
-      return winner;
+      // All 3 disagree — use highest-confidence pass
+      return candidates.reduce((best, c) =>
+        (c.confidence || 0) > (best.confidence || 0) ? c : best
+      );
     });
 
     // Fix 3A: Score Stability Rule
