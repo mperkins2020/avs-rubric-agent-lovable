@@ -4,7 +4,7 @@
 **Usage:** When a report produces a questionable result, log it here. Run `Scan the debug log for recurring patterns` periodically to surface systemic issues.
 **Related:** See ENGINE_DEBUG_HISTORY.md for backfilled history from git.
 
-**Entries:** 14 | **Last updated:** March 24, 2026
+**Entries:** 15 | **Last updated:** March 25, 2026
 
 ---
 
@@ -18,7 +18,7 @@
 | gate_misfire | 0 | — |
 | confidence_miscalc | 0 | — |
 | prompt_drift | 1 | ICP and Job Clarity (D2) |
-| pipeline_miss | 9 | Value Unit, Cost Driver Mapping, Safety/Trust, Overages & Risk |
+| pipeline_miss | 10 | Value Unit, Cost Driver Mapping, Safety/Trust, Overages & Risk |
 | contamination | 4 | Pricing Transparency, Enterprise/Compliance (D7/D8) |
 | other | 0 | — |
 
@@ -29,6 +29,94 @@
 <!-- Newest first. To add an entry, copy the template below and fill it in. -->
 
 <!-- Next entry goes here -->
+
+---
+
+### Entry 015 — March 25, 2026
+
+| Field | Value |
+|-------|-------|
+| Company | ElevenLabs (elevenlabs.io) |
+| Version | V3 — post-Bundle 2 rerun (March 24, 2026) |
+| Dimension | D7 Overages & Risk, D8 Safety Rails & Trust Surfaces (primary); D1 Product North Star (secondary) |
+| Score | 12/16 (75%) — no change from V2 (March 23). Bundle 2 did not recover D7/D8. |
+| Pages Analyzed | 7 — same as V2 |
+| Root Cause | pipeline_miss — four distinct evidence collection failures; three new failure classes identified |
+| Caught By | Manual report review + screenshot analysis (March 24) |
+| Status | Open. Four new failure patterns identified. None fixed. |
+
+**Score comparison:**
+
+| Dimension | Mar 6 (V1) | Mar 23 (V2) | Mar 24 (V3) | Status |
+|---|---|---|---|---|
+| D1 Product North Star | 2/2 | 1/2 | 1/2 | Not recovered |
+| D2 ICP & Job Clarity | 2/2 | 2/2 | 2/2 | Stable ✓ |
+| D3 Buyer & Budget | 2/2 | 2/2 | 2/2 | Stable ✓ |
+| D4 Value Unit | 2/2 | 2/2 | 2/2 | Stable ✓ |
+| D5 Cost Driver Mapping | 1/2 | 1/2 | 1/2 | Stable |
+| D6 Pools & Packaging | 2/2 | 2/2 | 2/2 | Stable ✓ |
+| D7 Overages & Risk | 2/2 | 1/2 | 1/2 | Not recovered |
+| D8 Safety Rails & Trust | 2/2 | 1/2 | 1/2 | Not recovered |
+
+**Bundle 2 assessment:** Bundle 2 added `/trust`, `/security`, `/compliance` as high-intent path probes on `elevenlabs.io`. These paths do not exist on the main domain — ElevenLabs hosts its trust/compliance content at `compliance.elevenlabs.io` (a separate subdomain). Path probing cannot reach subdomain-hosted trust centers. Bundle 2 was the correct fix class but the wrong form.
+
+---
+
+**Failure A — Trust center hosted on separate subdomain**
+
+ElevenLabs' compliance and trust center lives at `compliance.elevenlabs.io`, not at `elevenlabs.io/compliance`. The canonical path probe step (and Bundle 2's highIntentPaths additions) only probe paths on the main registered domain. Subdomain trust centers are never discovered by path probing or by Firecrawl's `/map` endpoint (which returns same-domain URLs only by default).
+
+This is a distinct failure class from missing paths. Companies increasingly host trust content at `compliance.*`, `trust.*`, or `security.*` subdomains (e.g., `compliance.elevenlabs.io`, `trust.segment.com`, `security.dropbox.com`). None of these are reachable by current pipeline.
+
+**Fix needed:** In the canonical path probe step, also probe `compliance.{domain}`, `trust.{domain}`, and `security.{domain}` as subdomain root URLs alongside path variants. If the subdomain root returns non-empty content, add it to the evidence queue at the same priority as `/compliance` path.
+
+---
+
+**Failure B — Login-wall pages consuming evidence slots**
+
+`elevenlabs.io/subscription` and `elevenlabs.io/usage` both scraped successfully (HTTP 200) but returned only the "Sign In | ElevenLabs" login page — zero evidence content. These consumed 2 of 7 slots (28% of evidence budget) with no return.
+
+Fix 2 (pre-scoring validation) applies a confidence penalty for pages with unresolved/empty content, but login-wall pages are not empty — they return a complete HTML page. The login wall is invisible to the current content validation checks.
+
+This pattern is consistent across SaaS: `/subscription`, `/usage`, `/account`, `/dashboard`, `/settings` are uniformly behind authentication for any company that uses these URL patterns. They should never enter the queue.
+
+**Fix needed:** Add a **gated path blocklist** to `isEvidenceEligible()`: reject any URL whose path exactly matches or starts with `/subscription`, `/usage`, `/account`, `/dashboard`, `/settings`, `/login`, `/signin`, `/sign-in`, `/register`. These are in-app paths with no public evidence surface.
+
+---
+
+**Failure C — Tab-partitioned pricing page with query-param variants not reached**
+
+The ElevenLabs pricing page uses JavaScript tabs to partition pricing by platform:
+- `elevenlabs.io/pricing?price.platform=creative_platform`
+- `elevenlabs.io/pricing?price.platform=agents_platform`
+- `elevenlabs.io/pricing?price.platform=api`
+
+Each tab shows a distinct pricing breakdown with different credit amounts, limits, and overage rates — the primary evidence source for D5 (Cost Driver Mapping) and D7 (Overages & Risk). These tabs are rendered as JS state changes, not as `<a href>` anchor links, so they are invisible to:
+1. Firecrawl's `/map` step (sitemaps never include query-param variants)
+2. Fix 1's secondary pass (extracts `<a href>` links from scraped markdown — JS tab navigation emits none)
+3. Deduplication (query params stripped → all three collapse to `/pricing`)
+
+The pipeline scrapes `/pricing` and receives only the default tab content. The other two tabs' pricing details are never seen.
+
+**Fix needed:** After scraping a `/pricing` page, scan the raw HTML response for `<a href>` and JavaScript state patterns that match `?{param}={value}` on the same path. Probe each unique `?`-variant as a separate evidence page at high priority. This is distinct from the existing FAQ anchor extraction (Fix 1) — it targets URL query-param tab navigation, not anchor fragment links.
+
+---
+
+**Failure D — JS accordion content truncation causing D8 score miss (waitFor regression)**
+
+The ElevenLabs pricing page FAQ section contains in-product observability disclosures:
+
+> "How do I check how many credits I have remaining? You can view your remaining credits by logging into the platform and navigating to your subscription page from your profile menu."
+
+This is public documentation of in-product credit balance monitoring — directly relevant to D8 (Safety Rails, in-product observability subtest). It was NOT captured in the March 24 run.
+
+The performance commit `bb6e4ec` reduced `waitFor` from 3000ms to a blanket 1500ms across all pages. The pricing page FAQ accordions require full JS execution to expand and render their content. At 1500ms, the accordions are not yet expanded when Firecrawl snapshots the page, so FAQ content below the fold is absent from the scraped markdown.
+
+The already-captured equivalent ("analytics tab in Developers dashboard" from `/pricing/api`) is a different FAQ item. The credit balance FAQ is distinct and was missed entirely due to the timing regression.
+
+**Fix needed:** Restore adaptive `waitFor` behavior: use 2500ms for `/pricing` pages specifically, or detect `<details>`, `<summary>`, accordion class patterns in the initial HTML response and apply 2500ms only when detected. The blanket 1500ms is appropriate for non-accordion pages and preserves the performance gain for most pages.
+
+**Pattern Tag:** `subdomain-trust-center`, `login-wall-slot-consumption`, `query-param-pricing-tab-miss`, `accordion-waitfor-regression`, `post-bundle-regression-no-recovery`
 
 ---
 
@@ -519,6 +607,10 @@ Recurring pipeline failure patterns identified across production runs. Each row 
 | Changelog over-representation — versioned `/changelog/x-y-z` entries consuming multiple slots with zero pricing/trust signal | Fixed — Bundle 1. `/changelog/*` capped at 1 slot in per-category slot reservation. |
 | Locale variant paths not deduplicated — `/en-US/page` and `/page` treated as distinct URLs | Fixed — Bundle 1. `normaliseForDedup()` strips locale prefixes (`/en/`, `/en-US/`, `/fr/`, etc.) before deduplication key comparison. |
 | `/docs/*` over-representation without keyword gating — integration and feature docs consuming slots ahead of billing/limits docs | Open — observed: Deepnote (9 of 10 docs slots zero-signal; only `/docs/billing-alerts-and-limits` relevant). Fix: boost `/docs/*billing*`, `/docs/*credits*`, `/docs/*limits*`, `/docs/*security*` etc.; cap non-matching `/docs/*` at 2 slots. |
+| Trust center hosted on separate subdomain (`compliance.*`, `trust.*`, `security.*`) — unreachable by path probing or Firecrawl map | Open — observed: ElevenLabs `compliance.elevenlabs.io` (Entry 015). Path pinning in Bundle 2 cannot reach subdomain-hosted trust centers. Fix: probe `compliance.{domain}`, `trust.{domain}`, `security.{domain}` as subdomain roots alongside canonical path probes. |
+| Login-wall pages consuming evidence slots — `/subscription`, `/usage`, `/account` scrape successfully (HTTP 200) but return only "Sign In" page with zero evidence | Open — observed: ElevenLabs `/subscription` and `/usage` (Entry 015), 28% of evidence budget wasted. Fix: add gated path blocklist to `isEvidenceEligible()`: reject `/subscription`, `/usage`, `/account`, `/dashboard`, `/settings`, `/login`, `/signin`, `/sign-in`, `/register`. |
+| Tab-partitioned pricing page — query-param tab variants (`?price.platform=api` etc.) not reached by map, Fix 1, or deduplication; each tab contains distinct pricing/limits evidence | Open — observed: ElevenLabs pricing (Entry 015). Affects D5 and D7 specifically. Fix: after scraping `/pricing`, scan raw HTML for query-param variants on same path; probe each as a separate high-priority evidence page. |
+| JS accordion content truncated on pricing page — `waitFor` reduction to 1500ms (`bb6e4ec`) prevents FAQ accordions from fully rendering; below-fold FAQ content absent from scraped markdown | Open — observed: ElevenLabs pricing FAQ credit balance answer missing (Entry 015); confirmed D8 score miss. Fix: restore adaptive `waitFor` — use 2500ms for `/pricing` pages or when accordion markup detected in initial HTML response. |
 
 ---
 
