@@ -867,10 +867,13 @@ Deno.serve(async (req) => {
 
       // Canonical probe: if critical pricing pages weren't discovered by map,
       // force-add them — they are too important to miss due to map variance.
+      // Use www-prefix when discovered URLs use www (most enterprise SaaS).
       const canonicalProbes = ['/pricing', '/plans', '/billing'];
+      const usesWww = allDiscovered.some(u => { try { return new URL(u).hostname.startsWith('www.'); } catch { return false; } });
+      const probeBase = usesWww ? `https://www.${baseHost}` : `https://${baseHost}`;
       const selectedSet = new Set(rawPriorityLinks.map(l => normaliseForDedup(l)));
       const missingProbes = canonicalProbes
-        .map(probe => `https://${baseHost}${probe}`)
+        .map(probe => `${probeBase}${probe}`)
         .filter(probeUrl => !selectedSet.has(normaliseForDedup(probeUrl)));
       const priorityLinks = [...missingProbes, ...rawPriorityLinks].slice(0, safeMaxPages - 1);
 
@@ -903,9 +906,21 @@ Deno.serve(async (req) => {
 
       for (let i = 0; i < allUrlsToScrape.length; i++) {
         const page = scrapedPages[i];
-        if (page) {
+        // 404 filter: pages that returned 404/Not Found content consume slots
+        // but provide zero evidence — treat them as unresolved.
+        const is404 = page && (
+          /^\s*(404|not found|page not found)/i.test(page.title || '') ||
+          /\b404\b.*\b(not found|error)\b/i.test(page.title || '') ||
+          page.markdown?.trimStart().startsWith('# 404') ||
+          page.markdown?.trimStart().startsWith('## 404') ||
+          /^#\s*(404|Page Not Found)/m.test(page.markdown || '')
+        );
+        if (page && !is404) {
           resolvedPages.push(page);
         } else {
+          if (is404) {
+            console.log(`Skipping 404 page: ${allUrlsToScrape[i]} (title: "${page?.title}")`);
+          }
           unresolvedUrls.push(allUrlsToScrape[i]);
         }
       }
