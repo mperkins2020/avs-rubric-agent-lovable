@@ -182,17 +182,17 @@ const Index = () => {
   };
 
   const features = [{
-    icon: Target,
-    title: "8 Trust Dimensions",
-    description: "Cover units, limits, overages, rails, and more."
+    icon: Eye,
+    title: "Product Clarity",
+    description: "Can buyers understand what your product does and the outcomes it delivers?"
   }, {
-    icon: Shield,
-    title: "Evidence-Backed",
-    description: "Ties scores to public sources, with confidence and what's missing."
+    icon: Calculator,
+    title: "Cost Predictability",
+    description: "Can buyers predict how usage translates to cost and value?"
   }, {
-    icon: Zap,
-    title: "Instant Analysis",
-    description: "Identifies trust gaps, ranks by severity, and recommends what to fix first."
+    icon: ShieldCheck,
+    title: "Operational Trust",
+    description: "Do buyers see the controls needed to safely deploy and scale usage?"
   }];
 
   return (
