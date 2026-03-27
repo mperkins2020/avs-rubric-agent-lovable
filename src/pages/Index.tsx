@@ -334,6 +334,9 @@ const Index = () => {
         </div>
       </section>
 
+      {/* Category Carousel */}
+      <CategoryCarousel />
+
       {/* Three-pillar features */}
       <section className="py-16 md:py-24 bg-secondary">
         <div className="container mx-auto px-5 md:px-10">
