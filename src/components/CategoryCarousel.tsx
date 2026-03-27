@@ -9,6 +9,15 @@ interface CategoryCard {
   hint: string;
 }
 
+const accentColors = [
+  "bg-primary",           // violet
+  "bg-vt-cyan",           // cyan
+  "bg-vt-violet",         // violet alt
+  "bg-[hsl(var(--score-yellow))]", // amber
+  "bg-vt-cyan",           // cyan
+  "bg-primary",           // violet
+];
+
 const categories: CategoryCard[] = [
   {
     category: "AI Vibe Coding Tools",
@@ -114,7 +123,7 @@ export function CategoryCarousel() {
   const allCards = [...categories, ...categories];
 
   return (
-    <section className="pt-4 pb-14 md:pt-6 md:pb-20 overflow-hidden">
+    <section className="pt-0 pb-14 md:pt-0 md:pb-20 overflow-hidden">
       <div className="container mx-auto px-5 md:px-10 mb-8">
         <motion.h2
           initial={{ opacity: 0, y: 12 }}
@@ -143,8 +152,11 @@ export function CategoryCarousel() {
             viewport={{ once: true }}
             transition={{ delay: Math.min(i * 0.08, 0.4) }}
             onClick={() => handleCardClick(card.hint)}
-            className="shrink-0 w-[300px] md:w-[340px] bg-card border border-border rounded-3xl p-6 shadow-vt-sm hover:shadow-vt-md hover:border-primary/30 transition-all duration-200 cursor-pointer group select-none"
+            className="shrink-0 w-[300px] md:w-[340px] bg-card border border-border rounded-3xl pt-0 overflow-hidden shadow-vt-sm hover:shadow-vt-md hover:border-primary/30 transition-all duration-200 cursor-pointer group select-none"
           >
+            {/* Accent color bar */}
+            <div className={`h-1 w-14 rounded-full mx-6 mt-5 mb-4 ${accentColors[i % accentColors.length]}`} />
+            <div className="px-6 pb-6">
             <div className="flex items-start justify-between mb-3">
               <h3 className="font-semibold text-base text-foreground group-hover:text-primary transition-colors leading-tight pr-3">
                 {card.category}
@@ -161,6 +173,7 @@ export function CategoryCarousel() {
             <p className="text-sm text-muted-foreground leading-relaxed line-clamp-4">
               {card.impact}
             </p>
+            </div>
           </motion.div>
         ))}
         {/* Right spacer */}
