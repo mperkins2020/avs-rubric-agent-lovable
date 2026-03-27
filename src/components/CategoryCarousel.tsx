@@ -173,6 +173,7 @@ export function CategoryCarousel() {
             <p className="text-sm text-muted-foreground leading-relaxed line-clamp-4">
               {card.impact}
             </p>
+            </div>
           </motion.div>
         ))}
         {/* Right spacer */}
