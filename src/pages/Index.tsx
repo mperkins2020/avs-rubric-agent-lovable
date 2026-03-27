@@ -297,7 +297,7 @@ const Index = () => {
       </AnimatePresence>
 
       {/* Hero section */}
-      <section className="py-20 md:py-28">
+      <section className="pt-16 pb-10 md:pt-20 md:pb-12">
         <div className="container mx-auto px-5 md:px-10">
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center max-w-3xl mx-auto">
             <h1 id="hero" className="text-3xl sm:text-4xl md:text-[56px] font-bold mb-5 leading-[1.15] tracking-tight">
