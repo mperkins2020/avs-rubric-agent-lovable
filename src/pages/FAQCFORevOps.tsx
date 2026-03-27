@@ -3,6 +3,8 @@ import { ArrowLeft } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import ValueTempoLogo from "@/assets/ValueTempo_Logo_main.png";
+import { ResourcesDropdown } from "@/components/ResourcesDropdown";
+import { Footer } from "@/components/Footer";
 import { FAQJsonLd } from "@/components/FAQJsonLd";
 import { SEOHead } from "@/components/SEOHead";
 const FAQCFORevOps = () => {
