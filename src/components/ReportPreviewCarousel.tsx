@@ -256,6 +256,20 @@ export function ReportPreviewCarousel() {
           </motion.div>
         </AnimatePresence>
       </div>
+
+      <div className="text-center mt-10">
+        <Button
+          size="lg"
+          className="bg-vt-midnight text-white hover:bg-vt-midnight/90 rounded-[20px] px-8 h-12 font-semibold shadow-vt-sm"
+          onClick={() => {
+            const el = document.getElementById('url-input');
+            el?.scrollIntoView({ behavior: 'smooth' });
+          }}
+        >
+          Run My Score
+          <ArrowRight className="w-5 h-5 ml-2" />
+        </Button>
+      </div>
     </motion.div>
   );
 }
