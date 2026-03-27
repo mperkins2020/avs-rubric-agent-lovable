@@ -121,6 +121,7 @@ export default function CaseStudies() {
           </div>
         </div>
       </main>
+      <Footer />
     </div>
   );
 }

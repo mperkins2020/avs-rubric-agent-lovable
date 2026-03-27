@@ -135,7 +135,7 @@ const Methodology = () => {
         )}
       </AnimatePresence>
 
-      <div className="relative z-10 container mx-auto px-4 py-12">
+      <div className="container mx-auto px-4 py-12">
         <div className="flex gap-10 max-w-6xl mx-auto">
 
           {/* Sticky TOC — desktop only */}
