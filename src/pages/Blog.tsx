@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 import ValueTempoLogo from "@/assets/ValueTempo_Logo_main.png";
 import { Footer } from "@/components/Footer";
 import { motion } from "framer-motion";
-import { Sparkles } from "lucide-react";
+import {} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ResourcesDropdown } from "@/components/ResourcesDropdown";
 
