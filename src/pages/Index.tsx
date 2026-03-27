@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { URLInput } from "@/components/URLInput";
-import { Shield, Target, Zap, AlertCircle, LogOut, LogIn, Menu, X } from "lucide-react";
+import { Eye, Calculator, ShieldCheck, AlertCircle, LogOut, LogIn, Menu, X } from "lucide-react";
 import { Footer } from "@/components/Footer";
 import { ReportPreviewCarousel } from "@/components/ReportPreviewCarousel";
 import { useScan } from "@/hooks/useScan";
