@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 import ValueTempoLogo from "@/assets/ValueTempo_Logo_main.png";
 import { motion } from "framer-motion";
 import { Footer } from "@/components/Footer";
-import { Sparkles, ArrowLeft, Calendar } from "lucide-react";
+import { ArrowLeft, Calendar } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ResourcesDropdown } from "@/components/ResourcesDropdown";
 import { BlogTOC, TocItem } from "@/components/BlogTOC";
