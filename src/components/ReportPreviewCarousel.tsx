@@ -225,7 +225,7 @@ export function ReportPreviewCarousel() {
       className="max-w-4xl mx-auto"
     >
       <div className="text-center mb-8">
-        <h2 className="text-2xl font-bold mb-2">What your report looks like</h2>
+        <h2 className="text-2xl font-bold mb-2">Example AI product analysis</h2>
         <div className="h-6 relative overflow-hidden">
           <AnimatePresence mode="wait">
             <motion.p
@@ -236,7 +236,7 @@ export function ReportPreviewCarousel() {
               transition={{ duration: 0.4, ease: "easeInOut" }}
               className="text-sm text-muted-foreground absolute inset-0 flex items-center justify-center"
             >
-              {examples[index].label}
+              Example: {examples[index].company}
             </motion.p>
           </AnimatePresence>
         </div>
