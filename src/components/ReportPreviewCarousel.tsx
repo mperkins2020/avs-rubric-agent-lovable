@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { ArrowRight } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 const SLIDE_DURATION = 6000;
 
@@ -223,7 +225,7 @@ export function ReportPreviewCarousel() {
       className="max-w-4xl mx-auto"
     >
       <div className="text-center mb-8">
-        <h2 className="text-2xl font-bold mb-2">What your report looks like</h2>
+        <h2 className="text-2xl font-bold mb-2">Example AI product analysis</h2>
         <div className="h-6 relative overflow-hidden">
           <AnimatePresence mode="wait">
             <motion.p
@@ -234,7 +236,7 @@ export function ReportPreviewCarousel() {
               transition={{ duration: 0.4, ease: "easeInOut" }}
               className="text-sm text-muted-foreground absolute inset-0 flex items-center justify-center"
             >
-              {examples[index].label}
+              Example: {examples[index].company}
             </motion.p>
           </AnimatePresence>
         </div>
@@ -253,6 +255,20 @@ export function ReportPreviewCarousel() {
             <PreviewCard data={examples[index]} />
           </motion.div>
         </AnimatePresence>
+      </div>
+
+      <div className="text-center mt-10">
+        <Button
+          size="lg"
+          className="bg-vt-midnight text-white hover:bg-vt-midnight/90 rounded-[20px] px-8 h-12 font-semibold shadow-vt-sm"
+          onClick={() => {
+            const el = document.getElementById('url-input');
+            el?.scrollIntoView({ behavior: 'smooth' });
+          }}
+        >
+          Run My Score
+          <ArrowRight className="w-5 h-5 ml-2" />
+        </Button>
       </div>
     </motion.div>
   );

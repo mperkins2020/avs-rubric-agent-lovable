@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { URLInput } from "@/components/URLInput";
-import { Shield, Target, Zap, AlertCircle, LogOut, LogIn, Menu, X } from "lucide-react";
+import { Eye, Calculator, ShieldCheck, AlertCircle, LogOut, LogIn, Menu, X } from "lucide-react";
 import { Footer } from "@/components/Footer";
 import { ReportPreviewCarousel } from "@/components/ReportPreviewCarousel";
 import { useScan } from "@/hooks/useScan";
@@ -182,17 +182,17 @@ const Index = () => {
   };
 
   const features = [{
-    icon: Target,
-    title: "8 Trust Dimensions",
-    description: "Cover units, limits, overages, rails, and more."
+    icon: Eye,
+    title: "Product Clarity",
+    description: "Can buyers understand what your product does and the outcomes it delivers?"
   }, {
-    icon: Shield,
-    title: "Evidence-Backed",
-    description: "Ties scores to public sources, with confidence and what's missing."
+    icon: Calculator,
+    title: "Cost Predictability",
+    description: "Can buyers predict how usage translates to cost and value?"
   }, {
-    icon: Zap,
-    title: "Instant Analysis",
-    description: "Identifies trust gaps, ranks by severity, and recommends what to fix first."
+    icon: ShieldCheck,
+    title: "Operational Trust",
+    description: "Do buyers see the controls needed to safely deploy and scale usage?"
   }];
 
   return (
@@ -340,6 +340,7 @@ const Index = () => {
       {/* Three-pillar features */}
       <section className="py-16 md:py-24 bg-secondary">
         <div className="container mx-auto px-5 md:px-10">
+          <h2 className="text-2xl md:text-3xl font-bold text-center mb-10">What the analysis evaluates</h2>
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="grid md:grid-cols-3 gap-6 max-w-4xl mx-auto">
             {features.map((feature, i) => (
               <motion.div
