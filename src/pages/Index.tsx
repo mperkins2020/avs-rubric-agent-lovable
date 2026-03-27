@@ -340,6 +340,7 @@ const Index = () => {
       {/* Three-pillar features */}
       <section className="py-16 md:py-24 bg-secondary">
         <div className="container mx-auto px-5 md:px-10">
+          <h2 className="text-2xl md:text-3xl font-bold text-center mb-10">What the analysis evaluates</h2>
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="grid md:grid-cols-3 gap-6 max-w-4xl mx-auto">
             {features.map((feature, i) => (
               <motion.div
