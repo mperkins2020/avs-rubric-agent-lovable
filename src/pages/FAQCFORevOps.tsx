@@ -83,7 +83,7 @@ Here is why:
 
 Example: A CFO can forward the report to GTM, Product, and CS and align on risks without exposing internal dashboards.`
   }];
-  return <div className="min-h-screen bg-background relative overflow-hidden">
+  return <div className="min-h-screen bg-background">
       <SEOHead
         title="AVS Rubric FAQ for CFO & RevOps"
         description="How the AVS Rubric helps CFOs and RevOps teams surface expectation gaps, reduce churn, improve NRR, and create auditable revenue quality assessments."
@@ -92,33 +92,32 @@ Example: A CFO can forward the report to GTM, Product, and CS and align on risks
         tags={["FAQ", "CFO", "RevOps", "AVS Rubric", "churn", "NRR"]}
       />
       <FAQJsonLd faqs={faqs.map(f => ({ question: f.question, answer: f.answer }))} />
-      {/* Background effects */}
-      <div className="absolute inset-0 bg-gradient-to-b from-primary/5 via-transparent to-accent/5 pointer-events-none" />
 
       {/* Header */}
-      <header className="relative z-10 border-b border-border/50 bg-background/80 backdrop-blur-sm">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
+      <header className="sticky top-0 z-30 border-b border-border bg-white/75 backdrop-blur-md">
+        <div className="container mx-auto px-5 md:px-10 h-[72px] flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Link to="/">
               <img alt="ValueTempo" className="h-8" src={ValueTempoLogo} />
-            </Link>
-            <Link to="/">
-              <Button variant="outline" size="sm" className="gap-2">
-                AVS Rubric
-              </Button>
             </Link>
           </div>
           <nav className="hidden md:flex items-center gap-6">
             <Link to="/methodology" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
               Methodology
             </Link>
-            <Link to="/faq/product-growth" className="text-sm text-muted-foreground hover:text-foreground transition-colors">FAQ: Growth</Link>
-            <Link to="/faq/cfo-revops" className="text-sm font-medium text-primary">FAQ: RevOps</Link>
+            <ResourcesDropdown />
+            <Button
+              size="sm"
+              className="bg-vt-midnight text-white hover:bg-vt-midnight/90 rounded-[20px] px-5 h-9"
+              asChild
+            >
+              <Link to="/#url-input">Analyze</Link>
+            </Button>
           </nav>
         </div>
       </header>
 
-      <div className="relative z-10 container mx-auto px-4 py-12 max-w-4xl">
+      <div className="container mx-auto px-4 py-12 max-w-4xl">
         <motion.div initial={{
         opacity: 0,
         y: 20
