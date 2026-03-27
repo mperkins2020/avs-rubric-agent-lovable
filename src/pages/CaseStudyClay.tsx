@@ -33,22 +33,23 @@ export default function CaseStudyClay() {
         tags={["Clay", "case study", "AVS Rubric", "trust infrastructure", "AI SaaS"]}
       />
       {/* Header */}
-      <header className="border-b border-border/50 bg-background/80 backdrop-blur-sm sticky top-0 z-40">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
+      <header className="sticky top-0 z-30 border-b border-border bg-white/75 backdrop-blur-md">
+        <div className="container mx-auto px-5 md:px-10 h-[72px] flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Link to="/">
               <img alt="ValueTempo" className="h-8" src={ValueTempoLogo} />
-            </Link>
-            <Link to="/#url-input">
-              <Button variant="outline" size="sm" className="gap-2 hidden sm:flex">
-                <Sparkles className="w-4 h-4" />
-                AVS Rubric
-              </Button>
             </Link>
           </div>
           <nav className="hidden md:flex items-center gap-6">
             <Link to="/methodology" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Methodology</Link>
             <ResourcesDropdown />
+            <Button
+              size="sm"
+              className="bg-vt-midnight text-white hover:bg-vt-midnight/90 rounded-[20px] px-5 h-9"
+              asChild
+            >
+              <Link to="/#url-input">Analyze</Link>
+            </Button>
           </nav>
         </div>
       </header>

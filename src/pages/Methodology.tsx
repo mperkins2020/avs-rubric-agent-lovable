@@ -59,7 +59,7 @@ const Methodology = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background relative overflow-hidden">
+    <div className="min-h-screen bg-background">
       <SEOHead
         title="AVS Rubric Methodology — How We Score Trust Infrastructure"
         description="The AVS Rubric evaluates AI products across 8 trust dimensions using a four-layer Trust Stack hierarchy. Learn about our scoring system, confidence labels, and evidence-based methodology."
@@ -67,22 +67,25 @@ const Methodology = () => {
         publishedDate="2026-01-15"
         tags={["methodology", "AVS Rubric", "trust stack", "scoring system", "AI evaluation"]}
       />
-      <div className="absolute inset-0 bg-gradient-to-b from-primary/5 via-transparent to-accent/5 pointer-events-none" />
 
       {/* Header */}
-      <header className="relative z-10 border-b border-border/50 bg-background/80 backdrop-blur-sm">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
+      <header className="sticky top-0 z-30 border-b border-border bg-white/75 backdrop-blur-md">
+        <div className="container mx-auto px-5 md:px-10 h-[72px] flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Link to="/">
               <img alt="ValueTempo" className="h-8" src={ValueTempoLogo} />
-            </Link>
-            <Link to="/">
-              <Button variant="outline" size="sm" className="gap-2">AVS Rubric</Button>
             </Link>
           </div>
           <nav className="hidden md:flex items-center gap-6">
             <Link to="/methodology" className="text-sm font-medium text-primary">Methodology</Link>
             <ResourcesDropdown />
+            <Button
+              size="sm"
+              className="bg-vt-midnight text-white hover:bg-vt-midnight/90 rounded-[20px] px-5 h-9"
+              asChild
+            >
+              <Link to="/#url-input">Analyze</Link>
+            </Button>
           </nav>
         </div>
       </header>
@@ -132,7 +135,7 @@ const Methodology = () => {
         )}
       </AnimatePresence>
 
-      <div className="relative z-10 container mx-auto px-4 py-12">
+      <div className="container mx-auto px-4 py-12">
         <div className="flex gap-10 max-w-6xl mx-auto">
 
           {/* Sticky TOC — desktop only */}
