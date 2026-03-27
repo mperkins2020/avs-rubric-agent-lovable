@@ -114,7 +114,7 @@ export function CategoryCarousel() {
   const allCards = [...categories, ...categories];
 
   return (
-    <section className="py-14 md:py-20 overflow-hidden">
+    <section className="pt-4 pb-14 md:pt-6 md:pb-20 overflow-hidden">
       <div className="container mx-auto px-5 md:px-10 mb-8">
         <motion.h2
           initial={{ opacity: 0, y: 12 }}
