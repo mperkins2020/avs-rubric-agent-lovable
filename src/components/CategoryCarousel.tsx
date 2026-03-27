@@ -9,6 +9,15 @@ interface CategoryCard {
   hint: string;
 }
 
+const accentColors = [
+  "bg-primary",           // violet
+  "bg-vt-cyan",           // cyan
+  "bg-vt-violet",         // violet alt
+  "bg-[hsl(var(--score-yellow))]", // amber
+  "bg-vt-cyan",           // cyan
+  "bg-primary",           // violet
+];
+
 const categories: CategoryCard[] = [
   {
     category: "AI Vibe Coding Tools",
