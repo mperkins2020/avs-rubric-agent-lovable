@@ -1,7 +1,8 @@
 import { Link } from "react-router-dom";
 import ValueTempoLogo from "@/assets/ValueTempo_Logo_main.png";
+import { Footer } from "@/components/Footer";
 import { motion } from "framer-motion";
-import { Sparkles, ArrowRight } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ResourcesDropdown } from "@/components/ResourcesDropdown";
 import { SEOHead } from "@/components/SEOHead";
