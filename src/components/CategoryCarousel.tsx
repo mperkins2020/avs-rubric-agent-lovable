@@ -152,8 +152,11 @@ export function CategoryCarousel() {
             viewport={{ once: true }}
             transition={{ delay: Math.min(i * 0.08, 0.4) }}
             onClick={() => handleCardClick(card.hint)}
-            className="shrink-0 w-[300px] md:w-[340px] bg-card border border-border rounded-3xl p-6 shadow-vt-sm hover:shadow-vt-md hover:border-primary/30 transition-all duration-200 cursor-pointer group select-none"
+            className="shrink-0 w-[300px] md:w-[340px] bg-card border border-border rounded-3xl pt-0 overflow-hidden shadow-vt-sm hover:shadow-vt-md hover:border-primary/30 transition-all duration-200 cursor-pointer group select-none"
           >
+            {/* Accent color bar */}
+            <div className={`h-1 w-14 rounded-full mx-6 mt-5 mb-4 ${accentColors[i % accentColors.length]}`} />
+            <div className="px-6 pb-6">
             <div className="flex items-start justify-between mb-3">
               <h3 className="font-semibold text-base text-foreground group-hover:text-primary transition-colors leading-tight pr-3">
                 {card.category}
