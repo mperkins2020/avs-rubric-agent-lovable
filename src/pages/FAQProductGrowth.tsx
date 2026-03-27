@@ -155,6 +155,7 @@ Example: If the assessment surfaces workflow cutover risk, the action is not "re
           </div>
         </motion.div>
       </div>
+      <Footer />
     </div>;
 };
 export default FAQProductGrowth;

@@ -165,6 +165,7 @@ Example: A CFO can forward the report to GTM, Product, and CS and align on risks
           </div>
         </motion.div>
       </div>
+      <Footer />
     </div>;
 };
 export default FAQCFORevOps;
