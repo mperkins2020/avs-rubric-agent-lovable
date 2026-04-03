@@ -312,8 +312,8 @@ const Methodology = () => {
                     ["Blog & changelog", "Product updates, case studies with quantified outcomes"],
                     ["Trust center", "Security controls, compliance certifications, audit surfaces"],
                     ["Use cases & case studies", "Workflow specificity, customer outcomes, proof artifacts"],
-                    ["Terms of service", "Overage policies, limit behaviors, renewal/cancellation terms"],
-                    ["Community & investor content", "Public demos, architecture posts, community evidence"],
+                    ["Help center / Knowledge base", "Overage policies, limit behaviors, cancellation/refund terms, billing FAQs"],
+                    ["Billing & plan documentation", "Plan comparison, billing mechanics, seat/credit management, upgrade/downgrade behavior"],
                   ].map(([title, desc]) => (
                     <div key={title} className="p-3 rounded-lg bg-muted/40 border border-border/40">
                       <p className="text-sm font-medium text-foreground">{title}</p>

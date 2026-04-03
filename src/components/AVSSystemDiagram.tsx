@@ -23,7 +23,7 @@ const signalItems = [
   { icon: Globe, label: "Pricing pages" },
   { icon: Shield, label: "Trust & security" },
   { icon: Monitor, label: "Product UI" },
-  { icon: FileText, label: "Terms of service" },
+  { icon: FileText, label: "Help center / Billing docs" },
   { icon: Settings, label: "Admin controls" },
   { icon: Wallet, label: "Spend limits" },
   { icon: ClipboardList, label: "Audit logs" },
