@@ -542,12 +542,17 @@ const Methodology = () => {
               </section>
 
               {/* CTA */}
-              <section className="mt-12 p-6 rounded-lg bg-primary/5 border border-primary/20 text-center">
-                <p className="text-muted-foreground mb-4">
-                  Questions about the methodology? Book a 30-min session to discuss your specific context.
+              <section className="mt-16 py-10 px-8 rounded-2xl bg-gradient-to-br from-[hsl(var(--vt-violet))] to-[hsl(var(--vt-blue))] text-center shadow-vt-lg">
+                <h3 className="text-xl md:text-2xl font-bold text-white mb-2">
+                  Want to discuss your score?
+                </h3>
+                <p className="text-white/80 mb-6 max-w-md mx-auto">
+                  Book a 30-min diagnostic session to walk through your AVS results and identify quick wins.
                 </p>
                 <a href="https://calendly.com/mlhperkins/30min" target="_blank" rel="noopener noreferrer">
-                  <Button className="bg-gradient-primary">Book 30-min Session</Button>
+                  <Button size="lg" className="bg-white text-[hsl(var(--vt-violet))] hover:bg-white/90 font-semibold text-base px-8 py-3 shadow-md">
+                    Book 30-min Session →
+                  </Button>
                 </a>
               </section>
 
