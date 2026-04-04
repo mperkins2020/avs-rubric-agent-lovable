@@ -265,6 +265,19 @@ function scoreUrl(link: string, baseHost: string, communityUrlSet: Set<string>):
     score += 800;
   }
 
+  // Docs two-tier scoring — /docs/* paths vary widely in evidence quality.
+  // Tier 1 (billing/trust/overage keywords in path): high-value evidence, boost to compete
+  //   with pricing pages. Examples: /docs/billing, /docs/credits, /docs/rate-limits, /docs/overage
+  // Tier 2 (generic docs): reduce priority so getting-started/API reference pages don't crowd
+  //   out pricing and trust evidence. Examples: /docs/quickstart, /docs/sdk, /docs/authentication
+  if (/\/docs?\b/i.test(path)) {
+    if (/\/(billing|pricing|credits?|overage|usage|refund|cancel|limit|quota|trust|security|compliance|plan|subscription|metering|rate.?limit|fair.?use)\b/i.test(path)) {
+      score += 800; // Tier 1: billing/trust/overage docs — treat like pricing-adjacent evidence
+    } else {
+      score -= 200; // Tier 2: generic docs — lower priority, allow only if no better page available
+    }
+  }
+
   // Feature/product pages — moderate boost for evidence quality
   if (/\/features?\//i.test(path)) score += 200;
 
