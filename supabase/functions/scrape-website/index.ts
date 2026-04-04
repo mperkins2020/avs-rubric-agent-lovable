@@ -248,9 +248,17 @@ function scoreUrl(link: string, baseHost: string, communityUrlSet: Set<string>):
   if (priorityPatterns.some(p => p.test(link))) score += 250;
   if (isSubdomainUrl(link)) {
     score += 100;
-    // Extra boost for high-value paths on help/docs subdomains (billing FAQs, refunds, etc.)
-    if (/\/(plans-and-credits|credits|pricing|billing|usage|subscription|refund|cancel|hc)\b/i.test(path)) {
-      score += 700;
+    // Extra boost for billing/pricing content on help/docs subdomains (billing FAQs, overage policies, etc.)
+    // NOTE: /hc removed from this list — it matches ALL Zendesk-style articles, including
+    // generic topics like "how to present slides" or "change theme" (zero evidence value).
+    // Billing-keyword check below handles /hc/billing, /hc/credits, etc. precisely.
+    if (/\/(plans-and-credits|credits|pricing|billing|usage|subscription|refund|cancel|overage|limit|quota|metering)\b/i.test(path)) {
+      score += 700; // Billing/pricing specific help content — treat like pricing-adjacent evidence
+    } else if (/\/hc\/.+/i.test(path) || /\/articles?\/.+/i.test(path)) {
+      // Generic deep help article (no billing keywords in path) — two-tier penalty.
+      // e.g. support.beautiful.ai/hc/en-us/articles/how-to-present-slides
+      // These consume evidence slots but provide zero scoring signal.
+      score -= 200;
     }
   }
 
@@ -839,7 +847,7 @@ Deno.serve(async (req) => {
         } catch { return false; }
       };
 
-      // Normalise a URL for deduplication: strip #:~:text= fragments, locale prefixes, and www.
+      // Normalise a URL for deduplication: strip #:~:text= fragments, locale prefixes, www, and query params.
       const normaliseForDedup = (link: string): string => {
         try {
           const parsed = new URL(link);
@@ -850,6 +858,10 @@ Deno.serve(async (req) => {
           // Strip www. prefix — www.example.com/path ≡ example.com/path for dedup purposes
           // Prevents canonical probes from generating both www and non-www variants for the same path
           parsed.hostname = parsed.hostname.replace(/^www\./, '');
+          // Strip query params — /pricing?billing=annual ≡ /pricing for URL selection dedup.
+          // Query-param variants of high-value pages (annual/monthly tabs, modal params) are
+          // handled separately by the Fix 1 secondary pass after the primary batch.
+          parsed.search = '';
           return parsed.toString();
         } catch { return link; }
       };

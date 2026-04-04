@@ -4,7 +4,7 @@
 **Usage:** When a report produces a questionable result, log it here. Run `Scan the debug log for recurring patterns` periodically to surface systemic issues.
 **Related:** See ENGINE_DEBUG_HISTORY.md for backfilled history from git.
 
-**Entries:** 18 | **Last updated:** April 4, 2026
+**Entries:** 19 | **Last updated:** April 4, 2026
 
 ---
 
@@ -19,7 +19,7 @@
 | confidence_miscalc | 0 | — |
 | prompt_drift | 1 | ICP and Job Clarity (D2) |
 | pipeline_miss | 10 | Value Unit, Cost Driver Mapping, Safety/Trust, Overages & Risk |
-| contamination | 4 | Pricing Transparency, Enterprise/Compliance (D7/D8) |
+| contamination | 6 | Pricing Transparency, Enterprise/Compliance (D7/D8) |
 | other | 0 | — |
 
 ---
@@ -29,6 +29,50 @@
 <!-- Newest first. To add an entry, copy the template below and fill it in. -->
 
 <!-- Next entry goes here -->
+
+---
+
+### Entry 019 — April 4, 2026
+
+| Field | Value |
+|-------|-------|
+| Companies | ElevenLabs (query param dedup), Beautiful.ai (help subdomain contamination) |
+| Version | Current — observed April 4, 2026 post-category-aware-scoring reruns |
+| Dimension | All — slot contamination affects evidence quality across dimensions |
+| Score | ElevenLabs 12/16 (75%); Beautiful.ai 12/16 (75%) |
+| Pages Analyzed | ElevenLabs: /pricing appeared 4× in Pages Analyzed; Beautiful.ai: 6 of 13 slots consumed by generic help articles |
+| Root Cause | pipeline_miss — two independent URL dedup/scoring failures causing evidence slot waste |
+| Caught By | Report validation review after category-aware scoring reruns, April 4, 2026 |
+| Status | ✅ FIXED (April 4, 2026) — both bugs corrected in scrape-website/index.ts |
+
+**Overview:** Post-rerun validation of ElevenLabs and Beautiful.ai revealed two distinct URL selection bugs. Both were pre-scrape failures — the wrong pages were being selected before evidence reached the LLM.
+
+---
+
+**Failure 1 — /pricing appearing 4× in ElevenLabs Pages Analyzed (query param dedup gap)**
+
+`normaliseForDedup()` stripped `www.` prefixes, locale paths (`/en-US/`), and text fragment anchors (`#:~:text=`), but did NOT strip query parameters. URL variants like `elevenlabs.io/pricing`, `elevenlabs.io/pricing?billing=annual`, `elevenlabs.io/pricing?billing=monthly`, and `elevenlabs.io/pricing?plan=creator` all normalized to different dedup keys, scored +900 each (highIntentPaths `/pricing` match), and were all selected into `allUrlsToScrape`. Result: the same pricing page was scraped 4 times, consuming 4 of the 14 available slots with near-identical content.
+
+**Fix:** Added `parsed.search = ''` to `normaliseForDedup()`. Query-param variants of the same base path now collapse to the same dedup key. Meaningful query-param variants (annual/monthly tab, modal) are still captured by the Fix 1 secondary pass after the primary batch — that's the correct place to handle them.
+
+---
+
+**Failure 2 — Generic Beautiful.ai help articles consuming evidence slots (/hc subpath boost too broad)**
+
+The subdomain scoring boost in `scoreUrl()` included `/hc` in the billing-keyword regex:
+`/\/(plans-and-credits|credits|pricing|billing|usage|subscription|refund|cancel|hc)\b/i`
+
+Since Zendesk help centers use paths like `support.beautiful.ai/hc/en-us/articles/12345-how-to-present-slides`, the regex matched `/hc` anywhere in the path and gave every article +700 (same boost as billing docs). Result: 6 of 13 Beautiful.ai evidence slots were consumed by help articles about slide presentations, theme changes, and export settings — content with zero D5/D6/D7/D8 scoring value.
+
+**Fix:** Two-part change to `scoreUrl()` subdomain block:
+
+1. Removed `/hc` from the billing-keyword boost list — it was the wrong heuristic.
+2. Added a **two-tier penalty** for generic deep help articles: paths matching `/hc/.+` or `/articles?/.+` with no billing keywords in the path now receive -200 (same as generic docs tier). Examples:
+   - `support.beautiful.ai/hc/en-us/articles/how-to-present` → +100 (subdomain) - 200 (generic article) = -100
+   - `support.beautiful.ai/hc/en-us/articles/manage-billing` → +100 + 700 (billing keyword) = +800
+   - `support.beautiful.ai/hc` (root) → +100 (no penalty, no billing boost)
+
+**Pattern Tag:** `query-param-dedup-gap`, `help-subdomain-boost-too-broad`, `evidence-slot-contamination`
 
 ---
 
