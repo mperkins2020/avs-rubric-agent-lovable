@@ -4,7 +4,7 @@
 **Usage:** When a report produces a questionable result, log it here. Run `Scan the debug log for recurring patterns` periodically to surface systemic issues.
 **Related:** See ENGINE_DEBUG_HISTORY.md for backfilled history from git.
 
-**Entries:** 16 | **Last updated:** April 4, 2026
+**Entries:** 17 | **Last updated:** April 4, 2026
 
 ---
 
@@ -29,6 +29,47 @@
 <!-- Newest first. To add an entry, copy the template below and fill it in. -->
 
 <!-- Next entry goes here -->
+
+---
+
+### Entry 017 — April 4, 2026
+
+| Field | Value |
+|-------|-------|
+| Companies | General — affects all companies with interactive pricing pages |
+| Version | Current — not yet fixed |
+| Dimension | D5 Cost Driver Mapping, D7 Overages & Risk, D8 Safety Rails & Trust (primary) |
+| Score | Undetermined — evidence gap, not yet quantified |
+| Pages Analyzed | N/A — architectural gap identified in scraping layer |
+| Root Cause | pipeline_miss — two classes of interactive pricing page content never captured |
+| Caught By | Architecture review, April 4, 2026 |
+| Status | Open. Two new failure classes identified. Not yet logged as open issues. |
+
+**Failure A — Tooltip content on pricing pages never captured**
+
+Pricing pages frequently use hover-triggered tooltips to explain pricing terms inline (e.g., "What counts as an active seat?", "How is API usage measured?", credit unit definitions, overage behavior explanations). These tooltips are directly relevant to D5 (Cost Driver Mapping), D7 (Overages & Risk), and D8 (Safety Rails).
+
+Firecrawl performs a JavaScript-rendered scrape with a `waitFor` timer. It does not simulate hover events. Tooltip content is CSS/JS hidden (`display:none`, `visibility:hidden`, or opacity transitions) and never appears in the scraped markdown regardless of wait time. This content is structurally unreachable by the current pipeline.
+
+**Fix needed:** Use Firecrawl's `actions` API to simulate hover/click on tooltip trigger elements on pricing pages before snapshotting. Alternatively, extract tooltip content directly from the raw HTML (many tooltip libraries embed the full text in `data-tooltip`, `title`, `aria-label`, or hidden `<div>` siblings) without requiring interaction simulation.
+
+---
+
+**Failure B — Collapsed FAQ accordions on pricing pages not actively expanded**
+
+Entry 015D addressed the `waitFor` timing regression (restoring 2500ms for pricing pages). However, many pricing page FAQ sections use click-to-expand accordions — the content is hidden until a user clicks the question. Firecrawl with a timer waits for auto-rendered JS but does not click collapsed accordion items. If accordions do not auto-expand on page load, their content is absent from the scraped markdown even at 2500ms.
+
+FAQ answers on pricing pages frequently contain the most precise documentation of:
+- Credit and token usage definitions (D5)
+- Overage rates and billing behavior (D7)
+- Spend caps, alerts, and limit behaviors (D8)
+- Cancellation and refund policies (D8)
+
+Additionally, FAQ answers often reference external documentation pages (help center articles, billing guides, usage calculators). Fix 1's secondary pass already extracts `<a href>` links from scraped pages and queues high-priority ones — but only if the FAQ content itself was captured. If the accordion was never expanded, those links are never seen.
+
+**Fix needed:** On pricing pages, use Firecrawl's `actions` API to click all collapsed accordion/details elements before snapshotting. Detect accordion patterns via `<details>`, `<summary>`, common accordion class names (`accordion`, `faq`, `collapsible`), or `aria-expanded="false"` attributes. This is distinct from the waitFor timing fix — it requires active interaction, not passive waiting.
+
+**Pattern Tag:** `tooltip-content-miss`, `accordion-active-expansion-miss`, `interactive-pricing-page-gap`
 
 ---
 
