@@ -1,3 +1,14 @@
+## Protected Files — Claude Code Territory
+
+The following files are maintained exclusively by Claude Code. Lovable must NEVER edit them:
+
+- `supabase/functions/analyze-company/index.ts` — scoring engine
+- `supabase/functions/scrape-website/index.ts` — scraper
+- `src/lib/api/scraper.ts` — client API layer
+- `tasks/` — calibration docs and todos
+
+If a Lovable push has overwritten any of these, restore from the last Claude Code commit.
+
 ## QA Debug Logs
 
 Two files track scoring QA:
