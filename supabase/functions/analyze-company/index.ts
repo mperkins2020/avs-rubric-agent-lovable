@@ -22,9 +22,14 @@ interface AnalyzeRequest {
   unresolvedPageCount?: number;
   totalQueuedCount?: number;
   confirmedMissUrls?: string[];
+  // Background processing: true = poll-only (check job status, do not start new analysis)
+  pollOnly?: boolean;
 }
 
-const ANALYSIS_VERSION = '2026-03-17-evidence-cleanup-v6';
+// Deno EdgeRuntime type for background processing
+declare const EdgeRuntime: { waitUntil: (p: Promise<unknown>) => void };
+
+const ANALYSIS_VERSION = '2026-04-03-category-aware-scoring-v7';
 
 const COMPANY_PROFILE_PROMPT = `You are an expert business analyst. Analyze the following website content and extract a company profile.
 
@@ -59,6 +64,32 @@ EVIDENCE QUALITY RULES (MANDATORY — apply before scoring every dimension):
 7. TIER ATTRIBUTION: When citing plan-specific features, policies, or constraints, name the EXACT plan tier the evidence belongs to (e.g., "Team plan allows custom overage pricing for seats over 20"). Never generalize a tier-specific feature to a different tier. If a feature applies to multiple tiers, list each tier explicitly. Enterprise "custom pricing" is NOT the same as a Team plan's seat overage policy.
 8. LEGAL vs PRODUCT EVIDENCE: Privacy policies, biometric notices, data processing addenda, and compliance legal pages describe COMPANY obligations to regulators — NOT customer-facing safety rails or admin controls. Do NOT cite legal compliance language (e.g., "monitor usage of our Service") as evidence for Safety rails, budget caps, or trust surfaces. Safety rails evidence must come from product pages, pricing pages, docs, or trust centers — not legal boilerplate.
 9. STRUCTURED DATA CAVEAT: Sections labeled "Machine-Extracted — NOT direct quotes" contain AI-paraphrased data. Use them as scoring context but do NOT cite their text as direct quotes in sourceEvidence. Always prefer the original markdown content for direct citations.
+
+PRICING MODEL CATEGORY AWARENESS (MANDATORY — apply throughout all dimension scoring):
+The "Pricing Model Guess" in the user content tells you the pricing category. Apply these overrides wherever they conflict with individual subtest defaults:
+
+SEAT-BASED products (Pricing Model Guess == "seat"): Per-user/seat pricing, no metered consumption. These rules override the default subtest logic:
+- D5 C1: Pass if ≥1 cost driver with driver_unit == seats AND per-seat price is published for at least one tier. The "≥3 drivers" and "≥1 inference-related" requirements are NOT applicable — seat products have one driver by design.
+- D5 C4: Pass if per-seat price is published for at least one non-enterprise tier. p50/p95 variance is NOT required — seat cost is deterministic (seats × price).
+- D5 C5: Auto-pass. Seat counts don't spike. Spike trigger requirements do NOT apply.
+- D5 C6: Pass if the pricing page provides enough information to calculate total cost. forecasting_surfaces.alerts is NOT required — variable-cost alerts are N/A when cost is deterministic.
+- D5 C6 gate: The "If C6 fails: cap score at 1" gate does NOT apply for seat-based products.
+- D6 P3: If segment_pools is empty, pass P3 if the product has defined tier boundaries — at minimum, feature set listed per tier AND seat limits or team-size bands defined (e.g., "Team plan: up to 20 seats, features X/Y/Z"). Do NOT fail P3 solely because metered pools are absent in a seat-based product.
+- D6 P3 gate: The "If P3 fails for the highest-priority segment: cap final dimension score at 1" gate applies only if P3 genuinely fails under the seat-based interpretation above. If tiers have clear boundaries, P3 passes.
+- D7 R1: Pass if what happens at seat or plan limits is documented (e.g., "contact sales for more seats", "features restricted at limit", "upgrade required", "account downgraded to free limits"). Overage disclosure surface on a per-unit basis is N/A.
+- D7 R2: Auto-pass if no tier has overage_enabled == true. Overage unit pricing is not applicable when costs don't vary by usage.
+- D7 R3: Pass if admin can manage seat count (add/remove members) and has subscription visibility. Cap and usage alert mechanisms for variable consumption are N/A.
+- D7 R6: Pass if total cost is deterministic from published pricing (no hidden variable charges). Estimation surfaces and usage alerts for variable spend are N/A for seat-based.
+- D7 overage_behavior missing gate: If no tier has overage_enabled == true AND the product is seat-based, a missing overage_behavior means "not applicable" — do NOT apply the "policies.overage_behavior is missing → score = 0" gate.
+- D8 T1: Pass if admin controls for user and access management exist (add/remove users, manage permissions, control who has access). Budget caps and usage caps for variable spend are N/A — do NOT penalize for their absence.
+- D8 T2: Pass if admin has visibility into team membership and subscription status (member list, billing plan view, seat count). Usage-based spend alerts are N/A.
+- D8 T3: Auto-pass. Cost = seats × price is deterministic. Pre-spend estimation for variable consumption is N/A.
+- D8 T6: Pass if what happens at plan boundaries is documented (feature restrictions, upgrade prompts, or limit behavior stated). Rate limits and circuit breakers for variable usage are N/A.
+- D8 T2 gate: The "If T2 fails: cap final dimension score at 1" gate does NOT apply when T2 passes under the seat-based reinterpretation above.
+
+CONSUMPTION-BASED ("usage") and PLATFORM/COMPUTE products: Apply all subtests as specified in each dimension. No overrides.
+
+HYBRID products ("hybrid"): Score the seat component using seat-based overrides above, the metered/consumption component using standard consumption rules. For subtests that span both components (D5 C1, D6 P3, D7 R1–R6), the lower-passing component is binding. For D8, both enterprise trust surfaces (SSO, audit logs, admin controls) AND consumption safety rails (caps, alerts, dashboards for the metered component) must be present for 2/2.
 
 For each of the 8 dimensions below, provide:
 - score: 0 (not present), 1 (emerging), or 2 (strong)
@@ -639,17 +670,19 @@ THE 8 DIMENSIONS:
    AND
    - workflows[].driver_contributions[] includes at least 2 drivers.
 
-   **C4 Cost per value unit estimate**
-   Pass if for the scored workflow:
-   - cost_estimates[].cost_per_value_unit_p50 is present
-   AND
-   - cost_estimates[].cost_per_value_unit_p95 is present.
+   **C4 Cost calculability from published information**
+   Pass if total cost for the primary workflow is calculable from published pricing:
+   - Consumption/platform: at least one per-unit rate is published (e.g., "$0.003 per minute", "$0.002 per 1K tokens", "10M tokens for $25/mo"), making cost estimation possible without insider knowledge.
+   - Seat-based: per-seat price is published for at least one non-enterprise tier, making total cost calculable as seats × price. (See PRICING MODEL CATEGORY AWARENESS for full seat-based override.)
+   - Hybrid: per-seat price AND per-unit price for the metered component are both published.
+   NOTE: p50/p95 workflow-level cost variance estimates are NOT required. No company publicly documents these — they are in-product analytics, not public pricing transparency artifacts.
 
-   **C5 Spike and tail mapping**
-   Pass if:
-   - at least 2 top drivers include spike_triggers[] (non-empty)
-   AND
-   - at least 2 top drivers include mitigations[] (non-empty).
+   **C5 Cost scaling and boundary behavior**
+   Pass if behavior at cost boundaries or unit exhaustion is documented:
+   - Consumption/platform: what happens when included usage is exhausted is documented (overage pricing published, hard stop behavior stated, or upgrade path documented); OR cost scales with a documented per-unit rate that makes scaling predictable.
+   - Seat-based: auto-pass. Seat cost is deterministic. (See PRICING MODEL CATEGORY AWARENESS.)
+   - Hybrid: consumption component boundary behavior is documented.
+   NOTE: Internal spike triggers and engineering mitigations (caches, batch routing, model fallbacks) are NOT required. These are implementation details, not public pricing transparency artifacts.
 
    **C6 Forecasting and visibility surfaces**
    Pass if:
@@ -667,8 +700,7 @@ THE 8 DIMENSIONS:
 
    #### Gates (hard enforcement caps)
    - If C3 fails: cap score at 1. You cannot claim driver mapping without linking to a workflow and value unit.
-   - If C4 fails: cap score at 1. If you cannot estimate cost per value unit, predictability is not real.
-   - If C6 fails: cap score at 1. Forecasting without visibility and alerts is not operational.
+   - If C6 fails: cap score at 1. Forecasting without visibility and alerts is not operational. EXCEPTION: For seat-based products, see PRICING MODEL CATEGORY AWARENESS — C6 gate does not apply.
 
    ## Confidence (separate from score)
    Compute confidence per subtest:
@@ -999,7 +1031,7 @@ THE 8 DIMENSIONS:
    - If missing: equal-weight across provided segments, and lower confidence.
 
    #### Gates (hard enforcement caps)
-   - If policies.overage_behavior is missing: final dimension score = 0.
+   - If policies.overage_behavior is missing AND any tier has overage_enabled == true: final dimension score = 0. EXCEPTION: For seat-based products where no tier has overage_enabled == true, a missing overage_behavior means "not applicable" — do NOT apply this gate (see PRICING MODEL CATEGORY AWARENESS).
    - If any tier has overage_enabled == true and both tiers[].cap_policy == none AND tiers[].alert_policy == none AND forecasting_surfaces.alerts == none: cap final score at 1.
    - If policies.overage_behavior == auto_topup and any tier has topup_available == true but tiers[].topup_increment is missing: cap final score at 1.
    - If an enterprise segment exists and R5 fails: cap final score at 1.
@@ -1166,7 +1198,7 @@ THE 8 DIMENSIONS:
 
    #### Gates (hard enforcement caps)
    - If T4 fails for the highest-priority segment: cap final dimension score at 1.
-   - If T2 fails for the highest-priority segment: cap final dimension score at 1.
+   - If T2 fails for the highest-priority segment: cap final dimension score at 1. EXCEPTION: For seat-based products, T2 is assessed under the seat-based interpretation (admin team/subscription visibility). If T2 passes under that interpretation, this gate does not apply.
    - If any tier has overage_enabled == true and both caps and alerts are absent for that tier (no cap_policy and no alert_policy and forecasting_surfaces.alerts == none): cap final score at 1.
 
    ## Confidence (separate from score)
@@ -1405,10 +1437,10 @@ Deno.serve(async (req) => {
     console.log('Admin check for', userId, ':', isAdmin);
 
     // Parse request body early to check if this is a re-run
-    const { pages, url, insiderAnswers, previousScores, existingProfile, unresolvedPageCount, totalQueuedCount, confirmedMissUrls }: AnalyzeRequest = await req.json();
+    const { pages, url, insiderAnswers, previousScores, existingProfile, unresolvedPageCount, totalQueuedCount, confirmedMissUrls, pollOnly }: AnalyzeRequest = await req.json();
     const isRerun = !!(previousScores && previousScores.length > 0);
 
-    if (!isAdmin && !isRerun) {
+    if (!isAdmin && !isRerun && !pollOnly) {
       const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
 
       // Check by user_id
@@ -1473,7 +1505,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    if (!pages || pages.length === 0) {
+    if (!pollOnly && (!pages || pages.length === 0)) {
       return new Response(
         JSON.stringify({ success: false, error: 'No pages provided for analysis' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -1489,6 +1521,38 @@ Deno.serve(async (req) => {
 
     // ── Cache lookup (skip for re-runs with insider/public-link context) ──
     const isFreshScan = !insiderAnswers && !previousScores;
+
+    // ── pollOnly: status check without starting new analysis ──
+    if (pollOnly) {
+      const { data: cached } = await supabaseAdmin
+        .from('scan_results')
+        .select('result_json')
+        .eq('url_domain', domain)
+        .gt('expires_at', new Date().toISOString())
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single();
+
+      if (!cached?.result_json) {
+        return new Response(
+          JSON.stringify({ success: false, status: 'not_found' }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      const cachedResult = cached.result_json as Record<string, unknown>;
+      if (cachedResult.status === 'pending') {
+        return new Response(
+          JSON.stringify({ success: false, status: 'pending' }),
+          { status: 202, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      // Complete result available
+      return new Response(
+        JSON.stringify(cachedResult),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     if (isFreshScan) {
       const { data: cached } = await supabaseAdmin
         .from('scan_results')
@@ -1499,26 +1563,55 @@ Deno.serve(async (req) => {
         .limit(1)
         .single();
 
-      const cachedVersion = cached?.result_json && typeof cached.result_json === 'object'
-        ? (cached.result_json as Record<string, unknown>).analysisVersion
+      const cachedResult = cached?.result_json && typeof cached.result_json === 'object'
+        ? cached.result_json as Record<string, unknown>
         : null;
 
-      if (cached?.result_json && cachedVersion === ANALYSIS_VERSION) {
+      // Another request already started this analysis — return pending status
+      if (cachedResult?.status === 'pending') {
+        console.log(`Job IN PROGRESS for ${domain} — returning pending status`);
+        return new Response(
+          JSON.stringify({ success: false, status: 'pending' }),
+          { status: 202, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      const cachedVersion = cachedResult?.analysisVersion ?? null;
+
+      if (cachedResult && cachedVersion === ANALYSIS_VERSION) {
         console.log(`Cache HIT for ${domain} — returning cached result (${ANALYSIS_VERSION})`);
         return new Response(
-          JSON.stringify(cached.result_json),
+          JSON.stringify(cachedResult),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
 
-      if (cached?.result_json) {
+      if (cachedResult) {
         console.log(`Cache STALE for ${domain} — expected ${ANALYSIS_VERSION}, got ${String(cachedVersion ?? 'none')}`);
       } else {
-        console.log(`Cache MISS for ${domain} — running fresh analysis`);
+        console.log(`Cache MISS for ${domain} — starting background analysis`);
+      }
+
+      // Insert pending marker so concurrent requests don't start duplicate jobs
+      try {
+        await supabaseAdmin
+          .from('scan_results')
+          .insert({
+            url_domain: domain,
+            result_json: { status: 'pending', analysisVersion: 'pending' },
+            expires_at: new Date(Date.now() + 10 * 60 * 1000).toISOString(), // 10 min pending TTL
+          });
+      } catch (pendingErr) {
+        console.error('Failed to insert pending marker (non-fatal):', pendingErr);
       }
     }
 
     console.log(`Analyzing ${pages.length} pages from ${url}`);
+
+    // ── Background processing wrapper ──
+    // For fresh scans: this promise runs in the background via EdgeRuntime.waitUntil.
+    // For reruns: this promise is awaited synchronously before returning.
+    const analysisPromise = (async (): Promise<Record<string, unknown>> => {
 
     // Prepare content for analysis — prioritize high-signal pages before truncation
     const stripBoilerplate = (markdown: string): string => {
@@ -2537,6 +2630,33 @@ ${truncatedContent}`;
       }
     }
 
+    return result;
+    // ── End of analysisPromise IIFE ──
+    })();
+
+    if (isFreshScan) {
+      // Register the analysis to complete in the background even after response is sent.
+      // The result is cached in scan_results when complete; client polls via pollOnly requests.
+      EdgeRuntime.waitUntil(
+        analysisPromise.catch((bgErr) => {
+          console.error('Background analysis failed:', bgErr);
+          // Write error marker so the client stops polling
+          supabaseAdmin.from('scan_results').insert({
+            url_domain: domain,
+            result_json: { status: 'error', error: String(bgErr), analysisVersion: 'error' },
+            expires_at: new Date(Date.now() + 5 * 60 * 1000).toISOString(),
+          }).catch(() => { /* best-effort */ });
+        })
+      );
+
+      return new Response(
+        JSON.stringify({ success: false, status: 'pending', message: 'Analysis started — poll for results' }),
+        { status: 202, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Rerun path (insiderAnswers or previousScores): await synchronously and return result
+    const result = await analysisPromise;
     return new Response(
       JSON.stringify(result),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

@@ -122,9 +122,13 @@ export const scraperApi = {
 
       if (error) {
         console.error('Analysis error:', error);
-        // Extract the meaningful error message from the response body (e.g. 429 rate limit)
         const msg = data?.error || error.message;
         return { success: false, error: msg };
+      }
+
+      // Background processing: edge function returned 202 — poll until complete
+      if (data && data.status === 'pending') {
+        return await this._pollAnalysis(url);
       }
 
       if (data && !data.success && data.error) {
@@ -134,11 +138,61 @@ export const scraperApi = {
       return data as AnalysisResult;
     } catch (err) {
       console.error('Analysis exception:', err);
-      return { 
-        success: false, 
-        error: err instanceof Error ? err.message : 'Failed to analyze company' 
+      return {
+        success: false,
+        error: err instanceof Error ? err.message : 'Failed to analyze company'
       };
     }
+  },
+
+  /**
+   * Poll for a background analysis result. Called after receiving a 202 from analyzeCompany.
+   * Polls every 4 seconds up to 2 minutes total.
+   */
+  async _pollAnalysis(url: string): Promise<AnalysisResult> {
+    const POLL_INTERVAL_MS = 4000;
+    const POLL_TIMEOUT_MS = 120000; // 2 minutes
+    const startTime = Date.now();
+
+    console.log(`Background analysis started for ${url} — polling for result`);
+
+    while (Date.now() - startTime < POLL_TIMEOUT_MS) {
+      await new Promise(resolve => setTimeout(resolve, POLL_INTERVAL_MS));
+
+      try {
+        const { data, error } = await supabase.functions.invoke('analyze-company', {
+          body: { url, pollOnly: true },
+        });
+
+        if (error) {
+          console.warn('Poll error (will retry):', error);
+          continue;
+        }
+
+        if (data?.status === 'pending') {
+          console.log(`Analysis still in progress for ${url}...`);
+          continue;
+        }
+
+        if (data?.status === 'error') {
+          return { success: false, error: 'Analysis failed in background — please try again' };
+        }
+
+        if (data?.status === 'not_found') {
+          // Pending marker expired before result was written — analysis failed silently
+          return { success: false, error: 'Analysis did not complete — please try again' };
+        }
+
+        if (data?.success === true) {
+          console.log(`Analysis complete for ${url} after ${Math.round((Date.now() - startTime) / 1000)}s`);
+          return data as AnalysisResult;
+        }
+      } catch (pollErr) {
+        console.warn('Poll exception (will retry):', pollErr);
+      }
+    }
+
+    return { success: false, error: 'Analysis timed out after 2 minutes — please try again' };
   },
 
   /**

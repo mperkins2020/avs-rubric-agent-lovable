@@ -147,6 +147,7 @@ const priorityPatterns = [
   /\/knowledge-base\b/i,
   /\/faq\b/i,
   /\/support\b/i,
+  /\/hc\b/i,           // Zendesk help center pattern (help.domain.com/hc/...)
   /\/api\b/i,
   /\/developers?\b/i,
   /\/changelog\b/i,
@@ -157,6 +158,9 @@ const priorityPatterns = [
   /\/legal\b/i,
   /\/privacy\b/i,
   /\/credits\b/i,
+  /\/refund/i,         // Refund/cancellation policies
+  /\/cancel/i,         // Cancellation terms
+  /\/roi\b/i,          // ROI calculators and value estimators
   /overage/i,
   /calculator/i,
   /fair.?use/i,
@@ -172,6 +176,10 @@ const highIntentPaths = new Set([
   // Bundle 2: trust-center path pinning — same priority as /pricing
   // Observed regression: ElevenLabs /security and /trust dropped after page-count reduction
   '/security', '/trust', '/compliance', '/privacy',
+  // Bundle 3: ROI/value calculators — direct D1 NS3 evidence (quantified outcome proof)
+  '/roi-calculator', '/roi', '/calculator', '/value-calculator',
+  // Bundle 4: Zendesk/help center root — billing FAQs and overage policies live here
+  '/hc',
 ]);
 
 const exclusionPatterns = [
@@ -200,6 +208,7 @@ const fullContentPatterns = [
   /\/pricing\b/i, /\/plans?\b/i, /\/billing\b/i,
   /\/faq\b/i, /\/help\b/i, /\/support\b/i,
   /\/trust\b/i, /\/security\b/i, /\/credits\b/i, /\/usage\b/i,
+  /\/hc\b/i, /\/roi\b/i, /calculator/i, /\/refund/i,
 ];
 
 const helpSubdomains = ['help', 'support', 'docs', 'developer', 'developers', 'kb', 'knowledge', 'community'];
@@ -239,15 +248,20 @@ function scoreUrl(link: string, baseHost: string, communityUrlSet: Set<string>):
   if (priorityPatterns.some(p => p.test(link))) score += 250;
   if (isSubdomainUrl(link)) {
     score += 100;
-    // Extra boost for credit/pricing paths on docs subdomains
-    if (/\/(plans-and-credits|credits|pricing|billing|usage|subscription)\b/i.test(path)) {
+    // Extra boost for high-value paths on help/docs subdomains (billing FAQs, refunds, etc.)
+    if (/\/(plans-and-credits|credits|pricing|billing|usage|subscription|refund|cancel|hc)\b/i.test(path)) {
       score += 700;
     }
   }
 
-  // HIGH-VALUE CONTENT BOOST: pricing/billing keywords anywhere in the path
-  // (catches /faqs/pricing, /resources/pricing, /info/plans, etc.)
-  if (/\/(pricing|billing|plans?|credits|subscription)\b/i.test(path) && !highIntentPaths.has(path)) {
+  // HIGH-VALUE CONTENT BOOST: pricing/billing/refund keywords anywhere in the path
+  // (catches /faqs/pricing, /resources/pricing, /info/plans, /help/billing, /hc/refunds, etc.)
+  if (/\/(pricing|billing|plans?|credits|subscription|refund|cancel)\b/i.test(path) && !highIntentPaths.has(path)) {
+    score += 800;
+  }
+
+  // ROI/calculator boost — direct D1 NS3 evidence (quantified outcome proof)
+  if (/\/(roi|calculator|value-calculator)\b/i.test(path) && !highIntentPaths.has(path)) {
     score += 800;
   }
 
