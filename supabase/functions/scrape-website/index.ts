@@ -976,7 +976,10 @@ Deno.serve(async (req) => {
       if (pricingPageUrl) {
         const scrapedPricing = resolvedPages.find(p => isPricingPage(p.url));
         if (scrapedPricing) {
-          const alreadyQueued = new Set([...allUrlsToScrape, formattedUrl]);
+          // Normalise www for dedup — prevents www.example.com/faq being re-scraped
+          // when clay.com/faq was already in the primary batch
+          const normaliseQueueUrl = (u: string) => { try { return new URL(u).href.replace('://www.', '://'); } catch { return u; } };
+          const alreadyQueued = new Set([...allUrlsToScrape, formattedUrl].map(normaliseQueueUrl));
           const discovered: string[] = [];
           const mdLinkRegex = /\[([^\]]*)\]\(([^)\s]+)\)/g;
           let mdMatch;
@@ -985,7 +988,7 @@ Deno.serve(async (req) => {
             if (href.startsWith('#') || href.startsWith('javascript:') || href.startsWith('mailto:')) continue;
             try {
               const resolved = new URL(href, pricingPageUrl).href;
-              if (alreadyQueued.has(resolved) || !isSameDomain(resolved, baseHost)) continue;
+              if (alreadyQueued.has(normaliseQueueUrl(resolved)) || !isSameDomain(resolved, baseHost)) continue;
               if (exclusionPatterns.some(p => p.test(resolved))) continue;
               // Accept modal/tab/plan params, FAQ fragments, or ≥2-segment docs subpages
               const parsedHref = new URL(resolved);
@@ -1003,7 +1006,14 @@ Deno.serve(async (req) => {
           if (secondaryUrls.length > 0) {
             console.log(`Fix 1 (post-batch): Found ${secondaryUrls.length} secondary pricing URLs:`, secondaryUrls);
             const secondaryResults = await Promise.all(secondaryUrls.map(u => scrapePage(apiKey, u)));
-            secondaryResults.forEach(p => { if (p) resolvedPages.push(p); });
+            secondaryResults.forEach(p => {
+              if (!p) return;
+              const is404Secondary = /\b(404|not found|page not found|page doesn['']t exist|this page (doesn['']t|does not) exist)\b/i.test(p.title || '') ||
+                p.markdown?.trimStart().startsWith('# 404') ||
+                /^#\s*(404|Page Not Found)/m.test(p.markdown || '') ||
+                (!p.markdown?.trim() && !p.title?.trim());
+              if (!is404Secondary) resolvedPages.push(p);
+            });
           } else {
             console.log('Fix 1 (post-batch): No secondary pricing URLs discovered');
           }
@@ -1064,7 +1074,17 @@ Deno.serve(async (req) => {
         for (let i = 0; i < retryResults.length; i++) {
           const retried = retryResults[i];
           if (retried) {
-            additionalRetryPages.push(retried);
+            // Apply same 404 filter to retry results — retry variants can return 404 pages
+            const is404Retry = /\b(404|not found|page not found|page doesn['']t exist|this page (doesn['']t|does not) exist)\b/i.test(retried.title || '') ||
+              retried.markdown?.trimStart().startsWith('# 404') ||
+              /^#\s*(404|Page Not Found)/m.test(retried.markdown || '') ||
+              (!retried.markdown?.trim() && !retried.title?.trim());
+            if (!is404Retry) {
+              additionalRetryPages.push(retried);
+            } else {
+              console.log(`Fix 2: Retry returned 404 page for ${unresolvedUrls[i]} (title: "${retried.title}") — skipping`);
+              fix2ConfirmedMissUrls.push(unresolvedUrls[i]);
+            }
           } else {
             fix2ConfirmedMissUrls.push(unresolvedUrls[i]);
           }
