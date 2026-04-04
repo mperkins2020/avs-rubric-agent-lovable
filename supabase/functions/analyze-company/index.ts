@@ -2641,11 +2641,15 @@ ${truncatedContent}`;
         analysisPromise.catch((bgErr) => {
           console.error('Background analysis failed:', bgErr);
           // Write error marker so the client stops polling
-          supabaseAdmin.from('scan_results').insert({
-            url_domain: domain,
-            result_json: { status: 'error', error: String(bgErr), analysisVersion: 'error' },
-            expires_at: new Date(Date.now() + 5 * 60 * 1000).toISOString(),
-          }).catch(() => { /* best-effort */ });
+          (async () => {
+            try {
+              await supabaseAdmin.from('scan_results').insert({
+                url_domain: domain,
+                result_json: { status: 'error', error: String(bgErr), analysisVersion: 'error' },
+                expires_at: new Date(Date.now() + 5 * 60 * 1000).toISOString(),
+              });
+            } catch { /* best-effort — don't let error reporting throw */ }
+          })();
         })
       );
 
