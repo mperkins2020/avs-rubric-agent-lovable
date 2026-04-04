@@ -4,7 +4,7 @@
 **Usage:** When a report produces a questionable result, log it here. Run `Scan the debug log for recurring patterns` periodically to surface systemic issues.
 **Related:** See ENGINE_DEBUG_HISTORY.md for backfilled history from git.
 
-**Entries:** 15 | **Last updated:** March 25, 2026
+**Entries:** 16 | **Last updated:** April 4, 2026
 
 ---
 
@@ -29,6 +29,58 @@
 <!-- Newest first. To add an entry, copy the template below and fill it in. -->
 
 <!-- Next entry goes here -->
+
+---
+
+### Entry 016 — April 4, 2026
+
+| Field | Value |
+|-------|-------|
+| Companies | Beautiful.ai, Linear (seat-based); ElevenLabs, Deepgram, OpenAI (consumption); Notion, Cursor (hybrid) |
+| Version | ANALYSIS_VERSION bump: `2026-04-03-category-aware-scoring-v7` |
+| Dimension | D5 Cost Driver Mapping, D6 Pools & Packaging, D7 Overages & Risk, D8 Safety Rails & Trust (primary); all categories affected |
+| Score | Pre/post not yet validated — engine deployed, reruns pending |
+| Pages Analyzed | N/A — calibration + engine change session |
+| Root Cause | contamination — scoring engine applied consumption-centric subtests to seat-based products, causing structural misfires on D5/D6/D7/D8 |
+| Caught By | Calibration audit (April 1–4, 2026) — cross-company pattern review across Beautiful.ai, Linear, Notion (seat); ElevenLabs, Deepgram (consumption); Bolt, Replit, Vercel (hybrid) |
+| Status | Engine deployed. Reruns needed: Beautiful.ai, Linear (seat-based); ElevenLabs, Deepgram (consumption); Notion, Cursor (hybrid) to validate corrections. |
+
+**Root cause analysis:**
+
+The scoring prompt evaluated all companies with a consumption-centric subtest battery. Seat-based products were penalized for missing artifacts that structurally cannot exist: p50/p95 cost variance estimates (C4), spike triggers and mitigations (C5), inference-related cost drivers (C1), and overage behavior documentation (D7). This caused systematic 1/2 scores on D5, D6, D7, and D8 for seat-based companies regardless of what was publicly available.
+
+**Engine changes deployed (ANALYSIS_VERSION: 2026-04-03-category-aware-scoring-v7):**
+
+1. **PRICING MODEL CATEGORY AWARENESS block** added to `RUBRIC_SCORING_PROMPT`:
+   - D5 seat-based: C1 passes on ≥1 driver with published per-seat price; C4 passes on per-seat price published (p50/p95 not required); C5 auto-pass (seats don't spike); C6 gate exception
+   - D6 seat-based: P3 (pool rules) override — pool features not applicable
+   - D7 seat-based: Overage gate exception — missing `overage_behavior` = "not applicable" when no `overage_enabled` tiers exist
+   - D8 seat-based: T1 passes on admin controls for user/access management; T2 passes on admin subscription/billing visibility; T3 passes on role-based access controls; T6 passes on documented seat limits or fair-use policy; T2 gate exception
+
+2. **C4 subtest replaced (all categories):** p50/p95 cost estimates removed. New subtest: cost calculability from published information (consumption = per-unit rate; seat = per-seat price; hybrid = both).
+
+3. **C5 subtest replaced (all categories):** Spike triggers/mitigations removed. New subtest: cost boundary behavior (consumption = overage/hard-stop documented; seat = auto-pass; hybrid = consumption boundary documented).
+
+4. **D5 gate change:** `If C4 fails: cap score at 1` removed. C6 gate exception added for seat-based.
+
+**Background processing deployed (analyze-company):**
+
+Fresh scans for large sites (GitHub, Cursor) were timing out the edge function before analysis completed. Fix:
+- `EdgeRuntime.waitUntil` keeps edge function alive post-response
+- Fresh scans return 202 immediately; analysis runs in background IIFE
+- Pending marker inserted into `scan_results` before analysis starts (10-min TTL)
+- `pollOnly` flag: client polls for result without sending pages payload
+- Error marker written to cache on background failure
+- Client (`scraper.ts`) polls every 4s up to 2 min
+
+**Scrape-website URL pattern updates:**
+
+- `/hc`, `/refund`, `/cancel`, `/roi` added to `priorityPatterns` and `highIntentPaths`
+- `fullContentPatterns` updated for help center, roi, calculator, refund paths
+- HIGH-VALUE CONTENT BOOST added for refund/cancel and roi/calculator paths
+- `/hc` added to subdomain boost path list
+
+**Pattern Tag:** `category-misfire`, `seat-based-contamination`, `consumption-centric-prompt`, `background-processing-timeout`, `url-pattern-miss`
 
 ---
 
