@@ -818,11 +818,15 @@ Deno.serve(async (req) => {
           // Random-slug user-generated content filter: path ends in -[a-z0-9]{10,} (e.g. gamma.app/docs/-gkzy48h1uj1yr1q)
           const lastSeg = parsed.pathname.split('/').filter(Boolean).pop() || '';
           if (/^-[a-z0-9]{10,}$/i.test(lastSeg)) return false;
+          // Gated path blocklist — these paths are uniformly behind authentication across SaaS.
+          // They return HTTP 200 + a login wall page with zero evidence content, wasting a slot.
+          const firstSeg = parsed.pathname.split('/').filter(Boolean)[0]?.toLowerCase() || '';
+          if (/^(subscription|usage|account|accounts|dashboard|settings|login|signin|sign-in|sign-up|signup|register)$/.test(firstSeg)) return false;
           return true;
         } catch { return false; }
       };
 
-      // Normalise a URL for deduplication: strip #:~:text= fragments and locale prefixes
+      // Normalise a URL for deduplication: strip #:~:text= fragments, locale prefixes, and www.
       const normaliseForDedup = (link: string): string => {
         try {
           const parsed = new URL(link);
@@ -830,6 +834,9 @@ Deno.serve(async (req) => {
           parsed.hash = parsed.hash.startsWith('#:~:') ? '' : parsed.hash;
           // Strip locale path prefixes (/en/, /en-US/, /fr/, /de/, etc.)
           parsed.pathname = parsed.pathname.replace(/^\/[a-z]{2}(-[A-Z]{2})?\//,  '/');
+          // Strip www. prefix — www.example.com/path ≡ example.com/path for dedup purposes
+          // Prevents canonical probes from generating both www and non-www variants for the same path
+          parsed.hostname = parsed.hostname.replace(/^www\./, '');
           return parsed.toString();
         } catch { return link; }
       };
@@ -924,12 +931,13 @@ Deno.serve(async (req) => {
         const page = scrapedPages[i];
         // 404 filter: pages that returned 404/Not Found content consume slots
         // but provide zero evidence — treat them as unresolved.
+        // Checks title anywhere (not just start) to catch "Not Found | Clay" variants.
         const is404 = page && (
-          /^\s*(404|not found|page not found)/i.test(page.title || '') ||
-          /\b404\b.*\b(not found|error)\b/i.test(page.title || '') ||
+          /\b(404|not found|page not found|page doesn['']t exist|this page (doesn['']t|does not) exist)\b/i.test(page.title || '') ||
           page.markdown?.trimStart().startsWith('# 404') ||
           page.markdown?.trimStart().startsWith('## 404') ||
-          /^#\s*(404|Page Not Found)/m.test(page.markdown || '')
+          /^#\s*(404|Page Not Found)/m.test(page.markdown || '') ||
+          (!page.markdown?.trim() && !page.title?.trim())  // Firecrawl returned completely empty page
         );
         if (page && !is404) {
           resolvedPages.push(page);

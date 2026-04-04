@@ -4,7 +4,7 @@
 **Usage:** When a report produces a questionable result, log it here. Run `Scan the debug log for recurring patterns` periodically to surface systemic issues.
 **Related:** See ENGINE_DEBUG_HISTORY.md for backfilled history from git.
 
-**Entries:** 17 | **Last updated:** April 4, 2026
+**Entries:** 18 | **Last updated:** April 4, 2026
 
 ---
 
@@ -29,6 +29,53 @@
 <!-- Newest first. To add an entry, copy the template below and fill it in. -->
 
 <!-- Next entry goes here -->
+
+---
+
+### Entry 018 — April 4, 2026
+
+| Field | Value |
+|-------|-------|
+| Company | Clay (clay.com) |
+| Version | Current — observed April 4, 2026 |
+| Dimension | All — evidence quality affected across every dimension |
+| Score | Not yet re-run post-fix |
+| Pages Analyzed | 15 shown in UI — majority "Not Found" |
+| Root Cause | pipeline_miss — three URL selection failures causing wasted scrape slots and report noise |
+| Caught By | Manual report review (screenshot), April 4, 2026 |
+| Status | Open. Three sub-issues identified. Fix planned for scrape-website. |
+
+**Overview:** A Clay.com run showed 15 URLs in "Pages Analyzed" with the majority returning "Not Found." This reveals three distinct failure classes in the URL selection and filtering layer, all occurring before evidence reaches the LLM.
+
+---
+
+**Failure 1a-i — Login-wall pages consuming evidence slots (pre-existing, Entry 015B)**
+
+Paths like `/subscription` and `/usage` return HTTP 200 but serve only a sign-in page ("Sign In | Clay"). The scraper treats the request as successful, returns the login page HTML, and the slot is counted as analyzed — but the evidence content is zero. These paths are consistently gated behind authentication across all SaaS companies.
+
+Known gated paths: `/subscription`, `/usage`, `/account`, `/accounts`, `/dashboard`, `/settings`, `/login`, `/signin`, `/sign-in`, `/sign-up`, `/signup`, `/register`, `/app`, `/home` (when path is exactly `/home`).
+
+**Fix:** Add gated path blocklist to `isEvidenceEligible()` — reject any URL whose path exactly matches or starts with these segments.
+
+---
+
+**Failure 1a-ii — 404 Not Found pages appearing in Pages Analyzed**
+
+The canonical probe step force-adds `/pricing`, `/plans`, `/billing` regardless of whether those paths exist on the domain. When a company doesn't use those URL patterns (Clay uses `/pricing-calculator` not `/plans`), the probed URLs return 404. These 404 pages appear in the "Pages Analyzed" list in the UI and may be included in the evidence payload sent to the LLM — adding noise to the analysis ("Not Found" appearing in evidence context).
+
+Clay screenshot: `www.clay.com/plans/` (Not Found), `www.clay.com/billing/` (Not Found), `clay.com/billing/` (Not Found), `clay.com/plans/` (Not Found), `clay.com/features/` (Not Found), `clay.com/product/` (Not Found), `clay.com/solutions/` (Not Found), `clay.com/platform/` (Not Found), `clay.com/subscription/` (Not Found), `clay.com/usage/` (Not Found).
+
+**Fix:** After scraping, filter pages whose scraped content is null, empty, or matches a "Not Found" pattern before adding to the evidence payload and Pages Analyzed display list.
+
+---
+
+**Failure 1a-iii — www vs. non-www duplicate canonical probing**
+
+The canonical probe step generates URLs using either the www-prefix or bare domain based on a heuristic. When the heuristic is ambiguous, both `www.clay.com/plans/` (item 6) and `clay.com/plans/` (item 10) are probed independently — two requests, two 404s, consuming two scrape slots for the same non-existent page.
+
+**Fix:** Before adding canonical probes to the scrape queue, deduplicate www vs. non-www variants of the same path. If both would be probed, pick one (prefer www if any discovered URL uses www, otherwise bare domain) and discard the other.
+
+**Pattern Tag:** `login-wall-slot-consumption`, `404-in-pages-analyzed`, `www-nonwww-duplicate-probe`, `canonical-probe-noise`
 
 ---
 
