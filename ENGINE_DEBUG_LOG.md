@@ -4,7 +4,7 @@
 **Usage:** When a report produces a questionable result, log it here. Run `Scan the debug log for recurring patterns` periodically to surface systemic issues.
 **Related:** See ENGINE_DEBUG_HISTORY.md for backfilled history from git.
 
-**Entries:** 21 | **Last updated:** April 4, 2026
+**Entries:** 23 | **Last updated:** April 5, 2026
 
 ---
 
@@ -19,7 +19,8 @@
 | confidence_miscalc | 0 | — |
 | prompt_drift | 1 | ICP and Job Clarity (D2) |
 | pipeline_miss | 10 | Value Unit, Cost Driver Mapping, Safety/Trust, Overages & Risk |
-| contamination | 8 | Pricing Transparency, Enterprise/Compliance (D7/D8) |
+| contamination | 9 | Pricing Transparency, Enterprise/Compliance (D7/D8) |
+| calibration | 1 | Value unit (D4) |
 | other | 0 | — |
 
 ---
@@ -29,6 +30,59 @@
 <!-- Newest first. To add an entry, copy the template below and fill it in. -->
 
 <!-- Next entry goes here -->
+
+---
+
+### Entry 023 — April 5, 2026
+
+| Field | Value |
+|-------|-------|
+| Company | ElevenLabs |
+| Version | Current — observed April 5, 2026 |
+| Dimension | D4 Value unit |
+| Score | D4: 2/2 (report 7) → 1/2 (report 9) — regression |
+| Pages Analyzed | 15 — correct page set including 4 pricing variants |
+| Root Cause | calibration — V6 Auditability and V2 Metering determinism subtests too strict for consumption-based AI products; run-to-run LLM variance on V1 boundary |
+| Caught By | ElevenLabs rerun after Entry 021 fixes, April 5, 2026 |
+| Status | Open — flagged for calibration design review. Not patched to avoid overcorrecting on other companies. |
+
+**Observation:** D4 scored 1/2 in report 9 after previously scoring 2/2 in report 7. ElevenLabs publishes explicit per-unit pricing across all 4 platforms (credits/character, $/minute, $/generation), which is objectively transparent. The 1/2 is driven by rubric subtest failures:
+
+- **V2 Metering determinism** — requires `rounding_rule` and `attribution_level` to be publicly documented. ElevenLabs does not publish rounding rules → V2 fails.
+- **V6 Auditability** — requires `audit_surface = dashboard_breakdown OR export_logs`. ElevenLabs has in-product credit dashboard (dashboard_total only) → V6 fails.
+
+With at most 4 of 6 subtests passing, the point map (5-6 → score 2) caps the score at 1.
+
+**Why 2/2 appeared in report 7:** LLM non-determinism. The previous run was more lenient on V1 (Unit definition clarity) interpretation, pushing to 5 passing subtests. This is within expected LLM variance.
+
+**Calibration question (open):** Should V6 pass when in-product usage tracking exists but only at dashboard-total granularity? For AI-native consumption products, per-endpoint/per-model breakdown is rarely public. If V6 requires export_logs or dashboard_breakdown, most consumption-based AI companies will structurally fail it regardless of pricing transparency. This warrants a dedicated calibration session before patching.
+
+**Pattern Tag:** `v6-auditability-too-strict`, `lm-scoring-variance`, `calibration-needed`
+
+---
+
+### Entry 022 — April 5, 2026
+
+| Field | Value |
+|-------|-------|
+| Company | ElevenLabs (primary), general (all companies) |
+| Version | Current — observed April 5, 2026 |
+| Dimension | D5 Cost driver mapping (rationale text); all dimensions (evidence repetition) |
+| Score | N/A — prompt and dedup issues |
+| Pages Analyzed | N/A |
+| Root Cause | contamination — p50/p95 field names in D5 schema; near-duplicate evidence passing dedup |
+| Caught By | ElevenLabs report 9 review, April 5, 2026 |
+| Status | Deployed (commit 595a8f4) — pending rerun validation |
+
+**Failure 1 — p50/p95 still appearing in D5 Cost Driver rationale after post-processing fix**
+
+Entry 021 removed the hardcoded `'Driver formulas and p50/p95 workflow cost estimates remain non-public.'` string from post-processing. However, the LLM was still generating p50/p95 language in its rationale because the D5 schema itself defined fields named `p50_per_value_unit`, `p95_per_value_unit`, `cost_per_value_unit_p50`, and `cost_per_value_unit_p95`. The LLM sees these field names and incorporates the concept into its reasoning even when C4 explicitly says p50/p95 is not required. Fix: renamed all four fields to `typical_per_value_unit`, `high_per_value_unit`, `cost_per_value_unit_typical`, and `cost_per_value_unit_high`. Insider prompts 3 and 4 updated to match.
+
+**Failure 2 — Near-duplicate evidence ("10k credits per month" vs "10k credits per month (Free tier)")**
+
+The snippet dedup from Entry 021 hashed on `snippet.toLowerCase().slice(0, 120)`. Short parenthetical tier annotations like `(Free tier)`, `(Business)`, `(Creator plan)` made otherwise identical quotes hash to different keys, both surviving into the evidence set. Fix: added `.replace(/\s*\([^)]{0,40}\)/g, '')` before hashing to strip short parentheticals. Ensures tier-label variants of the same quote count as one evidence item, preserving the first-occurrence URL.
+
+**Pattern Tag:** `schema-fieldname-prompt-bleed`, `near-duplicate-evidence-parenthetical`
 
 ---
 
