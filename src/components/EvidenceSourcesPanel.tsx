@@ -14,7 +14,9 @@ export function EvidenceSourcesPanel({ pages }: EvidenceSourcesPanelProps) {
   const formatUrl = (url: string) => {
     try {
       const u = new URL(url);
-      return u.pathname === "/" ? u.hostname : `${u.hostname}${u.pathname}`;
+      // Include query params — e.g. elevenlabs.io/pricing?price.platform=api
+      // is a distinct page from elevenlabs.io/pricing and should display as such.
+      return u.pathname === "/" ? u.hostname : `${u.hostname}${u.pathname}${u.search}`;
     } catch {
       return url;
     }
