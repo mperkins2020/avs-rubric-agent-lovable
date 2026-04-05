@@ -847,9 +847,10 @@ Deno.serve(async (req) => {
         } catch { return false; }
       };
 
-      // Normalise a URL for deduplication: strip #:~:text= fragments, locale prefixes, and www.
-      // NOTE: query params are intentionally preserved — e.g. elevenlabs.io/pricing?price.platform=api
-      // contains genuinely different content from elevenlabs.io/pricing and should keep its own slot.
+      // Normalise a URL for deduplication.
+      // Strips: #:~:text= fragments, locale prefixes, www prefix, trailing slash, http→https.
+      // Preserves: query params — e.g. elevenlabs.io/pricing?price.platform=api is genuinely
+      // different content from elevenlabs.io/pricing and must keep its own slot.
       const normaliseForDedup = (link: string): string => {
         try {
           const parsed = new URL(link);
@@ -857,9 +858,13 @@ Deno.serve(async (req) => {
           parsed.hash = parsed.hash.startsWith('#:~:') ? '' : parsed.hash;
           // Strip locale path prefixes (/en/, /en-US/, /fr/, /de/, etc.)
           parsed.pathname = parsed.pathname.replace(/^\/[a-z]{2}(-[A-Z]{2})?\//,  '/');
-          // Strip www. prefix — www.example.com/path ≡ example.com/path for dedup purposes
-          // Prevents canonical probes from generating both www and non-www variants for the same path
+          // Strip trailing slash from pathname (root '/' is preserved)
+          // /pricing/ ≡ /pricing — Firecrawl map often returns both variants
+          if (parsed.pathname.length > 1) parsed.pathname = parsed.pathname.replace(/\/$/, '');
+          // Strip www. prefix — www.example.com/path ≡ example.com/path
           parsed.hostname = parsed.hostname.replace(/^www\./, '');
+          // Normalize http → https — http://example.com/pricing ≡ https://example.com/pricing
+          parsed.protocol = 'https:';
           return parsed.toString();
         } catch { return link; }
       };
@@ -935,7 +940,16 @@ Deno.serve(async (req) => {
       // link extraction runs after the batch from the already-scraped markdown.
       // This eliminates the duplicate sequential Firecrawl call that previously
       // blocked the main batch from starting.
-      const allUrlsToScrape = [...priorityLinks];
+
+      // Final dedup pass: normaliseForDedup catches any trailing-slash / http / www
+      // variants that survived earlier dedup (e.g. map returning both /pricing and
+      // /pricing/ as separate entries). Uses a Map to preserve the first-seen URL form.
+      const finalDedupMap = new Map<string, string>();
+      for (const u of priorityLinks) {
+        const key = normaliseForDedup(u);
+        if (!finalDedupMap.has(key)) finalDedupMap.set(key, u);
+      }
+      const allUrlsToScrape = [...finalDedupMap.values()];
 
       const scrapePromises = allUrlsToScrape.map(pageUrl => scrapePage(apiKey, pageUrl));
       const scrapedPages = await Promise.all(scrapePromises);
