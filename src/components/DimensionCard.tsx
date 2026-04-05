@@ -31,7 +31,7 @@ export function DimensionCard({ dimension, index }: DimensionCardProps) {
   const formatUrl = (url: string) => {
     try {
       const u = new URL(url);
-      return u.pathname === "/" ? u.hostname : `${u.hostname}${u.pathname}`;
+      return u.pathname === "/" ? u.hostname : `${u.hostname}${u.pathname}${u.search}`;
     } catch {
       return url;
     }

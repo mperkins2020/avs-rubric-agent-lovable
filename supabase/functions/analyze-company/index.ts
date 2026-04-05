@@ -2190,7 +2190,11 @@ ${truncatedContent}`;
       const merged: SourceEvidence[] = [];
 
       for (const item of [...fromModel, ...fromObserved]) {
-        const key = `${item.url}|${item.snippet}`;
+        // Dedup by snippet content (first 120 chars, lowercased) — the same quote from multiple
+        // pricing page variants (e.g. /pricing and /pricing?price.platform=api) counts once.
+        // URL is preserved from the first occurrence. This prevents the same quote appearing
+        // as evidence 2 and evidence 4 when scraped from both the base and variant pricing pages.
+        const key = item.snippet.toLowerCase().trim().slice(0, 120);
         if (seen.has(key)) continue;
         seen.add(key);
         merged.push(item);
@@ -2355,7 +2359,7 @@ ${truncatedContent}`;
               : `Score floored to 1 based on ${evidenceDigest.costDriver.length} cost-driver evidence signals found in scraped pages.`,
             observed: mergedObserved,
             sourceEvidence: mergedSourceEvidence,
-            uncertaintyReasons: [...uncertaintyReasons, 'Driver formulas and p50/p95 workflow cost estimates remain non-public.'].slice(0, 2),
+            uncertaintyReasons: [...uncertaintyReasons, 'Driver formulas and per-workflow cost breakdowns are not publicly documented.'].slice(0, 2),
           };
         }
 
