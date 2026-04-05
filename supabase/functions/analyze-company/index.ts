@@ -616,14 +616,14 @@ THE 8 DIMENSIONS:
    - workflows[].primary_value_unit_name: string, must match value_units[].name
    - workflows[].driver_contributions[]: list of objects:
      - workflows[].driver_contributions[].driver_name: string, must match cost_drivers[].name
-     - workflows[].driver_contributions[].p50_per_value_unit: number or null
-     - workflows[].driver_contributions[].p95_per_value_unit: number or null
+     - workflows[].driver_contributions[].typical_per_value_unit: number or null  // typical observed quantity; leave null if not publicly documented
+     - workflows[].driver_contributions[].high_per_value_unit: number or null     // high-end observed quantity; leave null if not publicly documented
      - workflows[].driver_contributions[].notes: string
 
    **cost_estimates[]**
    - cost_estimates[].workflow_name: string, must match workflows[].name
-   - cost_estimates[].cost_per_value_unit_p50: number or null
-   - cost_estimates[].cost_per_value_unit_p95: number or null
+   - cost_estimates[].cost_per_value_unit_typical: number or null  // leave null if not publicly documented
+   - cost_estimates[].cost_per_value_unit_high: number or null     // leave null if not publicly documented
    - cost_estimates[].assumptions: string
    - cost_estimates[].last_updated: ISO string
 
@@ -719,9 +719,9 @@ THE 8 DIMENSIONS:
       -> cost_drivers[]
    2) For each top driver, what formula determines quantity, and what spikes it.
       -> cost_drivers[].driver_formula, spike_triggers[]
-   3) Name your 1 to 3 primary workflows, the primary value unit used, and p50 and p95 driver usage per value unit.
+   3) Name your 1 to 3 primary workflows, the primary value unit used, and typical and high-end driver usage per value unit.
       -> workflows[], workflows[].driver_contributions[]
-   4) Provide your estimated cost per value unit at p50 and p95 for the primary workflow, include assumptions.
+   4) Provide your estimated cost per value unit at typical and high-end usage for the primary workflow, include assumptions.
       -> cost_estimates[]
    5) What forecasting and visibility surfaces exist today: estimator, dashboards, breakdown level, alerts or caps.
       -> forecasting_surfaces.*
@@ -2190,11 +2190,21 @@ ${truncatedContent}`;
       const merged: SourceEvidence[] = [];
 
       for (const item of [...fromModel, ...fromObserved]) {
-        // Dedup by snippet content (first 120 chars, lowercased) — the same quote from multiple
-        // pricing page variants (e.g. /pricing and /pricing?price.platform=api) counts once.
-        // URL is preserved from the first occurrence. This prevents the same quote appearing
-        // as evidence 2 and evidence 4 when scraped from both the base and variant pricing pages.
-        const key = item.snippet.toLowerCase().trim().slice(0, 120);
+        // Dedup by normalized snippet content — same quote from different pages counts once.
+        // Normalizations applied before comparing:
+        //   1. Lowercase + trim
+        //   2. Strip parenthetical annotations: "10k credits per month (Free tier)" → "10k credits per month"
+        //      Prevents near-duplicate evidence items that differ only in tier label suffixes.
+        //   3. Collapse whitespace
+        //   4. Truncate to first 120 chars
+        // URL is preserved from the first occurrence.
+        const key = item.snippet
+          .toLowerCase()
+          .trim()
+          .replace(/\s*\([^)]{0,40}\)/g, '') // strip short parentheticals (tier labels, annotations)
+          .replace(/\s+/g, ' ')
+          .trim()
+          .slice(0, 120);
         if (seen.has(key)) continue;
         seen.add(key);
         merged.push(item);
