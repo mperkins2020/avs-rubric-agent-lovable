@@ -4,7 +4,7 @@
 **Usage:** When a report produces a questionable result, log it here. Run `Scan the debug log for recurring patterns` periodically to surface systemic issues.
 **Related:** See ENGINE_DEBUG_HISTORY.md for backfilled history from git.
 
-**Entries:** 19 | **Last updated:** April 4, 2026
+**Entries:** 21 | **Last updated:** April 4, 2026
 
 ---
 
@@ -19,7 +19,7 @@
 | confidence_miscalc | 0 | — |
 | prompt_drift | 1 | ICP and Job Clarity (D2) |
 | pipeline_miss | 10 | Value Unit, Cost Driver Mapping, Safety/Trust, Overages & Risk |
-| contamination | 6 | Pricing Transparency, Enterprise/Compliance (D7/D8) |
+| contamination | 8 | Pricing Transparency, Enterprise/Compliance (D7/D8) |
 | other | 0 | — |
 
 ---
@@ -29,6 +29,56 @@
 <!-- Newest first. To add an entry, copy the template below and fill it in. -->
 
 <!-- Next entry goes here -->
+
+---
+
+### Entry 021 — April 4, 2026
+
+| Field | Value |
+|-------|-------|
+| Company | ElevenLabs (primary), general (all companies) |
+| Version | Current — observed April 4, 2026 |
+| Dimension | All — display; D5 Cost Driver Mapping — uncertainty label |
+| Score | N/A — display and label bugs, not scoring bugs |
+| Pages Analyzed | N/A |
+| Root Cause | contamination — three UI components truncating evidence URLs; one hardcoded uncertainty string contradicting prompt |
+| Caught By | Report review after ElevenLabs rerun, April 4, 2026 |
+| Status | Deployed (commit cd7f708) — pending rerun validation |
+
+**Failure 1 — Query-param URLs stripped in three UI display components**
+
+`formatUrl()` helper existed identically in three components — `EvidenceSourcesPanel.tsx`, `DimensionCard.tsx`, `ObservabilityStrip.tsx` — building display URLs as `hostname + pathname` only, omitting `u.search`. For ElevenLabs, all four platform pricing pages (`/pricing?price.platform=agents_platform` etc.) displayed as identical `elevenlabs.io/pricing` entries in Pages Analyzed, dimension evidence citations, and the "What We Used" panel. `EvidenceSourcesPanel.tsx` was fixed in commit `42d9d77`; the other two were missed. Fixed in `cd7f708` by adding `u.search` to all three instances.
+
+**Failure 2 — Same evidence quote appearing twice in same dimension (evidence 2 = evidence 4)**
+
+`normalizeSourceEvidence()` in `analyze-company` deduped by `url|snippet` composite key. When the same quote appeared on both `elevenlabs.io/pricing` and `elevenlabs.io/pricing?price.platform=agents_platform`, they produced different composite keys and both passed through — surfacing as duplicate evidence items under the same dimension. Fixed in `cd7f708`: dedup key changed to `snippet.toLowerCase().trim().slice(0, 120)`. First-occurrence URL is preserved; duplicate snippet is dropped regardless of source URL.
+
+**Failure 3 — "p50/p95 workflow cost estimates remain non-public" in D5 uncertainty reasons**
+
+The Cost Driver Mapping post-processing block in `analyze-company` hardcoded this string as a forced uncertainty reason whenever the score was floored from 0→1. The C4 subtest in the scoring prompt explicitly states p50/p95 is NOT required (updated in ANALYSIS_VERSION v7). The hardcoded string contradicted the prompt and confused users about why confidence wasn't higher. Fixed in `cd7f708`: replaced with "per-workflow cost breakdowns are not publicly documented."
+
+**Pattern Tag:** `formaturl-search-omission`, `evidence-snippet-dedup`, `hardcoded-uncertainty-contradicts-prompt`
+
+---
+
+### Entry 020 — April 4, 2026
+
+| Field | Value |
+|-------|-------|
+| Company | ElevenLabs |
+| Version | Current — observed April 4, 2026 |
+| Dimension | All — URL selection |
+| Score | N/A — URL dedup fix |
+| Pages Analyzed | 4× identical `elevenlabs.io/pricing` after revert of `parsed.search=''` |
+| Root Cause | pipeline_miss — normaliseForDedup not normalizing trailing slash or http protocol |
+| Caught By | ElevenLabs rerun after Entry 019 revert, April 4, 2026 |
+| Status | ✅ Fixed (commit e225afd) — trailing slash strip + http→https normalization added to normaliseForDedup(); final Map-based dedup pass added before allUrlsToScrape construction |
+
+**Root cause:** `normaliseForDedup()` stripped www and locale prefixes but not trailing slashes or http→https. Firecrawl map returning both `/pricing` and `/pricing/` (and/or `http://elevenlabs.io/pricing`) produced different normalized keys, all scored +1650, and all were selected. Combined with the canonical probe, 4 identical slots resulted.
+
+**Fix:** Added `if (parsed.pathname.length > 1) parsed.pathname = parsed.pathname.replace(/\/$/, '')` and `parsed.protocol = 'https:'` to `normaliseForDedup()`. Also added a final `Map`-based dedup pass applied to `priorityLinks` before building `allUrlsToScrape` as a belt-and-suspenders guard.
+
+**Pattern Tag:** `trailing-slash-dedup-gap`, `protocol-normalization-gap`
 
 ---
 
