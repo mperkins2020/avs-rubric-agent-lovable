@@ -36,24 +36,30 @@
 
 | Field | Value |
 |-------|-------|
-| Companies | ElevenLabs (query param dedup), Beautiful.ai (help subdomain contamination) |
+| Companies | ElevenLabs (query param dedup — misdiagnosed then corrected), Beautiful.ai (help subdomain contamination — fixed) |
 | Version | Current — observed April 4, 2026 post-category-aware-scoring reruns |
 | Dimension | All — slot contamination affects evidence quality across dimensions |
 | Score | ElevenLabs 12/16 (75%); Beautiful.ai 12/16 (75%) |
-| Pages Analyzed | ElevenLabs: /pricing appeared 4× in Pages Analyzed; Beautiful.ai: 6 of 13 slots consumed by generic help articles |
-| Root Cause | pipeline_miss — two independent URL dedup/scoring failures causing evidence slot waste |
-| Caught By | Report validation review after category-aware scoring reruns, April 4, 2026 |
-| Status | ✅ FIXED (April 4, 2026) — both bugs corrected in scrape-website/index.ts |
+| Pages Analyzed | ElevenLabs: /pricing platform variants should appear 4× (correct behavior); Beautiful.ai: 6 of 13 slots consumed by generic help articles (bug) |
+| Root Cause | pipeline_miss (Beautiful.ai) — help subdomain boost too broad; misdiagnosis (ElevenLabs) — query-param pricing variants are content-differentiating, not duplicates |
+| Caught By | Report validation review after category-aware scoring reruns, April 4, 2026; regression caught on rerun |
+| Status | ✅ Beautiful.ai fix deployed (April 4, 2026). ✅ ElevenLabs `parsed.search=''` reverted — query params preserved. |
 
-**Overview:** Post-rerun validation of ElevenLabs and Beautiful.ai revealed two distinct URL selection bugs. Both were pre-scrape failures — the wrong pages were being selected before evidence reached the LLM.
+**Overview:** Post-rerun validation revealed one genuine bug (Beautiful.ai help subdomain over-boosting) and one misdiagnosis (ElevenLabs query-param pricing variants).
 
 ---
 
-**Failure 1 — /pricing appearing 4× in ElevenLabs Pages Analyzed (query param dedup gap)**
+**Failure 1 — ElevenLabs query-param pricing variants: misdiagnosis and revert**
 
-`normaliseForDedup()` stripped `www.` prefixes, locale paths (`/en-US/`), and text fragment anchors (`#:~:text=`), but did NOT strip query parameters. URL variants like `elevenlabs.io/pricing`, `elevenlabs.io/pricing?billing=annual`, `elevenlabs.io/pricing?billing=monthly`, and `elevenlabs.io/pricing?plan=creator` all normalized to different dedup keys, scored +900 each (highIntentPaths `/pricing` match), and were all selected into `allUrlsToScrape`. Result: the same pricing page was scraped 4 times, consuming 4 of the 14 available slots with near-identical content.
+Initial diagnosis: `/pricing` appearing 4× was a dedup bug. Proposed fix: `parsed.search = ''` in `normaliseForDedup()`.
 
-**Fix:** Added `parsed.search = ''` to `normaliseForDedup()`. Query-param variants of the same base path now collapse to the same dedup key. Meaningful query-param variants (annual/monthly tab, modal) are still captured by the Fix 1 secondary pass after the primary batch — that's the correct place to handle them.
+**This was wrong.** ElevenLabs uses query params to show genuinely different pricing content per product:
+- `elevenlabs.io/pricing` — default
+- `elevenlabs.io/pricing?price.platform=agents_platform`
+- `elevenlabs.io/pricing?price.platform=api`
+- `elevenlabs.io/pricing?price.platform=creative_platform`
+
+Each variant contains a different product's credit rates, tier limits, and overage behavior. Stripping query params collapsed all 4 to one slot, losing 3 pages of D5/D6/D7 evidence. The `parsed.search = ''` change was reverted. Query params are intentionally preserved in `normaliseForDedup()` — products legitimately use them for content-differentiating sub-pages.
 
 ---
 
@@ -67,12 +73,14 @@ Since Zendesk help centers use paths like `support.beautiful.ai/hc/en-us/article
 **Fix:** Two-part change to `scoreUrl()` subdomain block:
 
 1. Removed `/hc` from the billing-keyword boost list — it was the wrong heuristic.
-2. Added a **two-tier penalty** for generic deep help articles: paths matching `/hc/.+` or `/articles?/.+` with no billing keywords in the path now receive -200 (same as generic docs tier). Examples:
+2. Added a **two-tier penalty** for generic deep help articles: paths matching `/hc/.+` or `/articles?/.+` with no billing keywords in the path now receive -200. Examples:
    - `support.beautiful.ai/hc/en-us/articles/how-to-present` → +100 (subdomain) - 200 (generic article) = -100
    - `support.beautiful.ai/hc/en-us/articles/manage-billing` → +100 + 700 (billing keyword) = +800
    - `support.beautiful.ai/hc` (root) → +100 (no penalty, no billing boost)
 
-**Pattern Tag:** `query-param-dedup-gap`, `help-subdomain-boost-too-broad`, `evidence-slot-contamination`
+Rerun confirmed Beautiful.ai Pages Analyzed went from 6 generic help slots → 0. Freed slots filled by `/security`, `/roi-calculator`, `/enterprise`, `/enterprise-plan`.
+
+**Pattern Tag:** `help-subdomain-boost-too-broad`, `evidence-slot-contamination`, `query-param-content-differentiating`
 
 ---
 

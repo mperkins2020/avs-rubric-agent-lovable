@@ -847,7 +847,9 @@ Deno.serve(async (req) => {
         } catch { return false; }
       };
 
-      // Normalise a URL for deduplication: strip #:~:text= fragments, locale prefixes, www, and query params.
+      // Normalise a URL for deduplication: strip #:~:text= fragments, locale prefixes, and www.
+      // NOTE: query params are intentionally preserved — e.g. elevenlabs.io/pricing?price.platform=api
+      // contains genuinely different content from elevenlabs.io/pricing and should keep its own slot.
       const normaliseForDedup = (link: string): string => {
         try {
           const parsed = new URL(link);
@@ -858,10 +860,6 @@ Deno.serve(async (req) => {
           // Strip www. prefix — www.example.com/path ≡ example.com/path for dedup purposes
           // Prevents canonical probes from generating both www and non-www variants for the same path
           parsed.hostname = parsed.hostname.replace(/^www\./, '');
-          // Strip query params — /pricing?billing=annual ≡ /pricing for URL selection dedup.
-          // Query-param variants of high-value pages (annual/monthly tabs, modal params) are
-          // handled separately by the Fix 1 secondary pass after the primary batch.
-          parsed.search = '';
           return parsed.toString();
         } catch { return link; }
       };
