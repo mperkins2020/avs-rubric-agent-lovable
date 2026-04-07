@@ -72,7 +72,7 @@ With at most 4 of 6 subtests passing, the point map (5-6 → score 2) caps the s
 | Pages Analyzed | N/A |
 | Root Cause | contamination — p50/p95 field names in D5 schema; near-duplicate evidence passing dedup |
 | Caught By | ElevenLabs report 9 review, April 5, 2026 |
-| Status | Deployed (commit 595a8f4) — pending rerun validation |
+| Status | ✅ Confirmed (April 5, 2026) — p50/p95 gone from D5 rationale; near-duplicate evidence reduced. D4 returned to 2/2 (LLM variance; Entry 023 remains open for calibration). |
 
 **Failure 1 — p50/p95 still appearing in D5 Cost Driver rationale after post-processing fix**
 
@@ -97,7 +97,7 @@ The snippet dedup from Entry 021 hashed on `snippet.toLowerCase().slice(0, 120)`
 | Pages Analyzed | N/A |
 | Root Cause | contamination — three UI components truncating evidence URLs; one hardcoded uncertainty string contradicting prompt |
 | Caught By | Report review after ElevenLabs rerun, April 4, 2026 |
-| Status | Deployed (commit cd7f708) — pending rerun validation |
+| Status | ✅ Confirmed (April 5, 2026) — query-param URLs display correctly in all three components |
 
 **Failure 1 — Query-param URLs stripped in three UI display components**
 
