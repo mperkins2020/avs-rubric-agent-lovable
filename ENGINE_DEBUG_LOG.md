@@ -4,7 +4,7 @@
 **Usage:** When a report produces a questionable result, log it here. Run `Scan the debug log for recurring patterns` periodically to surface systemic issues.
 **Related:** See ENGINE_DEBUG_HISTORY.md for backfilled history from git.
 
-**Entries:** 27 | **Last updated:** April 10, 2026
+**Entries:** 29 | **Last updated:** April 10, 2026
 
 ---
 
@@ -19,7 +19,7 @@
 | confidence_miscalc | 0 | — |
 | prompt_drift | 1 | ICP and Job Clarity (D2) |
 | pipeline_miss | 10 | Value Unit, Cost Driver Mapping, Safety/Trust, Overages & Risk |
-| contamination | 12 | Pricing Transparency, Enterprise/Compliance (D7/D8) |
+| contamination | 13 | Pricing Transparency, Enterprise/Compliance (D7/D8) |
 | calibration | 2 | Value unit (D4), ICP and Job Clarity (D2) |
 | other | 0 | — |
 
@@ -30,6 +30,42 @@
 <!-- Newest first. To add an entry, copy the template below and fill it in. -->
 
 <!-- Next entry goes here -->
+
+---
+
+### Entry 029 — April 10, 2026
+
+| Field | Value |
+|-------|-------|
+| Company | ElevenLabs (observed), general |
+| Version | Current — observed April 10, 2026 via report 14 |
+| Dimension | D4 Value unit |
+| Score | Unaffected |
+| Root Cause | contamination — sub-minimum-length snippet from Machine-Extracted features list |
+| Caught By | Report 14 review |
+| Status | Open — cosmetic, deferred |
+
+**Observation:** D4 Value unit evidence 4: `"- additional minutes usage"` (24 chars) from `/pricing?price.platform=agents_platform`. This is a bullet fragment from the Machine-Extracted plan features list, likely `- **Features**: ...; additional minutes usage`. It passes the field-name filter because "additional" isn't a blocked schema field, but it's contextless and adds no evidential value. Fix: add minimum snippet length (~25 chars) to `normalizeSourceEvidence`. Deferred — score unaffected and ElevenLabs validated at 12/16.
+
+**Pattern Tag:** `synthetic-evidence`, `thin-fragment`, `evidence-quality`
+
+---
+
+### Entry 028 — April 10, 2026
+
+| Field | Value |
+|-------|-------|
+| Company | ElevenLabs (observed), general |
+| Version | Current — observed across reports 11–14 |
+| Dimension | D8 Safety rails and trust surfaces |
+| Score | Unaffected |
+| Root Cause | contamination — "monitor" keyword false-positive in safetyRails evidence bucket |
+| Caught By | Report 14 review |
+| Status | Open — cosmetic, deferred |
+
+**Observation:** D8 Safety rails evidence consistently includes `"Configure, deploy and monitor conversational agents."` from elevenlabs.io homepage. Product marketing copy being cited as a trust surface because "monitor" matches the safetyRails evidence bucket keyword. Fix: tighten the safetyRails keyword to require "monitor" adjacent to usage/spend/billing context words, not standalone. Deferred — score unaffected and ElevenLabs validated at 12/16.
+
+**Pattern Tag:** `wrong-dimension-evidence`, `keyword-false-positive`
 
 ---
 
