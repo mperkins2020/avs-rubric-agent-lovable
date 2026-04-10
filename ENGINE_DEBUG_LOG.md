@@ -4,7 +4,7 @@
 **Usage:** When a report produces a questionable result, log it here. Run `Scan the debug log for recurring patterns` periodically to surface systemic issues.
 **Related:** See ENGINE_DEBUG_HISTORY.md for backfilled history from git.
 
-**Entries:** 29 | **Last updated:** April 10, 2026
+**Entries:** 32 | **Last updated:** April 10, 2026
 
 ---
 
@@ -30,6 +30,60 @@
 <!-- Newest first. To add an entry, copy the template below and fill it in. -->
 
 <!-- Next entry goes here -->
+
+---
+
+### Entry 032 — April 10, 2026
+
+| Field | Value |
+|-------|-------|
+| Company | Beautiful.ai (observed), general |
+| Version | Current — observed April 10, 2026 via report 7 |
+| Dimension | D7 Overages and risk allocation |
+| Score | Unaffected |
+| Root Cause | contamination — Machine-Extracted schema fields surfacing in `observed` array, not just `sourceEvidence` |
+| Caught By | Beautiful.ai report 7 review |
+| Status | Open — related to Entry 026 |
+
+**Observation:** D7 renders under "Observations:" (bullet format) instead of "Evidence:" (card format), showing `"- Overage Policy : N/A"` and `"Refund Policy : ..."` directly from the LLM's `observed` array. The `normalizeSourceEvidence` filter blocks these from `sourceEvidence` but the LLM is also writing them into `observed` entries as `url: "schema text"` pairs, which bypasses all filtering. The PDF/UI then renders these raw `observed` entries when `sourceEvidence` is sparse. This is Entry 026 manifesting in a second location — the fix needs to target the `observed` array in addition to `sourceEvidence`.
+
+**Pattern Tag:** `synthetic-evidence`, `observed-array-bypass`, `entry-026-related`
+
+---
+
+### Entry 031 — April 10, 2026
+
+| Field | Value |
+|-------|-------|
+| Company | Beautiful.ai (observed), general |
+| Version | Current — observed April 10, 2026 via report 7 |
+| Dimension | D3 Buyer alignment, D8 Safety rails |
+| Score | Unaffected |
+| Root Cause | contamination — "features" schema field not in synthetic evidence blocklist |
+| Caught By | Beautiful.ai report 7 review |
+| Status | Open — cosmetic, deferred |
+
+**Observation:** `"- Features : Everything in Team plus...; Dedicated onboarding..."` appears in D3 and D8 evidence. "features" is not in the synthetic field blocklist regex. The Machine-Extracted plan section generates `- **Features**: ...` which the LLM cites as `- Features : ...`. Fix: add `features?` to both filter regex instances in `normalizeSourceEvidence`.
+
+**Pattern Tag:** `synthetic-evidence`, `filter-gap`
+
+---
+
+### Entry 030 — April 10, 2026
+
+| Field | Value |
+|-------|-------|
+| Company | Beautiful.ai (observed), general |
+| Version | Current — observed April 10, 2026 via report 7 |
+| Dimension | D1 Product north star, D2 ICP job clarity |
+| Score | Unaffected |
+| Root Cause | contamination — curly/smart quote variants bypassing snippet dedup |
+| Caught By | Beautiful.ai report 7 review |
+| Status | Open — cosmetic, deferred |
+
+**Observation:** D1 evidence 1 and 4 are the same quote: `""We reduced time by 75%..."` vs `"We reduced time by 75%..."`. D2 evidence 2 and 4 are identical. The dedup normalization hashes the snippet after lowercase/trim/slice(120) but does NOT strip leading/trailing curly quote characters (`"` `"`). So `""quote"` and `"quote"` produce different keys and both pass. Fix: add `.replace(/^["""'']+|["""'']+$/g, '')` to the dedup key normalization before slicing.
+
+**Pattern Tag:** `evidence-dedup`, `unicode-quote-variant`
 
 ---
 
