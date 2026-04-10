@@ -305,10 +305,10 @@ THE 8 DIMENSIONS:
    - jtbd[0].outputs[] length >= 1
 
    **J3 Success state is testable**
-   Pass if:
-   - jtbd[0].success_state exists
-   AND
-   - either jtbd[0].must_have_requirements[] length >= 1 OR icp_profile.top_constraints[] length >= 1
+   Pass if ANY of the following are true:
+   Tier A (explicit): jtbd[0].success_state exists AND (jtbd[0].must_have_requirements[] length >= 1 OR icp_profile.top_constraints[] length >= 1)
+   Tier B (implicit via product surface): The product has named product surfaces or platforms (e.g., "ElevenCreative", "ElevenAgents", "Slides AI") with documented capabilities, target users, and measurable I/O requirements — even without a single universal success metric. Pass if jtbd[0].inputs[] length >= 1 AND jtbd[0].outputs[] length >= 1 AND (jtbd[0].must_have_requirements[] length >= 1 OR icp_profile.top_constraints[] length >= 1).
+   IMPORTANT: Do NOT require a single published quantified outcome target (e.g., "95%+ accuracy") if the product's job is inherently variable (e.g., creative output, voice generation). Measurability via documented constraints and capability scope is sufficient for Tier B.
 
    **J4 Workflow specificity exists**
    Pass if at least one is true:
@@ -317,10 +317,11 @@ THE 8 DIMENSIONS:
    - positioning_surfaces[] includes api_reference with a valid evidence_url
 
    **J5 Non-fit boundaries are stated**
-   Pass if:
-   - icp_profile.non_fit_criteria[] length >= 1
-   OR
-   - a positioning_surfaces[] entry exists with surface_type == use_cases_page and evidence shows explicit exclusions, captured in facts.
+   Pass if ANY of the following are true:
+   Tier A (explicit non-fit): icp_profile.non_fit_criteria[] length >= 1
+   Tier B (explicit exclusions): a positioning_surfaces[] entry exists with surface_type == use_cases_page and evidence shows explicit exclusions, captured in facts
+   Tier C (implicit scope boundaries for B2B SaaS): The product has at least 2 distinct named use-case verticals or product surfaces AND the ICP is specific enough (primary_buyer_role + industries[] non-empty) that the implicit boundary is clear (e.g., "API-first voice platform for developers building speech applications" implicitly excludes consumer, non-technical buyers, non-audio use cases). Pass Tier C only if J1 has already passed and at least 2 job statements (jtbd[] length >= 2) are present with different target roles or verticals.
+   NOTE: Explicit "who we are NOT for" statements are Tier A evidence and should be noted when present. However, absence of explicit non-fit statements does NOT automatically fail this subtest for B2B SaaS products with clear vertical targeting. Most B2B SaaS companies define fit implicitly through their ICP — only penalize if scope is genuinely ambiguous.
 
    **J6 Proof artifacts exist for the job**
    Pass if:
@@ -518,7 +519,10 @@ THE 8 DIMENSIONS:
    Proxy rule: definition length >= 12 words AND contains one of: "includes", "does not include", "counts", "doesn't count".
 
    **V2 Metering determinism**
-   Pass if value_units[].metering_formula, granularity, rounding_rule, and attribution_level are all present.
+   Pass if ANY of the following tiers are satisfied:
+   Tier A (full determinism): value_units[].metering_formula, granularity, rounding_rule, and attribution_level are all present.
+   Tier B (explicit formula, implicit rounding): value_units[].metering_formula is explicitly published with granularity (e.g., "characters are converted to credits at a documented rate", "$0.30 per 1,000 characters", "1 credit = 1 minute of audio"), AND attribution_level is present. Rounding_rule and minimum_charge need not be published if the formula is explicit enough to calculate cost for any input size.
+   IMPORTANT: rounding_rule and attribution_level are rarely published publicly for consumption AI products. Do NOT fail V2 solely because rounding rules are undocumented if the metering formula is explicit and the granularity is documented. Tier B is the expected pass threshold for most consumption AI products.
 
    **V3 Price linkage legibility**
    Pass if at least one tier references the unit with:
@@ -539,8 +543,10 @@ THE 8 DIMENSIONS:
    If estimation is calculator or preflight_estimate, treat as stronger evidence for confidence.
 
    **V6 Auditability**
-   Pass if value_units[].audit_surface is dashboard_breakdown OR export_logs.
-   Also require breakdown_level != none.
+   Pass if ANY of the following tiers are satisfied:
+   Tier A (full auditability): value_units[].audit_surface is dashboard_breakdown OR export_logs AND breakdown_level != none.
+   Tier B (in-product visibility): value_units[].audit_surface is dashboard_total AND the product has a documented mechanism for users to monitor remaining balance or consumption (e.g., in-product credit counter, remaining-minutes display, low-credit notification system, subscription page showing credits remaining). This recognizes that for subscription-based consumption AI products, a real-time balance surface IS a trust control even without granular per-request breakdown.
+   NOTE: audit_surface == none always fails V6. dashboard_total alone without any notification or alert mechanism does NOT pass — there must be at least one proactive signal (alert, notification, or in-product indicator) alongside the total, or the dashboard must allow the user to take action based on the total (e.g., add credits, upgrade plan).
 
    #### Points to score mapping (0-2)
    points = sum(V1..V6)
@@ -551,8 +557,8 @@ THE 8 DIMENSIONS:
    #### Gates (hard enforcement caps)
    - If V1 fails: cap score at 1.
    - If V2 fails: cap score at 1.
-   - If V6 fails: cap score at 1.
-   Rationale: you cannot claim a production-grade value unit without auditability and deterministic metering.
+   - If V6 fails (audit_surface == none, or dashboard_total with no notification/action mechanism): cap score at 1.
+   Rationale: you cannot claim a production-grade value unit without any auditability surface. However, V6 Tier B recognizes that in-product balance visibility with alerts is a genuine trust surface for consumption AI products.
 
    ## Confidence (separate from score)
    Compute confidence per subtest:
