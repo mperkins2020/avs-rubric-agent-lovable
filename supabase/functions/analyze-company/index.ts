@@ -2174,7 +2174,17 @@ ${truncatedContent}`;
               url: typeof item.url === 'string' ? item.url.trim() : '',
               snippet: typeof item.snippet === 'string' ? cleanEvidenceLine(item.snippet).trim() : '',
             }))
-            .filter((item) => item.url.length > 0 && item.snippet.length > 0)
+            .filter((item) => {
+              if (item.url.length === 0 || item.snippet.length === 0) return false;
+              // Reject Machine-Extracted schema field citations. The scraper injects a
+              // "Structured Pricing Data (Machine-Extracted — NOT direct quotes)" section
+              // with fields like **Value Unit**: credits and - **Billing**: per minute.
+              // The LLM strips the ** markdown and cites them as page quotes despite the
+              // explicit instruction not to. Filter them out here as a safety net.
+              if (/not explicitly stated/i.test(item.snippet)) return false;
+              if (/^\s*-?\s*(value unit|free tier|trial available|trial details|refund policy|enterprise pricing|billing|limits?|overage policy)\s*:/i.test(item.snippet)) return false;
+              return true;
+            })
         : [];
 
       const fromObserved = observedEntries

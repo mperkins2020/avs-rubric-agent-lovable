@@ -4,7 +4,7 @@
 **Usage:** When a report produces a questionable result, log it here. Run `Scan the debug log for recurring patterns` periodically to surface systemic issues.
 **Related:** See ENGINE_DEBUG_HISTORY.md for backfilled history from git.
 
-**Entries:** 23 | **Last updated:** April 5, 2026
+**Entries:** 24 | **Last updated:** April 10, 2026
 
 ---
 
@@ -19,7 +19,7 @@
 | confidence_miscalc | 0 | — |
 | prompt_drift | 1 | ICP and Job Clarity (D2) |
 | pipeline_miss | 10 | Value Unit, Cost Driver Mapping, Safety/Trust, Overages & Risk |
-| contamination | 9 | Pricing Transparency, Enterprise/Compliance (D7/D8) |
+| contamination | 10 | Pricing Transparency, Enterprise/Compliance (D7/D8) |
 | calibration | 1 | Value unit (D4) |
 | other | 0 | — |
 
@@ -30,6 +30,36 @@
 <!-- Newest first. To add an entry, copy the template below and fill it in. -->
 
 <!-- Next entry goes here -->
+
+---
+
+### Entry 024 — April 10, 2026
+
+| Field | Value |
+|-------|-------|
+| Company | ElevenLabs (observed), general (all companies) |
+| Version | Current — observed April 10, 2026 via report 11 review |
+| Dimension | D4 Value unit, D6 Pools & Packaging, D7 Overages & Risk (primarily) |
+| Score | Scores unaffected — credibility issue only |
+| Pages Analyzed | 15 — correct |
+| Root Cause | contamination — LLM citing Machine-Extracted schema fields as direct page quotes |
+| Caught By | Full report 11 review, April 10, 2026 |
+| Status | Fixed — post-processing filter added to normalizeSourceEvidence |
+
+**Observation:** Multiple sourceEvidence snippets were structured schema fields, not actual page quotes:
+- D4: `"Value Unit : credits"` — from `**Value Unit**: credits` in the Machine-Extracted section
+- D4/D7: `"Refund Policy : Not explicitly stated"` — LLM inference cited as page evidence (**worst case**)
+- D4: `"- Billing : per minute"` — plan schema field
+- D6: `"- Limits : 10k credits per month; 3 Projects in Studio"` — plan schema field
+- D7: `"- Overage Policy : Not applicable"` — plan schema field
+
+The scraper injects a `## Structured Pricing Data (Machine-Extracted — NOT direct quotes)` section into the markdown passed to the analyzer. The prompt at line 66 of analyze-company explicitly says not to cite these as direct quotes, but Gemini 2.5 Flash ignores this instruction. "Refund Policy : Not explicitly stated" is particularly damaging to report credibility — it cites a LLM inference as a source URL quote.
+
+**Fix:** Post-processing filter in `normalizeSourceEvidence` (analyze-company/index.ts) that rejects snippets matching Machine-Extracted schema field patterns before they can enter the output. Two checks:
+1. `not explicitly stated` anywhere in snippet (always a LLM inference artifact)
+2. Snippet starts with `- ` or bare field name followed by `:` matching known schema fields (value unit, refund policy, billing, limits, overage policy, etc.)
+
+**Pattern Tag:** `synthetic-evidence`, `machine-extracted-citation`, `evidence-quality`
 
 ---
 
