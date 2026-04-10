@@ -38,7 +38,7 @@ interface FirecrawlMapResponse {
 }
 
 // Validate JWT authentication
-async function validateAuth(req: Request): Promise<{ userId: string; userEmail: string } | null> {
+async function validateAuth(req: Request): Promise<{ userId: string; userEmail: string; isAnonymous: boolean } | null> {
   const authHeader = req.headers.get('authorization');
   if (!authHeader?.startsWith('Bearer ')) return null;
   const sb = createClient(
@@ -52,6 +52,7 @@ async function validateAuth(req: Request): Promise<{ userId: string; userEmail: 
   return {
     userId: data.claims.sub as string,
     userEmail: (data.claims.email as string) ?? '',
+    isAnonymous: (data.claims.is_anonymous as boolean) ?? false,
   };
 }
 
@@ -575,33 +576,51 @@ Deno.serve(async (req) => {
     const isAdmin = adminCheck === true;
 
     if (!isAdmin) {
-      const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+      // Anonymous users get 1 free scan; authenticated users get 3/week
+      const maxScans = auth.isAnonymous ? 1 : 3;
 
-      const { count: userCount, error: countError } = await supabaseAdmin
-        .from('scan_usage')
-        .select('*', { count: 'exact', head: true })
-        .eq('user_id', auth.userId)
-        .gte('created_at', weekAgo);
-
-      if (!countError && userCount !== null && userCount >= 3) {
-        return new Response(
-          JSON.stringify({ success: false, error: 'Weekly limit reached. You can run 3 analyses per week. Try again next week.' }),
-          { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-
-      if (auth.userEmail) {
-        const { count: emailCount, error: emailCountError } = await supabaseAdmin
+      if (auth.isAnonymous) {
+        // For anonymous users: check total scans (not time-windowed)
+        const { count: anonCount, error: anonCountError } = await supabaseAdmin
           .from('scan_usage')
           .select('*', { count: 'exact', head: true })
-          .eq('email', auth.userEmail)
+          .eq('user_id', auth.userId);
+
+        if (!anonCountError && anonCount !== null && anonCount >= maxScans) {
+          return new Response(
+            JSON.stringify({ success: false, error: 'Free scan used. Create a free account to run more analyses.' }),
+            { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+      } else {
+        const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+
+        const { count: userCount, error: countError } = await supabaseAdmin
+          .from('scan_usage')
+          .select('*', { count: 'exact', head: true })
+          .eq('user_id', auth.userId)
           .gte('created_at', weekAgo);
 
-        if (!emailCountError && emailCount !== null && emailCount >= 3) {
+        if (!countError && userCount !== null && userCount >= maxScans) {
           return new Response(
             JSON.stringify({ success: false, error: 'Weekly limit reached. You can run 3 analyses per week. Try again next week.' }),
             { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
           );
+        }
+
+        if (auth.userEmail) {
+          const { count: emailCount, error: emailCountError } = await supabaseAdmin
+            .from('scan_usage')
+            .select('*', { count: 'exact', head: true })
+            .eq('email', auth.userEmail)
+            .gte('created_at', weekAgo);
+
+          if (!emailCountError && emailCount !== null && emailCount >= maxScans) {
+            return new Response(
+              JSON.stringify({ success: false, error: 'Weekly limit reached. You can run 3 analyses per week. Try again next week.' }),
+              { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+            );
+          }
         }
       }
     }

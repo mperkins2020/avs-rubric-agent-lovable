@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { URLInput } from "@/components/URLInput";
@@ -20,6 +20,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Mail, ArrowRight, Loader2 } from "lucide-react";
+import { trackEvent } from "@/utils/analytics";
 import {
   Tooltip,
   TooltipContent,
@@ -76,7 +77,9 @@ const Index = () => {
   const navigate = useNavigate();
   const { session, signOut } = useAuth();
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const [authModalReason, setAuthModalReason] = useState<'second-run' | 'pdf' | null>(null);
   const [pendingUrl, setPendingUrl] = useState<string | null>(null);
+  const [pendingPdfDownload, setPendingPdfDownload] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [authEmail, setAuthEmail] = useState("");
   const [authPassword, setAuthPassword] = useState("");
@@ -84,6 +87,8 @@ const Index = () => {
   const [authLoading, setAuthLoading] = useState(false);
   const [authResetSent, setAuthResetSent] = useState(false);
   const [authSendingReset, setAuthSendingReset] = useState(false);
+  // Track previous anonymous state to detect session upgrade
+  const prevIsAnonymousRef = useRef<boolean | null>(null);
   const {
     status,
     statusMessage,
@@ -133,6 +138,61 @@ const Index = () => {
     }
   }, [status, error]);
 
+  // Silent anonymous sign-in for first-time visitors
+  useEffect(() => {
+    const initAnonymousSession = async () => {
+      const { data: { session: existingSession } } = await supabase.auth.getSession();
+      if (!existingSession) {
+        const { error: anonError } = await supabase.auth.signInAnonymously();
+        if (!anonError) {
+          trackEvent('anon_session_start');
+        }
+      }
+    };
+    initAnonymousSession();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Handle ?auth=pdf redirect from Results page PDF gate
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('auth') === 'pdf') {
+      window.history.replaceState({}, '', '/');
+      setAuthModalReason('pdf');
+      setShowAuthModal(true);
+      setPendingPdfDownload(true);
+      trackEvent('signup_modal_opened', { reason: 'pdf' });
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // After authentication, handle pending PDF download
+  useEffect(() => {
+    if (!session || session.user.is_anonymous || !pendingPdfDownload) return;
+    const stored = sessionStorage.getItem('lastReport');
+    setPendingPdfDownload(false);
+    if (stored) {
+      try {
+        const data = JSON.parse(stored);
+        sessionStorage.removeItem('lastReport');
+        navigate('/results', { state: { ...data, autoDownloadPdf: true } });
+      } catch {
+        // sessionStorage data malformed — non-fatal, user is signed in at least
+      }
+    }
+  }, [session, pendingPdfDownload, navigate]);
+
+  // Detect anonymous-to-real session upgrade for signup_completed tracking
+  useEffect(() => {
+    if (!session) {
+      prevIsAnonymousRef.current = null;
+      return;
+    }
+    const currentIsAnon = session.user.is_anonymous ?? false;
+    if (prevIsAnonymousRef.current === true && !currentIsAnon) {
+      trackEvent('signup_completed', { method: 'email' });
+    }
+    prevIsAnonymousRef.current = currentIsAnon;
+  }, [session]);
+
   useEffect(() => {
     if (session && pendingUrl) {
       const url = pendingUrl;
@@ -144,10 +204,32 @@ const Index = () => {
 
   const handleSubmit = async (url: string) => {
     if (!session) {
+      // Fallback: shouldn't happen after silent sign-in, but guard just in case
       setPendingUrl(url);
+      setAuthModalReason(null);
       setShowAuthModal(true);
+      trackEvent('signup_modal_opened', { reason: 'manual' });
       return;
     }
+
+    // Anonymous users are capped at 1 free scan
+    if (session.user.is_anonymous) {
+      const { count } = await supabase
+        .from('scan_usage')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', session.user.id);
+      if ((count ?? 0) >= 1) {
+        setPendingUrl(url);
+        setAuthModalReason('second-run');
+        setShowAuthModal(true);
+        trackEvent('second_run_gate_hit');
+        trackEvent('signup_modal_opened', { reason: 'second_run' });
+        return;
+      }
+      // First scan for anonymous user
+      trackEvent('first_scan_started', { url });
+    }
+
     await startScan(url);
   };
 
@@ -234,7 +316,7 @@ const Index = () => {
                 Sign out
               </Button>
             ) : (
-              <Button variant="ghost" size="sm" onClick={() => setShowAuthModal(true)} className="gap-1 text-muted-foreground hover:text-foreground">
+              <Button variant="ghost" size="sm" onClick={() => { setAuthModalReason(null); setShowAuthModal(true); }} className="gap-1 text-muted-foreground hover:text-foreground">
                 <LogIn className="w-4 h-4" />
                 Sign in
               </Button>
@@ -286,7 +368,7 @@ const Index = () => {
                     <LogOut className="w-4 h-4" /> Sign out
                   </button>
                 ) : (
-                  <button onClick={() => { setMobileMenuOpen(false); setShowAuthModal(true); }} className="flex items-center gap-2 w-full px-3 py-2.5 rounded-lg text-sm text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors">
+                  <button onClick={() => { setMobileMenuOpen(false); setAuthModalReason(null); setShowAuthModal(true); }} className="flex items-center gap-2 w-full px-3 py-2.5 rounded-lg text-sm text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors">
                     <LogIn className="w-4 h-4" /> Sign in
                   </button>
                 )}
@@ -421,14 +503,24 @@ const Index = () => {
       <Footer />
 
       {/* Auth Modal */}
-      <Dialog open={showAuthModal} onOpenChange={(open) => { setShowAuthModal(open); if (!open) setPendingUrl(null); }}>
+      <Dialog open={showAuthModal} onOpenChange={(open) => { setShowAuthModal(open); if (!open) { setPendingUrl(null); setPendingPdfDownload(false); } }}>
         <DialogContent className="sm:max-w-md">
           <div className="space-y-6">
             <div className="text-center">
               <img alt="ValueTempo" className="h-8 mx-auto mb-4" src={ValueTempoLogo} />
-              <h2 className="text-xl font-bold">{authIsLogin ? "Sign in to analyze" : "Create account"}</h2>
+              <h2 className="text-xl font-bold">
+                {authIsLogin
+                  ? "Sign in to continue"
+                  : authModalReason === 'pdf'
+                    ? "Create a free account to save and download"
+                    : authModalReason === 'second-run'
+                      ? "Create a free account to run more analyses"
+                      : "Create account"}
+              </h2>
               <p className="text-sm text-muted-foreground mt-1">
-                {authIsLogin ? "Sign in to run your analysis" : "Sign up to get started — 3 analyses per week"}
+                {authIsLogin
+                  ? "Sign in to your account"
+                  : "Sign up to get started — 3 analyses per week"}
               </p>
             </div>
             <form onSubmit={handleAuthSubmit} className="space-y-4">

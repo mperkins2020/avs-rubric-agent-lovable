@@ -3,8 +3,10 @@ import ValueTempoLogo from "@/assets/ValueTempo_Logo_main.png";
 import { Footer } from "@/components/Footer";
 import { useLocation, Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Sparkles, Loader2, Download } from "lucide-react";
+import { Sparkles, Loader2, Download, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/hooks/useAuth";
+import { trackEvent } from "@/utils/analytics";
 import { TotalScoreCard } from "@/components/TotalScoreCard";
 import { CompanyProfileCard } from "@/components/CompanyProfileCard";
 import { ObservabilityStrip } from "@/components/ObservabilityStrip";
@@ -31,14 +33,18 @@ interface LocationState {
 export default function Results() {
   const location = useLocation();
   const navigate = useNavigate();
-  const initialState = location.state as LocationState | null;
-  
+  const { session } = useAuth();
+  const initialState = location.state as (LocationState & { autoDownloadPdf?: boolean }) | null;
+
   const [companyProfile, setCompanyProfile] = useState<CompanyProfile | null>(initialState?.companyProfile ?? null);
   const [rubricScore, setRubricScore] = useState<RubricScore | null>(initialState?.rubricScore ?? null);
   const [observability, setObservability] = useState<ObservabilityData | null>(initialState?.observability ?? null);
   const [pages, setPages] = useState<ScrapedPage[]>(initialState?.pages ?? []);
-  
-  
+
+  // PDF hint popup state (shown after 2s for anonymous users)
+  const [showPdfHint, setShowPdfHint] = useState(false);
+  const [pdfHintDismissed, setPdfHintDismissed] = useState(false);
+
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [isChatLoading, setIsChatLoading] = useState(false);
   const [isRerunning, setIsRerunning] = useState(false);
@@ -49,6 +55,48 @@ export default function Results() {
       navigate("/", { replace: true });
     }
   }, [initialState, navigate]);
+
+  // Track first_scan_completed and save report to sessionStorage for PDF gate recovery
+  useEffect(() => {
+    if (!companyProfile || !rubricScore || !observability) return;
+    trackEvent('first_scan_completed', { score: rubricScore.totalScore });
+    try {
+      sessionStorage.setItem('lastReport', JSON.stringify({ companyProfile, rubricScore, observability, pages }));
+    } catch {
+      // sessionStorage unavailable — non-fatal
+    }
+  }, [companyProfile, rubricScore, observability]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Auto-download PDF after login redirect from PDF gate
+  useEffect(() => {
+    if (!initialState?.autoDownloadPdf) return;
+    if (!companyProfile || !rubricScore || !observability) return;
+    trackEvent('pdf_downloaded');
+    exportToPDF({ companyProfile, rubricScore, observability });
+  }, [initialState?.autoDownloadPdf, companyProfile, rubricScore, observability]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Show PDF hint popup after 2 seconds (anonymous users only)
+  useEffect(() => {
+    if (pdfHintDismissed) return;
+    if (!session || !session.user.is_anonymous) return;
+    const timer = setTimeout(() => {
+      setShowPdfHint(true);
+      trackEvent('pdf_hint_shown');
+    }, 2000);
+    return () => clearTimeout(timer);
+  }, [session, pdfHintDismissed]);
+
+  const handlePdfClick = useCallback((source: 'hint_popup' | 'header_button' = 'header_button') => {
+    if (!session || session.user.is_anonymous) {
+      trackEvent('pdf_cta_clicked', { source });
+      navigate('/?auth=pdf');
+      return;
+    }
+    trackEvent('pdf_downloaded');
+    if (companyProfile && rubricScore && observability) {
+      exportToPDF({ companyProfile, rubricScore, observability });
+    }
+  }, [session, companyProfile, rubricScore, observability, navigate]);
 
   const handleDimensionClick = useCallback((dimension: string) => {
     const element = document.getElementById(
@@ -326,10 +374,10 @@ export default function Results() {
               </Link>
               <ResourcesDropdown />
             </nav>
-            <Button 
+            <Button
               variant="outline"
               size="sm"
-              onClick={() => exportToPDF({ companyProfile, rubricScore, observability })}
+              onClick={() => handlePdfClick('header_button')}
             >
               <Download className="w-4 h-4 mr-2" />
               PDF
@@ -413,6 +461,40 @@ export default function Results() {
       </main>
 
       <Footer />
+
+      {/* PDF hint popup — shown after 2s for anonymous users */}
+      {showPdfHint && !pdfHintDismissed && (
+        <div className="fixed bottom-6 right-6 z-50 bg-white border border-gray-200 rounded-xl shadow-lg p-4 max-w-xs w-full">
+          <button
+            className="absolute top-3 right-3 text-gray-400 hover:text-gray-600 transition-colors"
+            aria-label="Dismiss"
+            onClick={() => {
+              setShowPdfHint(false);
+              setPdfHintDismissed(true);
+              trackEvent('pdf_hint_dismissed');
+            }}
+          >
+            <X className="w-4 h-4" />
+          </button>
+          <p className="text-sm font-semibold text-gray-900 mb-1 pr-5">
+            Download this report as PDF
+          </p>
+          <p className="text-xs text-muted-foreground mb-3">
+            Log-in required.{' '}
+            <a href="/privacy" className="underline hover:text-foreground" target="_blank" rel="noreferrer">
+              See our privacy rules
+            </a>
+          </p>
+          <Button
+            size="sm"
+            className="w-full bg-vt-midnight text-white hover:bg-vt-midnight/90 rounded-[20px] h-8 text-xs"
+            onClick={() => handlePdfClick('hint_popup')}
+          >
+            <Download className="w-3 h-3 mr-1.5" />
+            Download PDF
+          </Button>
+        </div>
+      )}
     </div>
   );
 }

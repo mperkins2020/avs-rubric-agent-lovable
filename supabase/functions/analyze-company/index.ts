@@ -1428,7 +1428,8 @@ Deno.serve(async (req) => {
     }
     const userId = claimsData.claims.sub as string;
     const userEmail = claimsData.claims.email as string;
-    console.log('Authenticated user:', userId);
+    const isAnonymous = (claimsData.claims.is_anonymous as boolean) ?? false;
+    console.log('Authenticated user:', userId, 'anonymous:', isAnonymous);
 
     // Rate limit: 3 scans per week per user AND per email
     const supabaseAdmin = createClient(
@@ -1447,37 +1448,57 @@ Deno.serve(async (req) => {
     const isRerun = !!(previousScores && previousScores.length > 0);
 
     if (!isAdmin && !isRerun && !pollOnly) {
-      const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+      // Anonymous users get 1 free scan (total); authenticated users get 3/week
+      const maxScans = isAnonymous ? 1 : 3;
 
-      // Check by user_id
-      const { count: userCount, error: countError } = await supabaseAdmin
-        .from('scan_usage')
-        .select('*', { count: 'exact', head: true })
-        .eq('user_id', userId)
-        .gte('created_at', weekAgo);
-
-      if (countError) {
-        console.error('Rate limit check failed:', countError);
-      } else if (userCount !== null && userCount >= 3) {
-        return new Response(
-          JSON.stringify({ success: false, error: 'Weekly limit reached. You can run 3 analyses per week. Try again next week.' }),
-          { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-
-      // Secondary check by email to deter multi-account bypass
-      if (userEmail) {
-        const { count: emailCount, error: emailCountError } = await supabaseAdmin
+      if (isAnonymous) {
+        // Anonymous: check total all-time scan count (no time window)
+        const { count: anonCount, error: anonCountError } = await supabaseAdmin
           .from('scan_usage')
           .select('*', { count: 'exact', head: true })
-          .eq('email', userEmail)
+          .eq('user_id', userId);
+
+        if (anonCountError) {
+          console.error('Anonymous rate limit check failed:', anonCountError);
+        } else if (anonCount !== null && anonCount >= maxScans) {
+          return new Response(
+            JSON.stringify({ success: false, error: 'Free scan used. Create a free account to run more analyses.' }),
+            { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+      } else {
+        const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+
+        // Check by user_id
+        const { count: userCount, error: countError } = await supabaseAdmin
+          .from('scan_usage')
+          .select('*', { count: 'exact', head: true })
+          .eq('user_id', userId)
           .gte('created_at', weekAgo);
 
-        if (!emailCountError && emailCount !== null && emailCount >= 3) {
+        if (countError) {
+          console.error('Rate limit check failed:', countError);
+        } else if (userCount !== null && userCount >= maxScans) {
           return new Response(
             JSON.stringify({ success: false, error: 'Weekly limit reached. You can run 3 analyses per week. Try again next week.' }),
             { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
           );
+        }
+
+        // Secondary check by email to deter multi-account bypass
+        if (userEmail) {
+          const { count: emailCount, error: emailCountError } = await supabaseAdmin
+            .from('scan_usage')
+            .select('*', { count: 'exact', head: true })
+            .eq('email', userEmail)
+            .gte('created_at', weekAgo);
+
+          if (!emailCountError && emailCount !== null && emailCount >= maxScans) {
+            return new Response(
+              JSON.stringify({ success: false, error: 'Weekly limit reached. You can run 3 analyses per week. Try again next week.' }),
+              { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+            );
+          }
         }
       }
     } else if (isRerun) {
