@@ -2182,7 +2182,7 @@ ${truncatedContent}`;
               // The LLM strips the ** markdown and cites them as page quotes despite the
               // explicit instruction not to. Filter them out here as a safety net.
               if (/not explicitly stated/i.test(item.snippet)) return false;
-              if (/^\s*-?\s*(value unit|free tier|trial available|trial details|refund policy|enterprise pricing|billing|limits?|overage policy)\s*:/i.test(item.snippet)) return false;
+              if (/^\s*-?\s*(value unit|free tier|trial available|trial details|refund policy|enterprise pricing|billing|price|limits?|overage policy)\s*:/i.test(item.snippet)) return false;
               return true;
             })
         : [];
@@ -2219,7 +2219,7 @@ ${truncatedContent}`;
         seen.add(key);
         // Final synthetic-field guard — catches fromObserved bypass of the fromModel filter.
         if (/not explicitly stated/i.test(item.snippet)) continue;
-        if (/^\s*-?\s*(value unit|free tier|trial available|trial details|refund policy|enterprise pricing|billing|limits?|overage policy)\s*:/i.test(item.snippet)) continue;
+        if (/^\s*-?\s*(value unit|free tier|trial available|trial details|refund policy|enterprise pricing|billing|price|limits?|overage policy)\s*:/i.test(item.snippet)) continue;
         merged.push(item);
       }
 
