@@ -1016,11 +1016,13 @@ Deno.serve(async (req) => {
               if (exclusionPatterns.some(p => p.test(resolved))) continue;
               // Accept modal/tab/plan params, FAQ fragments, or ≥2-segment docs subpages
               const parsedHref = new URL(resolved);
-              const isModal = /[?&](modal|tab|plan)=/.test(parsedHref.search);
+              const isModal = /[?&](modal|tab|plan|price\.platform)=/.test(parsedHref.search);
+              // Also accept any query-param variant of a pricing page (e.g. /pricing?price.platform=api)
+              const isPricingVariant = isPricingPage(resolved) && parsedHref.search.length > 0;
               const isFaqAnchor = /^#?(faq-|credits|compute|billing)/i.test(parsedHref.hash);
               const pathSegs = parsedHref.pathname.split('/').filter(Boolean);
               const isDocSubpage = pathSegs.length >= 2 && isEvidenceEligible(resolved);
-              if (isModal || isFaqAnchor || isDocSubpage) {
+              if (isModal || isPricingVariant || isFaqAnchor || isDocSubpage) {
                 discovered.push(resolved);
                 alreadyQueued.add(resolved);
               }
