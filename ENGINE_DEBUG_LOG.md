@@ -4,7 +4,7 @@
 **Usage:** When a report produces a questionable result, log it here. Run `Scan the debug log for recurring patterns` periodically to surface systemic issues.
 **Related:** See ENGINE_DEBUG_HISTORY.md for backfilled history from git.
 
-**Entries:** 24 | **Last updated:** April 10, 2026
+**Entries:** 27 | **Last updated:** April 10, 2026
 
 ---
 
@@ -19,8 +19,8 @@
 | confidence_miscalc | 0 | — |
 | prompt_drift | 1 | ICP and Job Clarity (D2) |
 | pipeline_miss | 10 | Value Unit, Cost Driver Mapping, Safety/Trust, Overages & Risk |
-| contamination | 10 | Pricing Transparency, Enterprise/Compliance (D7/D8) |
-| calibration | 1 | Value unit (D4) |
+| contamination | 12 | Pricing Transparency, Enterprise/Compliance (D7/D8) |
+| calibration | 2 | Value unit (D4), ICP and Job Clarity (D2) |
 | other | 0 | — |
 
 ---
@@ -30,6 +30,79 @@
 <!-- Newest first. To add an entry, copy the template below and fill it in. -->
 
 <!-- Next entry goes here -->
+
+---
+
+### Entry 027 — April 10, 2026
+
+| Field | Value |
+|-------|-------|
+| Company | ElevenLabs |
+| Version | Current — observed April 10, 2026 via report 13 review |
+| Dimension | D2 ICP and job clarity |
+| Score | D2: 2/2 (report 11) → 1/2 (report 13) — regression |
+| Pages Analyzed | 15 — correct |
+| Root Cause | calibration — J5 non-fit and J3 success state subtests structurally too strict for B2B SaaS |
+| Caught By | ElevenLabs report 13 review, April 10, 2026 |
+| Status | Addressed — D2 J3 and J5 updated in calibration pass (April 10, 2026) |
+
+**Observation:** D2 scored 2/2 in report 11 and 1/2 in report 13. Rationale for 1/2 cited: "lacks explicit non-fit criteria or detailed success states for these jobs." Both failures trace to rubric subtests that most B2B SaaS companies structurally cannot pass from public evidence:
+
+- **J5 Non-fit boundaries** — requires explicit "who we are NOT for" statements (`non_fit_criteria[]`). Almost no B2B SaaS company publishes these. ElevenLabs clearly targets developers building speech/voice applications across defined verticals, which implicitly excludes consumer use and non-audio applications, but this is inferred from ICP, not stated as exclusion.
+- **J3 Success state** — requires `jtbd[0].success_state` with measurable constraints. ElevenLabs documents job scope via named platforms (ElevenCreative, ElevenAgents) with target users and I/O requirements, but without publishing a universal quantified success metric.
+
+Combined with D4 variance (Entry 023), two dimensions are now volatile, causing ±12% score swings (1-2 points each on a 16-point scale) across reruns on identical input. This makes the score unreliable as a benchmark.
+
+**Fix:** D2 J3 updated with Tier B path (named platforms + documented I/O + constraints). D2 J5 updated with Tier C path (implicit scope via vertical ICP + multiple jtbd roles). See calibration commit April 10, 2026.
+
+**Pattern Tag:** `j5-non-fit-too-strict`, `j3-success-state-too-strict`, `lm-scoring-variance`, `calibration-needed`
+
+---
+
+### Entry 026 — April 10, 2026
+
+| Field | Value |
+|-------|-------|
+| Company | ElevenLabs (observed), general (all companies) |
+| Version | Current — observed April 10, 2026 via report 13 review |
+| Dimension | D7 Overages and risk allocation (observed); potentially all dimensions |
+| Score | N/A — credibility/accuracy issue in rationale text |
+| Pages Analyzed | 15 — correct |
+| Root Cause | contamination — Machine-Extracted schema values leaking into rationale narrative |
+| Caught By | ElevenLabs report 13 review, April 10, 2026 |
+| Status | Open — harder to fix than evidence snippet contamination |
+
+**Observation:** The LLM references Machine-Extracted schema values in its rationale text, not just in sourceEvidence snippets. Example from D7 report 13: "the pricing pages consistently list 'Overage Policy : N/A' for all tiers". The post-processing filter in `normalizeSourceEvidence` (Entry 024 fix) removes these from `sourceEvidence` arrays, but cannot scrub them from the free-text `rationale` string.
+
+The root issue: the LLM treats the `## Structured Pricing Data (Machine-Extracted — NOT direct quotes)` section as if it is actual page copy, even in narrative output. The prompt at line 66 explicitly says not to cite this section as direct quotes, but Gemini 2.5 Flash incorporates these fields into rationale reasoning. This is distinct from Entry 024 — Entry 024 caught the snippet-level leakage; this entry tracks the narrative-level leakage.
+
+**Potential fixes (not yet implemented):**
+1. Rename the Machine-Extracted section header and fields to make them visually non-quotable — e.g., use `[CONTEXT ONLY — DO NOT CITE]` prefix on all fields, or emit as a JSON block rather than markdown prose.
+2. Add a post-processing regex pass on `rationale` strings to detect and flag Machine-Extracted field patterns appearing in narrative context.
+3. Move Machine-Extracted data to a separate, lower-salience position in the scrape markdown (after all real page content).
+
+**Pattern Tag:** `synthetic-evidence`, `machine-extracted-narrative-bleed`, `rationale-contamination`
+
+---
+
+### Entry 025 — April 10, 2026
+
+| Field | Value |
+|-------|-------|
+| Company | ElevenLabs (observed), general (all companies) |
+| Version | Current — observed April 10, 2026 via report 13 review |
+| Dimension | D4 Value unit |
+| Score | N/A — evidence quality issue |
+| Pages Analyzed | 15 — correct |
+| Root Cause | contamination — "price" field missing from synthetic schema field filter blocklist |
+| Caught By | ElevenLabs report 13 review, April 10, 2026 |
+| Status | Fixed — "price" added to both filter regex instances in normalizeSourceEvidence |
+
+**Observation:** `"- Price : $0 per minute"` and `"- Price : $0.10 per minute"` appeared in D4 Value unit sourceEvidence in report 13. The Machine-Extracted plan section generates `- **Price**: $X per minute` fields for each pricing tier. The LLM strips the `**` markdown formatting and cites these as direct page quotes in sourceEvidence. "price" was not in the blocklist added in Entry 024, so the filter failed to catch it.
+
+**Fix:** Added "price" to both regex instances in `normalizeSourceEvidence` (analyze-company/index.ts lines ~2185 and ~2222). The regex pattern `billing|price|limits?` now catches `- Price : $X` citations before they enter the output. Committed as `fix: add 'price' to synthetic schema field filter`.
+
+**Pattern Tag:** `synthetic-evidence`, `machine-extracted-citation`, `filter-blocklist-incomplete`
 
 ---
 
