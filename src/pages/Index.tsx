@@ -203,14 +203,22 @@ const Index = () => {
   }, [session, pendingUrl, startScan]);
 
   const handleSubmit = async (url: string) => {
-    if (!session) {
-      // Fallback: shouldn't happen after silent sign-in, but guard just in case
+    // If session is still null (sign-in still resolving), check directly before falling back
+    let activeSession = session;
+    if (!activeSession) {
+      const { data: { session: current } } = await supabase.auth.getSession();
+      activeSession = current;
+    }
+    if (!activeSession) {
+      // Anonymous auth may be disabled or failed — fall back to manual sign-in
       setPendingUrl(url);
       setAuthModalReason(null);
       setShowAuthModal(true);
       trackEvent('signup_modal_opened', { reason: 'manual' });
       return;
     }
+    // Sync local session state if it just resolved
+    const session = activeSession;
 
     // Anonymous users are capped at 1 free scan
     if (session.user.is_anonymous) {
