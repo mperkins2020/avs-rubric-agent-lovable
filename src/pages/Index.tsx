@@ -217,15 +217,12 @@ const Index = () => {
       trackEvent('signup_modal_opened', { reason: 'manual' });
       return;
     }
-    // Sync local session state if it just resolved
-    const session = activeSession;
-
     // Anonymous users are capped at 1 free scan
-    if (session.user.is_anonymous) {
+    if (activeSession.user.is_anonymous) {
       const { count } = await supabase
         .from('scan_usage')
         .select('*', { count: 'exact', head: true })
-        .eq('user_id', session.user.id);
+        .eq('user_id', activeSession.user.id);
       if ((count ?? 0) >= 1) {
         setPendingUrl(url);
         setAuthModalReason('second-run');
