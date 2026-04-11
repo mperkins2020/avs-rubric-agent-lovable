@@ -203,14 +203,22 @@ const Index = () => {
   }, [session, pendingUrl, startScan]);
 
   const handleSubmit = async (url: string) => {
-    // If session is still null (sign-in still resolving), check directly before falling back
+    // Resolve session — try context first, then getSession(), then signInAnonymously()
     let activeSession = session;
     if (!activeSession) {
       const { data: { session: current } } = await supabase.auth.getSession();
       activeSession = current;
     }
     if (!activeSession) {
-      // Anonymous auth may be disabled or failed — fall back to manual sign-in
+      // Background effect may still be in-flight — try sign-in inline now
+      const { data, error: anonError } = await supabase.auth.signInAnonymously();
+      if (!anonError && data.session) {
+        activeSession = data.session;
+        trackEvent('anon_session_start');
+      }
+    }
+    if (!activeSession) {
+      // Anonymous auth is disabled in Supabase — fall back to manual sign-in
       setPendingUrl(url);
       setAuthModalReason(null);
       setShowAuthModal(true);
