@@ -2208,8 +2208,9 @@ ${truncatedContent}`;
               // with fields like **Value Unit**: credits and - **Billing**: per minute.
               // The LLM strips the ** markdown and cites them as page quotes despite the
               // explicit instruction not to. Filter them out here as a safety net.
+              if (item.snippet.length < 25) return false; // Entry 029: drop thin fragments
               if (/not explicitly stated/i.test(item.snippet)) return false;
-              if (/^\s*-?\s*(value unit|free tier|trial available|trial details|refund policy|enterprise pricing|billing|price|limits?|overage policy)\s*:/i.test(item.snippet)) return false;
+              if (/^\s*-?\s*(value unit|free tier|trial available|trial details|refund policy|enterprise pricing|billing|price|limits?|overage policy|features?)\s*:/i.test(item.snippet)) return false; // Entry 031: features added
               return true;
             })
         : [];
@@ -2238,6 +2239,7 @@ ${truncatedContent}`;
         const key = item.snippet
           .toLowerCase()
           .trim()
+          .replace(/^["""\u201C\u201D'''\u2018\u2019]+|["""\u201C\u201D'''\u2018\u2019]+$/g, '') // Entry 030: strip curly/smart quote variants before hashing
           .replace(/\s*\([^)]{0,40}\)/g, '') // strip short parentheticals (tier labels, annotations)
           .replace(/\s+/g, ' ')
           .trim()
@@ -2245,8 +2247,9 @@ ${truncatedContent}`;
         if (seen.has(key)) continue;
         seen.add(key);
         // Final synthetic-field guard — catches fromObserved bypass of the fromModel filter.
+        if (item.snippet.length < 25) continue; // Entry 029: drop thin fragments
         if (/not explicitly stated/i.test(item.snippet)) continue;
-        if (/^\s*-?\s*(value unit|free tier|trial available|trial details|refund policy|enterprise pricing|billing|price|limits?|overage policy)\s*:/i.test(item.snippet)) continue;
+        if (/^\s*-?\s*(value unit|free tier|trial available|trial details|refund policy|enterprise pricing|billing|price|limits?|overage policy|features?)\s*:/i.test(item.snippet)) continue; // Entry 031: features added
         merged.push(item);
       }
 

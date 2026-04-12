@@ -4,7 +4,7 @@
 **Usage:** When a report produces a questionable result, log it here. Run `Scan the debug log for recurring patterns` periodically to surface systemic issues.
 **Related:** See ENGINE_DEBUG_HISTORY.md for backfilled history from git.
 
-**Entries:** 32 | **Last updated:** April 10, 2026
+**Entries:** 32 | **Last updated:** April 11, 2026
 
 ---
 
@@ -61,7 +61,7 @@
 | Score | Unaffected |
 | Root Cause | contamination — "features" schema field not in synthetic evidence blocklist |
 | Caught By | Beautiful.ai report 7 review |
-| Status | Open — cosmetic, deferred |
+| Status | Fixed — April 11, 2026 |
 
 **Observation:** `"- Features : Everything in Team plus...; Dedicated onboarding..."` appears in D3 and D8 evidence. "features" is not in the synthetic field blocklist regex. The Machine-Extracted plan section generates `- **Features**: ...` which the LLM cites as `- Features : ...`. Fix: add `features?` to both filter regex instances in `normalizeSourceEvidence`.
 
@@ -79,7 +79,7 @@
 | Score | Unaffected |
 | Root Cause | contamination — curly/smart quote variants bypassing snippet dedup |
 | Caught By | Beautiful.ai report 7 review |
-| Status | Open — cosmetic, deferred |
+| Status | Fixed — April 11, 2026 |
 
 **Observation:** D1 evidence 1 and 4 are the same quote: `""We reduced time by 75%..."` vs `"We reduced time by 75%..."`. D2 evidence 2 and 4 are identical. The dedup normalization hashes the snippet after lowercase/trim/slice(120) but does NOT strip leading/trailing curly quote characters (`"` `"`). So `""quote"` and `"quote"` produce different keys and both pass. Fix: add `.replace(/^["""'']+|["""'']+$/g, '')` to the dedup key normalization before slicing.
 
@@ -97,7 +97,7 @@
 | Score | Unaffected |
 | Root Cause | contamination — sub-minimum-length snippet from Machine-Extracted features list |
 | Caught By | Report 14 review |
-| Status | Open — cosmetic, deferred |
+| Status | Fixed — April 11, 2026 |
 
 **Observation:** D4 Value unit evidence 4: `"- additional minutes usage"` (24 chars) from `/pricing?price.platform=agents_platform`. This is a bullet fragment from the Machine-Extracted plan features list, likely `- **Features**: ...; additional minutes usage`. It passes the field-name filter because "additional" isn't a blocked schema field, but it's contextless and adds no evidential value. Fix: add minimum snippet length (~25 chars) to `normalizeSourceEvidence`. Deferred — score unaffected and ElevenLabs validated at 12/16.
 
