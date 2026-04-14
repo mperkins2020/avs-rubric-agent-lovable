@@ -4,7 +4,7 @@
 **Usage:** When a report produces a questionable result, log it here. Run `Scan the debug log for recurring patterns` periodically to surface systemic issues.
 **Related:** See ENGINE_DEBUG_HISTORY.md for backfilled history from git.
 
-**Entries:** 32 | **Last updated:** April 11, 2026
+**Entries:** 33 | **Last updated:** April 13, 2026
 
 ---
 
@@ -30,6 +30,28 @@
 <!-- Newest first. To add an entry, copy the template below and fill it in. -->
 
 <!-- Next entry goes here -->
+
+---
+
+### Entry 033 — April 13, 2026
+
+| Field | Value |
+|-------|-------|
+| Company | All — new feature |
+| Version | Pre-deploy — implemented April 13, 2026 |
+| Dimension | N/A — metadata, not a scoring dimension |
+| Subtest(s) | N/A |
+| V1 Score | N/A |
+| V2 Score | N/A |
+| Root Cause | other — new feature addition |
+| Caught By | Feature request — model-type-classifier-plan.md |
+| Status | implemented |
+
+**Root Cause Detail:** Added deterministic model-type classifier that runs post-evidence-ingestion, pre-scoring. Classifies pricing model as access-based, consumption-based, outcome-based, or hybrid using regex + keyword scoring against /pricing page content — no LLM call. Outputs `model_classification` metadata on every scan with L1 type, L2 variant (e.g., `per-seat`, `credit-pool`, `access+consumption`), confidence score, source tag (`auto`/`unclassified`/`gated`), and `enterprise_pricing` flag. Handles edge cases: no /pricing page → `unclassified`; 100% Contact Sales → `gated`; mixed public + gated tiers → classify from public, tag enterprise as `gated`.
+
+**Resolution:** New files: `supabase/functions/analyze-company/classifyModelType.ts` (classifier module), `src/components/ModelClassificationCard.tsx` (UI card). Modified: `analyze-company/index.ts` (integration), `src/types/rubric.ts` (types), `src/lib/api/scraper.ts` (API layer), `src/hooks/useScan.ts` (state), `src/pages/Index.tsx` + `Results.tsx` (plumbing + display). No scoring logic, gate logic, or 3-pass voting modified. All 33 existing tests pass.
+
+**Pattern Tag:** `new-feature`, `model-type-classifier`, `metadata-only`
 
 ---
 

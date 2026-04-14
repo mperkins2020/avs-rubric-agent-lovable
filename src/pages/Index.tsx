@@ -97,6 +97,7 @@ const Index = () => {
     companyProfile,
     rubricScore,
     observability,
+    modelClassification,
     pages,
     chatMessages
   } = useScan();
@@ -105,10 +106,10 @@ const Index = () => {
   useEffect(() => {
     if (status === 'complete' && companyProfile && rubricScore && observability) {
       navigate("/results", {
-        state: { companyProfile, rubricScore, observability, pages }
+        state: { companyProfile, rubricScore, observability, modelClassification, pages }
       });
     }
-  }, [status, companyProfile, rubricScore, observability, pages, navigate]);
+  }, [status, companyProfile, rubricScore, observability, modelClassification, pages, navigate]);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);

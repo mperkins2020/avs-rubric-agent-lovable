@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import { scraperApi, type ScrapedPage, type AnalysisResult } from '@/lib/api/scraper';
-import type { CompanyProfile, RubricScore, ObservabilityData, ChatMessage } from '@/types/rubric';
+import type { CompanyProfile, RubricScore, ObservabilityData, ModelClassification, ChatMessage } from '@/types/rubric';
 
 export type ScanStatus = 'idle' | 'scraping' | 'analyzing' | 'complete' | 'error';
 
@@ -12,6 +12,7 @@ interface ScanState {
   companyProfile: CompanyProfile | null;
   rubricScore: RubricScore | null;
   observability: ObservabilityData | null;
+  modelClassification: ModelClassification | null;
   error: string | null;
   chatMessages: ChatMessage[];
   isChatLoading: boolean;
@@ -25,6 +26,7 @@ const initialState: ScanState = {
   companyProfile: null,
   rubricScore: null,
   observability: null,
+  modelClassification: null,
   error: null,
   chatMessages: [],
   isChatLoading: false,
@@ -46,6 +48,7 @@ export function useScan() {
       companyProfile: null,
       rubricScore: null,
       observability: null,
+      modelClassification: null,
       error: null,
       chatMessages: [],
     });
@@ -96,6 +99,7 @@ export function useScan() {
         companyProfile: analysisResult.companyProfile || null,
         rubricScore: analysisResult.rubricScore || null,
         observability: analysisResult.observability || null,
+        modelClassification: analysisResult.modelClassification || null,
       });
 
       return true;

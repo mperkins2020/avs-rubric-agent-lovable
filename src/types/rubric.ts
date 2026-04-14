@@ -90,6 +90,16 @@ export interface ObservabilityData {
   }[];
 }
 
+export interface ModelClassification {
+  model_type: string;
+  model_type_l1: 'access' | 'consumption' | 'outcome' | 'hybrid' | 'unclassified' | 'gated';
+  model_type_l2: string;
+  model_type_confidence: number;
+  model_type_source: 'auto' | 'unclassified' | 'gated';
+  enterprise_pricing: 'public' | 'gated';
+  classification_evidence: string[];
+}
+
 export interface ScanResult {
   id: string;
   url: string;
@@ -97,6 +107,7 @@ export interface ScanResult {
   companyProfile: CompanyProfile | null;
   rubricScore: RubricScore | null;
   observability: ObservabilityData | null;
+  modelClassification: ModelClassification | null;
   createdAt: Date;
 }
 

@@ -1,5 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
-import type { CompanyProfile, RubricScore, ObservabilityData } from '@/types/rubric';
+import type { CompanyProfile, RubricScore, ObservabilityData, ModelClassification } from '@/types/rubric';
 
 export interface ScrapedPage {
   url: string;
@@ -28,6 +28,7 @@ export interface AnalysisResult {
   companyProfile?: CompanyProfile;
   rubricScore?: RubricScore;
   observability?: ObservabilityData;
+  modelClassification?: ModelClassification;
   error?: string;
 }
 

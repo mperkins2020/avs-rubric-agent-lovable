@@ -1,5 +1,6 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { classifyModelType } from "./classifyModelType.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -1920,6 +1921,29 @@ Deno.serve(async (req) => {
       console.log('Company profile extracted:', companyProfile.companyName);
     }
 
+    // ── Model-Type Classifier (post-ingestion, pre-scoring) ──
+    const pricingPage = prioritizedPages.find(p =>
+      /\/(pricing|plans?)\b/i.test(p.url)
+    );
+    const billingPage = prioritizedPages.find(p =>
+      /\/(billing|credits?)\b/i.test(p.url)
+    );
+    const faqPage = prioritizedPages.find(p =>
+      /\/(faq|help)\b/i.test(p.url)
+    );
+    const caseStudyPages = prioritizedPages
+      .filter(p => /\/(case[-_]?stud|customers?|stories)\b/i.test(p.url))
+      .slice(0, 2);
+
+    const modelClassification = classifyModelType({
+      pricingPageContent: pricingPage?.markdown || '',
+      billingPageContent: billingPage?.markdown,
+      faqContent: faqPage?.markdown,
+      caseStudyContent: caseStudyPages.length > 0 ? caseStudyPages.map(p => p.markdown) : undefined,
+      pricingPageExists: !!pricingPage,
+    });
+    console.log('Model-type classification:', modelClassification.model_type, 'confidence:', modelClassification.model_type_confidence);
+
     // Fix 3B: Page-to-Dimension Routing
     // Classify pages whose URLs indicate billing/invoice-only content.
     // These pages should only be used as evidence for D7 (Overages & Risk Allocation)
@@ -2572,6 +2596,7 @@ ${truncatedContent}`;
         pagesUsed: selectedUrls,
         mostUncertainDimensions: mostUncertain,
       },
+      modelClassification,
     };
 
     console.log('Analysis complete:', {

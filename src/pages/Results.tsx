@@ -15,18 +15,20 @@ import { StrengthsWeaknesses } from "@/components/StrengthsWeaknesses";
 import { ChatPanel } from "@/components/ChatPanel";
 import { InsiderPromptsPanel } from "@/components/InsiderPromptsPanel";
 import { EvidenceSourcesPanel } from "@/components/EvidenceSourcesPanel";
+import { ModelClassificationCard } from "@/components/ModelClassificationCard";
 
 import { FeedbackForm } from "@/components/FeedbackForm";
 import { scraperApi, type ScrapedPage } from "@/lib/api/scraper";
 import { exportToPDF } from "@/lib/pdfExport";
 import { toast } from "sonner";
-import type { ChatMessage, CompanyProfile, RubricScore, ObservabilityData } from "@/types/rubric";
+import type { ChatMessage, CompanyProfile, RubricScore, ObservabilityData, ModelClassification } from "@/types/rubric";
 import { ResourcesDropdown } from "@/components/ResourcesDropdown";
 
 interface LocationState {
   companyProfile: CompanyProfile;
   rubricScore: RubricScore;
   observability: ObservabilityData;
+  modelClassification?: ModelClassification;
   pages: ScrapedPage[];
 }
 
@@ -39,6 +41,7 @@ export default function Results() {
   const [companyProfile, setCompanyProfile] = useState<CompanyProfile | null>(initialState?.companyProfile ?? null);
   const [rubricScore, setRubricScore] = useState<RubricScore | null>(initialState?.rubricScore ?? null);
   const [observability, setObservability] = useState<ObservabilityData | null>(initialState?.observability ?? null);
+  const [modelClassification, setModelClassification] = useState<ModelClassification | null>(initialState?.modelClassification ?? null);
   const [pages, setPages] = useState<ScrapedPage[]>(initialState?.pages ?? []);
 
   // PDF hint popup state (shown after 2s for anonymous users)
@@ -61,7 +64,7 @@ export default function Results() {
     if (!companyProfile || !rubricScore || !observability) return;
     trackEvent('first_scan_completed', { score: rubricScore.totalScore });
     try {
-      sessionStorage.setItem('lastReport', JSON.stringify({ companyProfile, rubricScore, observability, pages }));
+      sessionStorage.setItem('lastReport', JSON.stringify({ companyProfile, rubricScore, observability, modelClassification, pages }));
     } catch {
       // sessionStorage unavailable — non-fatal
     }
@@ -399,6 +402,11 @@ export default function Results() {
 
             {/* Company Profile */}
             <CompanyProfileCard profile={companyProfile} />
+
+            {/* Model Classification */}
+            {modelClassification && modelClassification.model_type_l1 !== 'unclassified' && (
+              <ModelClassificationCard classification={modelClassification} />
+            )}
 
             {/* Observability Strip */}
             <ObservabilityStrip
