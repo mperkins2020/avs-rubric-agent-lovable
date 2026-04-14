@@ -197,6 +197,7 @@ export const mockScanResult: ScanResult = {
   companyProfile: mockCompanyProfile,
   rubricScore: mockRubricScore,
   observability: mockObservability,
+  modelClassification: null,
   createdAt: new Date(),
 };
 
