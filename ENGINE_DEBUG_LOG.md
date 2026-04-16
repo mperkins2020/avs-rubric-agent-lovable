@@ -4,7 +4,7 @@
 **Usage:** When a report produces a questionable result, log it here. Run `Scan the debug log for recurring patterns` periodically to surface systemic issues.
 **Related:** See ENGINE_DEBUG_HISTORY.md for backfilled history from git.
 
-**Entries:** 34 | **Last updated:** April 16, 2026
+**Entries:** 35 | **Last updated:** April 16, 2026
 
 ---
 
@@ -18,7 +18,7 @@
 | gate_misfire | 0 | — |
 | confidence_miscalc | 0 | — |
 | prompt_drift | 1 | ICP and Job Clarity (D2) |
-| pipeline_miss | 11 | Value Unit, Cost Driver Mapping, Safety/Trust, Overages & Risk, URL filter |
+| pipeline_miss | 12 | Value Unit, Cost Driver Mapping, Safety/Trust, Overages & Risk, URL filter |
 | contamination | 13 | Pricing Transparency, Enterprise/Compliance (D7/D8) |
 | calibration | 2 | Value unit (D4), ICP and Job Clarity (D2) |
 | other | 0 | — |
@@ -30,6 +30,40 @@
 <!-- Newest first. To add an entry, copy the template below and fill it in. -->
 
 <!-- Next entry goes here -->
+
+---
+
+### Entry 035 — April 16, 2026
+
+| Field | Value |
+|-------|-------|
+| Company | miro.com (second live scan QA pass) |
+| Version | 2026-04-13-model-type-classifier-v8 |
+| Dimension | N/A — evidence pipeline quality |
+| Subtest(s) | N/A |
+| V1 Score | N/A |
+| V2 Score | N/A |
+| Root Cause | pipeline_miss |
+| Caught By | Live scan QA — 13 pages analyzed, only /pricing contributed evidence; board URLs still present after Entry 034 fix |
+| Status | fixed |
+
+**Root Cause Detail:** Four separate issues found in second QA pass after deploying Entry 034 fix:
+
+1. **Base64 filter in wrong code path.** The filter was added to `isEvidenceEligible()`, which is only called when discovering secondary links from the pricing page markdown. Board URLs discovered via the Firecrawl map flow through `scoredLinks.filter`, a completely separate code path that never calls `isEvidenceEligible`. Filter never ran for the offending URLs.
+
+2. **Base64 filter had broken digit requirement.** `uXjVGArvT-g=` and `uXjVlvQzGAs=` contain no digits. The filter required uppercase AND lowercase AND digits — the digit check caused both IDs to pass even when the filter ran. Mixed case alone is sufficient to identify a generated ID.
+
+3. **Locale-prefixed duplicate pages.** `miro.com/fr/products/roadmaps` — a French translation of an English page. No additional evidence value for English-language pricing and trust scoring.
+
+4. **Educational how-to articles and marketplace listings.** `miro.com/agile/what-is-burnup-chart`, `/customer-journey-map/what-is-service-blueprint` (content marketing pages), and `miro.com/marketplace/aws-cost-calculator` (third-party integration listing). None contain pricing, trust, or enterprise evidence.
+
+**Resolution:** Four changes to `scrape-website/index.ts`:
+- Added base64 check directly in `scoredLinks.filter` (fixes wrong code path)
+- Removed digit requirement from both the new main-pipeline check and the existing `isEvidenceEligible` check
+- Added locale-prefix filter: first path segment matching ISO 639-1 two-letter code + sub-path present → excluded
+- Added to `exclusionPatterns`: `/marketplace/[^/]+$` (same principle as existing `/integrations/[^/]+$`), `/what-is-[^/]+`, `/how-to-[^/]+`, `/guide-to-[^/]+`
+
+**Pattern Tag:** `pipeline_miss`, `url-filter`, `random-id-exclusion`, `locale-exclusion`
 
 ---
 

@@ -203,6 +203,15 @@ const exclusionPatterns = [
   /\/webinars?\b/i,
   // Single integration pages — parent /integrations is sufficient
   /\/integrations\/[^/]+$/i,
+  // Single marketplace listing pages — same principle as integrations above;
+  // the listing describes a third-party tool, not the company's own pricing or trust posture
+  /\/marketplace\/[^/]+$/i,
+  // Educational how-to/what-is articles — content marketing, not pricing or trust evidence.
+  // Principle: a page explaining "what is X" teaches a concept; it does not document how
+  // this company's product is priced, secured, or operationalised.
+  /\/what-is-[^/]+/i,
+  /\/how-to-[^/]+/i,
+  /\/guide-to-[^/]+/i,
 ];
 
 const fullContentPatterns = [
@@ -821,6 +830,28 @@ Deno.serve(async (req) => {
         .filter((link: string) => {
           if (exclusionPatterns.some(p => p.test(link))) return false;
           if (link === formattedUrl || link === formattedUrl + '/') return false;
+          try {
+            const parsed = new URL(link);
+            const segs = parsed.pathname.split('/').filter(Boolean);
+            // Base64 / random resource-ID filter — applied here (map-discovery path) and in
+            // isEvidenceEligible (pricing-page link-discovery path). Principle: a path segment
+            // that looks like a generated identifier (mixed-case alphanumeric, ≥8 chars,
+            // optional trailing '=') is a resource instance URL, not an evidence page.
+            // No digit requirement — board IDs like uXjVGArvT-g= contain no digits.
+            const lastSeg = segs[segs.length - 1] ?? '';
+            if (
+              lastSeg.length >= 8 &&
+              /^[A-Za-z0-9_-]+=*$/.test(lastSeg) &&
+              /[A-Z]/.test(lastSeg) &&
+              /[a-z]/.test(lastSeg)
+            ) return false;
+            // Locale-prefix filter — ISO 639-1 two-letter language codes as first path segment
+            // indicate a localised duplicate of the English page. No new evidence value.
+            // Principle: we score against public English-language pricing and trust surfaces;
+            // a French or German copy of the same page contains identical evidence.
+            const firstSeg = (segs[0] ?? '').toLowerCase();
+            if (segs.length >= 2 && /^(?:fr|de|es|pt|ja|zh|ko|it|nl|pl|ru|ar|tr|sv|da|fi|nb|cs|hu|ro|uk|en|pt-br|zh-cn|zh-tw|es-mx|fr-ca)$/.test(firstSeg)) return false;
+          } catch { /* malformed URL — let downstream filters handle */ }
           // Community URLs always pass
           if (communityUrlSet.has(link)) return true;
           // Shallow same-domain paths (high-value top-level pages)
@@ -863,12 +894,12 @@ Deno.serve(async (req) => {
           //       this catches similar patterns in other paths like /file/AbCd1234xyz=)
           const lastSeg = parsed.pathname.split('/').filter(Boolean).pop() || '';
           if (/^-[a-z0-9]{10,}$/i.test(lastSeg)) return false;
+          // Base64/random-ID filter (digit requirement removed — board IDs often have no digits)
           if (
             lastSeg.length >= 8 &&
             /^[A-Za-z0-9_-]+=*$/.test(lastSeg) &&
             /[A-Z]/.test(lastSeg) &&
-            /[a-z]/.test(lastSeg) &&
-            /[0-9]/.test(lastSeg)
+            /[a-z]/.test(lastSeg)
           ) return false;
           // Gated path blocklist — these paths are uniformly behind authentication across SaaS.
           // They return HTTP 200 + a login wall page with zero evidence content, wasting a slot.
