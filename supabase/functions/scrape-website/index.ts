@@ -203,9 +203,6 @@ const exclusionPatterns = [
   /\/webinars?\b/i,
   // Single integration pages — parent /integrations is sufficient
   /\/integrations\/[^/]+$/i,
-  // Product UI paths — /app/* is the authenticated product surface, not an informational page.
-  // These return login walls or empty canvas content; miro.com/app/board/xxx is a prime example.
-  /\/app\//i,
 ];
 
 const fullContentPatterns = [

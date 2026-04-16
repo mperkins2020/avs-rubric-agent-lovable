@@ -47,11 +47,11 @@
 | Caught By | Live scan QA — pages analyzed count increased from 7 to 13 with noise URLs |
 | Status | fixed |
 
-**Root Cause Detail:** Miro's `/app/board/<id>` URLs (e.g., `miro.com/app/board/uXjVG05WR5Q=/`) were being included as "Pages Analyzed." These are Miro's live product canvas — authenticated SaaS UI, not informational pages. They contain no evidence-quality content. Two gaps allowed them through: (1) `exclusionPatterns` had no rule for `/app/` paths; (2) `isShallowSameDomainPath()` allows ≤3 path segments, and `/app/board/<id>` is exactly 3. The random-slug filter only caught segments starting with `-`; base64-encoded IDs like `uXjVG05WR5Q=` (mixed-case alphanumeric + trailing `=`) were not caught.
+**Root Cause Detail:** Miro's `/app/board/<id>` URLs (e.g., `miro.com/app/board/uXjVG05WR5Q=/`) were being included as "Pages Analyzed." These are live product canvases — no evidence-quality content. The random-slug filter only caught path segments starting with `-`; base64-encoded IDs like `uXjVG05WR5Q=` (mixed-case alphanumeric + trailing `=`) were not caught. An initial fix also added `/\/app\//i` to `exclusionPatterns`, but this was reverted: the `/app/` prefix is not a principled signal — some companies use `/app/` for valid informational pages (download pages, integrations directories, feature landing pages). The over-broad exclusion would cause false positives. The actual pattern to reject is: a path segment that looks like a randomly-generated resource identifier, regardless of what precedes it in the path.
 
-**Resolution:** Two fixes in `scrape-website/index.ts`: (1) Added `/\/app\//i` to `exclusionPatterns` — blocks all `/app/*` paths at the discovery stage before scoring. (2) Extended the random-slug filter in `isEvidenceEligible` to also catch base64-style IDs: ≥8 chars, matches `[A-Za-z0-9_-]+=*`, requires mixed case AND digits. Covers similar patterns on other SaaS products (e.g., Figma `/file/AbCd1234xyz=`).
+**Resolution:** Extended the random-slug filter in `isEvidenceEligible` (`scrape-website/index.ts`) to catch base64-style IDs: last path segment ≥8 chars, matches `[A-Za-z0-9_-]+=*`, requires mixed case AND digits. This is path-structure-agnostic — catches `uXjVG05WR5Q=` in `/app/board/`, `/file/`, `/workspace/`, or any other path prefix without hardcoding product-specific conventions.
 
-**Pattern Tag:** `pipeline_miss`, `url-filter`, `product-ui-exclusion`
+**Pattern Tag:** `pipeline_miss`, `url-filter`, `random-id-exclusion`
 
 ---
 
