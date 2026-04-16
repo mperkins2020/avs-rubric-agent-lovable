@@ -15,7 +15,9 @@ import { StrengthsWeaknesses } from "@/components/StrengthsWeaknesses";
 import { ChatPanel } from "@/components/ChatPanel";
 import { InsiderPromptsPanel } from "@/components/InsiderPromptsPanel";
 import { EvidenceSourcesPanel } from "@/components/EvidenceSourcesPanel";
-import { ModelClassificationCard } from "@/components/ModelClassificationCard";
+// import { ModelClassificationCard } from "@/components/ModelClassificationCard";
+// TODO (paid tier): re-enable ModelClassificationCard — component is built and data flows through;
+// flip this import and the render block below to ship as a premium feature.
 
 import { FeedbackForm } from "@/components/FeedbackForm";
 import { scraperApi, type ScrapedPage } from "@/lib/api/scraper";
@@ -403,10 +405,11 @@ export default function Results() {
             {/* Company Profile */}
             <CompanyProfileCard profile={companyProfile} />
 
-            {/* Model Classification */}
+            {/* Model Classification — hidden in free tier; data still stored in sessionStorage + Supabase.
+                TODO (paid tier): uncomment to render the ModelClassificationCard here.
             {modelClassification && modelClassification.model_type_l1 !== 'unclassified' && (
               <ModelClassificationCard classification={modelClassification} />
-            )}
+            )} */}
 
             {/* Observability Strip */}
             <ObservabilityStrip
