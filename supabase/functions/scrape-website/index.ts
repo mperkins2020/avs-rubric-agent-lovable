@@ -203,6 +203,9 @@ const exclusionPatterns = [
   /\/webinars?\b/i,
   // Single integration pages — parent /integrations is sufficient
   /\/integrations\/[^/]+$/i,
+  // Product UI paths — /app/* is the authenticated product surface, not an informational page.
+  // These return login walls or empty canvas content; miro.com/app/board/xxx is a prime example.
+  /\/app\//i,
 ];
 
 const fullContentPatterns = [
@@ -855,9 +858,21 @@ Deno.serve(async (req) => {
           if (/\/(images|assets|static|media|fonts)\//i.test(parsed.pathname)) return false;
           // @username user-generated content filter (e.g. replit.com/@user/project)
           if (parsed.pathname.split('/').some(seg => seg.startsWith('@'))) return false;
-          // Random-slug user-generated content filter: path ends in -[a-z0-9]{10,} (e.g. gamma.app/docs/-gkzy48h1uj1yr1q)
+          // Random-slug / product-generated ID filter.
+          // Catches two patterns:
+          //   1. gamma.app style: last segment starts with '-' (e.g. -gkzy48h1uj1yr1q)
+          //   2. Base64-style IDs: mixed-case alphanumeric ≥8 chars, optional trailing '='
+          //      (e.g. miro.com/app/board/uXjVG05WR5Q= — after /app/ is excluded above,
+          //       this catches similar patterns in other paths like /file/AbCd1234xyz=)
           const lastSeg = parsed.pathname.split('/').filter(Boolean).pop() || '';
           if (/^-[a-z0-9]{10,}$/i.test(lastSeg)) return false;
+          if (
+            lastSeg.length >= 8 &&
+            /^[A-Za-z0-9_-]+=*$/.test(lastSeg) &&
+            /[A-Z]/.test(lastSeg) &&
+            /[a-z]/.test(lastSeg) &&
+            /[0-9]/.test(lastSeg)
+          ) return false;
           // Gated path blocklist — these paths are uniformly behind authentication across SaaS.
           // They return HTTP 200 + a login wall page with zero evidence content, wasting a slot.
           const firstSeg = parsed.pathname.split('/').filter(Boolean)[0]?.toLowerCase() || '';

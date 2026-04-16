@@ -4,7 +4,7 @@
 **Usage:** When a report produces a questionable result, log it here. Run `Scan the debug log for recurring patterns` periodically to surface systemic issues.
 **Related:** See ENGINE_DEBUG_HISTORY.md for backfilled history from git.
 
-**Entries:** 33 | **Last updated:** April 13, 2026
+**Entries:** 34 | **Last updated:** April 16, 2026
 
 ---
 
@@ -18,7 +18,7 @@
 | gate_misfire | 0 | — |
 | confidence_miscalc | 0 | — |
 | prompt_drift | 1 | ICP and Job Clarity (D2) |
-| pipeline_miss | 10 | Value Unit, Cost Driver Mapping, Safety/Trust, Overages & Risk |
+| pipeline_miss | 11 | Value Unit, Cost Driver Mapping, Safety/Trust, Overages & Risk, URL filter |
 | contamination | 13 | Pricing Transparency, Enterprise/Compliance (D7/D8) |
 | calibration | 2 | Value unit (D4), ICP and Job Clarity (D2) |
 | other | 0 | — |
@@ -30,6 +30,28 @@
 <!-- Newest first. To add an entry, copy the template below and fill it in. -->
 
 <!-- Next entry goes here -->
+
+---
+
+### Entry 034 — April 16, 2026
+
+| Field | Value |
+|-------|-------|
+| Company | miro.com (observed in live scan) |
+| Version | 2026-04-13-model-type-classifier-v8 |
+| Dimension | N/A — evidence pipeline quality |
+| Subtest(s) | N/A |
+| V1 Score | N/A |
+| V2 Score | N/A |
+| Root Cause | pipeline_miss |
+| Caught By | Live scan QA — pages analyzed count increased from 7 to 13 with noise URLs |
+| Status | fixed |
+
+**Root Cause Detail:** Miro's `/app/board/<id>` URLs (e.g., `miro.com/app/board/uXjVG05WR5Q=/`) were being included as "Pages Analyzed." These are Miro's live product canvas — authenticated SaaS UI, not informational pages. They contain no evidence-quality content. Two gaps allowed them through: (1) `exclusionPatterns` had no rule for `/app/` paths; (2) `isShallowSameDomainPath()` allows ≤3 path segments, and `/app/board/<id>` is exactly 3. The random-slug filter only caught segments starting with `-`; base64-encoded IDs like `uXjVG05WR5Q=` (mixed-case alphanumeric + trailing `=`) were not caught.
+
+**Resolution:** Two fixes in `scrape-website/index.ts`: (1) Added `/\/app\//i` to `exclusionPatterns` — blocks all `/app/*` paths at the discovery stage before scoring. (2) Extended the random-slug filter in `isEvidenceEligible` to also catch base64-style IDs: ≥8 chars, matches `[A-Za-z0-9_-]+=*`, requires mixed case AND digits. Covers similar patterns on other SaaS products (e.g., Figma `/file/AbCd1234xyz=`).
+
+**Pattern Tag:** `pipeline_miss`, `url-filter`, `product-ui-exclusion`
 
 ---
 
