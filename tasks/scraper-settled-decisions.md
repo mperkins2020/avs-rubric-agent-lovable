@@ -31,12 +31,22 @@ class as `/terms`). Not the company's own product or pricing documentation.
 sites, docs). They are not the company's own product, pricing, or trust documentation.
 **Implementation:** `exclusionPatterns` contains `/\/explore\b/i`.
 
-### `developer` / `developers` subdomains — NOT in `helpSubdomains`
+### `developer` / `developers` subdomains — EXCLUDED at exclusionPatterns level
 **Rationale:** `developers.company.com` serves API reference documentation (endpoint
-listings, SDK guides). Not user-facing product evidence. Including it adds API endpoint
-pages (e.g. "GET /folders") which have zero AVS dimension value.
-**Implementation:** `helpSubdomains = ['help', 'support', 'docs', 'kb', 'knowledge', 'community']`.
-`developer` and `developers` are intentionally absent.
+listings, SDK guides). Not user-facing product evidence.
+
+**CRITICAL — Do not rely on `helpSubdomains` alone to block these.**
+`/\/developers?\b/i` in `priorityPatterns` unintentionally matches `https://developers.company.com/...`
+URLs because the `://` protocol separator contains a `/` immediately before `developers`
+in the hostname. So `priorityPatterns.some(p => p.test(link))` returns `true` even though
+`isSubdomainUrl` correctly returns `false`. The URL leaks back in through the priority check.
+
+**Implementation:** `exclusionPatterns` contains `/^https?:\/\/developers?\./i` which runs
+BEFORE the priority pattern check and permanently blocks these URLs regardless of path content.
+`helpSubdomains` continues to NOT include `developer` or `developers` as defense-in-depth.
+
+**Do not remove the exclusionPatterns entry** — removing it from `helpSubdomains` alone is
+insufficient. This was confirmed across Entries 037, 038, 039, 040.
 
 ### `/what-is-`, `/how-to-`, `/guide-to-` paths — EXCLUDED
 **Rationale:** Educational content marketing articles. A page explaining a concept does

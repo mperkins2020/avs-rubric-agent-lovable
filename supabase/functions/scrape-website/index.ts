@@ -229,6 +229,14 @@ const exclusionPatterns = [
   // Partner agreement pages — legal terms between the company and its channel partners.
   // Not the company's own pricing or product documentation.
   /\/partners\b/i,
+  // API/developer portal subdomains (developers.company.com, developer.company.com).
+  // IMPORTANT: /\/developers?\b/i in priorityPatterns unintentionally matches these URLs
+  // because the protocol separator '://' contributes a '/' immediately before 'developers'
+  // in the hostname (e.g. https://developers.gamma.app contains '/developers').
+  // This exclusion must run BEFORE the priorityPatterns check catches them.
+  // Matches: https://developers.gamma.app/... and https://developer.stripe.com/...
+  // Does NOT match: https://gamma.app/developers (different URL structure).
+  /^https?:\/\/developers?\./i,
 ];
 
 const fullContentPatterns = [

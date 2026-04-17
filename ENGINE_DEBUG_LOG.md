@@ -4,7 +4,7 @@
 **Usage:** When a report produces a questionable result, log it here. Run `Scan the debug log for recurring patterns` periodically to surface systemic issues.
 **Related:** See ENGINE_DEBUG_HISTORY.md for backfilled history from git.
 
-**Entries:** 39 | **Last updated:** April 16, 2026
+**Entries:** 40 | **Last updated:** April 17, 2026
 
 ---
 
@@ -18,7 +18,7 @@
 | gate_misfire | 0 | — |
 | confidence_miscalc | 0 | — |
 | prompt_drift | 1 | ICP and Job Clarity (D2) |
-| pipeline_miss | 17 | Value Unit, Cost Driver Mapping, Safety/Trust, Overages & Risk, URL filter |
+| pipeline_miss | 18 | Value Unit, Cost Driver Mapping, Safety/Trust, Overages & Risk, URL filter |
 | contamination | 13 | Pricing Transparency, Enterprise/Compliance (D7/D8) |
 | calibration | 2 | Value unit (D4), ICP and Job Clarity (D2) |
 | other | 0 | — |
@@ -30,6 +30,60 @@
 <!-- Newest first. To add an entry, copy the template below and fill it in. -->
 
 <!-- Next entry goes here -->
+
+---
+
+### Entry 040 — April 17, 2026
+
+| Field | Value |
+|-------|-------|
+| Company | gamma.app (live scan QA — fifth pass) |
+| Version | 2026-04-16-pipeline-v10 |
+| Dimension | D8 Safety Rails (0/2, confidence 30%) |
+| Root Cause | pipeline_miss (developers.* leak via priorityPatterns) + missing credits article (map coverage gap) |
+| Caught By | Live scan QA — developers.gamma.app/workspace/list-folders appeared for the 4th consecutive scan |
+| Status | fixed (developers.*) / pending (credits article) |
+
+**Root Cause Detail — `developers.gamma.app` persisting despite helpSubdomains fix:**
+
+Removing `developer`/`developers` from `helpSubdomains` was necessary but not sufficient.
+The URL `https://developers.gamma.app/workspace/list-folders` was still passing through
+`scoredLinks.filter` via a different code path: `priorityPatterns.some(p => p.test(link))`.
+
+The offending pattern is `/\/developers?\b/i` in `priorityPatterns`. When tested against
+the full URL string `https://developers.gamma.app/workspace/list-folders`, this pattern
+finds a match because the URL contains `://developers` — the second `/` in `://` is
+immediately followed by `developers`, satisfying `\/developers?\b`. The regex is intended
+to match `/developer` as a PATH segment, but URL-string matching cannot distinguish
+hostname from path segments.
+
+**Fix:** Added `/^https?:\/\/developers?\./i` to `exclusionPatterns`. This runs BEFORE
+the `priorityPatterns` check and permanently blocks `developers.*` subdomains. The pattern
+anchors to the start of the URL and checks for the protocol `://` + `developers.` as a
+HOSTNAME marker (not a path segment), which eliminates the false positive.
+
+**Root Cause Detail — credits article still missing:**
+
+`https://help.gamma.app/en/articles/7834324-how-do-credits-work-in-gamma` is not
+returned by Firecrawl's map of `help.gamma.app` (map returns ~100 URLs; article is
+not among them). Fix 1 (pricing page secondary discovery) can only find it if
+`gamma.app/pricing` contains a markdown-format link `[text](url)` — which the scraped
+markdown does not. The link likely appears in a JavaScript tooltip or hover element.
+
+**Consequence:** D8 scored 0/2 because the hard-cap credit model (credits run out →
+blocked, no overages) is documented in the credits article but not otherwise
+publicly stated in a way the LLM can cite. The 90-day recommendation ("Publish a
+detailed How AI Credits Work page") is factually incorrect — Gamma already has this
+page. This confirms the article must enter the evidence set to produce accurate scoring.
+
+**Resolution for credits article:** Add to `community_evidence` table in Supabase:
+- `url_domain`: `gamma.app`
+- `evidence_url`: `https://help.gamma.app/en/articles/7834324-how-do-credits-work-in-gamma`
+Community URLs always pass the filter and are always included in the evidence set.
+
+**ANALYSIS_VERSION:** bumped to `2026-04-17-pipeline-v11`.
+
+**Pattern Tag:** `pipeline_miss`, `url-filter`, `priority-pattern-hostname-leak`, `map-coverage-gap`
 
 ---
 
