@@ -2190,10 +2190,24 @@ ${truncatedContent}`;
     });
 
     // Use pass 1 for strengths/weaknesses/breakpoints/focus (these are narrative, not scored)
+    // Guard: remove any weakness whose dimension scored 2/2 after stabilization.
+    // The LLM generates weaknesses before median scoring is finalized, so a dimension
+    // can appear as a weakness in Pass 1 even if the stabilized score is 2/2.
+    // A 2/2 score means the rubric found full evidence — it cannot logically be a weakness.
+    const fullScoreDimensions = new Set(
+      (stabilizedDimensionScores as Array<{ dimension: string; score: number }>)
+        .filter(d => d.score === 2)
+        .map(d => d.dimension.toLowerCase())
+    );
+    const filteredWeaknesses = (rubricPasses[0].weaknesses || []).filter(
+      (w: { dimension: string }) =>
+        !fullScoreDimensions.has((w.dimension ?? '').toLowerCase())
+    );
+
     const rubricData: Record<string, unknown> = {
       dimensionScores: stabilizedDimensionScores,
       strengths: rubricPasses[0].strengths || [],
-      weaknesses: rubricPasses[0].weaknesses || [],
+      weaknesses: filteredWeaknesses,
       trustBreakpoints: rubricPasses[0].trustBreakpoints || [],
       recommendedFocus: rubricPasses[0].recommendedFocus || null,
     };
