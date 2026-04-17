@@ -4,7 +4,7 @@
 **Usage:** When a report produces a questionable result, log it here. Run `Scan the debug log for recurring patterns` periodically to surface systemic issues.
 **Related:** See ENGINE_DEBUG_HISTORY.md for backfilled history from git.
 
-**Entries:** 36 | **Last updated:** April 16, 2026
+**Entries:** 37 | **Last updated:** April 16, 2026
 
 ---
 
@@ -18,7 +18,7 @@
 | gate_misfire | 0 | — |
 | confidence_miscalc | 0 | — |
 | prompt_drift | 1 | ICP and Job Clarity (D2) |
-| pipeline_miss | 13 | Value Unit, Cost Driver Mapping, Safety/Trust, Overages & Risk, URL filter |
+| pipeline_miss | 14 | Value Unit, Cost Driver Mapping, Safety/Trust, Overages & Risk, URL filter |
 | contamination | 13 | Pricing Transparency, Enterprise/Compliance (D7/D8) |
 | calibration | 2 | Value unit (D4), ICP and Job Clarity (D2) |
 | other | 0 | — |
@@ -30,6 +30,36 @@
 <!-- Newest first. To add an entry, copy the template below and fill it in. -->
 
 <!-- Next entry goes here -->
+
+---
+
+### Entry 037 — April 16, 2026
+
+| Field | Value |
+|-------|-------|
+| Company | gamma.app (live scan QA — second pass) |
+| Version | 2026-04-13-model-type-classifier-v8 |
+| Dimension | N/A — evidence pipeline quality |
+| Subtest(s) | N/A |
+| V1 Score | N/A |
+| V2 Score | N/A |
+| Root Cause | pipeline_miss |
+| Caught By | Live scan QA — after Entry 036 fix, two low-signal pages still visible in Gamma evidence set: `robots.txt` and `developers.gamma.app` |
+| Status | fixed |
+
+**Root Cause Detail:** Two residual pages survived Entry 036's cleanup:
+
+1. **`robots.txt` included as a page.** The asset extension filter excluded `.pdf`, `.zip`, `.png`, `.jpg`, `.jpeg`, `.gif`, `.svg`, `.css`, `.js`, `.woff`, `.woff2`, `.ttf`, `.eot` — but not `.txt`. The Firecrawl URL map includes `robots.txt` for many domains; without an explicit exclusion it passed every filter and was fetched and included as evidence. Fix: added `txt` to the extension exclusion list in `exclusionPatterns`.
+
+2. **`developers.gamma.app` treated as a help subdomain.** `'developer'` and `'developers'` were entries in `helpSubdomains`, which grants those subdomains a +100 priority score boost and causes Phase 1b to explicitly probe them. `developers.gamma.app` is an API reference subdomain (endpoint listings, SDK guides) — not a user-facing pricing or trust page. Including it adds noise without relevant evidence. Fix: removed `'developer'` and `'developers'` from `helpSubdomains`. These subdomains are now neither boosted nor explicitly probed.
+
+**Principle documented in code:** `developers.company.com` is an API surface, not a product evidence page. API reference docs may mention auth schemes or rate limits, but they do not document plan-level pricing, enterprise trust controls, or buyer-facing features with enough specificity to count as evidence for AVS rubric dimensions.
+
+**Resolution:** Two edits to `supabase/functions/scrape-website/index.ts`:
+- `exclusionPatterns[0]`: added `txt` → `/\.(pdf|zip|png|jpg|jpeg|gif|svg|css|js|woff|woff2|ttf|eot|txt)$/i`
+- `helpSubdomains`: removed `'developer'`, `'developers'`
+
+**Pattern Tag:** `pipeline_miss`, `url-filter`, `asset-exclusion`, `subdomain-noise`
 
 ---
 

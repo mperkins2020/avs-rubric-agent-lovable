@@ -184,7 +184,7 @@ const highIntentPaths = new Set([
 ]);
 
 const exclusionPatterns = [
-  /\.(pdf|zip|png|jpg|jpeg|gif|svg|css|js|woff|woff2|ttf|eot)$/i,
+  /\.(pdf|zip|png|jpg|jpeg|gif|svg|css|js|woff|woff2|ttf|eot|txt)$/i,
   /\/(blog|news|press|careers|jobs|cookie|author|tag|category)\//i,
   /\/(blog|news|press|careers|jobs|cookie|author|tag|category)$/i,
   /\/(wp-content|wp-admin|wp-includes|wp-json)\//i,
@@ -221,7 +221,10 @@ const fullContentPatterns = [
   /\/hc\b/i, /\/roi\b/i, /calculator/i, /\/refund/i,
 ];
 
-const helpSubdomains = ['help', 'support', 'docs', 'developer', 'developers', 'kb', 'knowledge', 'community'];
+// 'developer' and 'developers' intentionally excluded: these subdomains serve API reference
+// documentation (endpoint listings, SDK guides), not user-facing pricing or trust evidence.
+// Principle: developers.company.com is an API surface, not a product evidence page.
+const helpSubdomains = ['help', 'support', 'docs', 'kb', 'knowledge', 'community'];
 
 function getNormalizedPath(link: string): string {
   try { return new URL(link).pathname.replace(/\/$/, '').toLowerCase() || '/'; }
