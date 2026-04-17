@@ -222,6 +222,13 @@ const exclusionPatterns = [
   // These showcase what users built with the product; they are not the company's own
   // pricing, trust, or product documentation.
   /\/explore\b/i,
+  // Zendesk collection pages — category/navigation pages that list articles.
+  // They contain no actual help content, only article titles and summaries.
+  // Example: help.gamma.app/en/collections/12271373-themes-fonts
+  /\/collections\//i,
+  // Partner agreement pages — legal terms between the company and its channel partners.
+  // Not the company's own pricing or product documentation.
+  /\/partners\b/i,
 ];
 
 const fullContentPatterns = [
@@ -852,31 +859,31 @@ Deno.serve(async (req) => {
             // Resource-instance ID filter — three rules covering different ID conventions.
             // Principle: a path segment that looks like a generated identifier is a resource
             // instance URL (a board, a doc, a file), not an informational evidence page.
-            // Applied here (map-discovery path) and mirrored in isEvidenceEligible.
             //
-            // Resource-instance ID filter — three rules covering different ID conventions.
             // Rule A — Mixed-case base64 (Miro boards: uXjVGArvT-g=, uXjVG05WR5Q=)
             //   ≥8 chars, alphanumeric+hyphen+underscore+optional '=', has BOTH upper and lowercase.
             // Rule B — Digit-leading random slugs (Gamma docs: 2007-p39rtn8slkfwkbe, 6--2uoyy8nkses2lbj)
             //   Starts with a digit, ≥8 chars, contains letters.
-            //   EXCEPTION: Zendesk/help-center article slugs also start with a numeric ID but
-            //   are followed by a human-readable hyphenated title, producing ≥2 distinct hyphens
-            //   after normalising consecutive hyphens (e.g. 7834324-how-do-credits-work-in-gamma
-            //   has 6 hyphens; 2007-p39rtn8slkfwkbe has 1; 6--2uoyy8nkses2lbj normalises to 1).
+            //   ZENDESK EXCEPTION: Zendesk article slugs follow {id}-{human-readable-title}.
+            //   The word portion after the numeric ID is purely lowercase letters+hyphens — no digits.
+            //   Test: /^[0-9]+-[a-z][a-z-]*$/
+            //     7834324-how-do-credits-work-in-gamma → matches → Zendesk slug → ALLOWED
+            //     2007-p39rtn8slkfwkbe → 'p39...' has digits → no match → blocked ✓
+            //     2026-04--e3e4deqagopvucq → '04--...' starts with digit → no match → blocked ✓
+            //     6--2uoyy8nkses2lbj → starts with '-' → no match → blocked ✓
             // Rule C — All-lowercase opaque IDs (Gamma docs: avu2xyfyhrqm75f, 8nmk3jj496525b6)
             //   ≥10 chars, only [a-z0-9] (no hyphens), ≥3 digits.
             const lastSeg = segs[segs.length - 1] ?? '';
             const digitCount = (lastSeg.match(/[0-9]/g) ?? []).length;
-            const normHyphens = ((lastSeg.replace(/--+/g, '-')).match(/-/g) ?? []).length;
-            const isHelpArticleSlug = /^[0-9]/.test(lastSeg) && normHyphens >= 2; // Zendesk exception
+            const isZendeskArticleSlug = /^[0-9]+-[a-z][a-z-]*$/.test(lastSeg); // Zendesk exception
             if (
               // Rule A
               (lastSeg.length >= 8 &&
                /^[A-Za-z0-9_-]+=*$/.test(lastSeg) &&
                /[A-Z]/.test(lastSeg) &&
                /[a-z]/.test(lastSeg)) ||
-              // Rule B (with Zendesk exception)
-              (!isHelpArticleSlug &&
+              // Rule B (with Zendesk exception — pure alphabetic word portion)
+              (!isZendeskArticleSlug &&
                /^[0-9]/.test(lastSeg) &&
                lastSeg.length >= 8 &&
                /[a-zA-Z]/.test(lastSeg)) ||
@@ -932,16 +939,15 @@ Deno.serve(async (req) => {
           const lastSeg = parsed.pathname.split('/').filter(Boolean).pop() || '';
           if (/^-[a-z0-9]{10,}$/i.test(lastSeg)) return false; // legacy gamma.app '-slug' pattern
           const digitCount = (lastSeg.match(/[0-9]/g) ?? []).length;
-          const normHyphensEE = ((lastSeg.replace(/--+/g, '-')).match(/-/g) ?? []).length;
-          const isHelpArticleSlugEE = /^[0-9]/.test(lastSeg) && normHyphensEE >= 2; // Zendesk exception
+          const isZendeskArticleSlugEE = /^[0-9]+-[a-z][a-z-]*$/.test(lastSeg); // Zendesk exception (mirrors scoredLinks.filter)
           if (
             // Rule A — mixed-case base64 (Miro boards)
             (lastSeg.length >= 8 &&
              /^[A-Za-z0-9_-]+=*$/.test(lastSeg) &&
              /[A-Z]/.test(lastSeg) &&
              /[a-z]/.test(lastSeg)) ||
-            // Rule B — digit-leading slugs (Gamma docs: 2007-p39rtn8slkfwkbe); Zendesk exception
-            (!isHelpArticleSlugEE &&
+            // Rule B — digit-leading slugs; Zendesk exception: pure alphabetic word portion
+            (!isZendeskArticleSlugEE &&
              /^[0-9]/.test(lastSeg) &&
              lastSeg.length >= 8 &&
              /[a-zA-Z]/.test(lastSeg)) ||
@@ -1124,11 +1130,14 @@ Deno.serve(async (req) => {
             if (href.startsWith('#') || href.startsWith('javascript:') || href.startsWith('mailto:')) continue;
             try {
               const resolved = new URL(href, pricingPageUrl).href;
-              // Allow same hostname AND help/docs subdomains — e.g. help.gamma.app linked
-              // from gamma.app/pricing. isSameDomain (exact hostname match) would block these.
+              // Allow same hostname OR known help/docs subdomains only.
+              // Using .endsWith(registrableDomain) is too permissive — it admits developers.*,
+              // cdn.*, etc. Restrict to helpSubdomains explicitly so that only evidence-grade
+              // subdomains (help.*, support.*, docs.*) are followed.
               const resolvedHostFix1 = new URL(resolved).hostname.replace(/^www\./, '');
-              const isSameDomainOrSub = resolvedHostFix1 === baseHost || resolvedHostFix1.endsWith(`.${registrableDomain}`);
-              if (alreadyQueued.has(normaliseQueueUrl(resolved)) || !isSameDomainOrSub) continue;
+              const isHelpSubFix1 = helpSubdomains.some(s => resolvedHostFix1 === `${s}.${registrableDomain}`);
+              const isSameDomainOrHelpSub = resolvedHostFix1 === baseHost || isHelpSubFix1;
+              if (alreadyQueued.has(normaliseQueueUrl(resolved)) || !isSameDomainOrHelpSub) continue;
               if (exclusionPatterns.some(p => p.test(resolved))) continue;
               // Accept modal/tab/plan params, FAQ fragments, or ≥2-segment docs subpages
               const parsedHref = new URL(resolved);

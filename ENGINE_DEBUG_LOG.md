@@ -4,7 +4,7 @@
 **Usage:** When a report produces a questionable result, log it here. Run `Scan the debug log for recurring patterns` periodically to surface systemic issues.
 **Related:** See ENGINE_DEBUG_HISTORY.md for backfilled history from git.
 
-**Entries:** 38 | **Last updated:** April 16, 2026
+**Entries:** 39 | **Last updated:** April 16, 2026
 
 ---
 
@@ -18,7 +18,7 @@
 | gate_misfire | 0 | — |
 | confidence_miscalc | 0 | — |
 | prompt_drift | 1 | ICP and Job Clarity (D2) |
-| pipeline_miss | 16 | Value Unit, Cost Driver Mapping, Safety/Trust, Overages & Risk, URL filter |
+| pipeline_miss | 17 | Value Unit, Cost Driver Mapping, Safety/Trust, Overages & Risk, URL filter |
 | contamination | 13 | Pricing Transparency, Enterprise/Compliance (D7/D8) |
 | calibration | 2 | Value unit (D4), ICP and Job Clarity (D2) |
 | other | 0 | — |
@@ -30,6 +30,37 @@
 <!-- Newest first. To add an entry, copy the template below and fill it in. -->
 
 <!-- Next entry goes here -->
+
+---
+
+### Entry 039 — April 16, 2026
+
+| Field | Value |
+|-------|-------|
+| Company | gamma.app (live scan QA — fourth pass) |
+| Version | 2026-04-16-pipeline-v9 |
+| Dimension | D7/D8 (low confidence due to wrong help articles) |
+| Root Cause | pipeline_miss (×4 distinct issues) |
+| Caught By | Live scan QA — 5 of 9 pages still low-value or wrong |
+| Status | fixed |
+
+**Root Cause Detail:** Four residual issues after v9 deploy:
+
+1. **`gamma.app/docs/2026-04--e3e4deqagopvucq`** (Korean user-doc "April 2026 settlement report"):
+   The v9 Zendesk exception used `normHyphens >= 2`. After normalising `--` to `-`, `2026-04--e3e4deqagopvucq` becomes `2026-04-e3e4deqagopvucq` → 2 hyphens → exception incorrectly fired. The date prefix `2026-04` contributed a hyphen, making it look like a multi-word slug. Fix: replaced hyphen-counting with a precise regex test: `/^[0-9]+-[a-z][a-z-]*$/`. The word portion after the numeric ID must be **purely lowercase letters and hyphens** (no digits). `04--e3e4...` starts with `0` (digit) → fails → Rule B blocks. Verified: `2026-04--e3e4deqagopvucq` now blocked; `7834324-how-do-credits-work-in-gamma` still passes.
+
+2. **`developers.gamma.app/workspace/list-folders`** still appearing (Fix 1 regression from v9):
+   The v9 fix changed Fix 1's domain check to `resolvedHostFix1.endsWith(registrableDomain)`. This admitted ALL `*.gamma.app` subdomains — including `developers.gamma.app` — if linked from the pricing page markdown. Fix: restricted to `helpSubdomains` explicitly (`helpSubdomains.some(s => resolvedHostFix1 === s + '.' + registrableDomain)`). Only `help.*`, `support.*`, `docs.*`, etc. are admitted.
+
+3. **`help.gamma.app/en/collections/12271373-themes-fonts`** (Themes & Fonts category page):
+   Zendesk `/collections/` pages are navigation pages listing article titles — they contain no article content. Added `/\/collections\//i` to `exclusionPatterns`.
+
+4. **`gamma.app/partners`** (Gamma Partner Terms):
+   Partner agreement page — legal content, same exclusion rationale as `/terms`. Added `/\/partners\b/i` to `exclusionPatterns`.
+
+**ANALYSIS_VERSION:** bumped to `2026-04-16-pipeline-v10`.
+
+**Pattern Tag:** `pipeline_miss`, `url-filter`, `zendesk-exception-regression`, `wrong-page-type`
 
 ---
 

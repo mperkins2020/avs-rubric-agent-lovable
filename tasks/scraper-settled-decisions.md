@@ -1,7 +1,7 @@
 # Scraper — Settled Design Decisions
 
 These decisions were reached after live QA across Miro, Gamma, and Lovable scans
-(Entries 034–038). Do not revert without a new debug log entry explaining the regression.
+(Entries 034–039). Do not revert without a new debug log entry explaining the regression.
 
 ---
 
@@ -14,6 +14,17 @@ Help center / Knowledge base, Billing & plan documentation, and Trust center.
 Refund conditions are captured from `/pricing` and `/billing` pages instead.
 **Rule 8 also applies:** legal pages are not valid safety-rail evidence.
 **Implementation:** `exclusionPatterns` contains `/\/terms\b/i`. It is NOT in `priorityPatterns`.
+
+### `/collections/` — EXCLUDED
+**Rationale:** Zendesk `/collections/` pages are category navigation pages that list
+article titles. They contain no actual help content — only titles and summaries linking
+to the real articles. Including them provides zero evidence signal.
+**Implementation:** `exclusionPatterns` contains `/\/collections\//i`.
+
+### `/partners` — EXCLUDED
+**Rationale:** Partner agreement / partner terms pages are legal content (same exclusion
+class as `/terms`). Not the company's own product or pricing documentation.
+**Implementation:** `exclusionPatterns` contains `/\/partners\b/i`.
 
 ### `/explore` — EXCLUDED
 **Rationale:** Gallery/showcase pages display user-created content (presentations,
@@ -55,16 +66,24 @@ These rules block URLs that point to user-generated content instances
 ≥8 chars, alphanumeric+hyphen+underscore+optional `=`, has BOTH upper and lowercase letters.
 
 ### Rule B — Digit-leading random slugs (catches Gamma doc URLs)
-`2007-p39rtn8slkfwkbe`, `6--2uoyy8nkses2lbj`
+`2007-p39rtn8slkfwkbe`, `6--2uoyy8nkses2lbj`, `2026-04--e3e4deqagopvucq`
 Starts with a digit, ≥8 chars, contains letters.
 **ZENDESK EXCEPTION (do not remove):** Zendesk help-center article slugs also start
-with a numeric ID but are followed by a human-readable hyphenated title. These have
-≥2 distinct hyphens after normalising consecutive hyphens:
-- `7834324-how-do-credits-work-in-gamma` → 6 hyphens → human-readable → ALLOWED
-- `2007-p39rtn8slkfwkbe` → 1 hyphen → random ID → BLOCKED
-- `6--2uoyy8nkses2lbj` → normalises to 1 hyphen → random ID → BLOCKED
-**Implementation:** `normHyphens = (lastSeg.replace(/--+/g, '-').match(/-/g) ?? []).length;`
-Rule B only fires when `normHyphens < 2`.
+with a numeric ID but are followed by a human-readable hyphenated title where the
+**word portion is purely lowercase letters and hyphens — no digits**.
+**Implementation:** `const isZendeskArticleSlug = /^[0-9]+-[a-z][a-z-]*$/.test(lastSeg);`
+Rule B only fires when `!isZendeskArticleSlug`.
+
+Test cases:
+- `7834324-how-do-credits-work-in-gamma` → word part `how-do-credits-work-in-gamma` = `[a-z][a-z-]*` → ALLOWED ✓
+- `8022861-what-s-the-easiest-way-to-export-my-gamma` → word part = `[a-z][a-z-]*` → ALLOWED ✓
+- `2007-p39rtn8slkfwkbe` → word part `p39rtn8slkfwkbe` has digits → no match → BLOCKED ✓
+- `2026-04--e3e4deqagopvucq` → word part `04--e3e4...` starts with `0` (digit) → no match → BLOCKED ✓
+- `6--2uoyy8nkses2lbj` → first char after `6-` is `-` → no match → BLOCKED ✓
+
+**DO NOT revert to normHyphens-based approach:** `2026-04--e3e4deqagopvucq` has 2 normalized
+hyphens (the date `2026-04` contributes one) and incorrectly passes the hyphen threshold.
+The regex test is the correct implementation (Entry 039).
 
 ### Rule C — All-lowercase opaque IDs (catches Gamma doc URLs without hyphens)
 `avu2xyfyhrqm75f`, `8nmk3jj496525b6`
@@ -87,16 +106,23 @@ and any other Zendesk-hosted help center.
 
 ---
 
-## Fix 1 — Secondary Discovery Uses Registrable Domain, Not Exact Hostname
+## Fix 1 — Secondary Discovery Admits Help Subdomains Only (Not All Subdomains)
 
 When the scraper extracts links from a scraped pricing page's markdown, it follows
-links to discover additional evidence pages (FAQ tabs, billing modals, etc.).
-**The check is `resolvedHost.endsWith(registrableDomain)`, NOT `isSameDomain`.**
-`isSameDomain` requires exact hostname equality (`help.gamma.app` ≠ `gamma.app`).
-The registrable-domain check allows help subdomain links discovered on the pricing page
-to be included as secondary evidence.
-**Do not revert to `isSameDomain` here** — it will silently drop all cross-subdomain
-help article links found in pricing page markdown.
+links to discover additional evidence pages (FAQ tabs, billing modals, help articles).
+**The check is `helpSubdomains.some(s => resolvedHost === s + '.' + registrableDomain)`,
+plus the exact same-hostname check.**
+
+**DO NOT use `resolvedHost.endsWith(registrableDomain)`** — this admits ALL subdomains
+(e.g. `developers.gamma.app`) if they appear as links on the pricing page.
+We discovered this regression in Entry 039: Fix 1 was letting in API reference pages.
+
+**DO NOT revert to `isSameDomain` (exact hostname)** — that drops all help subdomain
+links (`help.gamma.app` ≠ `gamma.app`).
+
+The correct implementation admits only:
+- Same hostname as the scanned URL (`gamma.app`)
+- Known help subdomains: `help.*`, `support.*`, `docs.*`, `kb.*`, `knowledge.*`, `community.*`
 
 ---
 
