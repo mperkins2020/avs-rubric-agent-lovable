@@ -4,7 +4,7 @@
 **Usage:** When a report produces a questionable result, log it here. Run `Scan the debug log for recurring patterns` periodically to surface systemic issues.
 **Related:** See ENGINE_DEBUG_HISTORY.md for backfilled history from git.
 
-**Entries:** 37 | **Last updated:** April 16, 2026
+**Entries:** 38 | **Last updated:** April 16, 2026
 
 ---
 
@@ -18,7 +18,7 @@
 | gate_misfire | 0 | — |
 | confidence_miscalc | 0 | — |
 | prompt_drift | 1 | ICP and Job Clarity (D2) |
-| pipeline_miss | 14 | Value Unit, Cost Driver Mapping, Safety/Trust, Overages & Risk, URL filter |
+| pipeline_miss | 16 | Value Unit, Cost Driver Mapping, Safety/Trust, Overages & Risk, URL filter |
 | contamination | 13 | Pricing Transparency, Enterprise/Compliance (D7/D8) |
 | calibration | 2 | Value unit (D4), ICP and Job Clarity (D2) |
 | other | 0 | — |
@@ -30,6 +30,41 @@
 <!-- Newest first. To add an entry, copy the template below and fill it in. -->
 
 <!-- Next entry goes here -->
+
+---
+
+### Entry 038 — April 16, 2026
+
+| Field | Value |
+|-------|-------|
+| Company | gamma.app (live scan QA — third pass) |
+| Version | 2026-04-13-model-type-classifier-v8 |
+| Dimension | D7 Overages & Risk / D8 Safety Rails (low confidence due to missing credits article) |
+| Subtest(s) | T1–T6, R1–R6 |
+| V1 Score | confidence 30% (D8), 57% (D7) |
+| V2 Score | pending re-scan with v9 |
+| Root Cause | pipeline_miss (×3 independent blockers on help article) + wrong_page_type (×3 low-value pages) |
+| Caught By | Live scan QA — 4 of 8 pages were low-value; key credits article still missing |
+| Status | fixed |
+
+**Root Cause Detail:** Two categories of issues in the same scan:
+
+**Category A — Low-value pages still appearing (3 pages):**
+1. `gamma.app/terms` (Terms of Use Agreement): `/\/terms\b/i` was in `priorityPatterns` (a boost), not `exclusionPatterns`. Terms pages are legal boilerplate explicitly removed from the AVS methodology source list. Fix: moved to `exclusionPatterns`.
+2. `gamma.app/explore` (Explore Gamma | AI Presentation Software): a gallery of user-created presentations. Passes `isShallowSameDomainPath` (1 segment) and gets a score of +500. Not product evidence. Fix: added `/\/explore\b/i` to `exclusionPatterns`.
+3. `developers.gamma.app/workspace/list-folders` (GET /folders | Gamma): API endpoint reference page. Entry 037 fix (removing `developers` from `helpSubdomains`) was committed but not yet deployed to Lovable — scan predated the deployment.
+
+**Category B — `help.gamma.app/en/articles/7834324-how-do-credits-work-in-gamma` missing (3 independent blockers):**
+1. **Rule B** (`scoredLinks.filter` and `isEvidenceEligible`): segment `7834324-how-do-credits-work-in-gamma` starts with a digit → Rule B blocked it. Zendesk-style article URLs always start with a numeric ID but are followed by a human-readable hyphenated title. Key differentiator: normalized hyphen count. `7834324-how-do-credits-work-in-gamma` has 6 hyphens; `2007-p39rtn8slkfwkbe` has 1; `6--2uoyy8nkses2lbj` normalizes to 1. Zendesk exception: `normHyphens >= 2` → not a random ID. Fix applied in both code paths.
+2. **Locale filter** (`scoredLinks.filter`): first path segment `/en/` matched the ISO locale filter. For help subdomains (Zendesk), `/en/` is a structural URL element, not a language variant. Fix: added `isHelpSubdomainUrl` check — locale filter now skips help subdomain paths.
+3. **Fix 1 secondary discovery**: `isSameDomain(resolved, baseHost)` checks exact hostname equality (`help.gamma.app` ≠ `gamma.app`). Help subdomain links discovered in pricing page markdown were silently dropped. Fix: replaced with registrable-domain check (`resolvedHost.endsWith(registrableDomain)`).
+
+**Additional fix — billing keyword scoring for article slugs:**
+Added Tier 2 to the help subdomain score boost: billing keyword embedded anywhere in the path (not just as a dedicated segment) now scores +500. This ensures `7834324-how-do-credits-work-in-gamma` (contains "credits") competes with other evidence pages rather than getting the generic article penalty (−200).
+
+**Version bump:** ANALYSIS_VERSION → `2026-04-16-pipeline-v9` to bust the Gamma cache.
+
+**Pattern Tag:** `pipeline_miss`, `url-filter`, `zendesk-article-id`, `wrong-page-type`, `help-subdomain`
 
 ---
 

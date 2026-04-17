@@ -155,7 +155,6 @@ const priorityPatterns = [
   /\/updates\b/i,
   /\/release-notes\b/i,
   /\/status\b/i,
-  /\/terms\b/i,
   /\/legal\b/i,
   /\/privacy\b/i,
   /\/credits\b/i,
@@ -168,6 +167,9 @@ const priorityPatterns = [
   /rate.?limit/i,
   /quota/i,
   /metering/i,
+  // NOTE: /\/terms\b/i intentionally removed from priorityPatterns — terms pages are
+  // legal boilerplate excluded by exclusionPatterns above. Previously this caused
+  // gamma.app/terms to be included as an evidence page.
 ];
 
 const highIntentPaths = new Set([
@@ -212,6 +214,14 @@ const exclusionPatterns = [
   /\/what-is-[^/]+/i,
   /\/how-to-[^/]+/i,
   /\/guide-to-[^/]+/i,
+  // Terms of Service / Terms of Use pages — legal boilerplate. Removed from AVS methodology
+  // source list per methodology v2. Refund conditions are captured from pricing and billing
+  // pages instead. Rule 8: legal pages are not valid safety-rail evidence.
+  /\/terms\b/i,
+  // Explore / gallery pages — display user-created content (presentations, sites, docs).
+  // These showcase what users built with the product; they are not the company's own
+  // pricing, trust, or product documentation.
+  /\/explore\b/i,
 ];
 
 const fullContentPatterns = [
@@ -261,17 +271,20 @@ function scoreUrl(link: string, baseHost: string, communityUrlSet: Set<string>):
   if (priorityPatterns.some(p => p.test(link))) score += 250;
   if (isSubdomainUrl(link)) {
     score += 100;
-    // Extra boost for billing/pricing content on help/docs subdomains (billing FAQs, overage policies, etc.)
-    // NOTE: /hc removed from this list — it matches ALL Zendesk-style articles, including
-    // generic topics like "how to present slides" or "change theme" (zero evidence value).
-    // Billing-keyword check below handles /hc/billing, /hc/credits, etc. precisely.
+    // Three-tier scoring for help/docs subdomain content:
+    // Tier 1: billing keyword as a dedicated path segment (/credits, /billing, /overage, etc.)
+    //         → highest priority, treat like pricing-adjacent evidence
+    // Tier 2: billing keyword embedded anywhere in path — catches Zendesk article slugs
+    //         (e.g. help.gamma.app/en/articles/7834324-how-do-credits-work-in-gamma).
+    //         The article number prefix prevents Tier 1 from matching; check the full path.
+    // Tier 3: generic deep help article (no billing keywords) — penalise so non-billing
+    //         content (how-to-present-slides, change-theme, etc.) doesn't crowd out pricing pages.
     if (/\/(plans-and-credits|credits|pricing|billing|usage|subscription|refund|cancel|overage|limit|quota|metering)\b/i.test(path)) {
-      score += 700; // Billing/pricing specific help content — treat like pricing-adjacent evidence
+      score += 700; // Tier 1 — billing as path segment
+    } else if (/credits|billing|pricing|plans?|usage|overage|refund|subscription|cancel/i.test(path)) {
+      score += 500; // Tier 2 — billing keyword embedded in slug
     } else if (/\/hc\/.+/i.test(path) || /\/articles?\/.+/i.test(path)) {
-      // Generic deep help article (no billing keywords in path) — two-tier penalty.
-      // e.g. support.beautiful.ai/hc/en-us/articles/how-to-present-slides
-      // These consume evidence slots but provide zero scoring signal.
-      score -= 200;
+      score -= 200; // Tier 3 — generic deep help article, zero evidence signal
     }
   }
 
@@ -841,24 +854,30 @@ Deno.serve(async (req) => {
             // instance URL (a board, a doc, a file), not an informational evidence page.
             // Applied here (map-discovery path) and mirrored in isEvidenceEligible.
             //
+            // Resource-instance ID filter — three rules covering different ID conventions.
             // Rule A — Mixed-case base64 (Miro boards: uXjVGArvT-g=, uXjVG05WR5Q=)
             //   ≥8 chars, alphanumeric+hyphen+underscore+optional '=', has BOTH upper and lowercase.
-            // Rule B — Digit-leading slugs (Gamma docs: 2007-p39rtn8slkfwkbe, 6--2uoyy8nkses2lbj)
-            //   Starts with a digit, ≥8 chars, contains letters. Legitimate page slugs almost
-            //   never begin with a digit; generated IDs frequently do.
+            // Rule B — Digit-leading random slugs (Gamma docs: 2007-p39rtn8slkfwkbe, 6--2uoyy8nkses2lbj)
+            //   Starts with a digit, ≥8 chars, contains letters.
+            //   EXCEPTION: Zendesk/help-center article slugs also start with a numeric ID but
+            //   are followed by a human-readable hyphenated title, producing ≥2 distinct hyphens
+            //   after normalising consecutive hyphens (e.g. 7834324-how-do-credits-work-in-gamma
+            //   has 6 hyphens; 2007-p39rtn8slkfwkbe has 1; 6--2uoyy8nkses2lbj normalises to 1).
             // Rule C — All-lowercase opaque IDs (Gamma docs: avu2xyfyhrqm75f, 8nmk3jj496525b6)
-            //   ≥10 chars, only [a-z0-9] (no hyphens — word slugs use hyphens), ≥3 digits.
-            //   Word slugs like 'planning', 'enterprise', 'compliance' fail on digit count.
+            //   ≥10 chars, only [a-z0-9] (no hyphens), ≥3 digits.
             const lastSeg = segs[segs.length - 1] ?? '';
             const digitCount = (lastSeg.match(/[0-9]/g) ?? []).length;
+            const normHyphens = ((lastSeg.replace(/--+/g, '-')).match(/-/g) ?? []).length;
+            const isHelpArticleSlug = /^[0-9]/.test(lastSeg) && normHyphens >= 2; // Zendesk exception
             if (
               // Rule A
               (lastSeg.length >= 8 &&
                /^[A-Za-z0-9_-]+=*$/.test(lastSeg) &&
                /[A-Z]/.test(lastSeg) &&
                /[a-z]/.test(lastSeg)) ||
-              // Rule B
-              (/^[0-9]/.test(lastSeg) &&
+              // Rule B (with Zendesk exception)
+              (!isHelpArticleSlug &&
+               /^[0-9]/.test(lastSeg) &&
                lastSeg.length >= 8 &&
                /[a-zA-Z]/.test(lastSeg)) ||
               // Rule C
@@ -867,12 +886,12 @@ Deno.serve(async (req) => {
                /[a-z]/.test(lastSeg) &&
                digitCount >= 3)
             ) return false;
-            // Locale-prefix filter — ISO 639-1 two-letter language codes as first path segment
-            // indicate a localised duplicate of the English page. No new evidence value.
-            // Principle: we score against public English-language pricing and trust surfaces;
-            // a French or German copy of the same page contains identical evidence.
+            // Locale-prefix filter — applies to main-domain paths only.
+            // Zendesk-style help subdomains use /en/ as a structural URL element (not a locale
+            // variant). help.gamma.app/en/articles/... is primary content, not a translated copy.
             const firstSeg = (segs[0] ?? '').toLowerCase();
-            if (segs.length >= 2 && /^(?:fr|de|es|pt|ja|zh|ko|it|nl|pl|ru|ar|tr|sv|da|fi|nb|cs|hu|ro|uk|en|pt-br|zh-cn|zh-tw|es-mx|fr-ca)$/.test(firstSeg)) return false;
+            const isHelpSubdomainUrl = helpSubdomains.some(s => parsed.hostname === `${s}.${registrableDomain}`);
+            if (!isHelpSubdomainUrl && segs.length >= 2 && /^(?:fr|de|es|pt|ja|zh|ko|it|nl|pl|ru|ar|tr|sv|da|fi|nb|cs|hu|ro|uk|en|pt-br|zh-cn|zh-tw|es-mx|fr-ca)$/.test(firstSeg)) return false;
           } catch { /* malformed URL — let downstream filters handle */ }
           // Community URLs always pass
           if (communityUrlSet.has(link)) return true;
@@ -909,18 +928,21 @@ Deno.serve(async (req) => {
           // @username user-generated content filter (e.g. replit.com/@user/project)
           if (parsed.pathname.split('/').some(seg => seg.startsWith('@'))) return false;
           // Resource-instance ID filter — mirrors the three-rule check in scoredLinks.filter.
-          // See that location for full rule rationale.
+          // See that location for full rule rationale and Rule B Zendesk exception.
           const lastSeg = parsed.pathname.split('/').filter(Boolean).pop() || '';
           if (/^-[a-z0-9]{10,}$/i.test(lastSeg)) return false; // legacy gamma.app '-slug' pattern
           const digitCount = (lastSeg.match(/[0-9]/g) ?? []).length;
+          const normHyphensEE = ((lastSeg.replace(/--+/g, '-')).match(/-/g) ?? []).length;
+          const isHelpArticleSlugEE = /^[0-9]/.test(lastSeg) && normHyphensEE >= 2; // Zendesk exception
           if (
             // Rule A — mixed-case base64 (Miro boards)
             (lastSeg.length >= 8 &&
              /^[A-Za-z0-9_-]+=*$/.test(lastSeg) &&
              /[A-Z]/.test(lastSeg) &&
              /[a-z]/.test(lastSeg)) ||
-            // Rule B — digit-leading slugs (Gamma docs: 2007-p39rtn8slkfwkbe)
-            (/^[0-9]/.test(lastSeg) &&
+            // Rule B — digit-leading slugs (Gamma docs: 2007-p39rtn8slkfwkbe); Zendesk exception
+            (!isHelpArticleSlugEE &&
+             /^[0-9]/.test(lastSeg) &&
              lastSeg.length >= 8 &&
              /[a-zA-Z]/.test(lastSeg)) ||
             // Rule C — all-lowercase opaque IDs (Gamma docs: avu2xyfyhrqm75f)
@@ -1102,7 +1124,11 @@ Deno.serve(async (req) => {
             if (href.startsWith('#') || href.startsWith('javascript:') || href.startsWith('mailto:')) continue;
             try {
               const resolved = new URL(href, pricingPageUrl).href;
-              if (alreadyQueued.has(normaliseQueueUrl(resolved)) || !isSameDomain(resolved, baseHost)) continue;
+              // Allow same hostname AND help/docs subdomains — e.g. help.gamma.app linked
+              // from gamma.app/pricing. isSameDomain (exact hostname match) would block these.
+              const resolvedHostFix1 = new URL(resolved).hostname.replace(/^www\./, '');
+              const isSameDomainOrSub = resolvedHostFix1 === baseHost || resolvedHostFix1.endsWith(`.${registrableDomain}`);
+              if (alreadyQueued.has(normaliseQueueUrl(resolved)) || !isSameDomainOrSub) continue;
               if (exclusionPatterns.some(p => p.test(resolved))) continue;
               // Accept modal/tab/plan params, FAQ fragments, or ≥2-segment docs subpages
               const parsedHref = new URL(resolved);
