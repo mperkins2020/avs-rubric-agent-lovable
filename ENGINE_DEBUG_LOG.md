@@ -4,7 +4,7 @@
 **Usage:** When a report produces a questionable result, log it here. Run `Scan the debug log for recurring patterns` periodically to surface systemic issues.
 **Related:** See ENGINE_DEBUG_HISTORY.md for backfilled history from git.
 
-**Entries:** 35 | **Last updated:** April 16, 2026
+**Entries:** 36 | **Last updated:** April 16, 2026
 
 ---
 
@@ -18,7 +18,7 @@
 | gate_misfire | 0 | — |
 | confidence_miscalc | 0 | — |
 | prompt_drift | 1 | ICP and Job Clarity (D2) |
-| pipeline_miss | 12 | Value Unit, Cost Driver Mapping, Safety/Trust, Overages & Risk, URL filter |
+| pipeline_miss | 13 | Value Unit, Cost Driver Mapping, Safety/Trust, Overages & Risk, URL filter |
 | contamination | 13 | Pricing Transparency, Enterprise/Compliance (D7/D8) |
 | calibration | 2 | Value unit (D4), ICP and Job Clarity (D2) |
 | other | 0 | — |
@@ -30,6 +30,33 @@
 <!-- Newest first. To add an entry, copy the template below and fill it in. -->
 
 <!-- Next entry goes here -->
+
+---
+
+### Entry 036 — April 16, 2026
+
+| Field | Value |
+|-------|-------|
+| Company | gamma.app (live scan QA) |
+| Version | 2026-04-13-model-type-classifier-v8 |
+| Dimension | D8 Safety Rails and Trust Surfaces |
+| Subtest(s) | T1–T6 (all) |
+| V1 Score | 0/2 |
+| V2 Score | pending re-scan |
+| Root Cause | pipeline_miss |
+| Caught By | Live scan QA — 6 of 13 pages were user-generated Gamma documents, not Gamma's own pages |
+| Status | fixed |
+
+**Root Cause Detail:** Gamma's `/docs/{id}` path serves publicly accessible user-created presentations (boards, slides, docs made with Gamma's product). Six such pages were included as evidence, including a "Cybersecurity Maturity Assessment" authored by a Gamma user. The LLM read this as potential evidence for D8 (Safety Rails) but correctly couldn't attribute it to Gamma — driving D8 confidence to 30% and score to 0/2. A Korean-language user presentation was also included. All six IDs are all-lowercase alphanumeric (e.g., `avu2xyfyhrqm75f`, `8nmk3jj496525b6`). The existing base64 filter (Rule A) required BOTH uppercase and lowercase — all-lowercase IDs passed through.
+
+**Resolution:** Extended the resource-instance ID filter in both `scoredLinks.filter` and `isEvidenceEligible` (`scrape-website/index.ts`) to cover three ID conventions:
+- Rule A (existing): Mixed-case base64, ≥8 chars, optional trailing `=` → catches Miro board IDs
+- Rule B (new): Starts with a digit, ≥8 chars, has letters → catches `2007-p39rtn8slkfwkbe`, `6--2uoyy8nkses2lbj`
+- Rule C (new): ≥10 chars, only `[a-z0-9]` (no hyphens), ≥3 digits → catches `avu2xyfyhrqm75f`, `8nmk3jj496525b6`
+
+Verified: 10/10 known generated IDs caught, 12/12 legitimate slugs (`enterprise`, `planning-delivery`, `collaboration-features`, etc.) correctly preserved.
+
+**Pattern Tag:** `pipeline_miss`, `url-filter`, `random-id-exclusion`, `user-generated-content`
 
 ---
 

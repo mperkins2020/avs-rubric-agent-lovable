@@ -833,17 +833,36 @@ Deno.serve(async (req) => {
           try {
             const parsed = new URL(link);
             const segs = parsed.pathname.split('/').filter(Boolean);
-            // Base64 / random resource-ID filter — applied here (map-discovery path) and in
-            // isEvidenceEligible (pricing-page link-discovery path). Principle: a path segment
-            // that looks like a generated identifier (mixed-case alphanumeric, ≥8 chars,
-            // optional trailing '=') is a resource instance URL, not an evidence page.
-            // No digit requirement — board IDs like uXjVGArvT-g= contain no digits.
+            // Resource-instance ID filter — three rules covering different ID conventions.
+            // Principle: a path segment that looks like a generated identifier is a resource
+            // instance URL (a board, a doc, a file), not an informational evidence page.
+            // Applied here (map-discovery path) and mirrored in isEvidenceEligible.
+            //
+            // Rule A — Mixed-case base64 (Miro boards: uXjVGArvT-g=, uXjVG05WR5Q=)
+            //   ≥8 chars, alphanumeric+hyphen+underscore+optional '=', has BOTH upper and lowercase.
+            // Rule B — Digit-leading slugs (Gamma docs: 2007-p39rtn8slkfwkbe, 6--2uoyy8nkses2lbj)
+            //   Starts with a digit, ≥8 chars, contains letters. Legitimate page slugs almost
+            //   never begin with a digit; generated IDs frequently do.
+            // Rule C — All-lowercase opaque IDs (Gamma docs: avu2xyfyhrqm75f, 8nmk3jj496525b6)
+            //   ≥10 chars, only [a-z0-9] (no hyphens — word slugs use hyphens), ≥3 digits.
+            //   Word slugs like 'planning', 'enterprise', 'compliance' fail on digit count.
             const lastSeg = segs[segs.length - 1] ?? '';
+            const digitCount = (lastSeg.match(/[0-9]/g) ?? []).length;
             if (
-              lastSeg.length >= 8 &&
-              /^[A-Za-z0-9_-]+=*$/.test(lastSeg) &&
-              /[A-Z]/.test(lastSeg) &&
-              /[a-z]/.test(lastSeg)
+              // Rule A
+              (lastSeg.length >= 8 &&
+               /^[A-Za-z0-9_-]+=*$/.test(lastSeg) &&
+               /[A-Z]/.test(lastSeg) &&
+               /[a-z]/.test(lastSeg)) ||
+              // Rule B
+              (/^[0-9]/.test(lastSeg) &&
+               lastSeg.length >= 8 &&
+               /[a-zA-Z]/.test(lastSeg)) ||
+              // Rule C
+              (lastSeg.length >= 10 &&
+               /^[a-z0-9]+$/.test(lastSeg) &&
+               /[a-z]/.test(lastSeg) &&
+               digitCount >= 3)
             ) return false;
             // Locale-prefix filter — ISO 639-1 two-letter language codes as first path segment
             // indicate a localised duplicate of the English page. No new evidence value.
@@ -886,20 +905,26 @@ Deno.serve(async (req) => {
           if (/\/(images|assets|static|media|fonts)\//i.test(parsed.pathname)) return false;
           // @username user-generated content filter (e.g. replit.com/@user/project)
           if (parsed.pathname.split('/').some(seg => seg.startsWith('@'))) return false;
-          // Random-slug / product-generated ID filter.
-          // Catches two patterns:
-          //   1. gamma.app style: last segment starts with '-' (e.g. -gkzy48h1uj1yr1q)
-          //   2. Base64-style IDs: mixed-case alphanumeric ≥8 chars, optional trailing '='
-          //      (e.g. miro.com/app/board/uXjVG05WR5Q= — after /app/ is excluded above,
-          //       this catches similar patterns in other paths like /file/AbCd1234xyz=)
+          // Resource-instance ID filter — mirrors the three-rule check in scoredLinks.filter.
+          // See that location for full rule rationale.
           const lastSeg = parsed.pathname.split('/').filter(Boolean).pop() || '';
-          if (/^-[a-z0-9]{10,}$/i.test(lastSeg)) return false;
-          // Base64/random-ID filter (digit requirement removed — board IDs often have no digits)
+          if (/^-[a-z0-9]{10,}$/i.test(lastSeg)) return false; // legacy gamma.app '-slug' pattern
+          const digitCount = (lastSeg.match(/[0-9]/g) ?? []).length;
           if (
-            lastSeg.length >= 8 &&
-            /^[A-Za-z0-9_-]+=*$/.test(lastSeg) &&
-            /[A-Z]/.test(lastSeg) &&
-            /[a-z]/.test(lastSeg)
+            // Rule A — mixed-case base64 (Miro boards)
+            (lastSeg.length >= 8 &&
+             /^[A-Za-z0-9_-]+=*$/.test(lastSeg) &&
+             /[A-Z]/.test(lastSeg) &&
+             /[a-z]/.test(lastSeg)) ||
+            // Rule B — digit-leading slugs (Gamma docs: 2007-p39rtn8slkfwkbe)
+            (/^[0-9]/.test(lastSeg) &&
+             lastSeg.length >= 8 &&
+             /[a-zA-Z]/.test(lastSeg)) ||
+            // Rule C — all-lowercase opaque IDs (Gamma docs: avu2xyfyhrqm75f)
+            (lastSeg.length >= 10 &&
+             /^[a-z0-9]+$/.test(lastSeg) &&
+             /[a-z]/.test(lastSeg) &&
+             digitCount >= 3)
           ) return false;
           // Gated path blocklist — these paths are uniformly behind authentication across SaaS.
           // They return HTTP 200 + a login wall page with zero evidence content, wasting a slot.
