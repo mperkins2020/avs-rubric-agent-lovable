@@ -881,9 +881,21 @@ Deno.serve(async (req) => {
             //     6--2uoyy8nkses2lbj → starts with '-' → no match → blocked ✓
             // Rule C — All-lowercase opaque IDs (Gamma docs: avu2xyfyhrqm75f, 8nmk3jj496525b6)
             //   ≥10 chars, only [a-z0-9] (no hyphens), ≥3 digits.
+            // Rule D — Word-prefix + random suffix (Gamma docs: ringkasan-jurnal-c4d1t3zry6ijqnb)
+            //   User docs often have a human-readable name + random ID suffix joined by hyphens.
+            //   Rules A–C miss these because: not digit-leading (B), not mixed-case (A),
+            //   and hyphens fail Rule C's ^[a-z0-9]+$ test.
+            //   Detection: the LAST hyphen-delimited token of the segment is a compact
+            //   alphanumeric string (≥8 chars, only [a-z0-9], ≥2 digits).
+            //   Real word slugs end in actual words: 'delivery', 'features', 'gamma' (0 digits).
+            //     ringkasan-jurnal-c4d1t3zry6ijqnb → last token c4d1t3zry6ijqnb (4 digits) → BLOCKED
+            //     planning-delivery → last token delivery (0 digits) → ALLOWED
+            //     how-do-credits-work-in-gamma → last token gamma (0 digits) → ALLOWED
             const lastSeg = segs[segs.length - 1] ?? '';
             const digitCount = (lastSeg.match(/[0-9]/g) ?? []).length;
             const isZendeskArticleSlug = /^[0-9]+-[a-z][a-z-]*$/.test(lastSeg); // Zendesk exception
+            const lastToken = lastSeg.includes('-') ? (lastSeg.split('-').pop() || '') : '';
+            const lastTokenDigits = (lastToken.match(/[0-9]/g) ?? []).length;
             if (
               // Rule A
               (lastSeg.length >= 8 &&
@@ -895,11 +907,15 @@ Deno.serve(async (req) => {
                /^[0-9]/.test(lastSeg) &&
                lastSeg.length >= 8 &&
                /[a-zA-Z]/.test(lastSeg)) ||
-              // Rule C
+              // Rule C — no-hyphen opaque IDs
               (lastSeg.length >= 10 &&
                /^[a-z0-9]+$/.test(lastSeg) &&
                /[a-z]/.test(lastSeg) &&
-               digitCount >= 3)
+               digitCount >= 3) ||
+              // Rule D — compound slugs ending in a random opaque suffix
+              (lastToken.length >= 8 &&
+               /^[a-z0-9]+$/.test(lastToken) &&
+               lastTokenDigits >= 2)
             ) return false;
             // Locale-prefix filter — applies to main-domain paths only.
             // Zendesk-style help subdomains use /en/ as a structural URL element (not a locale
@@ -942,28 +958,34 @@ Deno.serve(async (req) => {
           if (/\/(images|assets|static|media|fonts)\//i.test(parsed.pathname)) return false;
           // @username user-generated content filter (e.g. replit.com/@user/project)
           if (parsed.pathname.split('/').some(seg => seg.startsWith('@'))) return false;
-          // Resource-instance ID filter — mirrors the three-rule check in scoredLinks.filter.
-          // See that location for full rule rationale and Rule B Zendesk exception.
+          // Resource-instance ID filter — mirrors Rules A–D in scoredLinks.filter.
+          // See that location for full rule rationale and Zendesk exception.
           const lastSeg = parsed.pathname.split('/').filter(Boolean).pop() || '';
           if (/^-[a-z0-9]{10,}$/i.test(lastSeg)) return false; // legacy gamma.app '-slug' pattern
           const digitCount = (lastSeg.match(/[0-9]/g) ?? []).length;
-          const isZendeskArticleSlugEE = /^[0-9]+-[a-z][a-z-]*$/.test(lastSeg); // Zendesk exception (mirrors scoredLinks.filter)
+          const isZendeskArticleSlugEE = /^[0-9]+-[a-z][a-z-]*$/.test(lastSeg); // Zendesk exception
+          const lastTokenEE = lastSeg.includes('-') ? (lastSeg.split('-').pop() || '') : '';
+          const lastTokenDigitsEE = (lastTokenEE.match(/[0-9]/g) ?? []).length;
           if (
             // Rule A — mixed-case base64 (Miro boards)
             (lastSeg.length >= 8 &&
              /^[A-Za-z0-9_-]+=*$/.test(lastSeg) &&
              /[A-Z]/.test(lastSeg) &&
              /[a-z]/.test(lastSeg)) ||
-            // Rule B — digit-leading slugs; Zendesk exception: pure alphabetic word portion
+            // Rule B — digit-leading slugs; Zendesk exception
             (!isZendeskArticleSlugEE &&
              /^[0-9]/.test(lastSeg) &&
              lastSeg.length >= 8 &&
              /[a-zA-Z]/.test(lastSeg)) ||
-            // Rule C — all-lowercase opaque IDs (Gamma docs: avu2xyfyhrqm75f)
+            // Rule C — no-hyphen opaque IDs (Gamma docs: avu2xyfyhrqm75f)
             (lastSeg.length >= 10 &&
              /^[a-z0-9]+$/.test(lastSeg) &&
              /[a-z]/.test(lastSeg) &&
-             digitCount >= 3)
+             digitCount >= 3) ||
+            // Rule D — compound slugs ending in a random opaque suffix
+            (lastTokenEE.length >= 8 &&
+             /^[a-z0-9]+$/.test(lastTokenEE) &&
+             lastTokenDigitsEE >= 2)
           ) return false;
           // Gated path blocklist — these paths are uniformly behind authentication across SaaS.
           // They return HTTP 200 + a login wall page with zero evidence content, wasting a slot.
@@ -1097,6 +1119,11 @@ Deno.serve(async (req) => {
         // Checks title anywhere (not just start) to catch "Not Found | Clay" variants.
         const is404 = page && (
           /\b(404|not found|page not found|page doesn['']t exist|this page (doesn['']t|does not) exist)\b/i.test(page.title || '') ||
+          // 5xx server error pages — "We're having technical difficulties (500)" etc.
+          // \(5\d{2}\) is specific to parenthesized HTTP codes in titles; avoids
+          // false positives on pricing text like "500 credits/month".
+          /\(5\d{2}\)/.test(page.title || '') ||
+          /\b(technical difficulties|internal server error|service unavailable|bad gateway|something went wrong)\b/i.test(page.title || '') ||
           page.markdown?.trimStart().startsWith('# 404') ||
           page.markdown?.trimStart().startsWith('## 404') ||
           /^#\s*(404|Page Not Found)/m.test(page.markdown || '') ||
@@ -1168,6 +1195,8 @@ Deno.serve(async (req) => {
             secondaryResults.forEach(p => {
               if (!p) return;
               const is404Secondary = /\b(404|not found|page not found|page doesn['']t exist|this page (doesn['']t|does not) exist)\b/i.test(p.title || '') ||
+                /\(5\d{2}\)/.test(p.title || '') ||
+                /\b(technical difficulties|internal server error|service unavailable|bad gateway|something went wrong)\b/i.test(p.title || '') ||
                 p.markdown?.trimStart().startsWith('# 404') ||
                 /^#\s*(404|Page Not Found)/m.test(p.markdown || '') ||
                 (!p.markdown?.trim() && !p.title?.trim());
@@ -1235,6 +1264,8 @@ Deno.serve(async (req) => {
           if (retried) {
             // Apply same 404 filter to retry results — retry variants can return 404 pages
             const is404Retry = /\b(404|not found|page not found|page doesn['']t exist|this page (doesn['']t|does not) exist)\b/i.test(retried.title || '') ||
+              /\(5\d{2}\)/.test(retried.title || '') ||
+              /\b(technical difficulties|internal server error|service unavailable|bad gateway|something went wrong)\b/i.test(retried.title || '') ||
               retried.markdown?.trimStart().startsWith('# 404') ||
               /^#\s*(404|Page Not Found)/m.test(retried.markdown || '') ||
               (!retried.markdown?.trim() && !retried.title?.trim());

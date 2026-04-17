@@ -4,7 +4,7 @@
 **Usage:** When a report produces a questionable result, log it here. Run `Scan the debug log for recurring patterns` periodically to surface systemic issues.
 **Related:** See ENGINE_DEBUG_HISTORY.md for backfilled history from git.
 
-**Entries:** 40 | **Last updated:** April 17, 2026
+**Entries:** 41 | **Last updated:** April 16, 2026
 
 ---
 
@@ -18,7 +18,7 @@
 | gate_misfire | 0 | — |
 | confidence_miscalc | 0 | — |
 | prompt_drift | 1 | ICP and Job Clarity (D2) |
-| pipeline_miss | 18 | Value Unit, Cost Driver Mapping, Safety/Trust, Overages & Risk, URL filter |
+| pipeline_miss | 19 | Value Unit, Cost Driver Mapping, Safety/Trust, Overages & Risk, URL filter |
 | contamination | 13 | Pricing Transparency, Enterprise/Compliance (D7/D8) |
 | calibration | 2 | Value unit (D4), ICP and Job Clarity (D2) |
 | other | 0 | — |
@@ -30,6 +30,51 @@
 <!-- Newest first. To add an entry, copy the template below and fill it in. -->
 
 <!-- Next entry goes here -->
+
+---
+
+### Entry 041 — April 16, 2026
+
+| Field | Value |
+|-------|-------|
+| Company | gamma.app (live scan QA — sixth pass) |
+| Version | 2026-04-17-pipeline-v11 |
+| Dimension | URL filter (multiple bad pages still appearing) |
+| Root Cause | pipeline_miss (×2 distinct issues) |
+| Caught By | Live scan QA — UGC doc URLs and 5xx error pages leaking into evidence set |
+| Status | fixed |
+
+**Root Cause Detail — Word-prefix + random suffix UGC doc URLs (Rule D):**
+
+A new URL pattern appeared in the evidence set: `gamma.app/docs/ringkasan-jurnal-c4d1t3zry6ijqnb`.
+The segment `ringkasan-jurnal-c4d1t3zry6ijqnb` starts with Indonesian words (`ringkasan jurnal` = "journal summary") followed by a random suffix. Rules A, B, and C did not block it:
+- Rule A: no uppercase letters → fail
+- Rule B: doesn't start with a digit → fail
+- Rule C: contains hyphens → fail (`^[a-z0-9]+$` requires no hyphens)
+
+**Fix (Rule D):** Check the **last hyphen-delimited token** of the last path segment.
+`lastToken = lastSeg.split('-').pop()` → `c4d1t3zry6ijqnb` → length 15, all `[a-z0-9]`, 4 digits → blocked.
+
+Threshold: `lastToken.length >= 8 && /^[a-z0-9]+$/.test(lastToken) && lastTokenDigits >= 2`.
+Human-readable words (`gamma`, `delivery`, `enterprise`) have 0 digits → always pass.
+Zendesk article slugs: lastToken is always a real English word (0 digits) → pass.
+
+**Applied to:** both `scoredLinks.filter` and `isEvidenceEligible` (must be mirrored).
+
+**Root Cause Detail — 5xx error pages not caught by is404 check:**
+
+Help article `https://help.gamma.app/en/articles/8022861-what-s-the-easiest-way-to-export-my-gamma`
+returned a page titled "We're having technical difficulties (500)". The existing `is404` check
+pattern only matched 404-style strings. The parenthesized HTTP code `(500)` and generic error
+messages were not covered.
+
+**Fix:** Added two new conditions to all three `is404` check locations (primary, Fix 1 secondary, Fix 2 retry):
+- `/\(5\d{2}\)/` — catches parenthesized HTTP status codes like `(500)`, `(503)`
+- `/\b(technical difficulties|internal server error|service unavailable|bad gateway|something went wrong)\b/i`
+
+**ANALYSIS_VERSION:** bumped to `2026-04-17-pipeline-v12`.
+
+**Pattern Tag:** `pipeline_miss`, `url-filter`, `ugc-doc-pattern`, `error-page-detection`
 
 ---
 

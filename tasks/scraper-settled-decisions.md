@@ -101,6 +101,20 @@ The regex test is the correct implementation (Entry 039).
 Human-readable slugs like `enterprise`, `planning-delivery` fail on either the
 no-hyphens constraint or the digit count.
 
+### Rule D — Word-prefix + random suffix (catches multilingual UGC doc URLs)
+`ringkasan-jurnal-c4d1t3zry6ijqnb`, `my-document-k9x2p7qmvr3stu`
+Checks the **last hyphen-delimited token** only:
+`lastToken = lastSeg.split('-').pop()` → `c4d1t3zry6ijqnb`
+Fires when: lastToken.length ≥ 8, all `[a-z0-9]`, ≥2 digits.
+Human-readable words like `gamma`, `delivery`, `enterprise` have 0 digits → pass.
+Zendesk articles: lastToken is always a real word (0 digits) → pass.
+
+**Threshold is ≥2 digits** (not ≥3). The suffix pattern always has many scattered digits;
+real words virtually never have 2+ embedded digits.
+
+**Applied to both `scoredLinks.filter` AND `isEvidenceEligible`** — must be mirrored
+in both locations or Fix 1 secondary discovery will admit the same bad URLs.
+
 ---
 
 ## Locale Filter Exception for Help Subdomains
