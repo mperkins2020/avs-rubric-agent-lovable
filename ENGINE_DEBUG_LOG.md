@@ -4,7 +4,7 @@
 **Usage:** When a report produces a questionable result, log it here. Run `Scan the debug log for recurring patterns` periodically to surface systemic issues.
 **Related:** See ENGINE_DEBUG_HISTORY.md for backfilled history from git.
 
-**Entries:** 44 | **Last updated:** April 18, 2026
+**Entries:** 45 | **Last updated:** April 18, 2026
 
 ---
 
@@ -20,7 +20,7 @@
 | prompt_drift | 1 | ICP and Job Clarity (D2) |
 | pipeline_miss | 21 | Value Unit, Cost Driver Mapping, Safety/Trust, Overages & Risk, URL filter |
 | contamination | 13 | Pricing Transparency, Enterprise/Compliance (D7/D8) |
-| calibration | 2 | Value unit (D4), ICP and Job Clarity (D2) |
+| calibration | 3 | Value unit (D4), ICP and Job Clarity (D2), Safety Rails (D8) |
 | other | 0 | — |
 
 ---
@@ -30,6 +30,59 @@
 <!-- Newest first. To add an entry, copy the template below and fill it in. -->
 
 <!-- Next entry goes here -->
+
+---
+
+### Entry 045 — April 18, 2026
+
+| Field | Value |
+|-------|-------|
+| Company | gamma.app (live scan QA — tenth pass, arc closed) |
+| Version | 2026-04-18-pipeline-v16 |
+| Dimension | All dimensions — QA arc closure |
+| Root Cause | N/A — confirmed result |
+| Caught By | Live scan QA — final verification pass |
+| Status | resolved ✅ |
+
+**Result:** 12/16 (75%), Established Stage, 68% confidence, 9 pages analyzed.
+
+| Dimension | Score | Confidence |
+|---|---|---|
+| Product north star | 1/2 | 60% |
+| ICP and job clarity | 2/2 | 80% |
+| Buyer and budget alignment | 2/2 | 80% |
+| Value unit | 2/2 | 80% |
+| Cost driver mapping | 1/2 | 60% |
+| Pools and packaging | 2/2 | 80% |
+| Overages and risk allocation | 1/2 | 60% |
+| Safety rails and trust surfaces | 1/2 | 43% |
+
+**D8 rationale (confirmed correct):** SOC2 Type II + Trust Center satisfy T5 via the
+compliance_cert path. Missing public budget caps/usage alerts correctly hold T2 and T4,
+capping at 1/2. Confidence 43% (Medium) is accurate — in-product controls likely exist
+but are not publicly documented. 90-day recommendation is actionable: document overage
+policy and publish safety rail documentation.
+
+**Gamma QA arc summary (Entries 034–045):**
+
+| Version | Score | D8 | Root cause fixed |
+|---|---|---|---|
+| v8 (baseline) | 8/16 | 0/2 | — |
+| v9 | — | 0/2 | /terms, /explore exclusions |
+| v10 | — | 0/2 | developers.* hostname leak |
+| v11 | — | 0/2 | Zendesk exception regex, Fix 1 domain check |
+| v12 | — | 0/2 | Rule D (UGC slugs), 5xx detection |
+| v13 | 11/16 | 0/2 | Credits article (community_evidence) |
+| v14 | 10/16 | 0/2 | trust/compliance helpSubdomains (var bug introduced) |
+| v15 | — | 0/2 | Subdomain probe cap (trust probes separated) |
+| v15-hotfix | error | — | parsed is not defined in scoreUrl |
+| v16 | **12/16** | **1/2** | D8 T5 SOC2/compliance_cert path |
+
+**Net result:** +4 score points, Emerging → Established, D8 0/2 → 1/2, all from
+pipeline and scoring engine fixes with no change to Gamma's actual product or policies.
+This arc is the primary case study for the verification loop build-in-public post.
+
+**Pattern Tag:** `arc-closed`, `pipeline-miss`, `scoring-gap`, `verification-loop`
 
 ---
 
