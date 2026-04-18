@@ -298,7 +298,7 @@ function scoreUrl(link: string, baseHost: string, communityUrlSet: Set<string>):
     //         The article number prefix prevents Tier 1 from matching; check the full path.
     // Tier 3: generic deep help article (no billing keywords) — penalise so non-billing
     //         content (how-to-present-slides, change-theme, etc.) doesn't crowd out pricing pages.
-    const subPrefix = parsed.hostname.split('.')[0].toLowerCase();
+    const subPrefix = new URL(link).hostname.split('.')[0].toLowerCase();
     if (subPrefix === 'trust' || subPrefix === 'compliance') {
       score += 800; // Tier 0 — trust/compliance center: primary D8 evidence
     } else if (/\/(plans-and-credits|credits|pricing|billing|usage|subscription|refund|cancel|overage|limit|quota|metering)\b/i.test(path)) {
