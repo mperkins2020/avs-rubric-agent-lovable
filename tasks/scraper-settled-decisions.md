@@ -169,6 +169,11 @@ runs before the billing keyword tiers.
 **Do not remove from helpSubdomains** — without this, Fix 1 won't follow trust center links
 from pricing pages and Firecrawl's map may not surface them either.
 
+**Do not merge trust/compliance probes into the general cap** — the subdomain probing logic
+(Phase 1b) caps general help subdomains at 2 slots. Trust/compliance probes are separated
+into their own uncapped pool so they are always fetched when undiscovered. Merging them back
+into the general pool would cause `docs.*` and `help.*` to crowd them out (Entry 043).
+
 ---
 
 ## Billing Keyword Scoring — Three Tiers for Help Subdomain Content

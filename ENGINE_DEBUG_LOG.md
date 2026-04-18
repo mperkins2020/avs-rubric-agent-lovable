@@ -4,7 +4,7 @@
 **Usage:** When a report produces a questionable result, log it here. Run `Scan the debug log for recurring patterns` periodically to surface systemic issues.
 **Related:** See ENGINE_DEBUG_HISTORY.md for backfilled history from git.
 
-**Entries:** 42 | **Last updated:** April 17, 2026
+**Entries:** 43 | **Last updated:** April 18, 2026
 
 ---
 
@@ -18,7 +18,7 @@
 | gate_misfire | 0 | — |
 | confidence_miscalc | 0 | — |
 | prompt_drift | 1 | ICP and Job Clarity (D2) |
-| pipeline_miss | 20 | Value Unit, Cost Driver Mapping, Safety/Trust, Overages & Risk, URL filter |
+| pipeline_miss | 21 | Value Unit, Cost Driver Mapping, Safety/Trust, Overages & Risk, URL filter |
 | contamination | 13 | Pricing Transparency, Enterprise/Compliance (D7/D8) |
 | calibration | 2 | Value unit (D4), ICP and Job Clarity (D2) |
 | other | 0 | — |
@@ -30,6 +30,48 @@
 <!-- Newest first. To add an entry, copy the template below and fill it in. -->
 
 <!-- Next entry goes here -->
+
+---
+
+### Entry 043 — April 18, 2026
+
+| Field | Value |
+|-------|-------|
+| Company | gamma.app (live scan QA — eighth pass) |
+| Version | 2026-04-17-pipeline-v14 |
+| Dimension | D8 Safety Rails (0/2, 30% confidence) |
+| Root Cause | pipeline_miss — subdomain probe hard-capped at 2, trust/compliance sorted to bottom |
+| Caught By | Live scan QA — trust.gamma.app still absent after v14 helpSubdomains fix |
+| Status | fixed |
+
+**Root Cause Detail:**
+
+Adding `trust` and `compliance` to `helpSubdomains` (v14) was necessary but not sufficient.
+The subdomain probing logic (Phase 1b) caps probes at `.slice(0, 2)` after sorting by a
+priority order of `['docs', 'help', 'support', 'developer']`. Since `trust` and `compliance`
+are not in that order list, they receive sort index 99 and are cut off by the slice.
+
+For Gamma: `help.gamma.app` and `docs.gamma.app` take both slots → `trust.gamma.app` never
+probed. The main Firecrawl domain map also doesn't discover `trust.gamma.app` because the
+link on the pricing page ("Learn more at our Trust Center") is a JavaScript-rendered element,
+not a plain `<a href>` that Firecrawl follows during crawling. Vanta/Drata hosting via CNAME
+also prevents the main domain sitemap from including trust center URLs.
+
+**Fix:** Split `priorityProbes` into two separate pools:
+1. **Trust/compliance probes** — always probed when undiscovered, no cap. These are primary
+   D8 evidence per the AVS methodology and must not be gated by a cost-saving cap.
+2. **General help probes** — capped at 2, sorted by `['docs', 'help', 'support', 'kb', 'knowledge']`.
+   `developer` removed from the sort order (no longer in helpSubdomains).
+
+Result: `trust.gamma.app` will now always be probed regardless of how many help subdomains
+are also undiscovered. No cost increase for companies without trust/compliance subdomains.
+
+**Also noted:** D2 (ICP & Job Clarity) regressed 2/2 → 1/2 in v14 vs v13 — run-to-run variance,
+not a pipeline bug. Expect it to stabilise once evidence set is complete.
+
+**ANALYSIS_VERSION:** bumped to `2026-04-18-pipeline-v15`.
+
+**Pattern Tag:** `pipeline_miss`, `subdomain-probe-cap`, `trust-center-subdomain`, `D8-evidence-gap`
 
 ---
 

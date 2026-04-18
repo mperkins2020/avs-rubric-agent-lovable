@@ -810,15 +810,24 @@ Deno.serve(async (req) => {
 
       let subdomainMapLinks: string[] = [];
       if (subdomainsToProbe.length > 0) {
-        // Map at most 2 high-value subdomains (docs + help are most common)
-        const priorityProbes = subdomainsToProbe
+        // Trust/compliance centers are primary D8 evidence per methodology — always probe
+        // these when they exist, regardless of the general cap.
+        // Examples: trust.gamma.app, trust.lovable.dev, compliance.elevenlabs.io
+        const trustProbes = subdomainsToProbe.filter(s =>
+          s.startsWith('trust.') || s.startsWith('compliance.')
+        );
+        // General help subdomains (help, docs, support, etc.) — cap at 2,
+        // prioritising the most evidence-rich subdomain types first.
+        const generalProbes = subdomainsToProbe
+          .filter(s => !s.startsWith('trust.') && !s.startsWith('compliance.'))
           .sort((a, b) => {
-            const order = ['docs', 'help', 'support', 'developer'];
+            const order = ['docs', 'help', 'support', 'kb', 'knowledge'];
             const aIdx = order.findIndex(o => a.startsWith(o));
             const bIdx = order.findIndex(o => b.startsWith(o));
             return (aIdx === -1 ? 99 : aIdx) - (bIdx === -1 ? 99 : bIdx);
           })
           .slice(0, 2);
+        const priorityProbes = [...trustProbes, ...generalProbes];
 
         console.log(`Phase 1b: Mapping ${priorityProbes.length} undiscovered subdomains:`, priorityProbes);
         const subMapResults = await Promise.all(
