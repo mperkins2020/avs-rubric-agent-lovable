@@ -30,7 +30,7 @@ interface AnalyzeRequest {
 // Deno EdgeRuntime type for background processing
 declare const EdgeRuntime: { waitUntil: (p: Promise<unknown>) => void };
 
-const ANALYSIS_VERSION = '2026-04-18-pipeline-v15';
+const ANALYSIS_VERSION = '2026-04-18-pipeline-v16';
 
 const COMPANY_PROFILE_PROMPT = `You are an expert business analyst. Analyze the following website content and extract a company profile.
 
@@ -1099,7 +1099,7 @@ THE 8 DIMENSIONS:
    - safety_rails[].tier_coverage: list of tier names (must match tiers[].name)
 
    **trust_surfaces[]**
-   - trust_surfaces[].surface_type: usage_dashboard | cost_dashboard | estimate_surface | alerting | admin_controls | audit_export | policy_docs | limit_behavior_docs | changelog | status_page | postmortems
+   - trust_surfaces[].surface_type: usage_dashboard | cost_dashboard | estimate_surface | alerting | admin_controls | audit_export | policy_docs | limit_behavior_docs | changelog | status_page | postmortems | compliance_cert
    - trust_surfaces[].availability: public | in_product | both
    - trust_surfaces[].breakdown_level: none | by_project | by_user | by_workflow | by_model | by_endpoint
    - trust_surfaces[].exportable: boolean
@@ -1182,8 +1182,17 @@ THE 8 DIMENSIONS:
    - (rbac OR admin) IN tiers[].features
    AND
    - at least one of: audit_logs IN tiers[].features OR trust_surfaces[].surface_type == audit_export is covered
+   OR — alternative path for security-compliant products:
+   - soc2 IN tiers[].features for at least one tier in segment_tiers
+   AND
+   - a publicly linked trust center or compliance page exists with security controls documented
+     (trust_surfaces[].surface_type == compliance_cert with availability in {public, both}, OR
+      trust_surfaces[].evidence_url is not null for any surface from a trust center domain)
+   NOTE: SOC 2 Type II, ISO 27001, HIPAA, PCI-DSS, FedRAMP each satisfy the soc2 condition.
    For indie segment, pass if:
-   - at least one of: usage_dashboard OR alerts OR caps is present in tier features.
+   - at least one of: usage_dashboard OR alerts OR caps is present in tier features
+   OR
+   - soc2 IN tiers[].features for any tier in segment_tiers.
 
    **T6 Safe failure behavior and bounded risk**
    Pass if there exists evidence for both:

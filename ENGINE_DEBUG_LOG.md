@@ -4,7 +4,7 @@
 **Usage:** When a report produces a questionable result, log it here. Run `Scan the debug log for recurring patterns` periodically to surface systemic issues.
 **Related:** See ENGINE_DEBUG_HISTORY.md for backfilled history from git.
 
-**Entries:** 43 | **Last updated:** April 18, 2026
+**Entries:** 44 | **Last updated:** April 18, 2026
 
 ---
 
@@ -30,6 +30,52 @@
 <!-- Newest first. To add an entry, copy the template below and fill it in. -->
 
 <!-- Next entry goes here -->
+
+---
+
+### Entry 044 — April 18, 2026
+
+| Field | Value |
+|-------|-------|
+| Company | gamma.app (live scan QA — ninth pass) |
+| Version | 2026-04-18-pipeline-v15 |
+| Dimension | D8 Safety Rails (0/2, 30% confidence) |
+| Root Cause | scoring_gap — T5 subtest definition doesn't award credit for SOC2 + Trust Center |
+| Caught By | Live scan QA — trust.gamma.app now in evidence set but D8 still 0/2 |
+| Status | fixed |
+
+**Root Cause Detail:**
+
+Trust center IS now in the evidence set (trust.gamma.app, trust.gamma.app/controls,
+trust.gamma.app/resources — pages 5, 8, 9). The LLM correctly extracted the content.
+The LLM rationale stated: "While a Trust Center exists, it focuses on security and
+compliance rather than customer-facing cost controls." This is accurate — and that's
+the problem.
+
+D8 T5 (Admin and access controls) only passes if `(rbac OR admin) IN tiers[].features`
+AND `audit_logs OR audit_export`. SOC2 Type II is extractable into `tiers[].features`
+as `soc2`, but T5 never checks for it. The trust center content (infrastructure security,
+organizational security, product security) maps to `compliance_cert` but that surface_type
+didn't exist. Result: T1 (hard-cap) + T6 (limit behavior) = 2 points = Score 0.
+
+**The methodology says:** "Score 1: Basic security mentions present" and "Score 2: Explicit
+advanced trust surfaces + compliance certs (SOC2, HIPAA, ISO) required." The subtests
+didn't implement this — SOC2 had no scoring path.
+
+**Fix:**
+1. Added `compliance_cert` to trust_surfaces[].surface_type enum
+2. Extended T5 with alternative pass path: `soc2 IN tiers[].features` AND publicly
+   linked trust center with controls (trust_surfaces[].surface_type == compliance_cert
+   with public availability OR evidence_url not null from trust domain)
+3. Note: SOC2 Type II, ISO 27001, HIPAA, PCI-DSS, FedRAMP all satisfy the soc2 condition
+
+**Expected result for Gamma:**
+T1 (hard-cap) + T5 (SOC2 + trust.gamma.app) + T6 (limit behavior) = 3 points → Score 1
+Gates: T4 fail → cap at 1, T2 fail → cap at 1. Final: D8 = 1/2 ✓
+
+**ANALYSIS_VERSION:** bumped to `2026-04-18-pipeline-v16`.
+
+**Pattern Tag:** `scoring_gap`, `D8-subtest-definition`, `soc2-trust-center`, `spec-implementation-mismatch`
 
 ---
 
