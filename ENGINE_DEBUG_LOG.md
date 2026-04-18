@@ -4,7 +4,7 @@
 **Usage:** When a report produces a questionable result, log it here. Run `Scan the debug log for recurring patterns` periodically to surface systemic issues.
 **Related:** See ENGINE_DEBUG_HISTORY.md for backfilled history from git.
 
-**Entries:** 41 | **Last updated:** April 16, 2026
+**Entries:** 42 | **Last updated:** April 17, 2026
 
 ---
 
@@ -18,7 +18,7 @@
 | gate_misfire | 0 | — |
 | confidence_miscalc | 0 | — |
 | prompt_drift | 1 | ICP and Job Clarity (D2) |
-| pipeline_miss | 19 | Value Unit, Cost Driver Mapping, Safety/Trust, Overages & Risk, URL filter |
+| pipeline_miss | 20 | Value Unit, Cost Driver Mapping, Safety/Trust, Overages & Risk, URL filter |
 | contamination | 13 | Pricing Transparency, Enterprise/Compliance (D7/D8) |
 | calibration | 2 | Value unit (D4), ICP and Job Clarity (D2) |
 | other | 0 | — |
@@ -30,6 +30,41 @@
 <!-- Newest first. To add an entry, copy the template below and fill it in. -->
 
 <!-- Next entry goes here -->
+
+---
+
+### Entry 042 — April 17, 2026
+
+| Field | Value |
+|-------|-------|
+| Company | gamma.app (live scan QA — seventh pass) |
+| Version | 2026-04-17-pipeline-v13 |
+| Dimension | D8 Safety Rails (0/2, 30% confidence) |
+| Root Cause | pipeline_miss — trust subdomain not in helpSubdomains |
+| Caught By | Live scan QA — trust.gamma.app linked from pricing page but not followed |
+| Status | fixed |
+
+**Root Cause Detail:**
+
+v13 scan showed 11/16 (significant improvement from v12's 8/16 after credits article was added).
+D8 remains 0/2 at 30% confidence. The pricing page contains "We're a SOC 2 Type II compliant
+organization. Learn more at our Trust Center" with a link to `trust.gamma.app`. The scraper
+did not follow this link because `trust` was not in `helpSubdomains`.
+
+`trust.*` and `compliance.*` are a well-established SaaS convention for dedicated trust centers
+(trust.gamma.app, trust.lovable.dev, trust.clay.com, trust.replit.com, trust.hex.tech,
+compliance.elevenlabs.io). These pages contain primary D8 evidence: SOC2/HIPAA/ISO certs,
+security controls, audit capabilities, and compliance documentation.
+
+**Fix:**
+1. Added `'trust'` and `'compliance'` to `helpSubdomains` — Fix 1 secondary discovery now
+   follows links to these subdomains from pricing page markdown
+2. Added Tier 0 scoring (+800) for `subPrefix === 'trust' || subPrefix === 'compliance'` —
+   trust centers compete with `highIntentPaths` for evidence slots, above billing articles
+
+**ANALYSIS_VERSION:** bumped to `2026-04-17-pipeline-v14`.
+
+**Pattern Tag:** `pipeline_miss`, `url-filter`, `trust-center-subdomain`, `D8-evidence-gap`
 
 ---
 

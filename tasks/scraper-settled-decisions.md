@@ -146,7 +146,28 @@ links (`help.gamma.app` ≠ `gamma.app`).
 
 The correct implementation admits only:
 - Same hostname as the scanned URL (`gamma.app`)
-- Known help subdomains: `help.*`, `support.*`, `docs.*`, `kb.*`, `knowledge.*`, `community.*`
+- Known help subdomains: `help.*`, `support.*`, `docs.*`, `kb.*`, `knowledge.*`, `community.*`, `trust.*`, `compliance.*`
+
+---
+
+## Trust/Compliance Subdomain Discovery
+
+`trust.*` and `compliance.*` are standard SaaS conventions for dedicated trust centers:
+- `trust.gamma.app`, `trust.lovable.dev`, `trust.clay.com`, `trust.replit.com`, `trust.hex.tech`
+- `compliance.elevenlabs.io`
+
+**Implementation:** Both added to `helpSubdomains`. This means:
+1. Fix 1 secondary discovery follows links to `trust.*` / `compliance.*` from pricing page markdown
+2. Locale filter exception applies (same as help subdomains)
+3. Scoring: **+800 (Tier 0)** — highest subdomain priority, competing with `highIntentPaths`
+
+**Rationale:** Trust centers are primary D8 Safety Rails evidence — SOC2, HIPAA, ISO certs,
+audit controls, and security posture documentation live here. They should rank above billing
+help articles and generic docs. `subPrefix === 'trust' || subPrefix === 'compliance'` check
+runs before the billing keyword tiers.
+
+**Do not remove from helpSubdomains** — without this, Fix 1 won't follow trust center links
+from pricing pages and Firecrawl's map may not surface them either.
 
 ---
 

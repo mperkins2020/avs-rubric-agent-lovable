@@ -249,7 +249,7 @@ const fullContentPatterns = [
 // 'developer' and 'developers' intentionally excluded: these subdomains serve API reference
 // documentation (endpoint listings, SDK guides), not user-facing pricing or trust evidence.
 // Principle: developers.company.com is an API surface, not a product evidence page.
-const helpSubdomains = ['help', 'support', 'docs', 'kb', 'knowledge', 'community'];
+const helpSubdomains = ['help', 'support', 'docs', 'kb', 'knowledge', 'community', 'trust', 'compliance'];
 
 function getNormalizedPath(link: string): string {
   try { return new URL(link).pathname.replace(/\/$/, '').toLowerCase() || '/'; }
@@ -286,15 +286,22 @@ function scoreUrl(link: string, baseHost: string, communityUrlSet: Set<string>):
   if (priorityPatterns.some(p => p.test(link))) score += 250;
   if (isSubdomainUrl(link)) {
     score += 100;
-    // Three-tier scoring for help/docs subdomain content:
+    // Four-tier scoring for help/docs/trust subdomain content:
+    // Tier 0: trust/compliance subdomains (trust.company.com, compliance.company.com) —
+    //         primary D8 Safety Rails evidence. Treat like high-intent paths.
+    //         Covers: trust.gamma.app, trust.lovable.dev, trust.clay.com,
+    //                 trust.replit.com, trust.hex.tech, compliance.elevenlabs.io
     // Tier 1: billing keyword as a dedicated path segment (/credits, /billing, /overage, etc.)
-    //         → highest priority, treat like pricing-adjacent evidence
+    //         → highest priority for billing-adjacent evidence
     // Tier 2: billing keyword embedded anywhere in path — catches Zendesk article slugs
     //         (e.g. help.gamma.app/en/articles/7834324-how-do-credits-work-in-gamma).
     //         The article number prefix prevents Tier 1 from matching; check the full path.
     // Tier 3: generic deep help article (no billing keywords) — penalise so non-billing
     //         content (how-to-present-slides, change-theme, etc.) doesn't crowd out pricing pages.
-    if (/\/(plans-and-credits|credits|pricing|billing|usage|subscription|refund|cancel|overage|limit|quota|metering)\b/i.test(path)) {
+    const subPrefix = parsed.hostname.split('.')[0].toLowerCase();
+    if (subPrefix === 'trust' || subPrefix === 'compliance') {
+      score += 800; // Tier 0 — trust/compliance center: primary D8 evidence
+    } else if (/\/(plans-and-credits|credits|pricing|billing|usage|subscription|refund|cancel|overage|limit|quota|metering)\b/i.test(path)) {
       score += 700; // Tier 1 — billing as path segment
     } else if (/credits|billing|pricing|plans?|usage|overage|refund|subscription|cancel/i.test(path)) {
       score += 500; // Tier 2 — billing keyword embedded in slug
