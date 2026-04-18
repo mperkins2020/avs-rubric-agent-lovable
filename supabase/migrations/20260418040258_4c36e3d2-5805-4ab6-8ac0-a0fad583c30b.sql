@@ -1,0 +1,1 @@
+DELETE FROM public.scan_results WHERE url_domain ILIKE '%gamma.app%';
