@@ -88,7 +88,28 @@ export default function BlogVerificationLoop() {
                 <p>Most software quality comes in two layers: evals (does the model reason correctly?) and traditional QA (does the feature work?). For AI systems that read external data, a third layer has to sit upstream of both.</p>
 
                 <div className="overflow-x-auto my-6">
-...
+                  <table className="w-full text-sm border-collapse">
+                    <thead>
+                      <tr className="border-b border-border">
+                        <th className="text-left py-2 px-3 font-semibold"></th>
+                        <th className="text-left py-2 px-3 font-semibold">What it tests</th>
+                        <th className="text-left py-2 px-3 font-semibold">When it runs</th>
+                        <th className="text-left py-2 px-3 font-semibold">What it assumes</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr className="border-b border-border/50">
+                        <td className="py-2 px-3 font-semibold">Input Verification</td>
+                        <td className="py-2 px-3">Are the inputs actually correct?</td>
+                        <td className="py-2 px-3">Before the model call</td>
+                        <td className="py-2 px-3">Nothing — this is the check</td>
+                      </tr>
+                      <tr className="border-b border-border/50">
+                        <td className="py-2 px-3 font-semibold">Evals</td>
+                        <td className="py-2 px-3">Does the model reason correctly?</td>
+                        <td className="py-2 px-3">Against model outputs</td>
+                        <td className="py-2 px-3">Inputs are correct</td>
+                      </tr>
                       <tr>
                         <td className="py-2 px-3 font-semibold">Traditional QA</td>
                         <td className="py-2 px-3">Does the feature work?</td>
