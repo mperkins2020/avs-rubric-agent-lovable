@@ -179,6 +179,7 @@ export default function BlogVerificationLoop() {
                 <hr className="border-border/50 my-8" />
                 <h2 id="see" className="text-2xl font-bold mt-12 mb-4 text-foreground">See what your surface looks like</h2>
                 <p>The AVS Rubric is live at <Link to="/" className="text-primary hover:underline font-semibold">app.valuetempo.com</Link>. A single scan runs the full trust infrastructure analysis across eight dimensions and returns an evidence-backed score, gap breakdown, and prioritized recommendations. It is grounded in the engineering described above.</p>
+                <p>If you spot something the rubric should do differently on your own report, we want to know. Rate and comment on your results page. That feedback is how the loop keeps tightening.</p>
               </div>
             </motion.article>
           </div>

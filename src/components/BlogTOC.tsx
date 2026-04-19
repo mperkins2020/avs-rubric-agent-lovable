@@ -52,7 +52,7 @@ export function BlogTOC({ sections, variant = "inline" }: BlogTOCProps) {
         {/* Desktop: sticky sidebar TOC */}
         <aside className="hidden lg:block w-56 shrink-0">
           <div className="sticky top-24 space-y-1">
-            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">On this page</p>
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">ON THIS PAGE</p>
             {sections.map(({ id, label }) => (
               <button
                 key={id}
@@ -103,7 +103,7 @@ export function BlogTOC({ sections, variant = "inline" }: BlogTOCProps) {
                 className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-background border-t border-border rounded-t-2xl p-5 max-h-[60vh] overflow-y-auto"
               >
                 <div className="flex items-center justify-between mb-4">
-                  <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">On this page</p>
+                  <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">ON THIS PAGE</p>
                   <button onClick={() => setMobileOpen(false)} className="text-muted-foreground hover:text-foreground">
                     <X className="w-5 h-5" />
                   </button>
@@ -137,7 +137,7 @@ export function BlogTOC({ sections, variant = "inline" }: BlogTOCProps) {
     <>
       {/* Desktop: inline TOC card */}
       <nav className="hidden lg:block my-8 rounded-xl border border-border/40 bg-muted/20 p-5">
-        <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">On this page</p>
+        <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">ON THIS PAGE</p>
         <ul className="space-y-1.5">
           {sections.map(({ id, label }) => (
             <li key={id}>
@@ -190,7 +190,7 @@ export function BlogTOC({ sections, variant = "inline" }: BlogTOCProps) {
               className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-background border-t border-border rounded-t-2xl p-5 max-h-[60vh] overflow-y-auto"
             >
               <div className="flex items-center justify-between mb-4">
-                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">On this page</p>
+                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">ON THIS PAGE</p>
                 <button onClick={() => setMobileOpen(false)} className="text-muted-foreground hover:text-foreground">
                   <X className="w-5 h-5" />
                 </button>
