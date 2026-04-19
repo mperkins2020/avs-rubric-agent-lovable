@@ -73,15 +73,15 @@ export default function BlogVerificationLoop() {
               </div>
 
               <div className="space-y-6 text-foreground/90 leading-relaxed">
-                <p>If you're building an AI-native product, your public surface is already being evaluated by AI. Before a buyer books a demo, they're scanning your pricing page, your docs, your trust surfaces — increasingly through ChatGPT, Claude, Gemini, and Perplexity. By the time they reach your site, a machine has often already shaped their impression of you.</p>
+                <p>If you're building an AI-native product, your public surface is already being evaluated by AI. Before a buyer books a demo, they're scanning your pricing page, your docs, your trust surfaces that are increasingly discovered through ChatGPT, Claude, Gemini, and Perplexity. By the time they reach your site, a machine has often already shaped their impression of you.</p>
 
-                <p>When those signals are incomplete or contradictory, buyers don't always churn in obvious ways. They hesitate. They might still try your product, but would churn after a 7-day trial. They quietly route the budget to a competitor whose trust posture is easier to verify. You see the gap late — in the retention curve, in a lost deal, in pricing confusion a CFO flags on a call.</p>
+                <p>When those signals are incomplete or contradictory, buyers don't always churn in obvious ways. They hesitate. They might still try your product, but would churn after a 7-day trial. They quietly route the budget to a competitor whose trust posture is easier to verify. You see the gap late in the retention curve, in a lost deal, in pricing confusion a CFO flags on a call.</p>
 
                 <p>Which means the question isn't whether to use AI diagnostics on your own trust infrastructure. The question is whether the diagnostic's output deserves the trust it asks for.</p>
 
-                <p>Most don't. An AI system will confidently analyze whatever evidence it's given. If the evidence reaching the model is incomplete, contaminated, or wrong, the output will still look structured, still sound authoritative, and still be wrong. That failure mode is silent — it doesn't raise an exception.</p>
+                <p>Most don't. An AI system will confidently analyze whatever evidence it's given. If the evidence reaching the model is incomplete, contaminated, or wrong, the output will still look structured, still sound authoritative, and still be wrong. That failure mode is silent. It doesn't raise an exception.</p>
 
-                <p>The AVS Rubric is an evidence-based trust infrastructure diagnostic, which means its output is only as good as the evidence the pipeline delivers to the model. This post is about the engineering discipline that sits behind that output — and the single QA layer most AI-native tools skip.</p>
+                <p>The AVS Rubric is an evidence-based trust infrastructure diagnostic, which means its output is only as good as the evidence the pipeline delivers to the model. This post is about the engineering discipline that sits behind that output and the single QA layer most AI-native tools skip.</p>
 
                 <hr className="border-border/50 my-8" />
                 <h2 id="three-layers" className="text-2xl font-bold mt-12 mb-4 text-foreground">Three layers of QA, not two</h2>
@@ -122,17 +122,17 @@ export default function BlogVerificationLoop() {
 
                 <p>Evals assume the inputs are correct. QA assumes the model and inputs are both correct. For AI systems that read the external world — web scraping, RAG, agent tool calls — the inputs are dynamic and constantly changing. The assumption breaks. And when it breaks, the model doesn't error out. It produces confident, well-structured analysis of whatever it was given.</p>
 
-                <p>Most AI-native tools run evals on their model. Fewer run a dedicated verification layer on their inputs. The ones that don't can still produce trustworthy-sounding output — until the evidence shifts underneath them.</p>
+                <p>Most AI-native tools run evals on their model. Fewer run a dedicated verification layer on their inputs. The ones that don't can still produce trustworthy-sounding output until the evidence shifts underneath them.</p>
 
                 <hr className="border-border/50 my-8" />
                 <h2 id="in-practice" className="text-2xl font-bold mt-12 mb-4 text-foreground">What this looks like in practice</h2>
                 <p>In a recent stress test, the AVS Rubric scored an AI-native company on its credit-based pricing model. The early runs surfaced all the wrong evidence.</p>
 
-                <p>The scraper walks a company's sitemap and ranks pages by URL pattern: <code className="px-1 py-0.5 rounded bg-muted text-sm">/pricing</code> high, <code className="px-1 py-0.5 rounded bg-muted text-sm">/faq</code> and <code className="px-1 py-0.5 rounded bg-muted text-sm">/help</code> next, generic paths lower. Precise logic — until the sitemap itself is noisy. In this case, the sitemap included developer API documentation, terms of service, Zendesk category navigation pages (titles, no content), and user-generated documents in Korean and Indonesian the scraper couldn't distinguish from the company's own product pages.</p>
+                <p>The scraper walks a company's sitemap and ranks pages by URL pattern: <code className="px-1 py-0.5 rounded bg-muted text-sm">/pricing</code> high, <code className="px-1 py-0.5 rounded bg-muted text-sm">/faq</code> and <code className="px-1 py-0.5 rounded bg-muted text-sm">/help</code> next, generic paths lower. It has precise logic until the sitemap itself is noisy. In this case, the sitemap included developer API documentation, terms of service, Zendesk category navigation pages (titles, no content), and user-generated documents in Korean and Indonesian the scraper couldn't distinguish from the company's own product pages.</p>
 
-                <p>The pricing page itself was reachable. The detailed explanation of how credits actually work — how many credits each action costs, what happens when you run out, what's included per plan — was not. That article existed, but only inside the signed-in product experience, behind a FAQ link in an in-product modal. The scraper had no path to it from the marketing site, help center, or sitemap.</p>
+                <p>The pricing page itself was reachable. However, the detailed explanation of how credits actually work was not captured and fed to the model. That article existed, but only inside the signed-in product experience, behind a FAQ link in an in-product modal. The scraper had no path to it from the marketing site, help center, or sitemap.</p>
 
-                <p>Missing that article, the rubric scored the company's Safety Rails dimension 0 out of 2 total points. Its top recommendation was to publish a detailed explanation of how credits work — a document the company already had.</p>
+                <p>Missing that article, the rubric scored the company's Safety Rails dimension 0 out of 2 total points. Its top recommendation was to publish a detailed explanation of how credits work, which a document the company already had.</p>
 
                 <p>After the pipeline was fixed and a path to that article was in, the score moved from 8/16 (50%) to 12/16 (75%). Same company. Same public information. Four points of score movement driven entirely by what the model was allowed to see.</p>
 
@@ -142,17 +142,17 @@ export default function BlogVerificationLoop() {
                 <h2 id="disciplines" className="text-2xl font-bold mt-12 mb-4 text-foreground">What the rubric does to make its output defensible</h2>
                 <p>Six pipeline disciplines work together to keep the evidence that reaches the model worth reasoning over.</p>
 
-                <p><strong>URL-pattern exclusion rules.</strong> Certain page types are noise for a trust infrastructure scan: template pages, legal boilerplate, sitemap XML, developer subdomains, category navigation. These are blocked before entering the evidence pool. Every exclusion lives in a documented file with a "do not revert" rationale — so a future refactor doesn't quietly undo product logic.</p>
+                <p><strong>URL-pattern exclusion rules.</strong> Certain page types are noise for a trust infrastructure scan: template pages, legal boilerplate, sitemap XML, developer subdomains, category navigation. These are blocked before entering the evidence pool. Every exclusion lives in a documented file with a "do not revert" rationale so we don't accidentally undo the product logic.</p>
 
                 <p><strong>Intent-weighted page priority.</strong> Pricing pages rank highest, with FAQ and billing close behind. Comparison and solution pages get reserved slots. When crawl capacity forces tradeoffs, the pages that carry commercial signals are selected first.</p>
 
-                <p><strong>Manual overrides for undiscoverable content.</strong> Some of the most important pages — in-product credit explanations, trust center pages, compliance documentation — are linked from JavaScript tooltips or in-product modals that standard crawlers cannot follow. A <code className="px-1 py-0.5 rounded bg-muted text-sm">community_evidence</code> table includes them explicitly on every run.</p>
+                <p><strong>Manual overrides for undiscoverable content.</strong> Some of the most important pages including: in-product credit explanations, trust center pages, compliance documentation, are linked from JavaScript tooltips or in-product modals that standard crawlers cannot follow. A <code className="px-1 py-0.5 rounded bg-muted text-sm">community_evidence</code> table includes them explicitly on every run.</p>
 
                 <p><strong>Every wrong output logged.</strong> A running log captures every scan that produces a surprising result: the company, the affected dimension, the root cause, the fix, whether resolved. Over time, the log becomes a prioritization tool. Pipeline misses get fixed first because they outnumber model errors by a significant margin.</p>
 
                 <p><strong>Versioned cache.</strong> Every pipeline change bumps an analysis version, so scans never return stale results from before a fix.</p>
 
-                <p><strong>Three-pass median voting.</strong> Every scan runs three independent LLM passes at temperature 0.1. The median score per dimension is reported. Disagreement between passes becomes a diagnostic about evidence quality — when passes land on different scores, the variance is usually tracing back to thin or contradictory evidence in the input layer, not model randomness.</p>
+                <p><strong>Three-pass median voting.</strong> Every scan runs three independent LLM passes at temperature 0.1. The median score per dimension is reported. Disagreement between passes becomes a diagnostic about evidence quality. When passes land on different scores, the variance is usually tracing back to thin or contradictory evidence in the input layer, not model randomness.</p>
 
                 <p>None of these is visible in the final report. All of them are why the final report is defensible.</p>
 
@@ -161,7 +161,7 @@ export default function BlogVerificationLoop() {
                 <p>Every scan and analysis returns an evidence-backed diagnostic, not a verdict. Specifically:</p>
                 <ul className="list-disc pl-6 space-y-2">
                   <li>A <strong>Trust Stack score</strong> across eight dimensions on a 0–16 scale, with a maturity band from Nascent to Advanced.</li>
-                  <li><strong>Dimension-level breakdowns</strong> showing pass/fail on each underlying subtest — so you can see exactly which elements of your trust posture are landing and which aren't.</li>
+                  <li><strong>Dimension-level breakdowns</strong> showing pass/fail on each underlying subtest so you can see exactly which elements of your trust posture are landing and which aren't.</li>
                   <li>An <strong>evidence ledger</strong>. Every score cites the specific URL it was drawn from, with the extracted evidence visible. If you disagree with a score, you can trace the reasoning back to the source.</li>
                   <li><strong>Prioritized recommendations</strong> organized by Trust Stack layer, so a product or GTM lead can sequence fixes from foundational (Product-ICP clarity, Pricing Architecture) up through enterprise readiness.</li>
                 </ul>
@@ -174,11 +174,11 @@ export default function BlogVerificationLoop() {
 
                 <p>A related question: is this an AEO audit?</p>
 
-                <p>No. AEO tools evaluate individual pages for discoverability by answer engines — <em>can ChatGPT find and cite this page?</em> The AVS Rubric evaluates the <strong>public-facing trust layer as a system</strong> — whether pricing logic, cost drivers, safety rails, enterprise controls, and support content cohere into a trust posture a buyer can predict, verify, and defend across eight dimensions. A company can pass an AEO audit (every page findable) and still fail the rubric (the pieces don't add up to a coherent story a buyer can act on). They answer different questions, and a company serious about growth should probably run both.</p>
+                <p>No. AEO tools evaluate individual pages for discoverability by answer engines, answering questions like: can ChatGPT find and cite this page? The AVS Rubric evaluates the <strong>public-facing trust layer as a system</strong>, assessing whether pricing logic, cost drivers, safety rails, enterprise controls, and support content cohere into a trust posture a buyer can predict, verify, and defend across eight dimensions. A company can pass an AEO audit (every page findable) and still fail the rubric (the pieces don't add up to a coherent story a buyer can act on). They answer different questions, and a company serious about growth should probably run both.</p>
 
                 <hr className="border-border/50 my-8" />
                 <h2 id="see" className="text-2xl font-bold mt-12 mb-4 text-foreground">See what your surface looks like</h2>
-                <p>The AVS Rubric is live at <Link to="/" className="text-primary hover:underline font-semibold">app.valuetempo.com</Link>. A single scan runs the full trust infrastructure analysis across eight dimensions and returns an evidence-backed score, gap breakdown, and prioritized recommendations — grounded in the engineering described above.</p>
+                <p>The AVS Rubric is live at <Link to="/" className="text-primary hover:underline font-semibold">app.valuetempo.com</Link>. A single scan runs the full trust infrastructure analysis across eight dimensions and returns an evidence-backed score, gap breakdown, and prioritized recommendations. It is grounded in the engineering described above.</p>
 
                 <p>If you spot something the rubric should do differently on your own report, we want to know. Rate and comment on your results page. That feedback is how the loop keeps tightening.</p>
               </div>
