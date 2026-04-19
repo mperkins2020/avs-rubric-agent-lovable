@@ -102,7 +102,7 @@ export default function BlogVerificationLoop() {
                         <td className="py-2 px-3 font-semibold">Input Verification</td>
                         <td className="py-2 px-3">Are the inputs actually correct?</td>
                         <td className="py-2 px-3">Before the model call</td>
-                        <td className="py-2 px-3">Nothing — this is the check</td>
+                        <td className="py-2 px-3">Nothing. This is the check.</td>
                       </tr>
                       <tr className="border-b border-border/50">
                         <td className="py-2 px-3 font-semibold">Evals</td>
@@ -120,7 +120,7 @@ export default function BlogVerificationLoop() {
                   </table>
                 </div>
 
-                <p>Evals assume the inputs are correct. QA assumes the model and inputs are both correct. For AI systems that read the external world — web scraping, RAG, agent tool calls — the inputs are dynamic and constantly changing. The assumption breaks. And when it breaks, the model doesn't error out. It produces confident, well-structured analysis of whatever it was given.</p>
+                <p>Evals assume the inputs are correct. QA assumes the model and inputs are both correct. For AI systems that read the external world (web scraping, RAG, agent tool calls) the inputs are dynamic and constantly changing. The assumption breaks. And when it breaks, the model doesn't error out. It produces confident, well-structured analysis of whatever it was given.</p>
 
                 <p>Most AI-native tools run evals on their model. Fewer run a dedicated verification layer on their inputs. The ones that don't can still produce trustworthy-sounding output until the evidence shifts underneath them.</p>
 
@@ -132,7 +132,7 @@ export default function BlogVerificationLoop() {
 
                 <p>The pricing page itself was reachable. However, the detailed explanation of how credits actually work was not captured and fed to the model. That article existed, but only inside the signed-in product experience, behind a FAQ link in an in-product modal. The scraper had no path to it from the marketing site, help center, or sitemap.</p>
 
-                <p>Missing that article, the rubric scored the company's Safety Rails dimension 0 out of 2 total points. Its top recommendation was to publish a detailed explanation of how credits work, which a document the company already had.</p>
+                <p>Missing that article, the rubric scored the company's Safety Rails dimension 0 out of 2 total points. Its top recommendation was to publish a detailed explanation of how credits work. The company already had.</p>
 
                 <p>After the pipeline was fixed and a path to that article was in, the score moved from 8/16 (50%) to 12/16 (75%). Same company. Same public information. Four points of score movement driven entirely by what the model was allowed to see.</p>
 
@@ -146,7 +146,7 @@ export default function BlogVerificationLoop() {
 
                 <p><strong>Intent-weighted page priority.</strong> Pricing pages rank highest, with FAQ and billing close behind. Comparison and solution pages get reserved slots. When crawl capacity forces tradeoffs, the pages that carry commercial signals are selected first.</p>
 
-                <p><strong>Manual overrides for undiscoverable content.</strong> Some of the most important pages including: in-product credit explanations, trust center pages, compliance documentation, are linked from JavaScript tooltips or in-product modals that standard crawlers cannot follow. A <code className="px-1 py-0.5 rounded bg-muted text-sm">community_evidence</code> table includes them explicitly on every run.</p>
+                <p><strong>Manual overrides for undiscoverable content.</strong> Some of the most important pages including in-product credit explanations, trust center pages, compliance documentation, are linked from JavaScript tooltips or in-product modals that standard crawlers cannot follow. A <code className="px-1 py-0.5 rounded bg-muted text-sm">community_evidence</code> table includes them explicitly on every run.</p>
 
                 <p><strong>Every wrong output logged.</strong> A running log captures every scan that produces a surprising result: the company, the affected dimension, the root cause, the fix, whether resolved. Over time, the log becomes a prioritization tool. Pipeline misses get fixed first because they outnumber model errors by a significant margin.</p>
 
