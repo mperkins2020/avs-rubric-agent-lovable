@@ -40,7 +40,7 @@ export default function Blog() {
               <motion.article initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="bg-muted/20 border border-border/40 rounded-xl p-6 hover:border-primary/40 transition-colors">
                 <p className="text-sm text-muted-foreground mb-2">April 2026</p>
                 <h2 className="text-xl md:text-2xl font-bold group-hover:text-primary transition-colors mb-2">Why a Trust Diagnostic Needs More Than Evals</h2>
-                <p className="text-muted-foreground">Three layers of AI-native QA: how the AVS Rubric engineers for evidence integrity — and the verification layer most AI tools skip.</p>
+                <p className="text-muted-foreground">Three layers of AI-native QA: how the AVS Rubric engineers for evidence integrity, and the verification layer most AI tools skip.</p>
               </motion.article>
             </Link>
 
