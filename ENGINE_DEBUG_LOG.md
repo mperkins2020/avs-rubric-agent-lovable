@@ -1672,7 +1672,7 @@ These are locked reference scores for companies that have been fully validated. 
 | Clay.com | Value Unit | 2/2 | 90% | Requires university.clay.com/docs/actions-data-credits in evidence set. If this page is absent, Value Unit drops to 1/2 — this is the Signal Page for this dimension. |
 | Hex.tech | Overall | 100% | 76% | Post-V2 score after modal and FAQ anchor links added. V1 63% was pipeline miss. |
 | Miro.com | Overall | 69% (11/16) | 64% | V2 post-fix. Pricing page present. Score reflects genuine partial observability — AI credit metering not publicly documented. Valid baseline. Follow-up recommended to check FAQ deep links on pricing page. |
-| ZoomInfo.com | Value Unit | 1/2 | 50% | V1 is authoritative. Seats and credits confirmed on `/faqs/pricing`. V2 regression to 0/2 was a Score Stability failure. Credit metering detail and audit surfaces not publicly documented — this is why confidence is medium, not high. |
+| ZoomInfo.com | Value Unit | 1/2 | 50% | V1 is authoritative. Confirmed again at v18 post scraper fixes — billing page dedup removal eliminated dimension bleed that had inflated this to 2/2 in the broken run. Credit metering formula and auditability surfaces not publicly documented — genuine gap, not pipeline miss. |
 | Relevance AI | Overall | 63% (10/16) | 64% | V2 post-fix. 4 pages. Pricing page present via canonical path probing. Remaining gaps (Value Unit 1/2, overage policy) reflect deliberate non-disclosure — accurate, not pipeline misses. |
 | Relevance AI | Overages & Risk | 1/2 | 45% | Pricing page explicitly states "Overage Policy: None specified." Score is accurate. Do not adjust upward without new public evidence of an actual overage policy. |
 
