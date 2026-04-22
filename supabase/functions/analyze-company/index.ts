@@ -1,6 +1,5 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { classifyModelType } from "./classifyModelType.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -30,7 +29,7 @@ interface AnalyzeRequest {
 // Deno EdgeRuntime type for background processing
 declare const EdgeRuntime: { waitUntil: (p: Promise<unknown>) => void };
 
-const ANALYSIS_VERSION = '2026-04-18-pipeline-v16';
+const ANALYSIS_VERSION = '2026-04-22-pipeline-v18';
 
 const COMPANY_PROFILE_PROMPT = `You are an expert business analyst. Analyze the following website content and extract a company profile.
 
@@ -44,14 +43,35 @@ Return a JSON object with these exact fields:
   "icpGuess": ["Array", "of", "ideal customer profile traits"],
   "keyWorkflows": ["Array", "of", "main workflows or use cases"],
   "productSurface": "api" | "app" | "both",
-  "pricingModelGuess": "seat" | "usage" | "hybrid" | "outcome" | "unknown",
+  "model_type_l1": "access" | "consumption" | "outcome" | "hybrid" | "gated" | "unclassified",
+  "model_type_l2": "per-seat" | "per-license" | "flat-rate-tiered" | "per-unit-metered" | "credit-pool" | "prepaid-block" | "event:resolution" | "event:conversation" | "event:checkpoint" | "share:revenue" | "share:clinical" | "access+consumption" | "access+outcome" | "consumption+outcome" | "unspecified",
+  "model_type_confidence": 0.0 to 1.0,
+  "classification_evidence": ["2–5 short verbatim snippets from pricing content that determined the classification"],
   "valueUnitGuess": "What they charge for (e.g., 'per user', 'per API call')",
   "packagingNotes": "Notes about their pricing tiers/packages",
   "trustControlsSeen": ["Array", "of", "security/trust controls mentioned"],
   "indicatorsSeen": ["Array", "of", "key indicators or metrics they mention"]
 }
 
-Be analytical and precise. If you can't determine something, use reasonable inferences based on the content. For productSurface, pricingModelGuess, use exactly those string values.`;
+Pricing model classification rules:
+- "access": Fixed per-user/seat/member/license pricing. No metered consumption.
+- "consumption": Pay-per-use — tokens, API calls, credits, minutes, GB, etc.
+- "outcome": Pay for results — per resolution, per conversation, revenue share.
+- "hybrid": Two or more of the above coexist in the same product (e.g., seat base + usage overages).
+- "gated": Pricing is entirely behind "Contact Sales" with no public prices.
+- "unclassified": Pricing page exists but model cannot be determined from the content.
+
+For model_type_l2:
+- access → one of: per-seat, per-license, flat-rate-tiered, unspecified
+- consumption → one of: per-unit-metered, credit-pool, prepaid-block, unspecified
+- outcome → one of: event:resolution, event:conversation, event:checkpoint, share:revenue, share:clinical, unspecified
+- hybrid → the two component types joined with "+", e.g., "access+consumption"
+- gated or unclassified → "unspecified"
+
+For model_type_confidence: 0.0 = no pricing page or entirely ambiguous; 1.0 = explicit, unambiguous pricing language.
+For classification_evidence: 2–5 short verbatim snippets from the pricing page content that directly support model_type_l1. Return an empty array if no pricing page is available.
+
+Be analytical and precise. If you can't determine something, use reasonable inferences based on the content. For productSurface and model_type_l1, use exactly those string values.`;
 
 const RUBRIC_SCORING_PROMPT = `You are an expert in SaaS pricing and value strategy. Score this company against the AVS (Adaptive Value System) rubric.
 
@@ -67,9 +87,9 @@ EVIDENCE QUALITY RULES (MANDATORY — apply before scoring every dimension):
 9. STRUCTURED DATA CAVEAT: Sections labeled "Machine-Extracted — NOT direct quotes" contain AI-paraphrased data. Use them as scoring context but do NOT cite their text as direct quotes in sourceEvidence. Always prefer the original markdown content for direct citations.
 
 PRICING MODEL CATEGORY AWARENESS (MANDATORY — apply throughout all dimension scoring):
-The "Pricing Model Guess" in the user content tells you the pricing category. Apply these overrides wherever they conflict with individual subtest defaults:
+The "Pricing Model" in the user content tells you the pricing category. Apply these overrides wherever they conflict with individual subtest defaults:
 
-SEAT-BASED products (Pricing Model Guess == "seat"): Per-user/seat pricing, no metered consumption. These rules override the default subtest logic:
+ACCESS/SEAT-BASED products (Pricing Model == "access"): Per-user/seat pricing, no metered consumption. These rules override the default subtest logic:
 - D5 C1: Pass if ≥1 cost driver with driver_unit == seats AND per-seat price is published for at least one tier. The "≥3 drivers" and "≥1 inference-related" requirements are NOT applicable — seat products have one driver by design.
 - D5 C4: Pass if per-seat price is published for at least one non-enterprise tier. p50/p95 variance is NOT required — seat cost is deterministic (seats × price).
 - D5 C5: Auto-pass. Seat counts don't spike. Spike trigger requirements do NOT apply.
@@ -88,9 +108,9 @@ SEAT-BASED products (Pricing Model Guess == "seat"): Per-user/seat pricing, no m
 - D8 T6: Pass if what happens at plan boundaries is documented (feature restrictions, upgrade prompts, or limit behavior stated). Rate limits and circuit breakers for variable usage are N/A.
 - D8 T2 gate: The "If T2 fails: cap final dimension score at 1" gate does NOT apply when T2 passes under the seat-based reinterpretation above.
 
-CONSUMPTION-BASED ("usage") and PLATFORM/COMPUTE products: Apply all subtests as specified in each dimension. No overrides.
+CONSUMPTION-BASED ("consumption") and PLATFORM/COMPUTE products: Apply all subtests as specified in each dimension. No overrides.
 
-HYBRID products ("hybrid"): Score the seat component using seat-based overrides above, the metered/consumption component using standard consumption rules. For subtests that span both components (D5 C1, D6 P3, D7 R1–R6), the lower-passing component is binding. For D8, both enterprise trust surfaces (SSO, audit logs, admin controls) AND consumption safety rails (caps, alerts, dashboards for the metered component) must be present for 2/2.
+HYBRID products ("hybrid"): Score the access/seat component using access-based overrides above, the metered/consumption component using standard consumption rules. For subtests that span both components (D5 C1, D6 P3, D7 R1–R6), the lower-passing component is binding. For D8, both enterprise trust surfaces (SSO, audit logs, admin controls) AND consumption safety rails (caps, alerts, dashboards for the metered component) must be present for 2/2.
 
 For each of the 8 dimensions below, provide:
 - score: 0 (not present), 1 (emerging), or 2 (strong)
@@ -1930,27 +1950,20 @@ Deno.serve(async (req) => {
       console.log('Company profile extracted:', companyProfile.companyName);
     }
 
-    // ── Model-Type Classifier (post-ingestion, pre-scoring) ──
-    const pricingPage = prioritizedPages.find(p =>
-      /\/(pricing|plans?)\b/i.test(p.url)
-    );
-    const billingPage = prioritizedPages.find(p =>
-      /\/(billing|credits?)\b/i.test(p.url)
-    );
-    const faqPage = prioritizedPages.find(p =>
-      /\/(faq|help)\b/i.test(p.url)
-    );
-    const caseStudyPages = prioritizedPages
-      .filter(p => /\/(case[-_]?stud|customers?|stories)\b/i.test(p.url))
-      .slice(0, 2);
-
-    const modelClassification = classifyModelType({
-      pricingPageContent: pricingPage?.markdown || '',
-      billingPageContent: billingPage?.markdown,
-      faqContent: faqPage?.markdown,
-      caseStudyContent: caseStudyPages.length > 0 ? caseStudyPages.map(p => p.markdown) : undefined,
-      pricingPageExists: !!pricingPage,
-    });
+    // ── Model-Type Classification — derived from LLM company profile (single classifier) ──
+    const l1 = String(companyProfile.model_type_l1 || 'unclassified');
+    const l2 = String(companyProfile.model_type_l2 || 'unspecified');
+    const modelClassification = {
+      model_type: l2 !== 'unspecified' ? `${l1}:${l2}` : l1,
+      model_type_l1: l1,
+      model_type_l2: l2,
+      model_type_confidence: Number(companyProfile.model_type_confidence ?? 0),
+      model_type_source: Number(companyProfile.model_type_confidence ?? 0) >= 0.50 ? 'auto' : 'unclassified',
+      enterprise_pricing: l1 === 'gated' ? 'gated' : 'public',
+      classification_evidence: Array.isArray(companyProfile.classification_evidence)
+        ? companyProfile.classification_evidence
+        : [],
+    };
     console.log('Model-type classification:', modelClassification.model_type, 'confidence:', modelClassification.model_type_confidence);
 
     // Fix 3B: Page-to-Dimension Routing
@@ -2002,7 +2015,7 @@ Company: ${companyProfile.companyName}
 Description: ${companyProfile.oneLineDescription}
 Primary Users: ${companyProfile.primaryUsers}
 Product Surface: ${companyProfile.productSurface}
-Pricing Model Guess: ${companyProfile.pricingModelGuess}
+Pricing Model: ${companyProfile.model_type_l1}
 ${previousScores && previousScores.length > 0 && !insiderAnswers ? `
 RERUN WITH NEW PUBLIC EVIDENCE:
 This is a re-analysis with additional public pages that were not available in the original scan.

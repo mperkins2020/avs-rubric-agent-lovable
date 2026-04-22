@@ -4,7 +4,7 @@
 **Usage:** When a report produces a questionable result, log it here. Run `Scan the debug log for recurring patterns` periodically to surface systemic issues.
 **Related:** See ENGINE_DEBUG_HISTORY.md for backfilled history from git.
 
-**Entries:** 45 | **Last updated:** April 18, 2026
+**Entries:** 48 | **Last updated:** April 22, 2026
 
 ---
 
@@ -18,10 +18,10 @@
 | gate_misfire | 0 | — |
 | confidence_miscalc | 0 | — |
 | prompt_drift | 1 | ICP and Job Clarity (D2) |
-| pipeline_miss | 21 | Value Unit, Cost Driver Mapping, Safety/Trust, Overages & Risk, URL filter |
+| pipeline_miss | 23 | Value Unit, Cost Driver Mapping, Safety/Trust, Overages & Risk, URL filter |
 | contamination | 13 | Pricing Transparency, Enterprise/Compliance (D7/D8) |
 | calibration | 3 | Value unit (D4), ICP and Job Clarity (D2), Safety Rails (D8) |
-| other | 0 | — |
+| other | 1 | N/A — architecture decision |
 
 ---
 
@@ -30,6 +30,87 @@
 <!-- Newest first. To add an entry, copy the template below and fill it in. -->
 
 <!-- Next entry goes here -->
+
+---
+
+### Entry 048 — April 22, 2026
+
+| Field | Value |
+|-------|-------|
+| Company | ZoomInfo.com |
+| Version | 2026-04-22-pipeline-v17 |
+| Dimension | N/A — URL filter / deduplication |
+| Subtest(s) | N/A |
+| V1 Score | N/A |
+| V2 Score | N/A |
+| Root Cause | pipeline_miss — same-URL query-string variants bypassing dedup |
+| Caught By | Manual review of Pages Analyzed list |
+| Status | implemented ✅ |
+
+**Root Cause Detail:**
+`www.zoominfo.com/about/payments` appeared 4 times in the Pages Analyzed list. `normaliseForDedup()` strips `#:~:text=` anchors but preserves all other hash fragments (by design — FAQ section anchors like `#faq-credits` reveal genuinely different JS-rendered content). ZoomInfo links to `/about/payments` from multiple places with different section anchors (`#creditcard`, `#invoice`, `#bank-transfer`, etc.), each producing a distinct dedup key and consuming a separate slot. Unlike pricing FAQ anchors, billing page section anchors do not reveal different content.
+
+**Resolution:**
+For paths matched by `BILLING_DEDUP_PATHS` in `normaliseForDedup()`, strip both query params AND hash fragments before key comparison. Billing support pages have no section-partitioned content that would justify separate slots.
+
+**Pattern Tag:** `dedup-query-param-billing-page`
+
+---
+
+### Entry 047 — April 22, 2026
+
+| Field | Value |
+|-------|-------|
+| Company | ZoomInfo.com |
+| Version | 2026-04-22-pipeline-v17 |
+| Dimension | N/A — URL filter |
+| Subtest(s) | N/A |
+| V1 Score | N/A |
+| V2 Score | N/A |
+| Root Cause | pipeline_miss — product database pages with pure numeric IDs consuming evidence slots |
+| Caught By | Manual review of Pages Analyzed list |
+| Status | implemented ✅ |
+
+**Root Cause Detail:**
+ZoomInfo's company enrichment pages (`/c/1fit/551539465`, `/c/8worx-co/474189324`, etc.) were included in the evidence set. These are ZoomInfo's product output — enriched profiles of *other companies* in their database — not ZoomInfo's own corporate content. They returned "Access to this page has been denied" (login wall) and contributed zero evidence. The `isEvidenceEligible()` resource-instance ID filter checks for mixed alphanumeric slugs (Rules A–D) but does not reject pure numeric last path segments. A 9-digit integer like `551539465` is always a database record key, never a content page.
+
+**Resolution:**
+Add Rule E to `isEvidenceEligible()`: reject any URL whose last path segment is a pure numeric string of 5+ digits. Catches `/c/company/551539465` universally without ZoomInfo-specific hardcoding.
+
+**Pattern Tag:** `numeric-id-product-page`, `login-wall-evidence-slot`
+
+---
+
+### Entry 046 — April 22, 2026
+
+| Field | Value |
+|-------|-------|
+| Company | N/A — Pipeline architecture |
+| Version | 2026-04-22-pipeline-v17 |
+| Dimension | All (model_type drives D5–D8 guardrail overrides) |
+| Subtest(s) | N/A |
+| V1 Score | N/A |
+| V2 Score | N/A |
+| Root Cause | other — architecture decision |
+| Caught By | Deliberate consolidation review |
+| Status | implemented ✅ |
+
+**Decision: Single LLM-based model type classifier**
+
+The regex classifier (`classifyModelType.ts`) and the LLM-inferred `pricingModelGuess` in the company profile were two parallel systems producing the same output through different methods. The regex classifier had low confidence on ambiguous cases because it operates on pricing page text only, with no holistic context. The LLM identifier, receiving all scraped content, was consistently more accurate but had no L2 variant output and no explicit confidence score.
+
+**Resolution:**
+Consolidated into a single LLM classifier. `COMPANY_PROFILE_PROMPT` now returns `model_type_l1`, `model_type_l2`, `model_type_confidence`, and `classification_evidence` using the internal taxonomy (`access/consumption/outcome/hybrid/gated/unclassified`). `classifyModelType.ts` is no longer called. `modelClassification` is derived directly from the company profile.
+
+**Taxonomy split (user-facing vs. internal):**
+- Internal: `access`, `consumption`, `outcome`, `hybrid`, `gated`, `unclassified`
+- Display: "Seat-based", "Usage-based", "Outcome-based", "Hybrid", "Enterprise / Contact Sales", "Unknown"
+- Display label is a deterministic mapping from `model_type_l1` — never LLM-generated at render time.
+- `classification_evidence` is internal only — not rendered in any public-facing component.
+
+**RUBRIC_SCORING_PROMPT updated:** `Pricing Model Guess == "seat"` → `Pricing Model == "access"`, `"usage"` → `"consumption"`. Hybrid and outcome terms unchanged.
+
+**Pattern Tag:** `classifier-consolidation`, `taxonomy-unification`
 
 ---
 
@@ -1572,6 +1653,8 @@ Recurring pipeline failure patterns identified across production runs. Each row 
 | Changelog over-representation — versioned `/changelog/x-y-z` entries consuming multiple slots with zero pricing/trust signal | Fixed — Bundle 1. `/changelog/*` capped at 1 slot in per-category slot reservation. |
 | Locale variant paths not deduplicated — `/en-US/page` and `/page` treated as distinct URLs | Fixed — Bundle 1. `normaliseForDedup()` strips locale prefixes (`/en/`, `/en-US/`, `/fr/`, etc.) before deduplication key comparison. |
 | `/docs/*` over-representation without keyword gating — integration and feature docs consuming slots ahead of billing/limits docs | Open — observed: Deepnote (9 of 10 docs slots zero-signal; only `/docs/billing-alerts-and-limits` relevant). Fix: boost `/docs/*billing*`, `/docs/*credits*`, `/docs/*limits*`, `/docs/*security*` etc.; cap non-matching `/docs/*` at 2 slots. |
+| Product database pages with pure numeric last path segment consuming evidence slots — e.g., `/c/company/551539465` are database record URLs that return login walls | Fixed — Rule E added to `isEvidenceEligible()`: reject last path segment matching `/^\d{5,}$/`. Observed: ZoomInfo (Entry 047). |
+| Same billing page URL with section anchor variants appearing multiple times in Pages Analyzed — dedup preserves hash fragments by design (for FAQ anchors) but billing pages have no section-partitioned content | Fixed — `normaliseForDedup()` strips both query params and hash fragments for billing/payment paths. Observed: ZoomInfo `/about/payments` ×4 (Entry 048). |
 | Trust center hosted on separate subdomain (`compliance.*`, `trust.*`, `security.*`) — unreachable by path probing or Firecrawl map | Open — observed: ElevenLabs `compliance.elevenlabs.io` (Entry 015). Path pinning in Bundle 2 cannot reach subdomain-hosted trust centers. Fix: probe `compliance.{domain}`, `trust.{domain}`, `security.{domain}` as subdomain roots alongside canonical path probes. |
 | Login-wall pages consuming evidence slots — `/subscription`, `/usage`, `/account` scrape successfully (HTTP 200) but return only "Sign In" page with zero evidence | Open — observed: ElevenLabs `/subscription` and `/usage` (Entry 015), 28% of evidence budget wasted. Fix: add gated path blocklist to `isEvidenceEligible()`: reject `/subscription`, `/usage`, `/account`, `/dashboard`, `/settings`, `/login`, `/signin`, `/sign-in`, `/register`. |
 | Tab-partitioned pricing page — query-param tab variants (`?price.platform=api` etc.) not reached by map, Fix 1, or deduplication; each tab contains distinct pricing/limits evidence | Open — observed: ElevenLabs pricing (Entry 015). Affects D5 and D7 specifically. Fix: after scraping `/pricing`, scan raw HTML for query-param variants on same path; probe each as a separate high-priority evidence page. |

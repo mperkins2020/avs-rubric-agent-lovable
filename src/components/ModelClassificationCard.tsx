@@ -67,20 +67,6 @@ export function ModelClassificationCard({ classification }: ModelClassificationC
         )}
       </div>
 
-      {classification.classification_evidence.length > 0 && (
-        <details className="group">
-          <summary className="text-xs text-muted-foreground cursor-pointer hover:text-foreground transition-colors">
-            View classification evidence ({classification.classification_evidence.length} signals)
-          </summary>
-          <ul className="mt-2 space-y-1 text-xs text-muted-foreground">
-            {classification.classification_evidence.map((ev, i) => (
-              <li key={i} className="pl-3 border-l-2 border-border py-0.5 font-mono break-all">
-                {ev}
-              </li>
-            ))}
-          </ul>
-        </details>
-      )}
     </motion.div>
   );
 }

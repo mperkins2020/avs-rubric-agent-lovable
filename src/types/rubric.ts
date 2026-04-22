@@ -72,7 +72,10 @@ export interface CompanyProfile {
   icpGuess: string[];
   keyWorkflows: string[];
   productSurface: 'api' | 'app' | 'both';
-  pricingModelGuess: 'seat' | 'usage' | 'hybrid' | 'outcome' | 'unknown';
+  model_type_l1: 'access' | 'consumption' | 'outcome' | 'hybrid' | 'gated' | 'unclassified';
+  model_type_l2: string;
+  model_type_confidence: number;
+  classification_evidence: string[];
   valueUnitGuess: string;
   packagingNotes: string;
   trustControlsSeen: string[];

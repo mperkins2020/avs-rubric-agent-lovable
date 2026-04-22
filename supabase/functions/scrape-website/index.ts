@@ -1001,7 +1001,9 @@ Deno.serve(async (req) => {
             // Rule D — compound slugs ending in a random opaque suffix
             (lastTokenEE.length >= 8 &&
              /^[a-z0-9]+$/.test(lastTokenEE) &&
-             lastTokenDigitsEE >= 2)
+             lastTokenDigitsEE >= 2) ||
+            // Rule E — pure numeric IDs (database record keys, e.g. zoominfo.com/c/co/551539465)
+            /^\d{5,}$/.test(lastSeg)
           ) return false;
           // Gated path blocklist — these paths are uniformly behind authentication across SaaS.
           // They return HTTP 200 + a login wall page with zero evidence content, wasting a slot.
@@ -1015,6 +1017,9 @@ Deno.serve(async (req) => {
       // Strips: #:~:text= fragments, locale prefixes, www prefix, trailing slash, http→https.
       // Preserves: query params — e.g. elevenlabs.io/pricing?price.platform=api is genuinely
       // different content from elevenlabs.io/pricing and must keep its own slot.
+      // Exception: billing/payment support pages have no content-differentiating query params —
+      // strip them entirely so tracking variants don't consume multiple slots.
+      const BILLING_DEDUP_PATHS = /\/(?:about\/payments?|billing(?:-support)?|invoice|payments?|billing-and-invoices|payment-support)\b/i;
       const normaliseForDedup = (link: string): string => {
         try {
           const parsed = new URL(link);
@@ -1029,6 +1034,9 @@ Deno.serve(async (req) => {
           parsed.hostname = parsed.hostname.replace(/^www\./, '');
           // Normalize http → https — http://example.com/pricing ≡ https://example.com/pricing
           parsed.protocol = 'https:';
+          // Strip query params and hash fragments from billing support pages — section anchors
+          // and tracking variants all resolve to the same content and must not consume separate slots.
+          if (BILLING_DEDUP_PATHS.test(parsed.pathname)) { parsed.search = ''; parsed.hash = ''; }
           return parsed.toString();
         } catch { return link; }
       };

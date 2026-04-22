@@ -10,6 +10,15 @@ import {
 } from "lucide-react";
 import type { CompanyProfile } from "@/types/rubric";
 
+const MODEL_TYPE_DISPLAY: Record<string, string> = {
+  access: 'Seat-based',
+  consumption: 'Usage-based',
+  outcome: 'Outcome-based',
+  hybrid: 'Hybrid',
+  gated: 'Enterprise / Contact Sales',
+  unclassified: 'Unknown',
+};
+
 interface CompanyProfileCardProps {
   profile: CompanyProfile;
 }
@@ -48,7 +57,7 @@ export function CompanyProfileCard({ profile }: CompanyProfileCardProps) {
               <CreditCard className="w-4 h-4" />
               <span className="text-xs uppercase tracking-wider">Pricing Model</span>
             </div>
-            <p className="text-sm capitalize">{profile.pricingModelGuess}</p>
+            <p className="text-sm">{MODEL_TYPE_DISPLAY[profile.model_type_l1] ?? profile.model_type_l1}</p>
           </div>
 
           {/* Value Unit */}

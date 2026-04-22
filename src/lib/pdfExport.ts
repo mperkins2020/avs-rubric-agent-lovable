@@ -106,7 +106,7 @@ export function exportToPDF({ companyProfile, rubricScore, observability }: Expo
     ["Economic Buyer", companyProfile.economicBuyerGuess],
     ["ICP", companyProfile.icpGuess.join(", ")],
     ["Product Surface", companyProfile.productSurface.toUpperCase()],
-    ["Pricing Model", companyProfile.pricingModelGuess.charAt(0).toUpperCase() + companyProfile.pricingModelGuess.slice(1)],
+    ["Pricing Model", { access: 'Seat-based', consumption: 'Usage-based', outcome: 'Outcome-based', hybrid: 'Hybrid', gated: 'Enterprise / Contact Sales', unclassified: 'Unknown' }[companyProfile.model_type_l1] ?? companyProfile.model_type_l1],
     ["Value Unit", companyProfile.valueUnitGuess],
   ];
 
