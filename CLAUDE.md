@@ -66,6 +66,24 @@ VALUES ('company.com', 'https://help.company.com/en/articles/...');
 
 ---
 
+## Scraper Dev Tools
+
+Four local tools in `tools/scraper-dev/` — run from the repo root.
+
+| Command | What it does |
+|---|---|
+| `npm run filter <url> [url2]...` | Tests URLs against every filter layer — shows which rules fire and why |
+| `npm run preview-urls <domain>` | Calls Firecrawl /map and shows which pages WOULD be scraped (add `--verbose` for dropped URLs) |
+| `npm run check-version` | Pre-deploy safety check — confirms local source is committed and pushed before deploying |
+| `npm run diff-pages <domain>` | Side-by-side diff of pages analyzed between the two most recent scans |
+
+**filter** example: `npm run filter 'https://zoominfo.com/c/co/551539465' 'https://zoominfo.com/pricing'`
+**preview-urls** example: `npm run preview-urls gamma.app --verbose`
+**check-version**: Run this before every Lovable deploy to prevent the "stale code deployed silently" problem.
+**diff-pages** example: `npm run diff-pages zoominfo.com`
+
+---
+
 ## ANALYSIS_VERSION
 
 Bump `ANALYSIS_VERSION` in `supabase/functions/analyze-company/index.ts` every time either edge function is meaningfully changed. Format: `'YYYY-MM-DD-pipeline-vN'`. Without a bump, the 7-day cache serves stale results.
