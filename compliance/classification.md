@@ -34,6 +34,7 @@ The system does not operate in any high-risk domain: critical infrastructure, ed
 | Mark AI-generated outputs | `src/pages/Results.tsx` — "AI-generated" badge with model attribution tooltip |
 | Disclose in exported artifacts | `src/lib/pdfExport.ts` — disclaimer text names the models used |
 | Public-facing transparency | `src/pages/Privacy.tsx` — AI Disclosure section |
+| Decision/QA logging | `ENGINE_DEBUG_LOG.md` (go-forward) and `ENGINE_DEBUG_HISTORY.md` (backfilled) — per-scan engine decisions, root causes, dimension outcomes |
 
 ## Models used (sub-processors)
 
