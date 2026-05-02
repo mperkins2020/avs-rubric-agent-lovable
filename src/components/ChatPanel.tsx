@@ -105,9 +105,15 @@ export function ChatPanel({ messages, onSendMessage, isLoading = false }: ChatPa
             <MessageCircle className="w-5 h-5 text-primary" />
           </div>
           <div>
-            <h3 className="font-semibold">Challenge Chat</h3>
+            <div className="flex items-center gap-2">
+              <h3 className="font-semibold">Challenge Chat</h3>
+              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-medium rounded-full bg-muted text-muted-foreground border border-border">
+                <Sparkles className="w-2.5 h-2.5" aria-hidden="true" />
+                AI
+              </span>
+            </div>
             <p className="text-xs text-muted-foreground">
-              Ask questions about your score
+              Replies are AI-generated — verify before acting
             </p>
           </div>
         </div>
