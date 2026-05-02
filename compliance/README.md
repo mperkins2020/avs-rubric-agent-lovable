@@ -22,4 +22,4 @@ Every six months, or immediately when:
 - Transparency badges: `src/pages/Results.tsx`, `src/components/ChatPanel.tsx`
 - PDF disclosure: `src/lib/pdfExport.ts`
 - Public-facing disclosure: `src/pages/Privacy.tsx`
-- QA logs: `ENGINE_DEBUG_LOG.md`, `ENGINE_DEBUG_HISTORY.md`
+- Decision & QA logs (Art. 12-style record-keeping): `ENGINE_DEBUG_LOG.md` (go-forward, append-only), `ENGINE_DEBUG_HISTORY.md` (backfilled from git)
