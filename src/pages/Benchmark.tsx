@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -586,10 +586,9 @@ function Heatmap({
         </div>
       ))}
 
-      {dimensions.map((dim, rowIdx) => (
-        <>
+      {dimensions.map((dim) => (
+        <Fragment key={`row-${dim}`}>
           <div
-            key={`label-${dim}`}
             className="text-xs text-foreground py-2 pr-2 truncate"
             title={dim}
           >
@@ -622,7 +621,7 @@ function Heatmap({
               </Tooltip>
             );
           })}
-        </>
+        </Fragment>
       ))}
 
       {/* avg row */}

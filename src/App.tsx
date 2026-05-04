@@ -22,6 +22,7 @@ import BlogClayPricing from "./pages/BlogClayPricing";
 import BlogEngineTuning from "./pages/BlogEngineTuning";
 import BlogVerificationLoop from "./pages/BlogVerificationLoop";
 import ResetPassword from "./pages/ResetPassword";
+import Benchmark from "./pages/Benchmark";
 
 const queryClient = new QueryClient();
 
@@ -52,6 +53,8 @@ const AppRoutes = () => (
     <Route path="/resources/blog/clay-pricing-three-layers" element={<BlogClayPricing />} />
     <Route path="/resources/blog/stable-score-unstable-evidence" element={<BlogEngineTuning />} />
     <Route path="/resources/blog/verification-loop" element={<BlogVerificationLoop />} />
+    <Route path="/benchmark" element={<Benchmark />} />
+    <Route path="/benchmark/:categorySlug" element={<Benchmark />} />
     
     <Route path="*" element={<NotFound />} />
   </Routes>
