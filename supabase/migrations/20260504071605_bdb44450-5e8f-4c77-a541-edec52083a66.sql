@@ -1,0 +1,126 @@
+CREATE OR REPLACE FUNCTION get_benchmark_data(
+  p_category text,
+  p_month    text
+)
+RETURNS json
+LANGUAGE sql
+SECURITY DEFINER
+STABLE
+SET search_path TO 'public'
+AS $$
+  WITH
+  current_scans AS (
+    SELECT
+      bc.company_name,
+      bc.domain,
+      bc.sort_order,
+      bc.notes,
+      sr.id            AS scan_id,
+      sr.created_at    AS scanned_at,
+      sr.result_json,
+      (sr.result_json->'rubricScore'->>'totalScore')::int        AS total_score,
+      (sr.result_json->'rubricScore'->>'maxScore')::int          AS max_score,
+      sr.result_json->'rubricScore'->>'band'                     AS band,
+      sr.result_json->'rubricScore'->'dimensionScores'           AS dimension_scores,
+      sr.result_json->'modelClassification'->>'model_type_l1'    AS model_type_l1,
+      sr.result_json->'modelClassification'->>'model_type_l2'    AS model_type_l2,
+      sr.result_json->'categoryClassification'->>'category_primary' AS category_primary,
+      (sr.result_json->'observability'->>'confidenceScore')::int AS confidence_score,
+      sr.result_json->'observability'->>'level'                  AS observability_level,
+      sr.result_json->'rubricScore'->'strengths'                 AS strengths,
+      sr.result_json->'rubricScore'->'weaknesses'                AS weaknesses,
+      sr.result_json->>'analysisVersion'                         AS analysis_version
+    FROM benchmark_companies bc
+    LEFT JOIN scan_results sr
+      ON  sr.url_domain      = bc.domain
+      AND sr.is_benchmark    = true
+      AND sr.benchmark_month = p_month
+      AND (sr.result_json->>'analysisVersion') NOT IN ('pending', 'error')
+    WHERE bc.category = p_category
+      AND bc.active   = true
+    ORDER BY bc.sort_order
+    LIMIT 8
+  ),
+  prior_month AS (
+    SELECT to_char(
+      to_date(p_month, 'YYYY-MM') - interval '1 month',
+      'YYYY-MM'
+    ) AS month_str
+  ),
+  prior_scans AS (
+    SELECT
+      bc.domain,
+      (sr.result_json->'rubricScore'->>'totalScore')::int   AS total_score,
+      sr.result_json->'rubricScore'->'dimensionScores'      AS dimension_scores,
+      sr.result_json->'rubricScore'->>'band'                AS band
+    FROM benchmark_companies bc
+    CROSS JOIN prior_month pm
+    LEFT JOIN scan_results sr
+      ON  sr.url_domain      = bc.domain
+      AND sr.is_benchmark    = true
+      AND sr.benchmark_month = pm.month_str
+      AND (sr.result_json->>'analysisVersion') NOT IN ('pending', 'error')
+    WHERE bc.category = p_category
+      AND bc.active   = true
+  )
+  SELECT json_build_object(
+    'category',    p_category,
+    'month',       p_month,
+    'prior_month', (SELECT month_str FROM prior_month),
+    'companies',   COALESCE(
+      (
+        SELECT json_agg(
+          json_build_object(
+            'company_name',          cs.company_name,
+            'domain',                cs.domain,
+            'notes',                 cs.notes,
+            'total_score',           cs.total_score,
+            'max_score',             cs.max_score,
+            'total_score_pct',       CASE WHEN cs.max_score > 0
+                                       THEN round((cs.total_score::numeric / cs.max_score) * 100)
+                                       ELSE NULL END,
+            'band',                  cs.band,
+            'dimension_scores',      cs.dimension_scores,
+            'model_type_l1',         cs.model_type_l1,
+            'model_type_l2',         cs.model_type_l2,
+            'category_primary',      cs.category_primary,
+            'confidence_score',      cs.confidence_score,
+            'observability_level',   cs.observability_level,
+            'strengths',             cs.strengths,
+            'weaknesses',            cs.weaknesses,
+            'analysis_version',      cs.analysis_version,
+            'scanned_at',            cs.scanned_at,
+            'prior_total_score',     ps.total_score,
+            'prior_total_score_pct', CASE WHEN ps.total_score IS NOT NULL AND cs.max_score > 0
+                                       THEN round((ps.total_score::numeric / cs.max_score) * 100)
+                                       ELSE NULL END,
+            'prior_band',            ps.band,
+            'score_delta',           CASE WHEN ps.total_score IS NOT NULL AND cs.total_score IS NOT NULL
+                                       THEN cs.total_score - ps.total_score
+                                       ELSE NULL END,
+            'score_delta_pct',       CASE WHEN ps.total_score IS NOT NULL AND cs.total_score IS NOT NULL AND cs.max_score > 0
+                                       THEN round(((cs.total_score - ps.total_score)::numeric / cs.max_score) * 100)
+                                       ELSE NULL END
+          )
+          ORDER BY cs.total_score DESC NULLS LAST, cs.sort_order
+        )
+        FROM current_scans cs
+        LEFT JOIN prior_scans ps ON ps.domain = cs.domain
+      ),
+      '[]'::json
+    ),
+    'run_status', (
+      SELECT json_agg(
+        json_build_object(
+          'domain',       brl.domain,
+          'company_name', brl.company_name,
+          'status',       brl.status,
+          'completed_at', brl.completed_at
+        )
+      )
+      FROM benchmark_run_log brl
+      WHERE brl.run_month = p_month
+        AND brl.category  = p_category
+    )
+  );
+$$;
