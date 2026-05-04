@@ -177,11 +177,17 @@ AS $$
             'scanned_at',         cs.scanned_at,
             'notes',              cs.notes,
             -- QoQ delta (null if no prior month data)
-            'prior_total_score',  ps.total_score,
-            'prior_band',         ps.band,
-            'score_delta',        CASE WHEN ps.total_score IS NOT NULL AND cs.total_score IS NOT NULL
-                                    THEN cs.total_score - ps.total_score
-                                    ELSE NULL END
+            'prior_total_score',     ps.total_score,
+            'prior_total_score_pct', CASE WHEN ps.total_score IS NOT NULL AND cs.max_score > 0
+                                       THEN round((ps.total_score::numeric / cs.max_score) * 100)
+                                       ELSE NULL END,
+            'prior_band',            ps.band,
+            'score_delta',           CASE WHEN ps.total_score IS NOT NULL AND cs.total_score IS NOT NULL
+                                       THEN cs.total_score - ps.total_score
+                                       ELSE NULL END,
+            'score_delta_pct',       CASE WHEN ps.total_score IS NOT NULL AND cs.total_score IS NOT NULL AND cs.max_score > 0
+                                       THEN round(((cs.total_score - ps.total_score)::numeric / cs.max_score) * 100)
+                                       ELSE NULL END
           )
           ORDER BY cs.total_score DESC NULLS LAST, cs.sort_order
         )
