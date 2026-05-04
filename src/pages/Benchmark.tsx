@@ -8,7 +8,7 @@ import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { ChevronDown, ChevronUp, ArrowUp, ArrowDown, Minus, X } from "lucide-react";
 import { cn } from "@/lib/utils";
-import SEOHead from "@/components/SEOHead";
+
 
 type Band = "Developing" | "Credible" | "Trusted" | "Exemplary";
 
@@ -256,10 +256,6 @@ export default function Benchmark() {
 
   return (
     <div className="min-h-screen bg-background">
-      <SEOHead
-        title={`${activeCategory} Benchmark — ${formatMonth(month)} | ValueTempo`}
-        description={`Pricing & trust transparency benchmark for ${activeCategory} — ${formatMonth(month)} cohort.`}
-      />
 
       {/* Zone 1 — Header */}
       <header className="border-b border-border bg-card">
