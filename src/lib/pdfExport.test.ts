@@ -42,6 +42,8 @@ const mockCompanyProfile: CompanyProfile = {
   model_type_l2: 'per-unit-metered',
   model_type_confidence: 0.80,
   classification_evidence: [],
+  category_primary: 'AI Agent Platform',
+  category_confidence: 0.75,
   valueUnitGuess: 'workflow runs',
   packagingNotes: 'Three tiers',
   trustControlsSeen: ['Admin dashboard'],

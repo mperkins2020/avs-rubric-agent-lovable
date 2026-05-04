@@ -20,6 +20,8 @@ export const mockCompanyProfile: CompanyProfile = {
   model_type_l2: "access+consumption",
   model_type_confidence: 0.82,
   classification_evidence: [],
+  category_primary: "AI Agent Platform",
+  category_confidence: 0.75,
   valueUnitGuess: "workflow runs",
   packagingNotes: "Three tiers: Starter, Pro, Enterprise with usage-based overages",
   trustControlsSeen: ["Usage dashboards", "Admin controls"],
@@ -201,6 +203,7 @@ export const mockScanResult: ScanResult = {
   rubricScore: mockRubricScore,
   observability: mockObservability,
   modelClassification: null,
+  categoryClassification: null,
   createdAt: new Date(),
 };
 
