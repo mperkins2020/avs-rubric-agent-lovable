@@ -14,6 +14,81 @@ export type Database = {
   }
   public: {
     Tables: {
+      benchmark_companies: {
+        Row: {
+          active: boolean
+          added_at: string
+          category: string
+          company_name: string
+          domain: string
+          id: string
+          notes: string | null
+          phase: number
+          sort_order: number
+        }
+        Insert: {
+          active?: boolean
+          added_at?: string
+          category: string
+          company_name: string
+          domain: string
+          id?: string
+          notes?: string | null
+          phase?: number
+          sort_order?: number
+        }
+        Update: {
+          active?: boolean
+          added_at?: string
+          category?: string
+          company_name?: string
+          domain?: string
+          id?: string
+          notes?: string | null
+          phase?: number
+          sort_order?: number
+        }
+        Relationships: []
+      }
+      benchmark_run_log: {
+        Row: {
+          category: string
+          company_name: string
+          completed_at: string | null
+          domain: string
+          error_message: string | null
+          id: string
+          run_month: string
+          scan_result_id: string | null
+          started_at: string
+          status: string
+        }
+        Insert: {
+          category: string
+          company_name: string
+          completed_at?: string | null
+          domain: string
+          error_message?: string | null
+          id?: string
+          run_month: string
+          scan_result_id?: string | null
+          started_at?: string
+          status?: string
+        }
+        Update: {
+          category?: string
+          company_name?: string
+          completed_at?: string | null
+          domain?: string
+          error_message?: string | null
+          id?: string
+          run_month?: string
+          scan_result_id?: string | null
+          started_at?: string
+          status?: string
+        }
+        Relationships: []
+      }
       community_evidence: {
         Row: {
           created_at: string
@@ -133,23 +208,29 @@ export type Database = {
       }
       scan_results: {
         Row: {
+          benchmark_month: string | null
           created_at: string
           expires_at: string
           id: string
+          is_benchmark: boolean | null
           result_json: Json
           url_domain: string
         }
         Insert: {
+          benchmark_month?: string | null
           created_at?: string
           expires_at?: string
           id?: string
+          is_benchmark?: boolean | null
           result_json: Json
           url_domain: string
         }
         Update: {
+          benchmark_month?: string | null
           created_at?: string
           expires_at?: string
           id?: string
+          is_benchmark?: boolean | null
           result_json?: Json
           url_domain?: string
         }
@@ -205,6 +286,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_benchmark_data: {
+        Args: { p_category: string; p_month: string }
+        Returns: Json
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
