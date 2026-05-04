@@ -76,6 +76,8 @@ export interface CompanyProfile {
   model_type_l2: string;
   model_type_confidence: number;
   classification_evidence: string[];
+  category_primary: 'AI Customer Support' | 'AI Agent Platform' | 'AI Coding Assistant' | 'AI Sales Intelligence' | 'AI Revenue Intelligence' | 'AI Legal' | 'AI Dev Infrastructure' | 'AI Speech Platform' | 'AI Healthcare' | 'AI Video & Podcast' | 'unclassified';
+  category_confidence: number;
   valueUnitGuess: string;
   packagingNotes: string;
   trustControlsSeen: string[];
@@ -103,6 +105,11 @@ export interface ModelClassification {
   classification_evidence: string[];
 }
 
+export interface CategoryClassification {
+  category_primary: 'AI Customer Support' | 'AI Agent Platform' | 'AI Coding Assistant' | 'AI Sales Intelligence' | 'AI Revenue Intelligence' | 'AI Legal' | 'AI Dev Infrastructure' | 'AI Speech Platform' | 'AI Healthcare' | 'AI Video & Podcast' | 'unclassified';
+  category_confidence: number;
+}
+
 export interface ScanResult {
   id: string;
   url: string;
@@ -111,6 +118,7 @@ export interface ScanResult {
   rubricScore: RubricScore | null;
   observability: ObservabilityData | null;
   modelClassification: ModelClassification | null;
+  categoryClassification: CategoryClassification | null;
   createdAt: Date;
 }
 

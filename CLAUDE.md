@@ -88,7 +88,7 @@ Four local tools in `tools/scraper-dev/` — run from the repo root.
 
 Bump `ANALYSIS_VERSION` in `supabase/functions/analyze-company/index.ts` every time either edge function is meaningfully changed. Format: `'YYYY-MM-DD-pipeline-vN'`. Without a bump, the 7-day cache serves stale results.
 
-Current version as of last session: `2026-04-18-pipeline-v16`
+Current version as of last session: `2026-05-02-pipeline-v19`
 
 ---
 

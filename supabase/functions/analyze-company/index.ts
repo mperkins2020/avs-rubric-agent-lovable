@@ -29,7 +29,7 @@ interface AnalyzeRequest {
 // Deno EdgeRuntime type for background processing
 declare const EdgeRuntime: { waitUntil: (p: Promise<unknown>) => void };
 
-const ANALYSIS_VERSION = '2026-04-22-pipeline-v18';
+const ANALYSIS_VERSION = '2026-05-02-pipeline-v19';
 
 const COMPANY_PROFILE_PROMPT = `You are an expert business analyst. Analyze the following website content and extract a company profile.
 
@@ -47,6 +47,8 @@ Return a JSON object with these exact fields:
   "model_type_l2": "per-seat" | "per-license" | "flat-rate-tiered" | "per-unit-metered" | "credit-pool" | "prepaid-block" | "event:resolution" | "event:conversation" | "event:checkpoint" | "share:revenue" | "share:clinical" | "access+consumption" | "access+outcome" | "consumption+outcome" | "unspecified",
   "model_type_confidence": 0.0 to 1.0,
   "classification_evidence": ["2–5 short verbatim snippets from pricing content that determined the classification"],
+  "category_primary": "AI Customer Support" | "AI Agent Platform" | "AI Coding Assistant" | "AI Sales Intelligence" | "AI Revenue Intelligence" | "AI Legal" | "AI Dev Infrastructure" | "AI Speech Platform" | "AI Healthcare" | "AI Video & Podcast" | "unclassified",
+  "category_confidence": 0.0 to 1.0,
   "valueUnitGuess": "What they charge for (e.g., 'per user', 'per API call')",
   "packagingNotes": "Notes about their pricing tiers/packages",
   "trustControlsSeen": ["Array", "of", "security/trust controls mentioned"],
@@ -71,7 +73,22 @@ For model_type_l2:
 For model_type_confidence: 0.0 = no pricing page or entirely ambiguous; 1.0 = explicit, unambiguous pricing language.
 For classification_evidence: 2–5 short verbatim snippets from the pricing page content that directly support model_type_l1. Return an empty array if no pricing page is available.
 
-Be analytical and precise. If you can't determine something, use reasonable inferences based on the content. For productSurface and model_type_l1, use exactly those string values.`;
+Product category classification rules (use these exact string values for category_primary):
+- "AI Customer Support": AI-powered chat, ticketing, or resolution tools for customer-facing support (e.g., Intercom Fin, Zendesk AI, Ada, Decagon, Forethought).
+- "AI Agent Platform": General-purpose platforms for building, deploying, or orchestrating AI agents or multi-agent workflows (e.g., Relevance AI, Lindy, Beam.ai, Composio).
+- "AI Coding Assistant": Tools that generate, review, or explain code for developers (e.g., Cursor, GitHub Copilot, Codeium, Tabnine).
+- "AI Sales Intelligence": Tools that enrich leads, prospect, or provide buyer intent data to sales teams (e.g., ZoomInfo, Clay, Apollo, Lusha).
+- "AI Revenue Intelligence": Tools that analyze sales calls, CRM data, or pipeline health to drive revenue outcomes (e.g., Gong, Clari, Chorus, Salesloft).
+- "AI Legal": AI tools for contract review, legal research, drafting, or compliance (e.g., Harvey, Ironclad, Spellbook, Lexis+AI).
+- "AI Dev Infrastructure": AI model serving, inference, fine-tuning, or MLOps platforms for developers and engineers (e.g., Together AI, Modal, Replicate, Baseten).
+- "AI Speech Platform": Voice AI tools — ASR (transcription), TTS (synthesis), voice agents, or real-time speech analytics (e.g., Deepgram, ElevenLabs, Speechmatics, Livekit).
+- "AI Healthcare": AI tools for clinical documentation, medical coding, diagnostics, or patient engagement (e.g., Abridge, Nabla, Suki, Ambience).
+- "AI Video & Podcast": AI-assisted video editing, podcast production, or content repurposing tools (e.g., Descript, Opus Clip, Riverside, Podcastle).
+- "unclassified": The product does not clearly fit any of the above categories.
+
+For category_confidence: 1.0 = the company's primary product unambiguously matches the category; 0.5 = plausible fit but the product spans multiple categories; 0.0 = category cannot be determined. Use the company's PRIMARY product and ICP — not every feature they offer.
+
+Be analytical and precise. If you can't determine something, use reasonable inferences based on the content. For productSurface, model_type_l1, and category_primary, use exactly those string values.`;
 
 const RUBRIC_SCORING_PROMPT = `You are an expert in SaaS pricing and value strategy. Score this company against the AVS (Adaptive Value System) rubric.
 
@@ -1966,6 +1983,26 @@ Deno.serve(async (req) => {
     };
     console.log('Model-type classification:', modelClassification.model_type, 'confidence:', modelClassification.model_type_confidence);
 
+    // ── Category Classification — derived from LLM company profile ──
+    const VALID_CATEGORIES = [
+      'AI Customer Support',
+      'AI Agent Platform',
+      'AI Coding Assistant',
+      'AI Sales Intelligence',
+      'AI Revenue Intelligence',
+      'AI Legal',
+      'AI Dev Infrastructure',
+      'AI Speech Platform',
+      'AI Healthcare',
+      'AI Video & Podcast',
+    ] as const;
+    const rawCategory = String(companyProfile.category_primary || 'unclassified');
+    const categoryClassification = {
+      category_primary: (VALID_CATEGORIES as readonly string[]).includes(rawCategory) ? rawCategory : 'unclassified',
+      category_confidence: Number(companyProfile.category_confidence ?? 0),
+    };
+    console.log('Category classification:', categoryClassification.category_primary, 'confidence:', categoryClassification.category_confidence);
+
     // Fix 3B: Page-to-Dimension Routing
     // Classify pages whose URLs indicate billing/invoice-only content.
     // These pages should only be used as evidence for D7 (Overages & Risk Allocation)
@@ -2633,6 +2670,7 @@ ${truncatedContent}`;
         mostUncertainDimensions: mostUncertain,
       },
       modelClassification,
+      categoryClassification,
     };
 
     console.log('Analysis complete:', {
