@@ -196,6 +196,10 @@ export default function Benchmark() {
   const [selected, setSelected] = useState<Company | null>(null);
 
   useEffect(() => {
+    document.title = `${activeCategory} Benchmark — ${formatMonth(month)} | ValueTempo`;
+  }, [activeCategory, month]);
+
+  useEffect(() => {
     let cancelled = false;
     setLoading(true);
     setError(null);
