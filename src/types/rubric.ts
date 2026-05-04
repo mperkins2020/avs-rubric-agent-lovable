@@ -55,7 +55,7 @@ export interface RecommendedFocus {
 export interface RubricScore {
   totalScore: number;
   maxScore: number;
-  band: 'Nascent' | 'Emerging' | 'Established' | 'Advanced';
+  band: 'Developing' | 'Credible' | 'Trusted' | 'Exemplary';
   dimensionScores: DimensionScore[];
   strengths: Strength[];
   weaknesses: Weakness[];

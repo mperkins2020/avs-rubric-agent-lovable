@@ -32,7 +32,7 @@ export const mockCompanyProfile: CompanyProfile = {
 export const mockRubricScore: RubricScore = {
   totalScore: 9,
   maxScore: 16,
-  band: "Emerging",
+  band: "Credible",
   dimensionScores: [
     {
       dimension: "Product north star",

@@ -29,7 +29,7 @@ interface AnalyzeRequest {
 // Deno EdgeRuntime type for background processing
 declare const EdgeRuntime: { waitUntil: (p: Promise<unknown>) => void };
 
-const ANALYSIS_VERSION = '2026-05-02-pipeline-v19';
+const ANALYSIS_VERSION = '2026-05-04-pipeline-v20';
 
 const COMPANY_PROFILE_PROMPT = `You are an expert business analyst. Analyze the following website content and extract a company profile.
 
@@ -2659,13 +2659,14 @@ ${truncatedContent}`;
     const totalScore = dimensionScores.reduce((sum, d) => sum + d.score, 0);
     const maxScore = dimensionScores.length * 2;
 
-    // Determine band
+    // Determine band (Developing / Credible / Trusted / Exemplary)
+    // Thresholds: 0–25% Developing, 26–50% Credible, 51–75% Trusted, 76–100% Exemplary
     const percentage = (totalScore / maxScore) * 100;
-    let band: 'Nascent' | 'Emerging' | 'Established' | 'Advanced';
-    if (percentage < 30) band = 'Nascent';
-    else if (percentage < 55) band = 'Emerging';
-    else if (percentage < 80) band = 'Established';
-    else band = 'Advanced';
+    let band: 'Developing' | 'Credible' | 'Trusted' | 'Exemplary';
+    if (percentage <= 25) band = 'Developing';
+    else if (percentage <= 50) band = 'Credible';
+    else if (percentage <= 75) band = 'Trusted';
+    else band = 'Exemplary';
 
     // Calculate observability
     const avgConfidence = dimensionScores.length > 0 

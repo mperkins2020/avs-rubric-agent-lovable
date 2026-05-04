@@ -53,7 +53,7 @@ const mockCompanyProfile: CompanyProfile = {
 const mockRubricScore: RubricScore = {
   totalScore: 10,
   maxScore: 16,
-  band: 'Emerging',
+  band: 'Credible',
   dimensionScores: [
     {
       dimension: 'Product north star',

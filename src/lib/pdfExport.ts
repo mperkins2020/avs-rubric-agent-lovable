@@ -28,13 +28,13 @@ function getScoreColor(score: number): [number, number, number] {
 
 function getBandColor(band: string): [number, number, number] {
   switch (band) {
-    case "Advanced":
+    case "Exemplary":
       return COLORS.success;
-    case "Established":
+    case "Trusted":
       return [34, 211, 238]; // Cyan
-    case "Emerging":
+    case "Credible":
       return COLORS.warning;
-    default:
+    default: // Developing
       return COLORS.danger;
   }
 }
