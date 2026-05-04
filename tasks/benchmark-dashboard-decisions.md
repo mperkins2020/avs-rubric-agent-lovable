@@ -54,10 +54,19 @@ Monthly. Single run per company per month. Engine calibration already reduces LL
 ---
 
 ### Quarterly company list refresh
-**Cadence**: end of March, June, September, December.
+**Cadence**: end of each calendar quarter — end of June, September, December, March.
+Refresh timing ensures the updated company list is in place before the next quarter's first benchmark run.
+
+| Refresh by | Ready for |
+|---|---|
+| End of June | Q3 — July run |
+| End of September | Q4 — October run |
+| End of December | Q1 next year — January run |
+| End of March | Q2 — April run |
+
+**First refresh: end of June 2026** (also evaluate Phase 2 category activation).
 **Rule**: never DELETE — set `active = false` to preserve historical data.
 **Owner**: Claude Code (not Lovable).
-**First refresh**: end of August 2026 (also evaluate Phase 2 category activation).
 
 ---
 
@@ -117,6 +126,6 @@ CREATE TABLE user_category_subscriptions (
 - [ ] Create `benchmark_company_changes` changelog table
 - [ ] Implement Trust Index as primary sort metric
 
-### Q3 2026 (end of August)
+### End of June 2026 (first calendar quarter refresh)
 - [ ] First quarterly company list refresh for all 5 Phase 1 categories
 - [ ] Evaluate Phase 2 categories for activation (AI Legal, AI Dev Infrastructure, AI Speech Platform, AI Healthcare, AI Video & Podcast)
