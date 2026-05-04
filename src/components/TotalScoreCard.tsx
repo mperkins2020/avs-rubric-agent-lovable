@@ -19,7 +19,7 @@ export function TotalScoreCard({
 
   const getBandConfig = () => {
     switch (band) {
-      case "Advanced":
+      case "Exemplary":
         return {
           color: "text-score-high",
           bgColor: "bg-score-high/10",
@@ -27,7 +27,7 @@ export function TotalScoreCard({
           description: "Enterprise-ready trust infrastructure — supports fastest sales cycles",
           outcome: "Companies at this level typically see 5–7% higher net revenue retention",
         };
-      case "Established":
+      case "Trusted":
         return {
           color: "text-score-high",
           bgColor: "bg-score-high/10",
@@ -35,7 +35,7 @@ export function TotalScoreCard({
           description: "Strong foundation — closing remaining gaps can unlock 2–5% ARR uplift",
           outcome: "Fastest path to revenue impact: fix the 1–2 gaps holding back expansion",
         };
-      case "Emerging":
+      case "Credible":
         return {
           color: "text-score-medium",
           bgColor: "bg-score-medium/10",
