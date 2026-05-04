@@ -602,15 +602,36 @@ Deno.serve(async (req) => {
   }
 
   try {
-    // Validate JWT authentication
-    const auth = await validateAuth(req);
+    // ── Service role bypass — internal callers (e.g. run-benchmark) ──────
+    // Detect the Supabase service_role JWT by decoding the payload without
+    // signature verification. Service role = unconditional admin access;
+    // rate limiting is skipped entirely for these callers.
+    let isBenchmarkRunner = false;
+    try {
+      const rawAuth = req.headers.get('authorization') ?? '';
+      const rawToken = rawAuth.replace('Bearer ', '');
+      const b64 = rawToken.split('.')[1];
+      if (b64) {
+        const claims = JSON.parse(atob(b64.replace(/-/g, '+').replace(/_/g, '/')));
+        isBenchmarkRunner = claims?.role === 'service_role';
+      }
+    } catch { /* not a JWT — fall through to normal auth */ }
+
+    // Validate JWT authentication (skip for service role callers)
+    const auth = isBenchmarkRunner
+      ? { userId: 'service_role', userEmail: '', isAnonymous: false }
+      : await validateAuth(req);
     if (!auth) {
       return new Response(
         JSON.stringify({ success: false, error: 'Unauthorized' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
-    console.log('Authenticated user:', auth.userId);
+    if (isBenchmarkRunner) {
+      console.log('Benchmark runner (service role) — auth bypass granted');
+    } else {
+      console.log('Authenticated user:', auth.userId);
+    }
 
     // Rate limit: 3 scrapes per week per user
     const supabaseAdmin = createClient(
@@ -618,9 +639,12 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
     );
 
-    const { data: adminCheck } = await supabaseAdmin
-      .rpc('has_role', { _user_id: auth.userId, _role: 'admin' });
-    const isAdmin = adminCheck === true;
+    let isAdmin = isBenchmarkRunner; // service role = always admin
+    if (!isBenchmarkRunner) {
+      const { data: adminCheck } = await supabaseAdmin
+        .rpc('has_role', { _user_id: auth.userId, _role: 'admin' });
+      isAdmin = adminCheck === true;
+    }
 
     if (!isAdmin) {
       // Anonymous users get 1 free scan; authenticated users get 3/week
