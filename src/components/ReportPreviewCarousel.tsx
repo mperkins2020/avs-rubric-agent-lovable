@@ -23,7 +23,7 @@ interface ExampleData {
 const hexExample: ExampleData = {
   label: "Hex report example",
   company: "Hex",
-  band: "Emerging",
+  band: "Credible",
   bandClass: "text-score-medium bg-score-medium/10 border-score-medium/30",
   bandDesc: "Key elements in place — structural gaps are costing you deals",
   score: 8,
@@ -54,7 +54,7 @@ const hexExample: ExampleData = {
 const lovableExample: ExampleData = {
   label: "Lovable report example",
   company: "Lovable",
-  band: "Advanced",
+  band: "Exemplary",
   bandClass: "text-score-high bg-score-high/10 border-score-high/30",
   bandDesc: "Enterprise-ready trust infrastructure — supports fastest sales cycles",
   score: 14,

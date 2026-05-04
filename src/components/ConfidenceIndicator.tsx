@@ -50,7 +50,7 @@ export function ConfidenceIndicator({
     >
       <Icon className={cn("w-4 h-4", className)} />
       <span className={cn("text-sm font-medium", className)}>
-        {level} Observability
+        {level} Evidence Coverage
       </span>
       <span className="text-muted-foreground text-sm">•</span>
       <span className="font-mono text-sm text-foreground">{score}%</span>

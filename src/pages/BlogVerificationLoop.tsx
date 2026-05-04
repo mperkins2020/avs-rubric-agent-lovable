@@ -160,7 +160,7 @@ export default function BlogVerificationLoop() {
                 <h2 id="report" className="text-2xl font-bold mt-12 mb-4 text-foreground">What a report includes</h2>
                 <p>Every scan and analysis returns an evidence-backed diagnostic, not a verdict. Specifically:</p>
                 <ul className="list-disc pl-6 space-y-2">
-                  <li>A <strong>Trust Stack score</strong> across eight dimensions on a 0–16 scale, with a maturity band from Nascent to Advanced.</li>
+                  <li>A <strong>Trust Stack score</strong> across eight dimensions on a 0–16 scale, with a maturity band from Developing to Exemplary.</li>
                   <li><strong>Dimension-level breakdowns</strong> showing pass/fail on each underlying subtest so you can see exactly which elements of your trust posture are landing and which aren't.</li>
                   <li>An <strong>evidence ledger</strong>. Every score cites the specific URL it was drawn from, with the extracted evidence visible. If you disagree with a score, you can trace the reasoning back to the source.</li>
                   <li><strong>Prioritized recommendations</strong> organized by Trust Stack layer, so a product or GTM lead can sequence fixes from foundational (Product-ICP clarity, Pricing Architecture) up through enterprise readiness.</li>

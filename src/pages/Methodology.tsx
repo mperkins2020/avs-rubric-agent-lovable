@@ -342,7 +342,7 @@ const Methodology = () => {
                 </p>
                 <ul className="space-y-2 text-sm text-muted-foreground mb-4">
                   {[
-                    ["Overall AVS Score", "Sum of 8 dimension scores (each 0–2), categorized as Nascent, Emerging, Established, or Advanced"],
+                    ["Overall AVS Score", "Sum of 8 dimension scores (each 0–2), categorized as Developing, Credible, Trusted, or Exemplary"],
                     ["Dimension breakdown", "Individual 0–2 scores with subtest-level detail for each of the 8 dimensions"],
                     ["Strengths & weaknesses", "What's working, what's missing, and what it enables or blocks"],
                     ["Trust breakpoints", "Specific gaps that are actively blocking trust and growth"],
@@ -418,10 +418,10 @@ const Methodology = () => {
                 </p>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
                   {[
-                    { band: "Nascent", range: "0–4", color: "bg-red-500/10 border-red-500/30" },
-                    { band: "Emerging", range: "5–8", color: "bg-yellow-500/10 border-yellow-500/30" },
-                    { band: "Established", range: "9–12", color: "bg-blue-500/10 border-blue-500/30" },
-                    { band: "Advanced", range: "13–16", color: "bg-green-500/10 border-green-500/30" },
+                    { band: "Developing", range: "0–4", color: "bg-red-500/10 border-red-500/30" },
+                    { band: "Credible", range: "5–8", color: "bg-yellow-500/10 border-yellow-500/30" },
+                    { band: "Trusted", range: "9–12", color: "bg-blue-500/10 border-blue-500/30" },
+                    { band: "Exemplary", range: "13–16", color: "bg-green-500/10 border-green-500/30" },
                   ].map((b) => (
                     <div key={b.band} className={`p-3 rounded-lg border text-center ${b.color}`}>
                       <p className="font-semibold text-foreground text-sm">{b.band}</p>
