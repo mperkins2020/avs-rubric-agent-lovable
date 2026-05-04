@@ -1453,21 +1453,14 @@ Deno.serve(async (req) => {
 
    try {
     // ── Auth: JWT validation with service role bypass ────────────────────
-    // Detect the Supabase service_role JWT by decoding the payload without
-    // signature verification. Service role = unconditional admin access;
-    // rate limiting and usage recording are skipped for these callers.
+    // Direct key comparison: if the Authorization header exactly matches
+    // "Bearer <SUPABASE_SERVICE_ROLE_KEY>", this is a trusted internal call.
+    // This is more reliable than JWT decode in Deno's edge runtime.
     const authHeader = req.headers.get('authorization');
-    let isBenchmarkRunner = false;
-    try {
-      if (authHeader?.startsWith('Bearer ')) {
-        const rawToken = authHeader.replace('Bearer ', '');
-        const b64 = rawToken.split('.')[1];
-        if (b64) {
-          const claims = JSON.parse(atob(b64.replace(/-/g, '+').replace(/_/g, '/')));
-          isBenchmarkRunner = claims?.role === 'service_role';
-        }
-      }
-    } catch { /* not a JWT — fall through to normal auth */ }
+    const _serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
+    const isBenchmarkRunner =
+      _serviceKey.length > 0 &&
+      (authHeader ?? '') === `Bearer ${_serviceKey}`;
 
     if (!isBenchmarkRunner) {
       if (!authHeader?.startsWith('Bearer ')) {
