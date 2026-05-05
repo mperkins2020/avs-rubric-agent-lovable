@@ -230,16 +230,10 @@ export default function Benchmark() {
     return first?.dimension_scores?.map((d) => d.dimension) ?? [];
   }, [companies]);
 
+  // Bottom row shows each company's total score % (matches leaderboard)
   const dimensionAverages = useMemo(() => {
-    return dimensionList.map((dim) => {
-      const scores = companies
-        .map((c) => c.dimension_scores?.find((d) => d.dimension === dim)?.score)
-        .filter((s): s is number => s != null);
-      if (!scores.length) return null;
-      const avg = scores.reduce((a, b) => a + b, 0) / scores.length;
-      return Math.round((avg / 2) * 100);
-    });
-  }, [companies, dimensionList]);
+    return companies.map((c) => c.total_score_pct ?? null);
+  }, [companies]);
 
   const insight = useMemo(() => {
     if (!stats) return null;
