@@ -137,16 +137,12 @@ export function DimensionCard({ dimension, index }: DimensionCardProps) {
                     </div>
                   ) : null}
 
-                  {/* Uncertainty Reasons */}
-                  {dimension.uncertaintyReasons.length > 0 && (
+                  {/* Uncertainty Reasons - always show when reasons exist, regardless of confidence */}
+                  {Array.isArray(dimension.uncertaintyReasons) && dimension.uncertaintyReasons.length > 0 && (
                     <div className="bg-muted/30 rounded-lg p-3">
                       <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2 flex items-center gap-1.5">
                         <AlertCircle className="w-3 h-3" />
-                        {dimension.confidence >= 0.7
-                          ? "Uncertainty factors"
-                          : dimension.confidence >= 0.4
-                            ? "Why confidence is not higher"
-                            : "Why confidence is low"}
+                        Why confidence is not higher
                       </h4>
                       <ul className="space-y-1">
                         {dimension.uncertaintyReasons.map((reason, i) => (
