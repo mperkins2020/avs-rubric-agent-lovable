@@ -6,8 +6,11 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { ChevronDown, ChevronUp, ArrowUp, ArrowDown, Minus, X } from "lucide-react";
+import { ChevronDown, ChevronUp, ArrowUp, ArrowDown, Minus, X, FileText, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
+
+const SCORE_LABELS: Record<number, string> = { 0: "None", 1: "Partial", 2: "Verified" };
 
 
 type Band = "Developing" | "Credible" | "Trusted" | "Exemplary";
@@ -501,6 +504,45 @@ function LeaderboardCard({
   onClick: () => void;
   highlighted: boolean;
 }) {
+  const navigate = useNavigate();
+  const [loadingReport, setLoadingReport] = useState(false);
+
+  const handleViewReport = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (loadingReport) return;
+    setLoadingReport(true);
+    try {
+      const { data, error } = await supabase
+        .from("scan_results")
+        .select("result_json")
+        .eq("url_domain", company.domain)
+        .eq("is_benchmark", true)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (error) throw error;
+      const r = data?.result_json as Record<string, unknown> | undefined;
+      if (!r || !r.rubricScore || !r.companyProfile) {
+        toast.error("No report available for this company yet.");
+        return;
+      }
+      navigate("/results", {
+        state: {
+          companyProfile: r.companyProfile,
+          rubricScore: r.rubricScore,
+          observability: r.observability,
+          modelClassification: r.modelClassification,
+          pages: [],
+        },
+      });
+    } catch (err) {
+      toast.error("Could not load report.");
+      console.error(err);
+    } finally {
+      setLoadingReport(false);
+    }
+  };
+
   return (
     <button
       onMouseEnter={onHover}
@@ -535,9 +577,25 @@ function LeaderboardCard({
             )}
           </div>
         </div>
-        <div className={cn("text-4xl font-bold tabular-nums", bandColor(company.band))}>
-          {company.total_score_pct ?? "—"}
-          <span className="text-xl font-medium">%</span>
+        <div className="flex flex-col items-end gap-2">
+          <div className={cn("text-4xl font-bold tabular-nums", bandColor(company.band))}>
+            {company.total_score_pct ?? "—"}
+            <span className="text-xl font-medium">%</span>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleViewReport}
+            disabled={loadingReport}
+            className="h-7 px-2 text-xs"
+          >
+            {loadingReport ? (
+              <Loader2 className="w-3 h-3 animate-spin" />
+            ) : (
+              <FileText className="w-3 h-3" />
+            )}
+            View report
+          </Button>
         </div>
       </div>
     </button>
@@ -598,18 +656,18 @@ function Heatmap({
                     onMouseEnter={() => setHoveredIndex(i)}
                     onMouseLeave={() => setHoveredIndex(null)}
                     className={cn(
-                      "h-9 flex items-center justify-center text-sm font-semibold tabular-nums rounded transition-all cursor-default",
+                      "h-9 flex items-center justify-center text-[10px] font-semibold rounded transition-all cursor-default px-1",
                       cellColor(score),
                       hoveredIndex === i && "ring-2 ring-primary/50",
                     )}
                   >
-                    {score ?? "—"}
+                    {score != null ? SCORE_LABELS[score] : "—"}
                   </div>
                 </TooltipTrigger>
                 <TooltipContent side="top" className="max-w-xs">
                   <div className="font-semibold">{c.company_name}</div>
                   <div className="text-xs text-muted-foreground">{dim}</div>
-                  <div className="text-xs mt-1">Score: {score ?? "—"}</div>
+                  <div className="text-xs mt-1">Score: {score != null ? `${SCORE_LABELS[score]} (${score})` : "—"}</div>
                   {ds?.rationale && <div className="text-xs mt-1">{ds.rationale}</div>}
                 </TooltipContent>
               </Tooltip>
