@@ -195,9 +195,9 @@ const Methodology = () => {
                 <div className="space-y-2 mb-4">
                   {[
                     { layer: 4, name: "Enterprise Readiness", question: "Can the economic buyers easily find what they need to approve the deal?", opacity: "bg-primary/15 border-primary/40" },
-                    { layer: 3, name: "Operational Controls", question: "Can customers control spend & avoid surprises?", opacity: "bg-primary/10 border-primary/30" },
-                    { layer: 2, name: "Pricing Architecture", question: "Can customers predict what they'll pay?", opacity: "bg-primary/7 border-primary/20" },
-                    { layer: 1, name: "Product-ICP Clarity", question: "Do you know who you serve & what success looks like?", opacity: "bg-primary/4 border-primary/15" },
+                    { layer: 3, name: "Operational Controls", question: "Can customers control spend & avoid surprises?", opacity: "bg-primary/5 border-primary/20" },
+                    { layer: 2, name: "Pricing Architecture", question: "Can customers predict what they'll pay?", opacity: "bg-primary/15 border-primary/40" },
+                    { layer: 1, name: "Product-ICP Clarity", question: "Do you know who you serve & what success looks like?", opacity: "bg-primary/5 border-primary/20" },
                   ].map((l, i) => (
                     <div key={l.layer}>
                       <div className={`p-4 rounded-lg border ${l.opacity}`}>
