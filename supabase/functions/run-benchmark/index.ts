@@ -119,7 +119,7 @@ async function processCompany(
       body: JSON.stringify({
         url: `https://${company.domain}`,
         includeSubpages: true,
-        maxPages: 15,
+        maxPages: 20,
       }),
     });
 
