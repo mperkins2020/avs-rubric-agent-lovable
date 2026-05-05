@@ -365,7 +365,7 @@ const Methodology = () => {
                 <div className="space-y-3 mb-8">
                   {[
                     { score: "0", label: "Not Present", color: "border-red-500/40 bg-red-500/5", meaning: "The trust signal is absent or too vague to be actionable. Fewer than 3 of 6 subtests pass.", action: "This is a critical gap — prospects cannot evaluate this aspect of your product." },
-                    { score: "1", label: "Emerging", color: "border-yellow-500/40 bg-yellow-500/5", meaning: "Partial evidence exists but key elements are missing. 3–4 of 6 subtests pass, or a hard gate caps the score.", action: "Foundation exists but isn't complete enough to build trust at scale." },
+                    { score: "1", label: "Partial", color: "border-yellow-500/40 bg-yellow-500/5", meaning: "Partial evidence exists but key elements are missing. 3–4 of 6 subtests pass, or a hard gate caps the score.", action: "Foundation exists but isn't complete enough to build trust at scale." },
                     { score: "2", label: "Strong", color: "border-green-500/40 bg-green-500/5", meaning: "Clear, specific, and verifiable evidence across the dimension. 5–6 of 6 subtests pass with no gate failures.", action: "This dimension is actively building trust and enabling growth." },
                   ].map((s) => (
                     <div key={s.score} className={`p-4 rounded-lg border ${s.color}`}>
