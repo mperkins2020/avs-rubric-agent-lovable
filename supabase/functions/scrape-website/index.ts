@@ -94,26 +94,47 @@ function isUnsafeUrl(urlString: string): string | null {
   return null;
 }
 
-// ─── Helper: call Firecrawl /map ───────────────────────────────────────────
+// ─── Helper: call Firecrawl /map (with retry on empty/rate-limited response) ──
 async function mapDomain(apiKey: string, url: string, limit = 200, includeSubdomains = false): Promise<string[]> {
-  try {
-    const response = await fetch('https://api.firecrawl.dev/v1/map', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ url, limit, includeSubdomains }),
-    });
-    const text = await response.text();
-    const data: FirecrawlMapResponse = JSON.parse(text);
-    if (response.ok && data.success && data.links) {
-      return data.links;
+  const MIN_EXPECTED_URLS = 3; // if we get fewer than this, treat as a rate-limit/partial failure
+  const RETRY_DELAY_MS = 12000; // wait 12s before retrying
+
+  async function attemptMap(): Promise<string[]> {
+    try {
+      const response = await fetch('https://api.firecrawl.dev/v1/map', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${apiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ url, limit, includeSubdomains }),
+      });
+      const text = await response.text();
+      const data: FirecrawlMapResponse = JSON.parse(text);
+      if (response.ok && data.success && data.links) {
+        return data.links;
+      }
+      console.warn(`Map returned non-success for ${url}: status=${response.status}`);
+    } catch (e) {
+      console.warn(`Map failed for ${url}:`, e);
     }
-  } catch (e) {
-    console.warn(`Map failed for ${url}:`, e);
+    return [];
   }
-  return [];
+
+  const firstAttempt = await attemptMap();
+  if (firstAttempt.length >= MIN_EXPECTED_URLS) return firstAttempt;
+
+  // Too few URLs — likely a rate-limit or transient failure. Wait and retry once.
+  console.warn(`Map returned only ${firstAttempt.length} URLs for ${url} — retrying after ${RETRY_DELAY_MS}ms`);
+  await new Promise(resolve => setTimeout(resolve, RETRY_DELAY_MS));
+  const secondAttempt = await attemptMap();
+  if (secondAttempt.length > firstAttempt.length) {
+    console.log(`Map retry succeeded for ${url}: ${secondAttempt.length} URLs`);
+    return secondAttempt;
+  }
+
+  // Return whichever attempt got more URLs
+  return secondAttempt.length >= firstAttempt.length ? secondAttempt : firstAttempt;
 }
 
 // ─── URL scoring & helpers ─────────────────────────────────────────────────

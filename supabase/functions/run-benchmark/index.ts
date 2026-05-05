@@ -10,7 +10,8 @@ const corsHeaders = {
 };
 
 // ── Constants ────────────────────────────────────────────────────────────────
-const BATCH_SIZE = 4;           // companies processed in parallel per batch
+const BATCH_SIZE = 2;           // companies processed in parallel per batch (reduced from 4 to limit concurrent Firecrawl /map calls)
+const STAGGER_MS = 20000;       // delay between company starts within a batch (20s) to spread Firecrawl load
 const POLL_INTERVAL_MS = 8000;  // how often to check for a new scan_results row
 const POLL_TIMEOUT_MS = 300000; // 5 min max wait per company (some sites are slow)
 
@@ -309,9 +310,12 @@ Deno.serve(async (req) => {
         `[run-benchmark] Batch ${Math.floor(i / BATCH_SIZE) + 1}: ` +
         batch.map(c => c.domain).join(', '),
       );
+      // Stagger companies within each batch to spread concurrent Firecrawl /map calls.
+      // Each company starts STAGGER_MS after the previous one, but they all run in parallel.
       await Promise.all(
-        batch.map(company =>
-          processCompany(supabaseAdmin, company, month, supabaseUrl, serviceRoleKey),
+        batch.map((company, idx) =>
+          new Promise<void>(resolve => setTimeout(resolve, idx * STAGGER_MS))
+            .then(() => processCompany(supabaseAdmin, company, month, supabaseUrl, serviceRoleKey)),
         ),
       );
     }
