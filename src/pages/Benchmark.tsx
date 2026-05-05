@@ -620,7 +620,7 @@ function Heatmap({
 
       {/* avg row */}
       <div className="text-xs font-semibold text-muted-foreground pt-2 pr-2 border-t border-border">
-        Category avg
+        Total score
       </div>
       {dimensionAverages.map((avg, i) => (
         <div
