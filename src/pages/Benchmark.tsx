@@ -6,8 +6,11 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { ChevronDown, ChevronUp, ArrowUp, ArrowDown, Minus, X } from "lucide-react";
+import { ChevronDown, ChevronUp, ArrowUp, ArrowDown, Minus, X, FileText, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
+
+const SCORE_LABELS: Record<number, string> = { 0: "None", 1: "Partial", 2: "Verified" };
 
 
 type Band = "Developing" | "Credible" | "Trusted" | "Exemplary";
