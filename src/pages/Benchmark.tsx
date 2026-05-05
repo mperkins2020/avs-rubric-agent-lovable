@@ -656,18 +656,18 @@ function Heatmap({
                     onMouseEnter={() => setHoveredIndex(i)}
                     onMouseLeave={() => setHoveredIndex(null)}
                     className={cn(
-                      "h-9 flex items-center justify-center text-sm font-semibold tabular-nums rounded transition-all cursor-default",
+                      "h-9 flex items-center justify-center text-[10px] font-semibold rounded transition-all cursor-default px-1",
                       cellColor(score),
                       hoveredIndex === i && "ring-2 ring-primary/50",
                     )}
                   >
-                    {score ?? "—"}
+                    {score != null ? SCORE_LABELS[score] : "—"}
                   </div>
                 </TooltipTrigger>
                 <TooltipContent side="top" className="max-w-xs">
                   <div className="font-semibold">{c.company_name}</div>
                   <div className="text-xs text-muted-foreground">{dim}</div>
-                  <div className="text-xs mt-1">Score: {score ?? "—"}</div>
+                  <div className="text-xs mt-1">Score: {score != null ? `${SCORE_LABELS[score]} (${score})` : "—"}</div>
                   {ds?.rationale && <div className="text-xs mt-1">{ds.rationale}</div>}
                 </TooltipContent>
               </Tooltip>
