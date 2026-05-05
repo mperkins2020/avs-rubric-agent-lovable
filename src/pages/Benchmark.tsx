@@ -232,8 +232,8 @@ export default function Benchmark() {
 
   // Bottom row shows each company's total score % (matches leaderboard)
   const dimensionAverages = useMemo(() => {
-    return companies.map((c) => c.total_score_pct ?? null);
-  }, [companies]);
+    return top8.map((c) => c.total_score_pct ?? null);
+  }, [top8]);
 
   const insight = useMemo(() => {
     if (!stats) return null;
