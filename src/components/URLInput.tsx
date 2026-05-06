@@ -76,7 +76,7 @@ export function URLInput({ onSubmit, isLoading = false }: URLInputProps) {
               <Loader2 className="w-5 h-5 animate-spin" />
             ) : (
               <>
-                Run My Score
+                Check Buyer Readiness
                 <ArrowRight className="w-5 h-5 ml-2" />
               </>
             )}
