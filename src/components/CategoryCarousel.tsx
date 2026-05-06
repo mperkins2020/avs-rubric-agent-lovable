@@ -128,7 +128,7 @@ export function CategoryCarousel() {
           viewport={{ once: true }}
           className="text-xl md:text-2xl font-bold text-center text-foreground"
         >
-          Where AI products lose trust today
+          Where AI products create buyer friction
         </motion.h2>
       </div>
 
@@ -164,7 +164,7 @@ export function CategoryCarousel() {
             </div>
 
             <p className="text-xs font-medium text-muted-foreground mb-3 tracking-wide uppercase">
-              Top Gap{card.topGaps.includes("·") ? "s" : ""}: {card.topGaps}
+              Top buyer friction: {card.topGaps}
             </p>
 
             <p className="text-sm text-muted-foreground leading-relaxed line-clamp-4">
