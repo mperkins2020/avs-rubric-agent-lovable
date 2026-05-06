@@ -269,7 +269,7 @@ export function ReportPreviewCarousel() {
             el?.scrollIntoView({ behavior: 'smooth' });
           }}
         >
-          Run My Score
+          Check Buyer Readiness
           <ArrowRight className="w-5 h-5 ml-2" />
         </Button>
       </div>
