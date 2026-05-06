@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { URLInput } from "@/components/URLInput";
-import { Eye, Calculator, ShieldCheck, AlertCircle, LogOut, LogIn, Menu, X } from "lucide-react";
+import { Eye, Calculator, ShieldCheck, CheckCircle2, AlertCircle, LogOut, LogIn, Menu, X } from "lucide-react";
 import { Footer } from "@/components/Footer";
 import { ReportPreviewCarousel } from "@/components/ReportPreviewCarousel";
 import { useScan } from "@/hooks/useScan";
@@ -29,9 +29,9 @@ import {
 } from "@/components/ui/tooltip";
 
 const rotatingLines = [
-  "Buyers can't predict what they'll pay.",
-  "Enterprise deals stall at the approval stage.",
-  "Churn starts before the contract ends.",
+  "Enterprise deals stall when buyers cannot verify trust.",
+  "Churn starts when value is unclear before renewal.",
+  "Buyers hesitate when they cannot predict what they will pay.",
 ];
 
 function RotatingSubhead() {
@@ -63,14 +63,14 @@ function RotatingSubhead() {
 }
 
 const dimensionDefinitions: Record<string, string> = {
-  "Product north star": "Observable outcomes tie to value delivery and predictability.",
-  "ICP and job clarity": "Clear target user and job, anchored in workflows.",
-  "Buyer and budget alignment": "Plans map to buyer, budget cycles, and approvals.",
-  "Value unit": "Billable unit tracks value, is predictable and auditable.",
-  "Cost driver mapping": "Usage and cost drivers are explicit and forecastable.",
-  "Pools and packaging": "Tiers separate exploration from production by segment.",
-  "Overages and risk allocation": "Limit behavior is explicit, risk is fairly shared.",
-  "Safety rails and trust surfaces": "Controls prevent surprises, show usage, enable limits.",
+  "Product North Star": "Observable outcomes tie to value delivery and predictability.",
+  "ICP & Job Clarity": "Clear target user and job, anchored in workflows.",
+  "Buyer & Budget Alignment": "Plans map to buyer, budget cycles, and approvals.",
+  "Value Unit": "Billable unit tracks value, is predictable and auditable.",
+  "Cost Driver Mapping": "Usage and cost drivers are explicit and forecastable.",
+  "Pools & Packaging": "Tiers separate exploration from production by segment.",
+  "Overages & Risk Allocation": "Limit behavior is explicit, risk is fairly shared.",
+  "Safety Rails & Trust Surfaces": "Controls prevent surprises, show usage, enable limits.",
 };
 
 const Index = () => {
@@ -280,15 +280,19 @@ const Index = () => {
   const features = [{
     icon: Eye,
     title: "Product Clarity",
-    description: "Can buyers understand what your product does and the outcomes it delivers?"
+    description: "Can buyers understand what your product does, who it is for, and what outcome it helps them achieve?"
   }, {
     icon: Calculator,
     title: "Cost Predictability",
-    description: "Can buyers predict how usage translates to cost and value?"
+    description: "Can buyers see what drives usage, how cost scales, and how to avoid budget surprises?"
   }, {
     icon: ShieldCheck,
     title: "Operational Trust",
-    description: "Do buyers see the controls needed to safely deploy and scale usage?"
+    description: "Can buyers verify the controls, limits, safety rails, and governance needed to deploy with confidence?"
+  }, {
+    icon: CheckCircle2,
+    title: "Decision Readiness",
+    description: "Can champions justify the purchase to finance, security, procurement, and leadership?"
   }];
 
   return (
@@ -397,17 +401,21 @@ const Index = () => {
         <div className="container mx-auto px-5 md:px-10">
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center max-w-3xl mx-auto">
             <h1 id="hero" className="text-3xl sm:text-4xl md:text-[56px] font-bold mb-5 leading-[1.15] tracking-tight">
-              <span className="block">Find the Trust Gaps</span>
+              <span className="block">Find the Buyer Friction</span>
               <span className="mt-3 md:mt-4 block">
-                in Your <span className="gradient-text">AI Product</span>
+                Slowing Your <span className="gradient-text">AI Revenue</span>
               </span>
             </h1>
 
             <RotatingSubhead />
 
-            <div id="url-input" className="flex justify-center mb-12 scroll-mt-24">
+            <div id="url-input" className="flex justify-center mb-4 scroll-mt-24">
               <URLInput onSubmit={handleSubmit} isLoading={isLoading} />
             </div>
+
+            <p className="text-xs text-muted-foreground mb-12">
+              Built for AI products and AI-powered SaaS teams.
+            </p>
 
             {isLoading && (
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center">
@@ -437,7 +445,7 @@ const Index = () => {
       <section className="py-16 md:py-24 bg-secondary">
         <div className="container mx-auto px-5 md:px-10">
           <h2 className="text-2xl md:text-3xl font-bold text-center mb-10">What the analysis evaluates</h2>
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="grid md:grid-cols-3 gap-6 max-w-4xl mx-auto">
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
             {features.map((feature, i) => (
               <motion.div
                 key={feature.title}
@@ -468,9 +476,12 @@ const Index = () => {
       <section className="py-16 md:py-20 bg-secondary">
         <div className="container mx-auto px-5 md:px-10 text-center">
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.6 }}>
-            <h2 className="text-lg font-semibold mb-6 text-muted-foreground">
-              Scored across 8 dimensions
+            <h2 className="text-lg font-semibold mb-3 text-muted-foreground">
+              Scored across 8 buyer-confidence dimensions
             </h2>
+            <p className="text-sm text-muted-foreground max-w-2xl mx-auto mb-6">
+              The rubric maps buyer-facing friction across product clarity, pricing architecture, operational controls, and buying readiness.
+            </p>
             <TooltipProvider delayDuration={100}>
               <div className="flex flex-wrap justify-center gap-2 max-w-3xl mx-auto">
                 {Object.keys(dimensionDefinitions).map(dim => (
@@ -495,10 +506,10 @@ const Index = () => {
       <section className="dark-anchor py-16 md:py-20">
         <div className="container mx-auto px-5 md:px-10 text-center">
           <h2 className="text-2xl md:text-3xl font-bold mb-4 text-[hsl(var(--vt-text-on-dark))]">
-            Ready to find your trust gaps?
+            Ready to make your AI product easier to evaluate and buy?
           </h2>
           <p className="text-[hsl(var(--vt-text-on-dark-secondary))] mb-8 max-w-lg mx-auto">
-            Get an instant, evidence-backed assessment of your AI product's trust infrastructure.
+            Get an instant, evidence-backed analysis of where buyers may lose clarity, confidence, or budget justification.
           </p>
           <Button
             size="lg"
@@ -508,7 +519,7 @@ const Index = () => {
               el?.scrollIntoView({ behavior: 'smooth' });
             }}
           >
-            Run My Score
+            Check Buyer Readiness
             <ArrowRight className="w-5 h-5 ml-2" />
           </Button>
         </div>
