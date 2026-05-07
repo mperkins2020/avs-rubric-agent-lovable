@@ -74,7 +74,7 @@ async function validateAdminAuth(
 // ── Poll until scan_results row appears after `afterTs` ──────────────────────
 async function pollForScanResult(
   supabaseAdmin: ReturnType<typeof createClient>,
-  domain: string,
+  hostname: string,
   afterTs: string,
 ): Promise<{ id: string } | null> {
   const deadline = Date.now() + POLL_TIMEOUT_MS;
@@ -83,7 +83,7 @@ async function pollForScanResult(
     const { data } = await supabaseAdmin
       .from('scan_results')
       .select('id, result_json')
-      .eq('url_domain', domain)
+      .eq('url_domain', hostname)
       .gte('created_at', afterTs)
       .not('result_json->>analysisVersion', 'in', '(pending,error)')
       .order('created_at', { ascending: false })
@@ -104,7 +104,10 @@ async function processCompany(
   serviceRoleKey: string,
 ): Promise<void> {
   const startedAt = new Date().toISOString();
-  console.log(`[run-benchmark] Starting: ${company.domain} (${month})`);
+  // benchmark_companies.domain may include a path (e.g. "github.com/features/copilot").
+  // scan_results.url_domain stores only the hostname, so derive it for lookups.
+  const hostname = company.domain.split('/')[0];
+  console.log(`[run-benchmark] Starting: ${company.domain} (host=${hostname}, ${month})`);
 
   try {
     // ── Step 1: Scrape ────────────────────────────────────────────────────
@@ -151,11 +154,11 @@ async function processCompany(
     let scanResultId: string | null = null;
 
     if (analyzeRes.status === 200) {
-      // Cache hit — the latest scan_results row for this domain is the result
+      // Cache hit — the latest scan_results row for this hostname is the result
       const { data: latest } = await supabaseAdmin
         .from('scan_results')
         .select('id')
-        .eq('url_domain', company.domain)
+        .eq('url_domain', hostname)
         .not('result_json->>analysisVersion', 'in', '(pending,error)')
         .order('created_at', { ascending: false })
         .limit(1)
@@ -165,7 +168,7 @@ async function processCompany(
     } else if (analyzeRes.status === 202) {
       // Fresh scan started in background — poll until the new row appears
       console.log(`[run-benchmark] Fresh scan started for ${company.domain}, polling…`);
-      const polled = await pollForScanResult(supabaseAdmin, company.domain, startedAt);
+      const polled = await pollForScanResult(supabaseAdmin, hostname, startedAt);
       if (!polled) throw new Error(`Analysis timed out after ${POLL_TIMEOUT_MS / 1000}s`);
       scanResultId = polled.id;
       console.log(`[run-benchmark] Analysis complete for ${company.domain}, scan_result id: ${scanResultId}`);
