@@ -335,7 +335,7 @@ Deno.serve(async (req) => {
       month,
       total: companies.length,
       queued: toProcess.length,
-      skipped: completedDomains.size,
+      skipped: skippedDomains.size,
     }),
     { status: 202, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
   );
