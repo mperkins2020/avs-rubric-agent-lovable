@@ -273,17 +273,18 @@ Deno.serve(async (req) => {
     );
   }
 
-  // ── Idempotency: skip companies already complete for this month ────────
+  // ── Idempotency: skip companies already complete or errored for this month ───────
   const { data: existingLogs } = await supabaseAdmin
     .from('benchmark_run_log')
     .select('domain, status')
     .eq('run_month', month)
     .in('domain', companies.map(c => c.domain));
 
-  const completedDomains = new Set(
-    (existingLogs ?? []).filter(l => l.status === 'complete').map(l => l.domain),
+  const skipStatuses = new Set(['complete', 'error']);
+  const skippedDomains = new Set(
+    (existingLogs ?? []).filter(l => skipStatuses.has(l.status)).map(l => l.domain),
   );
-  const toProcess = companies.filter(c => !completedDomains.has(c.domain));
+  const toProcess = companies.filter(c => !skippedDomains.has(c.domain));
 
   // Seed benchmark_run_log with 'pending' for each company to be processed
   for (const company of toProcess) {
