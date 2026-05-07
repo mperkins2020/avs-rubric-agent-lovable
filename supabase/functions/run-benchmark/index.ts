@@ -74,7 +74,7 @@ async function validateAdminAuth(
 // ── Poll until scan_results row appears after `afterTs` ──────────────────────
 async function pollForScanResult(
   supabaseAdmin: ReturnType<typeof createClient>,
-  domain: string,
+  hostname: string,
   afterTs: string,
 ): Promise<{ id: string } | null> {
   const deadline = Date.now() + POLL_TIMEOUT_MS;
@@ -83,7 +83,7 @@ async function pollForScanResult(
     const { data } = await supabaseAdmin
       .from('scan_results')
       .select('id, result_json')
-      .eq('url_domain', domain)
+      .eq('url_domain', hostname)
       .gte('created_at', afterTs)
       .not('result_json->>analysisVersion', 'in', '(pending,error)')
       .order('created_at', { ascending: false })
