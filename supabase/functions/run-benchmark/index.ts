@@ -300,7 +300,7 @@ Deno.serve(async (req) => {
 
   console.log(
     `[run-benchmark] Starting ${category} ${month}: ${toProcess.length} to process, ` +
-    `${completedDomains.size} already complete`,
+    `${skippedDomains.size} skipped`,
   );
 
   // ── Background batch processing ────────────────────────────────────────
