@@ -268,6 +268,18 @@ const exclusionPatterns = [
   // Matches: https://developers.gamma.app/... and https://developer.stripe.com/...
   // Does NOT match: https://gamma.app/developers (different URL structure).
   /^https?:\/\/developers?\./i,
+  // Prompt library pages — user-facing AI prompt templates, zero pricing signal
+  // (e.g. instantly.ai/prompt/generate-b2b-saas-usp-differentiator-phrases)
+  /\/prompts?\//i,
+  /\/prompts?\b$/i,
+  /\/prompts?\/[^/]+/i,
+  // Founders / team profile pages — similar to /experts/, no pricing evidence
+  /\/founders?\b/i,
+  // Lecture and playlist pages — educational content, same principle as /courses/
+  /\/[^/]+-lectures?\//i,
+  /\/[^/]+-lectures?\b$/i,
+  /\/[^/]+-playlist\//i,
+  /\/[^/]+-playlist\b$/i,
 ];
 
 const fullContentPatterns = [
