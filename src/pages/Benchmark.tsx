@@ -34,6 +34,7 @@ interface Company {
   company_name: string;
   domain: string;
   notes: string | null;
+  scan_id: string | null;
   total_score: number | null;
   max_score: number | null;
   total_score_pct: number | null;
@@ -512,13 +513,14 @@ function LeaderboardCard({
     if (loadingReport) return;
     setLoadingReport(true);
     try {
+      if (!company.scan_id) {
+        toast.error("No report available for this company yet.");
+        return;
+      }
       const { data, error } = await supabase
         .from("scan_results")
         .select("result_json")
-        .eq("url_domain", company.domain)
-        .eq("is_benchmark", true)
-        .order("created_at", { ascending: false })
-        .limit(1)
+        .eq("id", company.scan_id)
         .maybeSingle();
       if (error) throw error;
       const r = data?.result_json as Record<string, unknown> | undefined;
