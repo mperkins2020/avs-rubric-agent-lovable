@@ -226,6 +226,16 @@ const exclusionPatterns = [
   /\/webinars?\b/i,
   // Single integration pages — parent /integrations is sufficient
   /\/integrations\/[^/]+$/i,
+  // Expert/instructor profiles, course pages, academy content — user-generated or
+  // educational content with zero pricing signal (e.g. instantly.ai/experts/*, /courses/*)
+  /\/experts?\/[^/]+/i,
+  /\/courses?\//i,
+  /\/courses?\b$/i,
+  /\/academy\//i,
+  /\/academy\b$/i,
+  /\/tutorials?\//i,
+  /\/tutorials?\b$/i,
+  /\/learn\//i,
   // Single marketplace listing pages — same principle as integrations above;
   // the listing describes a third-party tool, not the company's own pricing or trust posture
   /\/marketplace\/[^/]+$/i,
@@ -829,8 +839,11 @@ Deno.serve(async (req) => {
     // ═══════════════════════════════════════════════════════════════════════
     if (includeSubpages && safeMaxPages > 1) {
       // Phase 1a: Map the main domain (with subdomains)
+      // For path-based domains (e.g. autobound.ai/pricing), strip the path before
+      // calling Firecrawl /map so it discovers the full site, not just the path subtree.
       console.log('Phase 1a: Mapping main domain...');
-      const mainMapLinks = await mapDomain(apiKey, formattedUrl, 300, true);
+      const mapBaseUrl = `${urlObj.protocol}//${urlObj.hostname}`;
+      const mainMapLinks = await mapDomain(apiKey, mapBaseUrl, 300, true);
       console.log(`Main domain map: ${mainMapLinks.length} URLs discovered`);
 
       // Phase 1b: Check if main map already covers docs/help subdomains
@@ -908,8 +921,11 @@ Deno.serve(async (req) => {
       // STEP 3: SCORE & SELECT — only from discovered + community URLs
       // ═════════════════════════════════════════════════════════════════════
       const communityUrlSet = new Set(communityUrls);
-      // All candidates come from actual discovery — no blind fallback probes
-      const allDiscovered = [...new Set([...mainMapLinks, ...subdomainMapLinks, ...communityUrls])];
+      // All candidates come from actual discovery — no blind fallback probes.
+      // If the input URL has a path (e.g. autobound.ai/pricing), add it as a seed so
+      // it's always in the candidate pool even though mapDomain used the base hostname.
+      const pathSeedUrls = urlObj.pathname !== '/' ? [formattedUrl] : [];
+      const allDiscovered = [...new Set([...mainMapLinks, ...subdomainMapLinks, ...communityUrls, ...pathSeedUrls])];
       console.log(`Total discovered URLs: ${allDiscovered.length}`);
 
       const scoredLinks = allDiscovered
@@ -1066,6 +1082,9 @@ Deno.serve(async (req) => {
           parsed.hash = parsed.hash.startsWith('#:~:') ? '' : parsed.hash;
           // Strip locale path prefixes (/en/, /en-US/, /fr/, /de/, etc.)
           parsed.pathname = parsed.pathname.replace(/^\/[a-z]{2}(-[A-Z]{2})?\//,  '/');
+          // Collapse double slashes in path (e.g. //about → /about) — Firecrawl map
+          // sometimes returns malformed URLs with double slashes that fool naive dedup.
+          parsed.pathname = parsed.pathname.replace(/\/\/+/g, '/');
           // Strip trailing slash from pathname (root '/' is preserved)
           // /pricing/ ≡ /pricing — Firecrawl map often returns both variants
           if (parsed.pathname.length > 1) parsed.pathname = parsed.pathname.replace(/\/$/, '');
@@ -1160,7 +1179,16 @@ Deno.serve(async (req) => {
         const key = normaliseForDedup(u);
         if (!finalDedupMap.has(key)) finalDedupMap.set(key, u);
       }
-      const allUrlsToScrape = [...finalDedupMap.values()];
+      // Sanitize URLs before scraping: collapse any double slashes in paths
+      // that survived earlier dedup (e.g. www.clay.com//about → www.clay.com/about).
+      const sanitiseForScrape = (link: string): string => {
+        try {
+          const parsed = new URL(link);
+          parsed.pathname = parsed.pathname.replace(/\/\/+/g, '/');
+          return parsed.toString();
+        } catch { return link; }
+      };
+      const allUrlsToScrape = [...finalDedupMap.values()].map(sanitiseForScrape);
 
       const scrapePromises = allUrlsToScrape.map(pageUrl => scrapePage(apiKey, pageUrl));
       const scrapedPages = await Promise.all(scrapePromises);
