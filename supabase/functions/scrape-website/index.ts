@@ -208,8 +208,8 @@ const highIntentPaths = new Set([
 
 const exclusionPatterns = [
   /\.(pdf|zip|png|jpg|jpeg|gif|svg|css|js|woff|woff2|ttf|eot|txt)$/i,
-  /\/(blog|news|press|careers|jobs|cookie|author|tag|category)\//i,
-  /\/(blog|news|press|careers|jobs|cookie|author|tag|category)$/i,
+  /\/(blog|news|press|careers|jobs|cookie|author|tag|category|insights?)\//i,
+  /\/(blog|news|press|careers|jobs|cookie|author|tag|category|insights?)$/i,
   /\/(wp-content|wp-admin|wp-includes|wp-json)\//i,
   /\/dashboard\b/i,
   /\/(login|signup|sign-up|sign-in|register|cart|checkout)\b/i,
