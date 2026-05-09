@@ -27,6 +27,36 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
+import { FAQJsonLd } from "@/components/FAQJsonLd";
+
+const homepageFaqs = [
+  {
+    question: "Who is the AVS Rubric built for?",
+    answer:
+      "The AVS Rubric is built for AI-native B2B products and AI-powered SaaS teams — product marketers, pricing leads, and GTM operators who need to understand how buyers evaluate their product before engaging sales.",
+  },
+  {
+    question: "What is buyability?",
+    answer:
+      "Buyability is the degree to which a buyer — human or AI agent — can independently understand, evaluate, budget for, and justify a product without engaging sales. It is the gap between buyer intent and decision-readiness.",
+  },
+  {
+    question: "How is buyability measured?",
+    answer:
+      "The AVS Rubric scores buyability across 8 dimensions: product clarity, value unit definition, cost driver mapping, proof and evidence quality, trust and governance visibility, integration readiness, enterprise controls, and ICP alignment. Each dimension is scored from publicly available evidence — the same evidence a buyer or AI agent would encounter.",
+  },
+  {
+    question: "Why does buyability matter for AI agents?",
+    answer:
+      "AI agents are increasingly involved in vendor evaluation and purchasing decisions. An agent cannot ask follow-up questions or infer information behind a contact-us wall. If pricing, value units, and cost drivers are not structured and publicly available, the product is invisible to agent-led evaluation.",
+  },
+];
 
 const dimensionDefinitions: Record<string, string> = {
   "Product North Star": "Observable outcomes tie to value delivery and predictability.",
@@ -491,6 +521,27 @@ const Index = () => {
           </Button>
         </div>
       </section>
+
+      <section className="py-16 px-6 bg-background">
+        <div className="max-w-3xl mx-auto">
+          <h2 className="text-3xl md:text-4xl font-bold text-center text-foreground mb-10">
+            Frequently Asked Questions
+          </h2>
+          <Accordion type="single" collapsible className="w-full">
+            {homepageFaqs.map((faq, idx) => (
+              <AccordionItem key={idx} value={`item-${idx}`}>
+                <AccordionTrigger className="text-left text-base md:text-lg font-medium">
+                  {faq.question}
+                </AccordionTrigger>
+                <AccordionContent className="text-muted-foreground text-base leading-relaxed">
+                  {faq.answer}
+                </AccordionContent>
+              </AccordionItem>
+            ))}
+          </Accordion>
+        </div>
+      </section>
+      <FAQJsonLd faqs={homepageFaqs} />
 
       <Footer />
 
