@@ -403,11 +403,15 @@ const Index = () => {
             <h1 id="hero" className="text-3xl sm:text-4xl md:text-[56px] font-bold mb-5 leading-[1.15] tracking-tight">
               <span className="block">Find the Buyer Friction</span>
               <span className="mt-3 md:mt-4 block">
-                Slowing Your <span className="gradient-text">AI Revenue</span>
+                Slowing Your <span className="gradient-text">Growth</span>
               </span>
             </h1>
 
             <RotatingSubhead />
+
+            <p className="text-sm text-muted-foreground mb-6">
+              AVS Rubric measures buyability across 8 buyer-confidence dimensions.
+            </p>
 
             <div id="url-input" className="flex justify-center mb-4 scroll-mt-24">
               <URLInput onSubmit={handleSubmit} isLoading={isLoading} />
@@ -519,7 +523,7 @@ const Index = () => {
               el?.scrollIntoView({ behavior: 'smooth' });
             }}
           >
-            Check Buyer Readiness
+            Check Your Buyability Score
             <ArrowRight className="w-5 h-5 ml-2" />
           </Button>
         </div>
