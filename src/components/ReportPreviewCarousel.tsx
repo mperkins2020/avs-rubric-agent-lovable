@@ -269,7 +269,7 @@ export function ReportPreviewCarousel() {
             el?.scrollIntoView({ behavior: 'smooth' });
           }}
         >
-          Check Buyer Readiness
+          Check Your Buyability Score
           <ArrowRight className="w-5 h-5 ml-2" />
         </Button>
       </div>
