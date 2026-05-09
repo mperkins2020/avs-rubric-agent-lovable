@@ -28,40 +28,6 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 
-const rotatingLines = [
-  "Enterprise deals stall when buyers cannot verify trust.",
-  "Churn starts when value is unclear before renewal.",
-  "Buyers hesitate when they cannot predict what they will pay.",
-];
-
-function RotatingSubhead() {
-  const [index, setIndex] = useState(0);
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setIndex((i) => (i + 1) % rotatingLines.length);
-    }, 3500);
-    return () => clearInterval(interval);
-  }, []);
-
-  return (
-    <div className="h-10 flex items-center justify-center mb-10">
-      <AnimatePresence mode="wait">
-        <motion.p
-          key={index}
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -12 }}
-          transition={{ duration: 0.4 }}
-          className="text-lg text-muted-foreground"
-        >
-          {rotatingLines[index]}
-        </motion.p>
-      </AnimatePresence>
-    </div>
-  );
-}
-
 const dimensionDefinitions: Record<string, string> = {
   "Product North Star": "Observable outcomes tie to value delivery and predictability.",
   "ICP & Job Clarity": "Clear target user and job, anchored in workflows.",
@@ -400,26 +366,20 @@ const Index = () => {
       <section className="pt-14 pb-4 md:pt-18 md:pb-6">
         <div className="container mx-auto px-5 md:px-10">
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center max-w-3xl mx-auto">
-            <h1 id="hero" className="text-3xl sm:text-4xl md:text-[56px] font-bold mb-5 leading-[1.15] tracking-tight">
+            <h1 id="hero" className="text-3xl sm:text-4xl md:text-[56px] font-bold mb-4 leading-[1.15] tracking-tight">
               <span className="block">Find the Buyer Friction</span>
               <span className="mt-3 md:mt-4 block">
                 Slowing Your <span className="gradient-text">Growth</span>
               </span>
             </h1>
 
-            <RotatingSubhead />
-
-            <p className="text-sm text-muted-foreground mb-6">
+            <p className="text-base md:text-lg text-muted-foreground mb-8 md:mb-10">
               AVS Rubric measures buyability across 8 buyer-confidence dimensions.
             </p>
 
-            <div id="url-input" className="flex justify-center mb-4 scroll-mt-24">
+            <div id="url-input" className="flex justify-center mb-12 scroll-mt-24">
               <URLInput onSubmit={handleSubmit} isLoading={isLoading} />
             </div>
-
-            <p className="text-xs text-muted-foreground mb-12">
-              Built for AI products and AI-powered SaaS teams.
-            </p>
 
             {isLoading && (
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center">
