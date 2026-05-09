@@ -128,7 +128,7 @@ export function CategoryCarousel() {
           viewport={{ once: true }}
           className="text-xl md:text-2xl font-bold text-center text-foreground"
         >
-          Where AI products create buyer friction
+          Where buyability breaks down
         </motion.h2>
       </div>
 
