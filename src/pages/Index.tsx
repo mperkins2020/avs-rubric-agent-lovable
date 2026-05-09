@@ -408,7 +408,10 @@ const Index = () => {
       {/* Three-pillar features */}
       <section className="py-16 md:py-24 bg-secondary">
         <div className="container mx-auto px-5 md:px-10">
-          <h2 className="text-2xl md:text-3xl font-bold text-center mb-10">What the analysis evaluates</h2>
+          <h2 className="text-2xl md:text-3xl font-bold text-center mb-3">What the analysis evaluates</h2>
+          <p className="text-center text-muted-foreground max-w-2xl mx-auto mb-10">
+            Your buyability score is what a buyer or AI agent can verify before engaging sales.
+          </p>
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
             {features.map((feature, i) => (
               <motion.div
