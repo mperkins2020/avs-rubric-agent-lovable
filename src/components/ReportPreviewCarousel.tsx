@@ -226,8 +226,8 @@ export function ReportPreviewCarousel() {
     >
       <div className="text-center mb-8">
         <h2 className="text-2xl font-bold mb-2">Example: Where Buyer Confidence Breaks</h2>
-        <p className="text-sm text-muted-foreground max-w-2xl mx-auto mb-2">
-          See how the analysis separates visible gaps from issues that may slow evaluation, approval, or expansion.
+        <p className="text-sm text-muted-foreground max-w-2xl mx-auto mb-2 whitespace-pre-line">
+          See how the analysis separates visible gaps from issues that may slow{"\n"}evaluation, approval, or expansion.
         </p>
         <div className="h-6 relative overflow-hidden">
           <AnimatePresence mode="wait">
