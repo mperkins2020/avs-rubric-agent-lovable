@@ -521,7 +521,7 @@ const Index = () => {
           </p>
           <Button
             size="lg"
-            className="bg-white text-vt-midnight hover:bg-white/90 rounded-[20px] px-8 h-12 font-semibold shadow-vt-sm"
+            className="bg-white text-vt-midnight hover:bg-white/90 rounded-[20px] px-8 h-12 font-semibold shadow-vt-sm transition-shadow hover:shadow-[0_18px_50px_-10px_hsl(var(--vt-cyan)/0.55)]"
             onClick={() => {
               const el = document.getElementById('url-input');
               el?.scrollIntoView({ behavior: 'smooth' });
