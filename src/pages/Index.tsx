@@ -393,8 +393,9 @@ const Index = () => {
       </AnimatePresence>
 
       {/* Hero section */}
-      <section className="pt-14 pb-4 md:pt-18 md:pb-6">
-        <div className="container mx-auto px-5 md:px-10">
+      <section className="relative pt-14 pb-4 md:pt-18 md:pb-6 overflow-hidden">
+        <div className="hero-blob" aria-hidden="true" />
+        <div className="container relative z-10 mx-auto px-5 md:px-10">
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center max-w-3xl mx-auto">
             <h1 id="hero" className="text-3xl sm:text-4xl md:text-[56px] font-bold mb-4 leading-[1.15] tracking-tight">
               <span className="block">Find the Buyer Friction</span>
