@@ -263,7 +263,7 @@ export function ReportPreviewCarousel() {
       <div className="text-center mt-10">
         <Button
           size="lg"
-          className="bg-vt-midnight text-white hover:bg-vt-midnight/90 rounded-[20px] px-8 h-12 font-semibold shadow-vt-sm"
+          className="bg-vt-midnight text-white hover:bg-vt-midnight/90 rounded-[20px] px-8 h-12 font-semibold shadow-vt-sm transition-shadow hover:shadow-[0_12px_40px_-10px_hsl(var(--vt-violet)/0.6)]"
           onClick={() => {
             const el = document.getElementById('url-input');
             el?.scrollIntoView({ behavior: 'smooth' });
