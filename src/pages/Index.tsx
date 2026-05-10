@@ -393,8 +393,9 @@ const Index = () => {
       </AnimatePresence>
 
       {/* Hero section */}
-      <section className="pt-14 pb-4 md:pt-18 md:pb-6">
-        <div className="container mx-auto px-5 md:px-10">
+      <section className="relative pt-14 pb-4 md:pt-18 md:pb-6 overflow-hidden">
+        <div className="hero-blob" aria-hidden="true" />
+        <div className="container relative z-10 mx-auto px-5 md:px-10">
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center max-w-3xl mx-auto">
             <h1 id="hero" className="text-3xl sm:text-4xl md:text-[56px] font-bold mb-4 leading-[1.15] tracking-tight">
               <span className="block">Find the Buyer Friction</span>
@@ -443,21 +444,31 @@ const Index = () => {
             Your buyability score is what a buyer or AI agent can verify before engaging sales.
           </p>
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
-            {features.map((feature, i) => (
-              <motion.div
-                key={feature.title}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.4 + i * 0.1 }}
-                className="bg-card border border-border rounded-3xl p-7 shadow-vt-sm hover:shadow-vt-md transition-shadow duration-200"
-              >
-                <div className="w-10 h-10 rounded-xl bg-secondary flex items-center justify-center mb-5">
-                  <feature.icon className="w-5 h-5 text-vt-cyan" />
-                </div>
-                <h3 className="font-semibold text-lg mb-2">{feature.title}</h3>
-                <p className="text-sm text-muted-foreground leading-relaxed">{feature.description}</p>
-              </motion.div>
-            ))}
+            {features.map((feature, i) => {
+              const accents = [
+                { border: 'hsl(var(--vt-cyan))', icon: 'text-vt-cyan', bg: 'bg-[hsl(var(--vt-cyan)/0.12)]', glow: 'glow-cyan-hover' },
+                { border: 'hsl(var(--vt-violet))', icon: 'text-vt-violet', bg: 'bg-[hsl(var(--vt-violet)/0.12)]', glow: 'glow-violet-hover' },
+                { border: 'hsl(var(--vt-mint))', icon: 'text-[hsl(var(--vt-mint))]', bg: 'bg-[hsl(var(--vt-mint)/0.14)]', glow: 'glow-mint-hover' },
+                { border: 'hsl(var(--vt-coral))', icon: 'text-vt-coral', bg: 'bg-[hsl(var(--vt-coral)/0.12)]', glow: 'glow-coral-hover' },
+              ];
+              const a = accents[i % accents.length];
+              return (
+                <motion.div
+                  key={feature.title}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.4 + i * 0.1 }}
+                  style={{ borderTop: `3px solid ${a.border}` }}
+                  className={`bg-card border border-border rounded-3xl p-7 shadow-vt-sm ${a.glow}`}
+                >
+                  <div className={`w-10 h-10 rounded-xl ${a.bg} flex items-center justify-center mb-5`}>
+                    <feature.icon className={`w-5 h-5 ${a.icon}`} />
+                  </div>
+                  <h3 className="font-semibold text-lg mb-2">{feature.title}</h3>
+                  <p className="text-sm text-muted-foreground leading-relaxed">{feature.description}</p>
+                </motion.div>
+              );
+            })}
           </motion.div>
         </div>
       </section>
@@ -510,7 +521,7 @@ const Index = () => {
           </p>
           <Button
             size="lg"
-            className="bg-white text-vt-midnight hover:bg-white/90 rounded-[20px] px-8 h-12 font-semibold shadow-vt-sm"
+            className="bg-white text-vt-midnight hover:bg-white/90 rounded-[20px] px-8 h-12 font-semibold shadow-vt-sm transition-shadow hover:shadow-[0_18px_50px_-10px_hsl(var(--vt-cyan)/0.55)]"
             onClick={() => {
               const el = document.getElementById('url-input');
               el?.scrollIntoView({ behavior: 'smooth' });

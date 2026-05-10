@@ -70,8 +70,11 @@ export function URLInput({ onSubmit, isLoading = false }: URLInputProps) {
             type="submit"
             size="lg"
             disabled={isLoading}
-            className="h-12 px-6 bg-vt-midnight hover:bg-vt-midnight/90 text-white font-semibold rounded-[20px] transition-all shadow-vt-sm"
+            className="relative h-12 px-6 bg-vt-midnight hover:bg-vt-midnight/90 text-white font-semibold rounded-[20px] transition-all shadow-vt-sm hover:shadow-[0_12px_40px_-10px_hsl(var(--vt-violet)/0.6)]"
           >
+            {!isLoading && (
+              <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-vt-coral ring-2 ring-card" aria-hidden="true" />
+            )}
             {isLoading ? (
               <Loader2 className="w-5 h-5 animate-spin" />
             ) : (
