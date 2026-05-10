@@ -45,7 +45,9 @@ if (args.length === 0) {
   process.exit(1);
 }
 
-const domainArg = args[0].replace(/^https?:\/\//, '').replace(/\/.*$/, '');
+const rawArg = args[0].replace(/^https?:\/\//, '');
+const domainArg = rawArg.replace(/\/.*$/, '');
+const inputPath = rawArg.includes('/') ? '/' + rawArg.split('/').slice(1).join('/') : '';
 const maxPagesFlag = args.indexOf('--max-pages');
 const maxPages = maxPagesFlag >= 0 ? parseInt(args[maxPagesFlag + 1], 10) || 15 : 15;
 const verbose = args.includes('--verbose');
@@ -60,23 +62,29 @@ if (!apiKey) {
 
 const baseHost = domainArg.replace(/^www\./, '');
 const registrableDomain = getRegistrableDomain(baseHost);
-const formattedUrl = `https://${baseHost}`;
+const formattedUrl = `https://${baseHost}${inputPath}`;
 const safeMaxPages = Math.min(Math.max(1, maxPages), 25);
 
-console.log(`\nPreviewing scrape for: ${baseHost}`);
-console.log(`Max pages: ${safeMaxPages}  |  Verbose: ${verbose}`);
+// When input targets a product path, use it as a search hint for Firecrawl /map
+const pathSegments = inputPath.replace(/\/+$/, '').split('/').filter(Boolean);
+const productSearch = pathSegments.length >= 1 ? pathSegments[0] : undefined;
+
+console.log(`\nPreviewing scrape for: ${baseHost}${inputPath || ''}`);
+console.log(`Max pages: ${safeMaxPages}  |  Verbose: ${verbose}${productSearch ? `  |  Product search: "${productSearch}"` : ''}`);
 console.log('─'.repeat(72));
 
 // ─── Firecrawl /map helper ────────────────────────────────────────────────────
 
-async function mapDomain(url: string, limit = 200, includeSubdomains = false): Promise<string[]> {
+async function mapDomain(url: string, limit = 200, includeSubdomains = false, search?: string): Promise<string[]> {
+  const payload: Record<string, unknown> = { url, limit, includeSubdomains };
+  if (search) payload.search = search;
   const resp = await fetch('https://api.firecrawl.dev/v1/map', {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${apiKey}`,
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({ url, limit, includeSubdomains }),
+    body: JSON.stringify(payload),
   });
   if (!resp.ok) {
     console.warn(`  Map request failed (${resp.status}) for ${url}`);
@@ -89,7 +97,7 @@ async function mapDomain(url: string, limit = 200, includeSubdomains = false): P
 // ─── Phase 1a: Map main domain ────────────────────────────────────────────────
 
 console.log('\nPhase 1a: Mapping main domain...');
-const mainMapLinks = await mapDomain(formattedUrl, 300, true);
+const mainMapLinks = await mapDomain(formattedUrl, 300, true, productSearch);
 console.log(`  Discovered ${mainMapLinks.length} URLs`);
 
 // ─── Phase 1b: Map undiscovered help subdomains ───────────────────────────────

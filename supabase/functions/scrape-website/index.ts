@@ -95,19 +95,21 @@ function isUnsafeUrl(urlString: string): string | null {
 }
 
 // ─── Helper: call Firecrawl /map (with retry on empty/rate-limited response) ──
-async function mapDomain(apiKey: string, url: string, limit = 200, includeSubdomains = false): Promise<string[]> {
+async function mapDomain(apiKey: string, url: string, limit = 200, includeSubdomains = false, search?: string): Promise<string[]> {
   const MIN_EXPECTED_URLS = 3; // if we get fewer than this, treat as a rate-limit/partial failure
   const RETRY_DELAY_MS = 12000; // wait 12s before retrying
 
   async function attemptMap(): Promise<string[]> {
     try {
+      const payload: Record<string, unknown> = { url, limit, includeSubdomains };
+      if (search) payload.search = search;
       const response = await fetch('https://api.firecrawl.dev/v1/map', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${apiKey}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ url, limit, includeSubdomains }),
+        body: JSON.stringify(payload),
       });
       const text = await response.text();
       const data: FirecrawlMapResponse = JSON.parse(text);
@@ -850,12 +852,22 @@ Deno.serve(async (req) => {
     // STEP 2: MAP-FIRST DISCOVERY — only discover URLs that actually exist
     // ═══════════════════════════════════════════════════════════════════════
     if (includeSubpages && safeMaxPages > 1) {
+      // When the input URL targets a specific product path (e.g. salesforce.com/agentforce/),
+      // pass the first path segment as a search hint to Firecrawl's /map so it returns
+      // product-scoped URLs instead of the entire domain.
+      const inputPath = urlObj.pathname.replace(/\/+$/, '');
+      const pathSegments = inputPath.split('/').filter(Boolean);
+      const productSearch = pathSegments.length >= 1 ? pathSegments[0] : undefined;
+      if (productSearch) {
+        console.log(`Product-scoped map: using search="${productSearch}" from input path`);
+      }
+
       // Phase 1a: Map the main domain (with subdomains)
       // For path-based domains (e.g. autobound.ai/pricing), strip the path before
       // calling Firecrawl /map so it discovers the full site, not just the path subtree.
       console.log('Phase 1a: Mapping main domain...');
       const mapBaseUrl = `${urlObj.protocol}//${urlObj.hostname}`;
-      const mainMapLinks = await mapDomain(apiKey, mapBaseUrl, 300, true);
+      const mainMapLinks = await mapDomain(apiKey, mapBaseUrl, 300, true, productSearch);
       console.log(`Main domain map: ${mainMapLinks.length} URLs discovered`);
 
       // Phase 1b: Check if main map already covers docs/help subdomains
