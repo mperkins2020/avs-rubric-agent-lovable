@@ -952,6 +952,15 @@ Deno.serve(async (req) => {
       const allDiscovered = [...new Set([...mainMapLinks, ...subdomainMapLinks, ...communityUrls, ...pathSeedUrls])];
       console.log(`Total discovered URLs: ${allDiscovered.length}`);
 
+      // When a product path is active, boost URLs containing that segment so
+      // product-specific pages outscore generic same-domain pages.
+      const productPathBoost = (link: string, baseScore: number): number => {
+        if (!productSearch) return baseScore;
+        const re = new RegExp(`\\/${productSearch}\\/|\\/${productSearch}$`, 'i');
+        if (re.test(link)) return baseScore + 1500;
+        return baseScore;
+      };
+
       const scoredLinks = allDiscovered
         .filter((link: string) => {
           if (exclusionPatterns.some(p => p.test(link))) return false;
@@ -1029,7 +1038,7 @@ Deno.serve(async (req) => {
           if (isSubdomainUrl(link)) return true;
           return false;
         })
-        .map((link: string) => ({ link, score: scoreUrl(link, baseHost, communityUrlSet) }))
+        .map((link: string) => ({ link, score: productPathBoost(link, scoreUrl(link, baseHost, communityUrlSet)) }))
         .sort((a, b) => b.score - a.score || a.link.localeCompare(b.link));
 
       // Perf: 40s budget — URL content-relevance pre-filter applied before batch selection.
@@ -1140,6 +1149,7 @@ Deno.serve(async (req) => {
       const storyLinks: string[] = [];   // /customers/* + /case-studies/* — 2 slots combined
       const blogLinks: string[] = [];    // /blog/* — 1 slot
       const changelogLinks: string[] = []; // /changelog/* — 1 slot
+      const complianceLinks: string[] = []; // compliance.*/trust.* subdomains — 3 slots max
       const otherLinks: string[] = [];
 
       for (const { link } of dedupedScoredLinks) {
@@ -1151,6 +1161,8 @@ Deno.serve(async (req) => {
           blogLinks.push(link);
         } else if (/\/changelog\//i.test(link)) {
           changelogLinks.push(link);
+        } else if (/^https?:\/\/(compliance|trust)\./i.test(link)) {
+          complianceLinks.push(link);
         } else {
           otherLinks.push(link);
         }
@@ -1160,10 +1172,12 @@ Deno.serve(async (req) => {
       const reservedStorySlots      = Math.min(2, storyLinks.length);
       const reservedBlogSlots       = Math.min(1, blogLinks.length);
       const reservedChangelogSlots  = Math.min(1, changelogLinks.length);
-      const reservedLowSignalSlots  = reservedCompareSlots + reservedStorySlots + reservedBlogSlots + reservedChangelogSlots;
+      const reservedComplianceSlots = Math.min(3, complianceLinks.length);
+      const reservedLowSignalSlots  = reservedCompareSlots + reservedStorySlots + reservedBlogSlots + reservedChangelogSlots + reservedComplianceSlots;
 
       const rawPriorityLinks = [
         ...otherLinks.slice(0, Math.max(0, (safeMaxPages - 1) - reservedLowSignalSlots)),
+        ...complianceLinks.slice(0, reservedComplianceSlots),
         ...compareLinks.slice(0, reservedCompareSlots),
         ...storyLinks.slice(0, reservedStorySlots),
         ...blogLinks.slice(0, reservedBlogSlots),

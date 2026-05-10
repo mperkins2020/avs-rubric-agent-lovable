@@ -177,9 +177,16 @@ if (verbose) {
   console.log(`  After exclusionPatterns + shape filters: ${afterExclusion.length} (dropped ${dropped})`);
 }
 
-// Step 2: Score
+// Step 2: Score (with product path boost when active)
+const productPathBoost = (link: string, baseScore: number): number => {
+  if (!productSearch) return baseScore;
+  const re = new RegExp(`\\/${productSearch}\\/|\\/${productSearch}$`, 'i');
+  if (re.test(link)) return baseScore + 1500;
+  return baseScore;
+};
+
 const scored = afterExclusion
-  .map(link => ({ link, score: scoreUrl(link, baseHost, communityUrlSet) }))
+  .map(link => ({ link, score: productPathBoost(link, scoreUrl(link, baseHost, communityUrlSet)) }))
   .sort((a, b) => b.score - a.score || a.link.localeCompare(b.link));
 
 // Step 3: isEvidenceEligible
@@ -207,6 +214,7 @@ const compareLinks: string[] = [];
 const storyLinks: string[] = [];
 const blogLinks: string[] = [];
 const changelogLinks: string[] = [];
+const complianceLinks: string[] = [];
 const otherLinks: string[] = [];
 
 for (const { link } of deduped) {
@@ -214,17 +222,20 @@ for (const { link } of deduped) {
   else if (/\/(customers|case-studies)\//i.test(link)) storyLinks.push(link);
   else if (/\/blog\//i.test(link)) blogLinks.push(link);
   else if (/\/changelog\//i.test(link)) changelogLinks.push(link);
+  else if (/^https?:\/\/(compliance|trust)\./i.test(link)) complianceLinks.push(link);
   else otherLinks.push(link);
 }
 
-const reservedCompare   = Math.min(2, compareLinks.length);
-const reservedStory     = Math.min(2, storyLinks.length);
-const reservedBlog      = Math.min(1, blogLinks.length);
-const reservedChangelog = Math.min(1, changelogLinks.length);
-const reservedTotal     = reservedCompare + reservedStory + reservedBlog + reservedChangelog;
+const reservedCompare     = Math.min(2, compareLinks.length);
+const reservedStory       = Math.min(2, storyLinks.length);
+const reservedBlog        = Math.min(1, blogLinks.length);
+const reservedChangelog   = Math.min(1, changelogLinks.length);
+const reservedCompliance  = Math.min(3, complianceLinks.length);
+const reservedTotal       = reservedCompare + reservedStory + reservedBlog + reservedChangelog + reservedCompliance;
 
 const rawSelected = [
   ...otherLinks.slice(0, Math.max(0, (safeMaxPages - 1) - reservedTotal)),
+  ...complianceLinks.slice(0, reservedCompliance),
   ...compareLinks.slice(0, reservedCompare),
   ...storyLinks.slice(0, reservedStory),
   ...blogLinks.slice(0, reservedBlog),
