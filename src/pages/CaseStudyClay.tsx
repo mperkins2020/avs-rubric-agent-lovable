@@ -71,7 +71,7 @@ export default function CaseStudyClay() {
             The $100M Platform With a Cost Predictability Gap
           </h1>
           <p className="text-lg text-muted-foreground leading-relaxed mb-2">
-            GTM Platform Leader. 81% AVS Trust Score. 4.9/5 G2 rating.
+            GTM Platform Leader. 81% Buyability Score. 4.9/5 G2 rating.
           </p>
           <p className="text-muted-foreground leading-relaxed">
             Clay has built the defining GTM platform of the AI era with exceptional product-market fit, explosive growth (6x in 2024, tripling in 2025), and a credit-based model that clearly maps value to usage. Yet credit consumption complaints dominate user feedback, teams burn $500-$800 in their first week learning the platform, and failed lookups still cost credits. The infrastructure that made Clay scale is the same infrastructure creating trust friction at the expansion layer.
@@ -126,7 +126,7 @@ export default function CaseStudyClay() {
           <div className="flex items-center gap-4 mb-4 p-4 rounded-xl bg-card/60 border border-border/50">
             <div>
               <span className="text-3xl font-mono font-bold gradient-text">81%</span>
-              <p className="text-xs text-muted-foreground">AVS Trust Score</p>
+              <p className="text-xs text-muted-foreground">Buyability Score</p>
             </div>
             <div className="h-8 w-px bg-border" />
             <div>
