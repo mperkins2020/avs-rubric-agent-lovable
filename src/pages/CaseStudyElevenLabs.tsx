@@ -70,13 +70,13 @@ export default function CaseStudyElevenLabs() {
           <h1 className="text-3xl md:text-4xl font-bold mb-4 leading-tight">
             The 75% Problem: When Strong Fundamentals Meet Predictability Gaps
           </h1>
-          <p className="text-lg text-muted-foreground leading-relaxed mb-2">Industry-leading voice AI technology. 75% AVS Trust Score. 3.1/5 Trustpilot rating.
+          <p className="text-lg text-muted-foreground leading-relaxed mb-2">Industry-leading voice AI technology. 75% Buyability Score. 3.1/5 Trustpilot rating.
 
           </p>
           <p className="text-muted-foreground leading-relaxed">
             ElevenLabs has built exceptional AI technology with strong commercial infrastructure — clear value units, transparent overage pricing, well-aligned buyer tiers. Yet cost predictability complaints dominate customer feedback, enterprise deals extend beyond 120 days, and expansion velocity lags 40% below potential.
           </p>
-          <p className="text-muted-foreground leading-relaxed mt-4 font-medium">The paradox: A 75% AVS trust score should indicate strong trust infrastructure. Why do "surprise bill" and "can't predict costs" complaints persist? Our analysis estimates closing these gaps could drive a <span className="text-foreground font-semibold">2–7% uplift in ARR</span>.
+          <p className="text-muted-foreground leading-relaxed mt-4 font-medium">The paradox: A 75% Buyability Score should indicate strong trust infrastructure. Why do "surprise bill" and "can't predict costs" complaints persist? Our analysis estimates closing these gaps could drive a <span className="text-foreground font-semibold">2–7% uplift in ARR</span>.
           </p>
         </Section>
 
@@ -113,7 +113,7 @@ export default function CaseStudyElevenLabs() {
           <div className="flex items-center gap-4 mb-6 p-4 rounded-xl bg-card/60 border border-border/50">
             <div>
               <span className="text-3xl font-mono font-bold gradient-text">75%</span>
-              <p className="text-xs text-muted-foreground">AVS Trust Score</p>
+              <p className="text-xs text-muted-foreground">Buyability Score</p>
             </div>
             <div className="h-8 w-px bg-border" />
             <div>

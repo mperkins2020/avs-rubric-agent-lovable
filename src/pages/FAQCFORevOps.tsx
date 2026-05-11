@@ -137,7 +137,7 @@ Example: A CFO can forward the report to GTM, Product, and CS and align on risks
           {/* Intro */}
           <div className="mb-12 p-6 rounded-xl bg-primary/5 border border-primary/20">
             <p className="text-muted-foreground mb-4">
-              The AVS Rubric is an upstream revenue-quality tool. It surfaces the expectation and predictability gaps that create sudden churn and forecasting volatility in AI-native products. The goal is not to optimize adoption, but to align belief early enough that retention doesn't collapse later.
+              The AVS Rubric is an upstream revenue-quality tool. It measures the trust infrastructure that enables buyability — surfacing the expectation and predictability gaps that create sudden churn before they show up in retention data.
             </p>
             <p className="text-sm text-muted-foreground">
               This doesn't predict churn. It surfaces the structural conditions that make churn more likely if expectations aren't aligned early.

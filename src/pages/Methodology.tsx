@@ -168,7 +168,7 @@ const Methodology = () => {
 
               <h1 className="text-4xl font-bold mb-3 tracking-tight">The AVS Rubric: Methodology</h1>
               <p className="text-lg text-muted-foreground mb-12 leading-relaxed">
-                How we measure whether your trust infrastructure is strong enough for AI product growth to compound.
+                How we measure whether your trust infrastructure is strong enough to enable buyability — so AI product growth can compound.
               </p>
 
               {/* ─── Why Trust Infrastructure ─── */}
@@ -181,7 +181,7 @@ const Methodology = () => {
                   Unlike traditional SaaS where workflows are deterministic ("click here, get this result"), AI outputs vary based on context, model versions, and user inputs. This unpredictability creates a <strong className="text-foreground">trust gap</strong> that breaks traditional growth loops before they can compound.
                 </p>
                 <Callout>
-                  The Adaptive Value System (AVS) Rubric measures whether your trust infrastructure is strong enough for growth to accelerate.
+                  The Adaptive Value System (AVS) Rubric measures the trust infrastructure that enables buyability: the degree to which a buyer can independently understand, evaluate, budget for, and justify a product without engaging sales. When that infrastructure is strong, buyability follows.
                 </Callout>
               </section>
 
@@ -333,12 +333,12 @@ const Methodology = () => {
                   <li>• <strong className="text-foreground">Duplicate evidence is counted once</strong> — the same fact on multiple pages does not inflate confidence.</li>
                 </ul>
                 <Callout>
-                  The report reflects what your prospects can actually see — not what you believe you're communicating. This is the trust infrastructure gap.
+                  The report reflects what your prospects can actually see — not what you believe you're communicating. When trust infrastructure gaps exist, buyability suffers.
                 </Callout>
 
                 <h3 className="text-lg font-semibold mb-3 mt-8">Output</h3>
                 <p className="text-muted-foreground mb-4 leading-relaxed">
-                  You receive a trust infrastructure report with a total score (0–16, mapped to a maturity band) including:
+                  You receive a buyability report with a total score (0–16, mapped to a maturity band) that shows how strong your trust infrastructure is across all eight dimensions:
                 </p>
                 <ul className="space-y-2 text-sm text-muted-foreground mb-4">
                   {[
@@ -509,7 +509,7 @@ const Methodology = () => {
                 </ul>
 
                 <Callout>
-                  The AVS Rubric identifies these gaps before they show up in your retention curve — by measuring whether trust infrastructure exists in your public signals.
+                  The AVS Rubric identifies these gaps before they show up in your retention curve — by measuring whether trust infrastructure exists in your public signals. When it does, buyability is the outcome.
                 </Callout>
               </section>
 

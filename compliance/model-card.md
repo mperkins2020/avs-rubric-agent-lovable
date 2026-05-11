@@ -4,7 +4,7 @@
 
 ## Purpose
 
-The AVS Rubric scores a SaaS company's pricing transparency across 8 dimensions (Buyer Budget, Cost Driver, ICP Clarity, North Star, Overages Risk, Pools Packaging, Safety Rails, Value Unit) on a 0–2 scale per subtest, producing a 0–16 overall score.
+The AVS Rubric scores a SaaS company's trust infrastructure that enables buyability across 8 dimensions (Buyer Budget, Cost Driver, ICP Clarity, North Star, Overages Risk, Pools Packaging, Safety Rails, Value Unit) on a 0–2 scale per subtest, producing a 0–16 overall score.
 
 ## Intended users
 

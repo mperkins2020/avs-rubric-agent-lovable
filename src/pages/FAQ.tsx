@@ -31,7 +31,7 @@ const faqs: FAQItem[] = [
     question: "We have great messaging. Isn't this just a copywriting audit?",
     answer: (
       <>
-        <p className="mb-3">No. The AVS Rubric scores whether buyers can safely infer how your system behaves before adoption, not how persuasive your copy is.</p>
+        <p className="mb-3">No. The AVS Rubric measures the trust infrastructure that enables buyability — the degree to which a buyer can independently understand, evaluate, budget for, and justify a product without engaging sales. It does not evaluate how persuasive your copy is.</p>
         <p className="mb-3">The difference: "Usage-based pricing" is messaging. Showing that 1,000 API calls = $2.50, with workflow examples ("typical chatbot: 50K calls/month = $125"), documented overage behavior, and configurable budget caps is trust infrastructure.</p>
       </>
     ),
@@ -285,7 +285,7 @@ const FAQ = () => {
     question: faq.question,
     answer: faq.category === "product-growth"
       ? {
-          "We have great messaging. Isn't this just a copywriting audit?": "No. The AVS Rubric scores whether buyers can safely infer how your system behaves before adoption, not how persuasive your copy is. The difference: 'Usage-based pricing' is messaging. Showing that 1,000 API calls = $2.50, with workflow examples, documented overage behavior, and configurable budget caps is trust infrastructure.",
+          "We have great messaging. Isn't this just a copywriting audit?": "No. The AVS Rubric measures the trust infrastructure that enables buyability — the degree to which a buyer can independently understand, evaluate, budget for, and justify a product without engaging sales. It does not evaluate how persuasive your copy is. The difference: 'Usage-based pricing' is messaging. Showing that 1,000 API calls = $2.50, with workflow examples, documented overage behavior, and configurable budget caps is trust infrastructure.",
           "Shouldn't you test the actual product, not just the website?": "The AVS Rubric intentionally evaluates pre-adoption legibility. Most revenue friction happens before deep product usage — long sales cycles, discount pressure, procurement objections, champions struggling to defend adoption internally. We measure whether rational buyers can understand your value unit, cost drivers, limit behavior, and risk allocation using only publicly observable signals.",
           "We have analytics, funnels, and surveys. What does this add?": "Your internal data shows what committed customers do. AVS shows what the market can confidently infer before committing. Revenue fragility often appears when internal data looks healthy but external signals create uncertainty.",
           "This feels subjective. How can I trust the scores?": "AVS makes subjectivity explicit and bounded. Every assessment separates Score (0-100%), Confidence (High/Medium/Low), and Uncertainty labels. Instead of implying certainty, AVS defaults conservatively when evidence is missing and labels low confidence explicitly.",
@@ -312,7 +312,7 @@ const FAQ = () => {
     <div className="min-h-screen bg-background">
       <SEOHead
         title="AVS Rubric FAQ — Frequently Asked Questions"
-        description="Find answers about the AVS Rubric for Product & Growth leaders and CFO & RevOps teams. Learn how AVS evaluates trust infrastructure, reduces churn, and improves revenue quality."
+        description="Find answers about the AVS Rubric for Product & Growth leaders and CFO & RevOps teams. Learn how AVS measures trust infrastructure to enable buyability, reduce churn, and improve revenue quality."
         canonicalUrl="https://valuetempo.lovable.app/resources/faq"
         publishedDate="2026-01-15"
         tags={["FAQ", "AVS Rubric", "trust infrastructure", "revenue quality"]}

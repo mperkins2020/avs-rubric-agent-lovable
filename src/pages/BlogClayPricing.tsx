@@ -10,7 +10,7 @@ import { SEOHead } from "@/components/SEOHead";
 import { AVSSystemDiagram } from "@/components/AVSSystemDiagram";
 
 const tocSections: TocItem[] = [
-{ id: "what-avs-measures", label: "What the AVS Trust Rubric Measures" },
+{ id: "what-avs-measures", label: "What the AVS Rubric Measures" },
 { id: "three-stages", label: "The Three Stages of AI Pricing" },
 { id: "what-changed", label: "What Changed in Clay's Pricing" },
 { id: "run-one", label: "Run One: February Pricing — 81%" },
@@ -27,7 +27,7 @@ export default function BlogClayPricing() {
     <div className="min-h-screen bg-background">
       <SEOHead
         title="Why AI Pricing Requires Three Layers — A Clay Case Study"
-        description="Clay announced a major pricing overhaul. The architecture improved. But the AVS Trust Rubric score dropped from 81% to 75%. That drop is a buyer signal."
+        description="Clay announced a major pricing overhaul. The architecture improved. But the AVS Rubric score dropped from 81% to 75%. That drop is a buyer signal."
         canonicalUrl="https://valuetempo.lovable.app/resources/blog/clay-pricing-three-layers"
         publishedDate="2026-03-13"
         tags={["AI pricing", "Clay", "AVS", "trust surfaces", "case study", "pricing architecture"]} />
@@ -74,20 +74,20 @@ export default function BlogClayPricing() {
 
               <div className="rounded-xl border border-primary/30 bg-primary/5 p-5 mb-8">
                 <p className="text-sm font-semibold text-primary uppercase tracking-wide mb-2">TL;DR</p>
-                <p className="text-foreground/90 leading-relaxed">AI pricing works when buyers can predict value, usage, and cost before committing.<br/>This article analyzes Clay's new pricing architecture using the AVS Trust Rubric and shows why AI pricing systems now require three layers: economic architecture, pricing observability, and trust surface distribution.</p>
+                <p className="text-foreground/90 leading-relaxed">AI pricing works when buyers can predict value, usage, and cost before committing.<br/>This article analyzes Clay's new pricing architecture using the AVS Rubric and shows why AI pricing systems now require three layers: economic architecture, pricing observability, and trust surface distribution.</p>
               </div>
 
               <div className="space-y-6 text-foreground/90 leading-relaxed">
                 <p>Clay announced a major pricing overhaul.</p>
                 <p>The architecture improved.</p>
-                <p>But when the AVS Trust Rubric evaluated the new pricing page, the score dropped from 81% to 75%.</p>
+                <p>But when the AVS Rubric evaluated the new pricing page, the score dropped from 81% to 75%.</p>
                 <p>That drop is not a failure signal. It is a buyer signal, because the score reflects the first place buyers look: the pricing page.</p>
 
                 <hr className="border-border/50 my-8" />
 
-                <h2 id="what-avs-measures" className="text-2xl font-bold text-foreground mt-10">What the AVS Trust Rubric Measures</h2>
+                <h2 id="what-avs-measures" className="text-2xl font-bold text-foreground mt-10">What the AVS Rubric Measures</h2>
 
-                <p>The Adaptive Value System (AVS) Rubric evaluates whether an AI SaaS product communicates predictable value, usage, and cost signals to buyers using only publicly observable signals.</p>
+                <p>The Adaptive Value System (AVS) Rubric measures the trust infrastructure that enables buyability — using only publicly observable signals to evaluate whether an AI SaaS product communicates predictable value, usage, and cost to buyers.</p>
                 <p>It scores eight dimensions across a four-layer trust stack:</p>
 
                 <div className="overflow-x-auto my-6">
@@ -127,7 +127,7 @@ export default function BlogClayPricing() {
                 <p>Each dimension scores 0–2, with a confidence label reflecting how much public evidence the rubric can find.</p>
                 <p>The score is not the destination. It reveals which signals buyers can easily reach and which signals require effort to find or even understand.</p>
                 <p className="font-semibold text-foreground">The score does not measure product quality. It measures how easily buyers can infer value, usage, and cost before committing.</p>
-                <p>The AVS rubric evaluates trust infrastructure across four internal layers. But when buyers experience pricing during evaluation, those signals typically appear through three observable stages.</p>
+                <p>The AVS Rubric measures trust infrastructure across four internal layers. But when buyers experience pricing during evaluation, those signals typically appear through three observable stages.</p>
 
                 <hr className="border-border/50 my-8" />
 
@@ -423,9 +423,9 @@ The observability infrastructure largely exists.</p>
                 <hr className="border-border/50 my-8" />
 
                 <div className="bg-muted/30 border border-border/50 rounded-xl p-6 my-8">
-                  <h3 className="text-xl font-bold text-foreground mb-3">The AVS Trust Rubric</h3>
-                  <p className="text-foreground/90 mb-2">The AVS Trust Rubric evaluates AI SaaS products using publicly observable signals across eight trust dimensions.</p>
-                  <p className="text-foreground/90 mb-0">It measures how easily buyers can infer value, usage, and cost before committing.</p>
+                  <h3 className="text-xl font-bold text-foreground mb-3">The AVS Rubric</h3>
+                  <p className="text-foreground/90 mb-2">The AVS Rubric measures the trust infrastructure that enables buyability, evaluating AI SaaS products across eight buyer-confidence dimensions using publicly observable signals.</p>
+                  <p className="text-foreground/90 mb-0">When that infrastructure is strong, buyers can independently infer value, usage, and cost before committing. That is buyability.</p>
                 </div>
               </div>
 
