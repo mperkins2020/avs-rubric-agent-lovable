@@ -44,12 +44,12 @@ const homepageFaqs = [
   {
     question: "What is buyability?",
     answer:
-      "Buyability is the degree to which a buyer — human or AI agent — can independently understand, evaluate, budget for, and justify a product without engaging sales. It is the gap between buyer intent and decision-readiness.",
+      "Buyability is the degree to which a buyer — human or AI agent — can independently understand, evaluate, budget for, and justify a product without engaging sales. It is the gap between buyer intent and decision-readiness. The AVS Rubric measures the trust infrastructure that enables it.",
   },
   {
     question: "How is buyability measured?",
     answer:
-      "The AVS Rubric scores buyability across 8 dimensions: product clarity, value unit definition, cost driver mapping, proof and evidence quality, trust and governance visibility, integration readiness, enterprise controls, and ICP alignment. Each dimension is scored from publicly available evidence — the same evidence a buyer or AI agent would encounter.",
+      "The AVS Rubric measures the trust infrastructure that enables buyability, scoring products across 8 buyer-confidence dimensions: from pricing clarity and cost driver mapping to operational controls and compliance visibility. Each dimension is scored from publicly available evidence — the same evidence a buyer or AI agent would encounter. When that infrastructure is strong, buyers can independently verify what they need to evaluate, budget for, and justify a product. That is buyability.",
   },
   {
     question: "Why does buyability matter for AI agents?",
@@ -295,7 +295,7 @@ const Index = () => {
     <div className="min-h-screen bg-background">
       <SEOHead
         title="ValueTempo — Measure Your AI Product's Buyability Score"
-        description="The AVS Rubric measures buyability — how well buyers and AI agents can independently evaluate, budget for, and justify your product. Free analysis across 8 buyer-confidence dimensions."
+        description="The AVS Rubric measures the trust infrastructure that enables buyability — how well buyers and AI agents can independently evaluate, budget for, and justify your product. Free analysis across 8 buyer-confidence dimensions."
         canonicalUrl="https://valuetempo.lovable.app/"
         publishedDate="2026-01-01"
         tags={["AVS Rubric", "AI trust", "trust infrastructure", "revenue quality", "SaaS"]}
@@ -405,7 +405,7 @@ const Index = () => {
             </h1>
 
             <p className="text-base md:text-lg text-muted-foreground mb-8 md:mb-10">
-              AVS Rubric measures buyability across 8 buyer-confidence dimensions.
+              AVS Rubric measures the trust infrastructure that enables buyability across 8 buyer-confidence dimensions.
             </p>
 
             <div id="url-input" className="flex justify-center mb-12 scroll-mt-24">
@@ -441,7 +441,7 @@ const Index = () => {
         <div className="container mx-auto px-5 md:px-10">
           <h2 className="text-2xl md:text-3xl font-bold text-center mb-3">What the analysis evaluates</h2>
           <p className="text-center text-muted-foreground max-w-2xl mx-auto mb-10">
-            Your buyability score is what a buyer or AI agent can verify before engaging sales.
+            Your buyability score reflects what a buyer or AI agent can verify before engaging sales.
           </p>
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
             {features.map((feature, i) => {
@@ -488,7 +488,7 @@ const Index = () => {
               Scored across 8 buyer-confidence dimensions
             </h2>
             <p className="text-sm text-muted-foreground max-w-2xl mx-auto mb-6">
-              The rubric maps buyer-facing friction across product clarity, pricing architecture, operational controls, and buying readiness.
+              The rubric maps trust infrastructure across product clarity, pricing architecture, operational controls, and enterprise readiness.
             </p>
             <TooltipProvider delayDuration={100}>
               <div className="flex flex-wrap justify-center gap-2 max-w-3xl mx-auto">

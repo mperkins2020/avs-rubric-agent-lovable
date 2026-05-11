@@ -205,7 +205,7 @@ export function AVSSystemDiagram() {
 
       {/* Caption */}
       <p className="text-center text-xs text-muted-foreground mt-4 italic">
-        The AVS Rubric Engine evaluates observable signals across four layers of trust infrastructure to predict buyer trust outcomes.
+        The AVS Rubric evaluates observable signals across four layers of trust infrastructure. When that infrastructure is strong, buyability is the outcome.
       </p>
     </div>
   );
