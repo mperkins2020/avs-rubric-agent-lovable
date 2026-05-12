@@ -231,7 +231,7 @@ function PreviewCard({ data }: { data: ExampleData }) {
               <span className="text-vt-coral text-xs">⚠</span>
             </div>
             <span className="font-bold text-base">Trust Breakpoints</span>
-            <span className="text-xs text-muted-foreground">Where billing anxiety may surface</span>
+            <span className="text-xs text-muted-foreground">Where deals stall silently</span>
           </div>
           <div className="grid grid-cols-2 gap-2">
             {data.breakpoints.map((bp) => (

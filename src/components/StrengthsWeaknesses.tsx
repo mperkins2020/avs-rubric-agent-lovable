@@ -117,7 +117,7 @@ export function StrengthsWeaknesses({
             </div>
             <h3 className="text-lg font-semibold">Trust Breakpoints</h3>
             <span className="text-sm text-muted-foreground ml-2">
-              Where billing anxiety may surface
+              Where deals stall silently
             </span>
           </div>
           <div className="grid sm:grid-cols-2 gap-4">
