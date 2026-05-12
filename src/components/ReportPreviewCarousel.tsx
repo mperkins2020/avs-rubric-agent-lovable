@@ -20,69 +20,131 @@ interface ExampleData {
   dimensions: { n: string; name: string; conf: string; score: string; color: string }[];
 }
 
-const hexExample: ExampleData = {
-  label: "Hex report example",
-  company: "Hex",
-  band: "Credible",
+const lovableExample: ExampleData = {
+  label: "Lovable report example",
+  company: "Lovable",
+  band: "Trusted Stage",
   bandClass: "text-score-medium bg-score-medium/10 border-score-medium/30",
-  bandDesc: "Key elements in place — structural gaps are costing you deals",
-  score: 8,
+  bandDesc: "Core trust signals in place — cost predictability gaps remain",
+  score: 11,
   maxScore: 16,
-  percentage: "50%",
+  percentage: "69%",
   strengths: {
-    title: "ICP and job clarity",
-    desc: "Hex clearly articulates its target audience, including both technical and non-technical users.",
-    enables: "Enables: Tailored messaging across segments.",
+    title: "Buyer and budget alignment",
+    desc: "Lovable offers clear tiered pricing with monthly and annual options, plus detailed instructions for managing subscriptions and accessing invoices via Stripe.",
+    enables: "Enables: Easy subscription management and budget planning.",
   },
   weaknesses: {
-    title: "Product north star",
-    desc: "Hex lacks a clearly defined, measurable primary outcome metric.",
-    impact: "Impact: Hard to quantify value delivery.",
+    title: "Cost driver mapping",
+    desc: "While 'credits' are the value unit, the underlying cost drivers (e.g., AI models, compute) and their formulas are not publicly detailed.",
+    impact: "Impact: Hard for users to optimize usage or forecast costs.",
   },
   breakpoints: [
-    { title: "Unpredictable Usage Costs", desc: "If metering for 'agent credits' and 'pay-as-you-go compute' are not transparent, customers face unexpected bills." },
-    { title: "Lack of Cost Control", desc: "Without explicit caps, alerts, or clear overage policies, customers may feel they lack spending control." },
+    { title: "Variable Credit Consumption", desc: "Without an explicit predictability metric, customers may struggle to forecast costs as 'message complexity' drives credit use." },
+    { title: "Limited Safety Rail Visibility", desc: "Budget caps, alerting mechanisms, and audit logs are not fully documented publicly, creating governance uncertainty." },
   ],
   dimensions: [
     { n: "01", name: "Product north star", conf: "Medium", score: "1/2", color: "text-score-medium bg-score-medium/10" },
+    { n: "02", name: "ICP and job clarity", conf: "Medium", score: "1/2", color: "text-score-medium bg-score-medium/10" },
+    { n: "03", name: "Buyer and budget alignment", conf: "High", score: "2/2", color: "text-score-high bg-score-high/10" },
+    { n: "04", name: "Value unit", conf: "High", score: "2/2", color: "text-score-high bg-score-high/10" },
+  ],
+};
+
+const hexExample: ExampleData = {
+  label: "Hex report example",
+  company: "Hex",
+  band: "Trusted Stage",
+  bandClass: "text-score-medium bg-score-medium/10 border-score-medium/30",
+  bandDesc: "Strong packaging — credit metering transparency is the gap",
+  score: 11,
+  maxScore: 16,
+  percentage: "69%",
+  strengths: {
+    title: "ICP and job clarity",
+    desc: "Hex clearly defines its target audience as data teams and business users, with specific use cases and customer testimonials illustrating value.",
+    enables: "Enables: Faster qualification and reduced sales friction.",
+  },
+  weaknesses: {
+    title: "Value unit",
+    desc: "While 'credits' are a billable unit, their definition and metering formula are not explicitly detailed — it's unclear how actions translate into credit consumption.",
+    impact: "Impact: Customer confusion and unexpected costs erode trust.",
+  },
+  breakpoints: [
+    { title: "Opaque Credit Metering", desc: "The exact formula linking AI features (agentic notebooks, quick edits) to credit consumption is not documented." },
+    { title: "Missing Overage Controls", desc: "Cap policies, alert mechanisms, and grace buffers for credit overages are not publicly detailed." },
+  ],
+  dimensions: [
+    { n: "01", name: "Product north star", conf: "Low", score: "1/2", color: "text-score-medium bg-score-medium/10" },
     { n: "02", name: "ICP and job clarity", conf: "High", score: "2/2", color: "text-score-high bg-score-high/10" },
     { n: "03", name: "Buyer and budget alignment", conf: "High", score: "2/2", color: "text-score-high bg-score-high/10" },
     { n: "04", name: "Value unit", conf: "Medium", score: "1/2", color: "text-score-medium bg-score-medium/10" },
   ],
 };
 
-const lovableExample: ExampleData = {
-  label: "Lovable report example",
-  company: "Lovable",
-  band: "Exemplary",
+const deepgramExample: ExampleData = {
+  label: "Deepgram report example",
+  company: "Deepgram",
+  band: "Advanced Stage",
   bandClass: "text-score-high bg-score-high/10 border-score-high/30",
-  bandDesc: "Enterprise-ready trust infrastructure — supports fastest sales cycles",
-  score: 14,
+  bandDesc: "Transparent unit pricing — supports confident developer adoption",
+  score: 13,
   maxScore: 16,
-  percentage: "88%",
+  percentage: "81%",
   strengths: {
-    title: "ICP and job clarity",
-    desc: "Lovable clearly articulates its target audience segments and the specific problems it solves for each, supported by a comprehensive list of use cases and templates.",
-    enables: "Enables: Potential customers can quickly identify if Lovable is the right solution, reducing friction in the sales cycle.",
+    title: "Value unit",
+    desc: "Deepgram uses precise, value-linked billing units (per-second audio minutes, per-character TTS, per-token AI features) and clearly defines how multichannel audio is calculated.",
+    enables: "Enables: Accurate cost prediction and efficient resource planning.",
   },
   weaknesses: {
     title: "Cost driver mapping",
-    desc: "While credit usage is explained, the underlying cost drivers and their direct impact on credit consumption are not fully detailed.",
-    impact: "Impact: Users may find it difficult to optimize usage or forecast costs beyond 'message complexity'.",
+    desc: "Per-unit pricing is published, but explicit formulas linking specific product behaviors to driver quantities are not detailed, and no in-product cost estimator is documented.",
+    impact: "Impact: Hard to forecast costs for complex usage patterns.",
   },
   breakpoints: [
-    { title: "Unexpected Overage Costs", desc: "If a complex prompt unexpectedly consumes a large number of credits, users could face higher-than-anticipated bills." },
-    { title: "Performance and Scalability", desc: "The lack of explicit performance guarantees or SLAs could lead to trust issues for enterprise users." },
+    { title: "Concurrency Limit Surprises", desc: "Pay-As-You-Go requests above concurrency limits may be queued or rejected — limit behavior is not consolidated in docs." },
+    { title: "No Public Budget Caps", desc: "Configurable budget caps, granular dashboards, and explicit alerting policies are not publicly visible across tiers." },
   ],
   dimensions: [
     { n: "01", name: "Product north star", conf: "High", score: "2/2", color: "text-score-high bg-score-high/10" },
     { n: "02", name: "ICP and job clarity", conf: "High", score: "2/2", color: "text-score-high bg-score-high/10" },
-    { n: "03", name: "Cost driver mapping", conf: "High", score: "1/2", color: "text-score-medium bg-score-medium/10" },
-    { n: "04", name: "Value unit", conf: "High", score: "2/2", color: "text-score-high bg-score-high/10" },
+    { n: "03", name: "Value unit", conf: "High", score: "2/2", color: "text-score-high bg-score-high/10" },
+    { n: "04", name: "Cost driver mapping", conf: "Medium", score: "1/2", color: "text-score-medium bg-score-medium/10" },
   ],
 };
 
-const examples = [hexExample, lovableExample];
+const momentumExample: ExampleData = {
+  label: "Momentum AI report example",
+  company: "Momentum AI",
+  band: "Trusted Stage",
+  bandClass: "text-score-medium bg-score-medium/10 border-score-medium/30",
+  bandDesc: "Clear ICP — usage-based add-on lacks pricing transparency",
+  score: 9,
+  maxScore: 16,
+  percentage: "56%",
+  strengths: {
+    title: "ICP and job clarity",
+    desc: "Momentum AI clearly identifies its target buyer roles (CROs, RevOps, Sales Managers) and explicitly states the core GTM workflows it automates.",
+    enables: "Enables: Faster lead qualification and reduced sales friction.",
+  },
+  weaknesses: {
+    title: "Cost driver mapping",
+    desc: "Underlying cost drivers (tokens, call minutes, API calls) are not publicly disclosed, nor how they relate to per-user pricing or 'usage-based credits' for Deep Research.",
+    impact: "Impact: Customers cannot forecast usage or AI feature costs.",
+  },
+  breakpoints: [
+    { title: "Undefined Deep Research Credits", desc: "The 'usage-based credits' add-on lacks definition, overage pricing, and customer controls — creating surprise risk." },
+    { title: "Missing Safety Rails", desc: "Budget caps, usage caps, rate limits, and audit dashboards are not publicly documented for any tier." },
+  ],
+  dimensions: [
+    { n: "01", name: "Product north star", conf: "Low", score: "1/2", color: "text-score-medium bg-score-medium/10" },
+    { n: "02", name: "ICP and job clarity", conf: "Medium", score: "2/2", color: "text-score-high bg-score-high/10" },
+    { n: "03", name: "Value unit", conf: "Low", score: "1/2", color: "text-score-medium bg-score-medium/10" },
+    { n: "04", name: "Cost driver mapping", conf: "Low", score: "1/2", color: "text-score-medium bg-score-medium/10" },
+  ],
+};
+
+const examples = [lovableExample, hexExample, deepgramExample, momentumExample];
 
 const slideVariants = {
   enter: { x: "100%", opacity: 0 },
