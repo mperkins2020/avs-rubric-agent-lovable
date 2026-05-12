@@ -23,7 +23,7 @@ interface ExampleData {
 const lovableExample: ExampleData = {
   label: "Lovable report example",
   company: "Lovable",
-  band: "Trusted Stage",
+  band: "Trusted",
   bandClass: "text-score-medium bg-score-medium/10 border-score-medium/30",
   bandDesc: "Core trust signals in place — cost predictability gaps remain",
   score: 11,
@@ -54,7 +54,7 @@ const lovableExample: ExampleData = {
 const hexExample: ExampleData = {
   label: "Hex report example",
   company: "Hex",
-  band: "Trusted Stage",
+  band: "Trusted",
   bandClass: "text-score-medium bg-score-medium/10 border-score-medium/30",
   bandDesc: "Strong packaging — credit metering transparency is the gap",
   score: 11,
@@ -85,7 +85,7 @@ const hexExample: ExampleData = {
 const deepgramExample: ExampleData = {
   label: "Deepgram report example",
   company: "Deepgram",
-  band: "Advanced Stage",
+  band: "Exemplary",
   bandClass: "text-score-high bg-score-high/10 border-score-high/30",
   bandDesc: "Transparent unit pricing — supports confident developer adoption",
   score: 13,
@@ -116,7 +116,7 @@ const deepgramExample: ExampleData = {
 const momentumExample: ExampleData = {
   label: "Momentum AI report example",
   company: "Momentum AI",
-  band: "Trusted Stage",
+  band: "Trusted",
   bandClass: "text-score-medium bg-score-medium/10 border-score-medium/30",
   bandDesc: "Clear ICP — usage-based add-on lacks pricing transparency",
   score: 9,
