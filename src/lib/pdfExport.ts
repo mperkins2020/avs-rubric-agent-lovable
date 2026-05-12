@@ -90,7 +90,7 @@ export function exportToPDF({ companyProfile, rubricScore, observability }: Expo
   const scorePercentage = Math.round((rubricScore.totalScore / rubricScore.maxScore) * 100);
   doc.text(`${rubricScore.totalScore}/${rubricScore.maxScore} (${scorePercentage}%)`, pageWidth / 2, yPos + 12, { align: "center" });
   doc.setFontSize(12);
-  doc.text(`${rubricScore.band} Stage`, pageWidth / 2, yPos + 22, { align: "center" });
+  doc.text(`${rubricScore.band}`, pageWidth / 2, yPos + 22, { align: "center" });
   yPos += 40;
 
   // Company Profile Section
