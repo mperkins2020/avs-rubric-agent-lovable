@@ -311,11 +311,10 @@ const FAQ = () => {
   return (
     <div className="min-h-screen bg-background">
       <SEOHead
-        title="AVS Rubric FAQ — Frequently Asked Questions"
-        description="Find answers about the AVS Rubric for Product & Growth leaders and CFO & RevOps teams. Learn how AVS measures trust infrastructure to enable buyability, reduce churn, and improve revenue quality."
-        canonicalUrl="https://valuetempo.lovable.app/resources/faq"
-        publishedDate="2026-01-15"
-        tags={["FAQ", "AVS Rubric", "trust infrastructure", "revenue quality"]}
+        title="AVS Rubric FAQ — ValueTempo"
+        description="Answers about the AVS Rubric for Product, Growth, CFO, and RevOps teams: how it measures trust infrastructure, buyability, and revenue quality."
+        canonicalUrl="https://app.valuetempo.com/faq"
+        type="website"
       />
       <FAQJsonLd faqs={faqJsonLdData} />
 

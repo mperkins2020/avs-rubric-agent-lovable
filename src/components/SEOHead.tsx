@@ -5,27 +5,31 @@ interface SEOHeadProps {
   description: string;
   canonicalUrl: string;
   ogImage?: string;
-  publishedDate: string;
+  publishedDate?: string;
   modifiedDate?: string;
   authorName?: string;
   tags?: string[];
+  /** Page type. 'website' avoids Article schema (use for home, FAQ, etc.). Default 'article'. */
+  type?: "article" | "website";
 }
+
+const SITE_URL = "https://app.valuetempo.com";
 
 export function SEOHead({
   title,
   description,
   canonicalUrl,
-  ogImage = "https://valuetempo.lovable.app/ValueTempo_Logo.png",
+  ogImage = `${SITE_URL}/ValueTempo_Logo.png`,
   publishedDate,
   modifiedDate,
   authorName = "ValueTempo",
   tags = [],
+  type = "article",
 }: SEOHeadProps) {
   useEffect(() => {
-    // Title
-    document.title = `${title} | ValueTempo`;
+    // Title — no suffix; pages own their full title
+    document.title = title;
 
-    // Helper to set or create a meta tag
     const setMeta = (attr: string, key: string, content: string) => {
       let el = document.querySelector(`meta[${attr}="${key}"]`) as HTMLMetaElement | null;
       if (!el) {
@@ -36,26 +40,34 @@ export function SEOHead({
       el.setAttribute("content", content);
     };
 
-    // Meta description
     setMeta("name", "description", description);
 
     // Open Graph
     setMeta("property", "og:title", title);
     setMeta("property", "og:description", description);
-    setMeta("property", "og:type", "article");
+    setMeta("property", "og:type", type);
     setMeta("property", "og:url", canonicalUrl);
     setMeta("property", "og:image", ogImage);
     setMeta("property", "og:site_name", "ValueTempo");
-    setMeta("property", "article:published_time", publishedDate);
-    if (modifiedDate) {
-      setMeta("property", "article:modified_time", modifiedDate);
-    }
-    setMeta("property", "article:author", authorName);
-    tags.forEach((tag, i) => {
-      setMeta("property", `article:tag:${i}`, tag);
-    });
 
-    // Twitter Card
+    // Article-only tags
+    const removeMeta = (attr: string, key: string) => {
+      const el = document.querySelector(`meta[${attr}="${key}"]`);
+      if (el) el.remove();
+    };
+
+    if (type === "article") {
+      if (publishedDate) setMeta("property", "article:published_time", publishedDate);
+      if (modifiedDate) setMeta("property", "article:modified_time", modifiedDate);
+      setMeta("property", "article:author", authorName);
+      tags.forEach((tag, i) => setMeta("property", `article:tag:${i}`, tag));
+    } else {
+      removeMeta("property", "article:published_time");
+      removeMeta("property", "article:modified_time");
+      removeMeta("property", "article:author");
+    }
+
+    // Twitter
     setMeta("name", "twitter:card", "summary_large_image");
     setMeta("name", "twitter:title", title);
     setMeta("name", "twitter:description", description);
@@ -70,7 +82,7 @@ export function SEOHead({
     }
     canonical.setAttribute("href", canonicalUrl);
 
-    // JSON-LD Article structured data
+    // JSON-LD — Article for posts; WebSite for non-article pages
     const jsonLdId = "seo-json-ld-article";
     let script = document.getElementById(jsonLdId) as HTMLScriptElement | null;
     if (!script) {
@@ -79,41 +91,41 @@ export function SEOHead({
       script.type = "application/ld+json";
       document.head.appendChild(script);
     }
-    script.textContent = JSON.stringify({
-      "@context": "https://schema.org",
-      "@type": "Article",
-      headline: title,
-      description,
-      image: ogImage,
-      datePublished: publishedDate,
-      ...(modifiedDate && { dateModified: modifiedDate }),
-      author: {
-        "@type": "Organization",
-        name: authorName,
-        url: "https://valuetempo.lovable.app",
-      },
-      publisher: {
-        "@type": "Organization",
-        name: "ValueTempo",
-        url: "https://valuetempo.lovable.app",
-        logo: {
-          "@type": "ImageObject",
-          url: "https://valuetempo.lovable.app/ValueTempo_Logo.png",
-        },
-      },
-      mainEntityOfPage: {
-        "@type": "WebPage",
-        "@id": canonicalUrl,
-      },
-      keywords: tags.join(", "),
-    });
 
-    // Cleanup
+    if (type === "article") {
+      script.textContent = JSON.stringify({
+        "@context": "https://schema.org",
+        "@type": "Article",
+        headline: title,
+        description,
+        image: ogImage,
+        ...(publishedDate && { datePublished: publishedDate }),
+        ...(modifiedDate && { dateModified: modifiedDate }),
+        author: { "@type": "Organization", name: authorName, url: SITE_URL },
+        publisher: {
+          "@type": "Organization",
+          name: "ValueTempo",
+          url: SITE_URL,
+          logo: { "@type": "ImageObject", url: `${SITE_URL}/ValueTempo_Logo.png` },
+        },
+        mainEntityOfPage: { "@type": "WebPage", "@id": canonicalUrl },
+        keywords: tags.join(", "),
+      });
+    } else {
+      script.textContent = JSON.stringify({
+        "@context": "https://schema.org",
+        "@type": "WebSite",
+        name: "ValueTempo",
+        url: SITE_URL,
+        description,
+      });
+    }
+
     return () => {
       const scriptEl = document.getElementById(jsonLdId);
       if (scriptEl) scriptEl.remove();
     };
-  }, [title, description, canonicalUrl, ogImage, publishedDate, modifiedDate, authorName, tags]);
+  }, [title, description, canonicalUrl, ogImage, publishedDate, modifiedDate, authorName, tags, type]);
 
   return null;
 }

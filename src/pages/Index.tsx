@@ -294,11 +294,10 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-background">
       <SEOHead
-        title="ValueTempo — Measure Your AI Product's Buyability Score"
-        description="The AVS Rubric measures the trust infrastructure that enables buyability — how well buyers and AI agents can independently evaluate, budget for, and justify your product. Free analysis across 8 buyer-confidence dimensions."
-        canonicalUrl="https://valuetempo.lovable.app/"
-        publishedDate="2026-01-01"
-        tags={["AVS Rubric", "AI trust", "trust infrastructure", "revenue quality", "SaaS"]}
+        title="ValueTempo — AI Product Buyability Score"
+        description="The AVS Rubric scores your AI product's buyability across 8 trust dimensions buyers and AI agents use to evaluate, budget, and justify a purchase."
+        canonicalUrl="https://app.valuetempo.com/"
+        type="website"
       />
 
       {/* Navbar */}

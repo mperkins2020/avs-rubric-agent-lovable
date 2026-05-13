@@ -13,4 +13,4 @@ Allow: /
 User-agent: *
 Allow: /
 
-Sitemap: https://valuetempo.lovable.app/sitemap.xml
+Sitemap: https://app.valuetempo.com/sitemap.xml
