@@ -4,7 +4,7 @@
 **Usage:** When a report produces a questionable result, log it here. Run `Scan the debug log for recurring patterns` periodically to surface systemic issues.
 **Related:** See ENGINE_DEBUG_HISTORY.md for backfilled history from git.
 
-**Entries:** 48 | **Last updated:** April 22, 2026
+**Entries:** 49 | **Last updated:** May 13, 2026
 
 ---
 
@@ -30,6 +30,31 @@
 <!-- Newest first. To add an entry, copy the template below and fill it in. -->
 
 <!-- Next entry goes here -->
+
+---
+
+### Entry 049 — May 13, 2026
+
+| Field | Value |
+|-------|-------|
+| Company | Multiple (Sierra, Amplemarket, CrewAI, Relevance AI, Gong, Devin, Amazon Q, JetBrains, others) |
+| Version | 2026-05-05-pipeline-v21 |
+| Dimension | All — page selection, not scoring |
+| Subtest(s) | N/A |
+| V1 Score | Varies (low — often 1-3 pages used) |
+| V2 Score | Varies (higher — all analyzed pages used after manual URL addition) |
+| Root Cause | pipeline_miss — pages analyzed but not selected for scoring; adding one URL via insider prompts causes all analyzed pages to suddenly appear in "pages used" |
+| Caught By | Manual benchmark QA review (Michelle, 2026-05-12) |
+| Status | monitoring 👀 |
+
+**Root Cause Detail:**
+During Phase 1 benchmark QA, a recurring pattern was observed across 10+ companies: the scraper discovers and analyzes 8-15 pages, but only 1-3 are selected for scoring. When the user manually adds one relevant URL (e.g., a trust center or security page) via the app UI's insider prompts, the rescan suddenly uses all analyzed pages, not just the added one. Scores jump significantly (e.g., Amplemarket 31→75, Devin 18→75, Relevance AI 69→94).
+
+The page selection logic uses a 100K char budget with priority scoring. The bug may be related to how the rerun path reprocesses the page set when insider answers are provided, potentially changing priority ordering or content assembly. However, the bug has not reproduced in the last 3-4 runs as of May 13.
+
+Added diagnostic logging in pipeline-v22: dropped pages now logged with priority score and char count to detect recurrence.
+
+**Pattern Tag:** `pages-analyzed-not-used`
 
 ---
 

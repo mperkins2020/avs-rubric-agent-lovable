@@ -2001,7 +2001,14 @@ Deno.serve(async (req) => {
     const evidenceDigest = collectHighSignalEvidence(prioritizedPages);
 
     console.log('Content length:', truncatedContent.length);
+    console.log(`Pages: ${candidatePages.length} candidates → ${selectedUrls.length} selected (${MAX_CONTENT_CHARS - usedChars} chars remaining)`);
     console.log('Pages selected for scoring:', selectedUrls);
+    if (candidatePages.length > selectedUrls.length) {
+      const droppedUrls = candidatePages
+        .filter(p => !selectedUrls.includes(p.url))
+        .map(p => `${p.url} (priority: ${scorePagePriority(p)}, chars: ${p.markdown.length})`);
+      console.warn('Pages dropped (over budget):', droppedUrls);
+    }
     console.log('High-signal evidence digest counts:', {
       northStar: evidenceDigest.northStar.length,
       costDriver: evidenceDigest.costDriver.length,
