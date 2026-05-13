@@ -4,10 +4,17 @@ import { Footer } from "@/components/Footer";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { ResourcesDropdown } from "@/components/ResourcesDropdown";
+import { SEOHead } from "@/components/SEOHead";
 
 export default function Blog() {
   return (
     <div className="min-h-screen bg-background">
+      <SEOHead
+        title="Blog — ValueTempo"
+        description="Essays on trust infrastructure, AI product buyability, pricing transparency, and revenue quality from the ValueTempo team."
+        canonicalUrl="https://app.valuetempo.com/resources/blog"
+        type="website"
+      />
       <header className="sticky top-0 z-30 border-b border-border bg-white/75 backdrop-blur-md">
         <div className="container mx-auto px-5 md:px-10 h-[72px] flex items-center justify-between">
           <div className="flex items-center gap-4">

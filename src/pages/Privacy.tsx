@@ -4,10 +4,17 @@ import { Footer } from "@/components/Footer";
 import { ArrowLeft, Shield, Bot } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { SEOHead } from "@/components/SEOHead";
 
 const Privacy = () => {
   return (
     <div className="min-h-screen bg-background relative overflow-hidden">
+      <SEOHead
+        title="Privacy Policy — ValueTempo"
+        description="How ValueTempo handles data, retention, sub-processors, and CCPA/CPRA disclosures for the AVS Rubric scanner."
+        canonicalUrl="https://app.valuetempo.com/privacy"
+        type="website"
+      />
       <div className="absolute inset-0 bg-gradient-to-b from-primary/5 via-transparent to-accent/5 pointer-events-none" />
 
       {/* Header */}
