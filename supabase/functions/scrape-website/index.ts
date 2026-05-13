@@ -1194,7 +1194,17 @@ Deno.serve(async (req) => {
       const missingProbes = canonicalProbes
         .map(probe => `${probeBase}${probe}`)
         .filter(probeUrl => !selectedSet.has(normaliseForDedup(probeUrl)));
-      const priorityLinks = [...missingProbes, ...rawPriorityLinks].slice(0, safeMaxPages - 1);
+
+      // Community evidence URLs get guaranteed slots — they were manually verified
+      // as high-value pages that automated discovery misses. Force-add any that
+      // didn't make it through the category cap system.
+      const missingCommunity = communityUrls
+        .filter(cu => !selectedSet.has(normaliseForDedup(cu)));
+      if (missingCommunity.length > 0) {
+        console.log(`Force-adding ${missingCommunity.length} community evidence URLs that were cut by slot caps:`, missingCommunity);
+      }
+
+      const priorityLinks = [...missingProbes, ...missingCommunity, ...rawPriorityLinks].slice(0, safeMaxPages - 1);
 
       console.log(`Selected ${priorityLinks.length} pages (${missingProbes.length} canonical probes added)`);
       console.log('Priority links:', priorityLinks);

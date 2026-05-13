@@ -4,7 +4,7 @@
 **Usage:** When a report produces a questionable result, log it here. Run `Scan the debug log for recurring patterns` periodically to surface systemic issues.
 **Related:** See ENGINE_DEBUG_HISTORY.md for backfilled history from git.
 
-**Entries:** 49 | **Last updated:** May 13, 2026
+**Entries:** 51 | **Last updated:** May 13, 2026
 
 ---
 
@@ -30,6 +30,50 @@
 <!-- Newest first. To add an entry, copy the template below and fill it in. -->
 
 <!-- Next entry goes here -->
+
+---
+
+### Entry 051 — May 13, 2026
+
+| Field | Value |
+|-------|-------|
+| Company | All |
+| Version | 2026-05-13-pipeline-v22 |
+| Dimension | N/A — performance |
+| Subtest(s) | N/A |
+| V1 Score | N/A |
+| V2 Score | N/A |
+| Root Cause | other — scan latency regression |
+| Caught By | Manual testing (Michelle, 2026-05-13) |
+| Status | open 🔴 |
+
+**Root Cause Detail:**
+Scan time increased from ~1 minute to over 2 minutes after pipeline-v22 deployment. Pipeline-v22 added retry logic (up to 2 attempts) to `callLovableAI()`, which could add latency on retries. However, the increase appears on successful first-attempt scans as well — retry alone doesn't explain the full regression. Possible contributors: Gemini 2.5 Flash gateway latency, larger prompt payloads from improved page selection, or Firecrawl scrape time. Needs profiling.
+
+**Pattern Tag:** `scan-latency-regression`
+
+---
+
+### Entry 050 — May 13, 2026
+
+| Field | Value |
+|-------|-------|
+| Company | Forethought (81%→50%), Sierra (38%→25%) |
+| Version | 2026-05-13-pipeline-v22 |
+| Dimension | Multiple — Value Unit, Buyer Budget, North Star, ICP |
+| Subtest(s) | Multiple |
+| V1 Score | Forethought 13/16, Sierra 6/16 |
+| V2 Score | Forethought 8/16, Sierra 4/16 |
+| Root Cause | calibration — scorer variance across runs on identical page sets |
+| Caught By | Benchmark rescan QA (Michelle, 2026-05-13) |
+| Status | open 🔴 |
+
+**Root Cause Detail:**
+Both companies were rescanned with the same pages available (community_evidence URLs included and confirmed in pages analyzed). Forethought dropped from 81% to 50%: Value Unit went from 1/2 to 0/2 ("not explicitly defined"), Buyer Budget from 2/2 to 1/2. Sierra dropped from 38% to 25%: North Star from 2/2 to 1/2, ICP from 2/2 to 1/2. No prompt or scoring logic changes between runs — same pipeline version for the "before" runs. The model (Gemini 2.5 Flash via Lovable AI Gateway) is interpreting the same evidence differently across runs. Temperature is set to 0.1, which should minimize but doesn't eliminate variance.
+
+Potential fixes: (1) reduce temperature to 0, (2) add scoring anchor examples to the prompt, (3) run multiple scoring passes and take median/mode, (4) add explicit calibration criteria for score thresholds.
+
+**Pattern Tag:** `scorer-variance-same-pages`
 
 ---
 
