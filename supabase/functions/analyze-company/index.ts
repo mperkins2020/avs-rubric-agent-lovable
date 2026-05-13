@@ -29,7 +29,7 @@ interface AnalyzeRequest {
 // Deno EdgeRuntime type for background processing
 declare const EdgeRuntime: { waitUntil: (p: Promise<unknown>) => void };
 
-const ANALYSIS_VERSION = '2026-05-05-pipeline-v21';
+const ANALYSIS_VERSION = '2026-05-13-pipeline-v22';
 
 const COMPANY_PROFILE_PROMPT = `You are an expert business analyst. Analyze the following website content and extract a company profile.
 
@@ -1361,89 +1361,111 @@ Return a JSON object matching this schema EXACTLY:
   }
 }`;
 
-async function callLovableAI(systemPrompt: string, userContent: string): Promise<object> {
+async function callLovableAI(systemPrompt: string, userContent: string, maxRetries = 2): Promise<object> {
   const apiKey = Deno.env.get('LOVABLE_API_KEY');
-  
+
   if (!apiKey) {
     throw new Error('Service temporarily unavailable');
   }
 
-  const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${apiKey}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      model: 'google/gemini-2.5-flash',
-      messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: userContent },
-      ],
-      temperature: 0.1,
-      max_tokens: 32768,
-      response_format: { type: 'json_object' },
-    }),
-  });
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'google/gemini-2.5-flash',
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userContent },
+        ],
+        temperature: 0.1,
+        max_tokens: 32768,
+        response_format: { type: 'json_object' },
+      }),
+    });
 
-  if (!response.ok) {
-    const error = await response.text();
-    console.error('Lovable AI error:', error);
-    throw new Error('Analysis service temporarily unavailable');
-  }
+    if (!response.ok) {
+      const error = await response.text();
+      console.error(`Lovable AI error (attempt ${attempt}/${maxRetries}):`, error);
+      if (attempt < maxRetries) { continue; }
+      throw new Error('Analysis service temporarily unavailable');
+    }
 
-  const data = await response.json();
-  
-  if (!data.choices || !data.choices[0] || !data.choices[0].message) {
-    console.error('Invalid AI response structure:', JSON.stringify(data));
-    throw new Error('Invalid AI response structure');
-  }
-  
-  let content = data.choices[0].message.content;
-  
-  if (!content || content.trim() === '') {
-    console.error('Empty AI response content');
-    throw new Error('AI returned empty response');
-  }
-  
-  console.log('AI response length:', content.length);
-  
-  // Strip markdown code fences if present
-  content = content.trim();
-  if (content.startsWith('```')) {
-    content = content.replace(/^```(?:json)?\s*\n?/, '').replace(/\n?```\s*$/, '');
-  }
-  
-  try {
-    return JSON.parse(content);
-  } catch (parseError) {
-    console.error('Failed to parse AI response:', content.substring(0, 500));
-    console.error('Response tail:', content.substring(content.length - 200));
-    
-    // Attempt to repair truncated JSON by closing open structures
+    const data = await response.json();
+
+    if (!data.choices || !data.choices[0] || !data.choices[0].message) {
+      console.error(`Invalid AI response structure (attempt ${attempt}/${maxRetries}):`, JSON.stringify(data));
+      if (attempt < maxRetries) { continue; }
+      throw new Error('Invalid AI response structure');
+    }
+
+    // Check finish_reason — retry on truncated or errored responses
+    const finishReason = data.choices[0].finish_reason;
+    if (finishReason && finishReason !== 'stop') {
+      console.warn(`AI finish_reason: "${finishReason}" (attempt ${attempt}/${maxRetries})`);
+    }
+
+    let content = data.choices[0].message.content;
+
+    if (!content || content.trim() === '') {
+      console.error(`Empty AI response content (attempt ${attempt}/${maxRetries})`);
+      if (attempt < maxRetries) { continue; }
+      throw new Error('AI returned empty response');
+    }
+
+    // Detect suspiciously short responses (likely truncated/errored)
+    if (content.length < 500) {
+      console.warn(`AI response suspiciously short: ${content.length} chars (attempt ${attempt}/${maxRetries}): ${content.substring(0, 200)}`);
+      if (attempt < maxRetries) { continue; }
+      // Fall through to parsing — let it fail with a clear error
+    }
+
+    console.log(`AI response length: ${content.length} (attempt ${attempt}/${maxRetries}, finish_reason: ${finishReason})`);
+
+    // Strip markdown code fences if present
+    content = content.trim();
+    if (content.startsWith('```')) {
+      content = content.replace(/^```(?:json)?\s*\n?/, '').replace(/\n?```\s*$/, '');
+    }
+
     try {
-      let repaired = content;
-      // Count open/close braces and brackets
-      const openBraces = (repaired.match(/{/g) || []).length;
-      const closeBraces = (repaired.match(/}/g) || []).length;
-      const openBrackets = (repaired.match(/\[/g) || []).length;
-      const closeBrackets = (repaired.match(/\]/g) || []).length;
-      
-      // Trim trailing incomplete key-value pairs
-      repaired = repaired.replace(/,\s*"[^"]*"?\s*:?\s*[^}\]]*$/, '');
-      
-      // Close missing brackets and braces
-      for (let i = 0; i < openBrackets - closeBrackets; i++) repaired += ']';
-      for (let i = 0; i < openBraces - closeBraces; i++) repaired += '}';
-      
-      const result = JSON.parse(repaired);
-      console.log('Successfully repaired truncated JSON response');
-      return result;
-    } catch (repairError) {
-      console.error('JSON repair also failed');
-      throw new Error('Failed to parse AI response as JSON');
+      return JSON.parse(content);
+    } catch (parseError) {
+      console.error('Failed to parse AI response:', content.substring(0, 500));
+      console.error('Response tail:', content.substring(content.length - 200));
+
+      // Attempt to repair truncated JSON by closing open structures
+      try {
+        let repaired = content;
+        // Count open/close braces and brackets
+        const openBraces = (repaired.match(/{/g) || []).length;
+        const closeBraces = (repaired.match(/}/g) || []).length;
+        const openBrackets = (repaired.match(/\[/g) || []).length;
+        const closeBrackets = (repaired.match(/\]/g) || []).length;
+
+        // Trim trailing incomplete key-value pairs
+        repaired = repaired.replace(/,\s*"[^"]*"?\s*:?\s*[^}\]]*$/, '');
+
+        // Close missing brackets and braces
+        for (let i = 0; i < openBrackets - closeBrackets; i++) repaired += ']';
+        for (let i = 0; i < openBraces - closeBraces; i++) repaired += '}';
+
+        const result = JSON.parse(repaired);
+        console.log('Successfully repaired truncated JSON response');
+        return result;
+      } catch (repairError) {
+        console.error(`JSON repair also failed (attempt ${attempt}/${maxRetries})`);
+        if (attempt < maxRetries) { continue; }
+        throw new Error('Failed to parse AI response as JSON');
+      }
     }
   }
+
+  // Should never reach here, but TypeScript needs it
+  throw new Error('Analysis failed after all retry attempts');
 }
 
 Deno.serve(async (req) => {
@@ -2855,10 +2877,20 @@ ${truncatedContent}`;
 
   } catch (error) {
     console.error('Error in analyze-company:', error);
+    const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred';
+    // Surface specific known errors to help diagnose; fall back to generic message for unknowns
+    const userMessage = [
+      'Analysis service temporarily unavailable',
+      'AI returned empty response',
+      'Failed to parse AI response as JSON',
+      'Analysis failed after all retry attempts',
+    ].includes(errorMessage)
+      ? errorMessage
+      : 'An unexpected error occurred. Please try again.';
     return new Response(
-      JSON.stringify({ 
-        success: false, 
-        error: 'An unexpected error occurred. Please try again.' 
+      JSON.stringify({
+        success: false,
+        error: userMessage
       }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
