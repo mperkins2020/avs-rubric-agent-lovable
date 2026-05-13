@@ -29,7 +29,7 @@ interface AnalyzeRequest {
 // Deno EdgeRuntime type for background processing
 declare const EdgeRuntime: { waitUntil: (p: Promise<unknown>) => void };
 
-const ANALYSIS_VERSION = '2026-05-13-pipeline-v22';
+const ANALYSIS_VERSION = '2026-05-13-pipeline-v23';
 
 const COMPANY_PROFILE_PROMPT = `You are an expert business analyst. Analyze the following website content and extract a company profile.
 
@@ -1381,7 +1381,7 @@ async function callLovableAI(systemPrompt: string, userContent: string, maxRetri
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userContent },
         ],
-        temperature: 0.1,
+        temperature: 0.0,
         max_tokens: 32768,
         response_format: { type: 'json_object' },
       }),
@@ -2252,6 +2252,22 @@ ${truncatedContent}`;
         (c.confidence || 0) > (best.confidence || 0) ? c : best
       );
     });
+
+    // Log consistency metrics for diagnostics
+    let unanimousCount = 0;
+    let splitCount = 0;
+    for (const dimName of DIMENSION_NAMES) {
+      const s1 = pass1Dims.find(d => d.dimension === dimName)?.score ?? -1;
+      const s2 = pass2Dims.find(d => d.dimension === dimName)?.score ?? -1;
+      const s3 = pass3Dims.find(d => d.dimension === dimName)?.score ?? -1;
+      if (s1 === s2 && s2 === s3) {
+        unanimousCount++;
+      } else {
+        splitCount++;
+        console.warn(`  [3-pass SPLIT] ${dimName}: ${s1}, ${s2}, ${s3}`);
+      }
+    }
+    console.log(`3-pass consistency: ${unanimousCount}/8 unanimous, ${splitCount}/8 split`);
 
     // Fix 3A: Score Stability Rule
     // For each dimension where the new score is LOWER than the previousScore
