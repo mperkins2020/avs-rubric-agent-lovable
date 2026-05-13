@@ -1,0 +1,24 @@
+# ValueTempo
+
+> The AVS Rubric scores AI product buyability — how well buyers and AI agents can independently evaluate, budget for, and justify a purchase across 8 trust dimensions.
+
+ValueTempo measures the public trust infrastructure of AI-native B2B products. Each scan analyzes pricing pages, docs, trust centers, and policy surfaces using a deterministic rubric and returns a 0–16 score with evidence-based rationale.
+
+## Pages
+
+- [Home](/): Run a free AVS Rubric scan on any AI product URL.
+- [Methodology](/methodology): How the AVS Rubric scoring engine works.
+- [FAQ](/faq): Answers for Product, Growth, CFO, and RevOps teams.
+- [Privacy](/privacy): Data handling and CCPA/CPRA disclosures.
+
+## Resources
+
+- [Blog](/resources/blog): Essays on trust infrastructure and revenue quality.
+- [The Verification Loop](/resources/blog/verification-loop): Case-study post on iterating an AVS score.
+- [Stable Score, Unstable Evidence](/resources/blog/stable-score-unstable-evidence): Engine tuning notes.
+- [Clay's Three-Layer Pricing](/resources/blog/clay-pricing-three-layers): Pricing structure breakdown.
+- [Trust as the Growth Constraint](/resources/blog/trust-growth-constraint): Why trust is the bottleneck.
+- [Vibecoding the AI Startup Tool](/resources/blog/vibecoding-ai-startup-tool): Build-in-public notes.
+- [Case Studies](/resources/case-studies): Real-world AVS Rubric analyses.
+- [Clay Case Study](/resources/case-studies/clay): Pricing transparency teardown.
+- [ElevenLabs Case Study](/resources/case-studies/elevenlabs): Voice AI buyability analysis.

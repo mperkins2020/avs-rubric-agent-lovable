@@ -1,76 +1,98 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>https://valuetempo.lovable.app/</loc>
+    <loc>https://app.valuetempo.com/</loc>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>https://valuetempo.lovable.app/methodology</loc>
+    <loc>https://app.valuetempo.com/auth</loc>
+    <changefreq>yearly</changefreq>
+    <priority>0.3</priority>
+  </url>
+  <url>
+    <loc>https://app.valuetempo.com/reset-password</loc>
+    <changefreq>yearly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  <url>
+    <loc>https://app.valuetempo.com/results</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.4</priority>
+  </url>
+  <url>
+    <loc>https://app.valuetempo.com/methodology</loc>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://valuetempo.lovable.app/resources/blog</loc>
+    <loc>https://app.valuetempo.com/faq</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://app.valuetempo.com/faq/product-growth</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://app.valuetempo.com/faq/cfo-revops</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://app.valuetempo.com/privacy</loc>
+    <changefreq>yearly</changefreq>
+    <priority>0.3</priority>
+  </url>
+  <url>
+    <loc>https://app.valuetempo.com/resources/blog</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://valuetempo.lovable.app/resources/blog/vibecoding-ai-startup-tool</loc>
+    <loc>https://app.valuetempo.com/resources/blog/verification-loop</loc>
+    <lastmod>2026-04-18</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://app.valuetempo.com/resources/blog/vibecoding-ai-startup-tool</loc>
     <lastmod>2026-03-01</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://valuetempo.lovable.app/resources/blog/stable-score-unstable-evidence</loc>
+    <loc>https://app.valuetempo.com/resources/blog/stable-score-unstable-evidence</loc>
     <lastmod>2026-03-19</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://valuetempo.lovable.app/resources/blog/clay-pricing-three-layers</loc>
+    <loc>https://app.valuetempo.com/resources/blog/clay-pricing-three-layers</loc>
     <lastmod>2026-03-10</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.9</priority>
+  </url>
   <url>
-    <loc>https://valuetempo.lovable.app/resources/blog/trust-growth-constraint</loc>
+    <loc>https://app.valuetempo.com/resources/blog/trust-growth-constraint</loc>
     <lastmod>2026-02-01</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://valuetempo.lovable.app/resources/case-studies</loc>
+    <loc>https://app.valuetempo.com/resources/case-studies</loc>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://valuetempo.lovable.app/resources/case-studies/clay</loc>
+    <loc>https://app.valuetempo.com/resources/case-studies/clay</loc>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://valuetempo.lovable.app/resources/case-studies/elevenlabs</loc>
+    <loc>https://app.valuetempo.com/resources/case-studies/elevenlabs</loc>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://valuetempo.lovable.app/resources/faq</loc>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-  </url>
-  <url>
-    <loc>https://valuetempo.lovable.app/resources/faq/cfo-revops</loc>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-  </url>
-  <url>
-    <loc>https://valuetempo.lovable.app/resources/faq/product-growth</loc>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-  </url>
-  <url>
-    <loc>https://valuetempo.lovable.app/privacy</loc>
-    <changefreq>yearly</changefreq>
-    <priority>0.3</priority>
   </url>
 </urlset>
