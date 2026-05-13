@@ -391,6 +391,7 @@ const Index = () => {
         )}
       </AnimatePresence>
 
+      <main>
       {/* Hero section */}
       <section className="relative pt-14 pb-4 md:pt-18 md:pb-6 overflow-hidden">
         <div className="hero-blob" aria-hidden="true" />
@@ -552,6 +553,7 @@ const Index = () => {
         </div>
       </section>
       <FAQJsonLd faqs={homepageFaqs} />
+      </main>
 
       <Footer />
 
