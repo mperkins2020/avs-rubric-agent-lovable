@@ -297,6 +297,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      update_scan_result_cache: {
+        Args: { p_result_json: Json; p_url_domain: string }
+        Returns: string
+      }
     }
     Enums: {
       app_role: "admin" | "user"
