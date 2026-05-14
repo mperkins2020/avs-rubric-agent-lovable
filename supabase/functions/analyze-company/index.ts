@@ -29,7 +29,7 @@ interface AnalyzeRequest {
 // Deno EdgeRuntime type for background processing
 declare const EdgeRuntime: { waitUntil: (p: Promise<unknown>) => void };
 
-const ANALYSIS_VERSION = '2026-05-13-pipeline-v25';
+const ANALYSIS_VERSION = '2026-05-14-pipeline-v26';
 
 const COMPANY_PROFILE_PROMPT = `You are an expert business analyst. Analyze the following website content and extract a company profile.
 
@@ -1773,13 +1773,37 @@ Deno.serve(async (req) => {
 
       let score = 0;
       if (/\/(pricing|plans?|billing|usage|credits|subscription)\b/.test(target)) score += 1200;
-      if (/\/(faq|support|help|docs|changelog|trust|security|api|developers?)\b/.test(target)) score += 900;
       if (/\/(templates?)\b/.test(target)) score += 350;
       if (/\/(terms|legal|privacy)\b/.test(target)) score += 450;
       if (/faq \/ accordion content/i.test(page.markdown)) score += 500;
 
-      // Boost pages that actually contain economic/pricing evidence
-      if (/(credit|top-up|overage|usage-based|monthly|annual|tier|pricing|quota|limit|billing)/i.test(content)) score += 300;
+      // Entry 053: Content-based scoring — pages with actual pricing/trust content
+      // outrank pages that only match URL patterns but contain no evidence.
+      // Split into two tiers: strong economic signals (+600) and trust signals (+400).
+      const economicHits = (content.match(/(per\s*(user|seat|month|year|agent|license|credit|api\s*call)|\$\d|€\d|free\s*tier|free\s*trial|enterprise\s*plan|starter\s*plan|pro\s*plan|pricing\s*table|included\s*in|add-?on|top-?up|overage|billing\s*cycle)/gi) || []).length;
+      if (economicHits >= 3) score += 600;
+      else if (economicHits >= 1) score += 300;
+
+      // Trust/security content boost — catches trust centers and security pages
+      // regardless of URL structure (e.g. /platform/trust-security, /company/security)
+      const trustHits = (content.match(/(soc\s*2|hipaa|gdpr|ccpa|pci\s*dss|iso\s*27001|penetration\s*test|audit\s*log|data\s*encrypt|compliance\s*certif|kill\s*switch|rate\s*limit|budget\s*cap|rollback\s*control)/gi) || []).length;
+      if (trustHits >= 3) score += 400;
+      else if (trustHits >= 1) score += 200;
+
+      // Entry 053: /help, /docs, /faq, /support paths — two-tier scoring.
+      // Pages at these paths WITH economic or trust content are high-value (billing docs,
+      // credits FAQ, trust center). Pages WITHOUT are noise (product tutorials, API guides
+      // for irrelevant products on multi-product domains like jetbrains.com).
+      const hasEvidenceContent = economicHits > 0 || trustHits > 0;
+      if (/\/(faq|support|help|docs|changelog|trust|security|api|developers?)\b/.test(target)) {
+        score += hasEvidenceContent ? 900 : 100;
+      }
+
+      // Entry 053: Penalize thin pages — help articles with minimal content
+      // contribute noise and dilute scorer attention on multi-product domains.
+      const strippedLength = page.markdown.trim().length;
+      if (strippedLength < 500) score -= 400;
+      else if (strippedLength < 1500) score -= 200;
 
       // Penalize noisy marketplace/community listing pages
       if (/\/(discover|products)\b/.test(target)) score -= 500;
