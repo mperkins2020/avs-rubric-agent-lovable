@@ -4,7 +4,7 @@
 **Usage:** When a report produces a questionable result, log it here. Run `Scan the debug log for recurring patterns` periodically to surface systemic issues.
 **Related:** See ENGINE_DEBUG_HISTORY.md for backfilled history from git.
 
-**Entries:** 51 | **Last updated:** May 13, 2026
+**Entries:** 52 | **Last updated:** May 13, 2026
 
 ---
 
@@ -30,6 +30,27 @@
 <!-- Newest first. To add an entry, copy the template below and fill it in. -->
 
 <!-- Next entry goes here -->
+
+---
+
+### Entry 052 — May 13, 2026
+
+| Field | Value |
+|-------|-------|
+| Company | Kore.ai |
+| Version | 2026-05-13-pipeline-v24 |
+| Dimension | Safety rails and trust surfaces |
+| Subtest(s) | Evidence citation |
+| V1 Score | 1/2 |
+| V2 Score | 1/2 |
+| Root Cause | presentation — duplicate evidence citations in 3-pass merge |
+| Caught By | Manual review (Michelle, 2026-05-13) |
+| Status | open 🔴 |
+
+**Root Cause Detail:**
+Safety Rails dimension shows 6 evidence blocks but only 3 are unique — the bottom 3 are truncated repeats of the top 3. The 3-pass majority vote system merges evidence from all passes into the final output without deduplicating. When multiple passes cite the same page and quote, duplicates appear in the report. This is a cosmetic/presentation issue — scoring is not affected since the majority vote operates on scores, not evidence. Fix: deduplicate evidence by (url + quote) before writing to the final output.
+
+**Pattern Tag:** `duplicate-evidence-citations`
 
 ---
 

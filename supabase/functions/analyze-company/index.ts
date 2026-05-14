@@ -29,7 +29,7 @@ interface AnalyzeRequest {
 // Deno EdgeRuntime type for background processing
 declare const EdgeRuntime: { waitUntil: (p: Promise<unknown>) => void };
 
-const ANALYSIS_VERSION = '2026-05-13-pipeline-v24';
+const ANALYSIS_VERSION = '2026-05-13-pipeline-v25';
 
 const COMPANY_PROFILE_PROMPT = `You are an expert business analyst. Analyze the following website content and extract a company profile.
 
@@ -2413,9 +2413,10 @@ ${truncatedContent}`;
           .trim()
           .replace(/^["""\u201C\u201D'''\u2018\u2019]+|["""\u201C\u201D'''\u2018\u2019]+$/g, '') // Entry 030: strip curly/smart quote variants before hashing
           .replace(/\s*\([^)]{0,40}\)/g, '') // strip short parentheticals (tier labels, annotations)
+          .replace(/\.{2,}$|\u2026$/g, '') // Entry 052: strip trailing ellipsis so truncated quotes dedup against full quotes
           .replace(/\s+/g, ' ')
           .trim()
-          .slice(0, 120);
+          .slice(0, 60); // Entry 052: shorter key catches full vs truncated quote variants
         if (seen.has(key)) continue;
         seen.add(key);
         // Final synthetic-field guard — catches fromObserved bypass of the fromModel filter.
