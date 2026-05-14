@@ -112,6 +112,28 @@ export function useScan() {
         modelClassification: analysisResult.modelClassification || null,
       });
 
+      // Persist result to scan_results cache (edge function does not write back)
+      try {
+        const domain = extractDomain(url);
+        if (domain) {
+          const resultPayload = {
+            companyProfile: analysisResult.companyProfile,
+            rubricScore: analysisResult.rubricScore,
+            observability: analysisResult.observability,
+            modelClassification: analysisResult.modelClassification,
+            categoryClassification: (analysisResult as unknown as { categoryClassification?: unknown }).categoryClassification,
+            analysisVersion: (analysisResult as unknown as { analysisVersion?: string }).analysisVersion,
+          };
+          const { error: cacheErr } = await supabase.rpc('upsert_scan_result_cache', {
+            p_url_domain: domain,
+            p_result_json: resultPayload as never,
+          });
+          if (cacheErr) console.warn('scan_results cache write failed:', cacheErr.message);
+        }
+      } catch (cacheErr) {
+        console.warn('scan_results cache write threw:', cacheErr);
+      }
+
       return true;
     } catch (err) {
       console.error('Scan error:', err);
