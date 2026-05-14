@@ -1,6 +1,16 @@
 import { useState, useCallback } from 'react';
 import { scraperApi, type ScrapedPage, type AnalysisResult } from '@/lib/api/scraper';
+import { supabase } from '@/integrations/supabase/client';
 import type { CompanyProfile, RubricScore, ObservabilityData, ModelClassification, ChatMessage } from '@/types/rubric';
+
+function extractDomain(rawUrl: string): string | null {
+  try {
+    const u = new URL(rawUrl.startsWith('http') ? rawUrl : `https://${rawUrl}`);
+    return u.hostname.replace(/^www\./, '').toLowerCase();
+  } catch {
+    return null;
+  }
+}
 
 export type ScanStatus = 'idle' | 'scraping' | 'analyzing' | 'complete' | 'error';
 
