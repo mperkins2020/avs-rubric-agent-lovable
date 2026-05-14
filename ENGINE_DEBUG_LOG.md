@@ -45,21 +45,20 @@
 | V2 Score | 6/16 (no improvement despite new evidence) |
 | Root Cause | scorer — high-value pages analyzed but not cited in any dimension |
 | Caught By | Manual review (Michelle, 2026-05-14) |
-| Status | fixed ✅ (pipeline-v26) |
+| Status | partially fixed ✅ (pipeline-v26) |
 
 **Root Cause Detail:**
-JetBrains AI pricing page (`/ai-ides/buy`) was scraped with rich content: 4 tiers (Free/Pro/Ultimate/Enterprise), explicit per-user pricing ($100/$300/$720/yr), AI Credits at $1 each with top-up and rollover, feature matrix with SSO/SCIM/audit logs, BYOK options. This should score 2/2 on Value Unit, Buyer & Budget, and Pools & Packaging at minimum. However, the scorer cited ZERO evidence from this page across all 8 dimensions.
+Two interleaved issues on `jetbrains.com`:
 
-The scraper sent 11 pages to the scorer, including 5 irrelevant CLion help docs (accessibility, apache-derby, remote-hosts, build-actions, c-support). The LLM's attention was consumed by noise rather than the pricing/product signal. The product-path boost (`/ai-ides`) was applied to URL scoring but the irrelevant pages still made it into the final set because `jetbrains.com` is a massive multi-product domain.
+1. **Scorer attention dilution (fixed v26):** When pages ARE scraped with content, irrelevant help docs (CLion accessibility, apache-derby, etc.) consumed the same token budget as high-value pages, diluting scorer attention. Fixed by content-based scoring in `scorePagePriority`: economic content boost (+300/+600), trust content boost (+200/+400), help/docs two-tier (evidence-rich +900, generic +100), thin page penalty (-200/-400). Verified working on Backstory (`/platform/trust-security` now cited as #1 source).
 
-**Fix (pipeline-v26):** Content-based scoring in `scorePagePriority` in `analyze-company/index.ts`. Three changes:
-1. Economic content boost: pages with ≥3 pricing keyword hits get +600 (was flat +300 for any hit). Catches pricing pages regardless of URL structure.
-2. Trust content boost: pages mentioning SOC 2, HIPAA, audit logs, etc. get +200/+400. Catches trust centers at non-standard paths like `/platform/trust-security`.
-3. Thin page penalty: pages under 500 chars get -400, under 1500 chars get -200. Pushes irrelevant help stubs to the bottom of the page ordering.
+2. **JS-rendered pricing page (open):** JetBrains `/ai-ides/buy` renders pricing tiers, dollar amounts, and feature matrix via client-side JavaScript. Firecrawl returns only the page shell (title "JetBrains AI Plans & Pricing" + navigation link) with no pricing content. The scraper selects the URL correctly but the resolved page is empty, so it's filtered out or contributes nothing. This is intermittent — earlier scrapes captured full content, later ones did not. Accepted as a scraper limitation for now; JetBrains score stays at 6/16.
 
-Also affects: Backstory (`backstory.ai`) — same pattern where `/platform/trust-security` was analyzed but not cited.
+**Fix (pipeline-v26):** Content-based scoring in `scorePagePriority` + `/buy` added to pricing URL patterns in both scraper and scorer.
 
-**Pattern Tag:** `pages-analyzed-not-used`, `multi-product-domain-noise`
+**Open:** JS-rendering reliability for community_evidence URLs. Potential future fix: Firecrawl `waitFor` parameter for community URLs.
+
+**Pattern Tag:** `pages-analyzed-not-used`, `multi-product-domain-noise`, `js-rendered-content`
 
 ---
 
