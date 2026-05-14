@@ -22,6 +22,7 @@ import { EvidenceSourcesPanel } from "@/components/EvidenceSourcesPanel";
 
 import { FeedbackForm } from "@/components/FeedbackForm";
 import { scraperApi, type ScrapedPage } from "@/lib/api/scraper";
+import { supabase } from "@/integrations/supabase/client";
 import { exportToPDF } from "@/lib/pdfExport";
 import { toast } from "sonner";
 import type { ChatMessage, CompanyProfile, RubricScore, ObservabilityData, ModelClassification } from "@/types/rubric";
