@@ -4,7 +4,7 @@
 **Usage:** When a report produces a questionable result, log it here. Run `Scan the debug log for recurring patterns` periodically to surface systemic issues.
 **Related:** See ENGINE_DEBUG_HISTORY.md for backfilled history from git.
 
-**Entries:** 52 | **Last updated:** May 13, 2026
+**Entries:** 53 | **Last updated:** May 14, 2026
 
 ---
 
@@ -30,6 +30,31 @@
 <!-- Newest first. To add an entry, copy the template below and fill it in. -->
 
 <!-- Next entry goes here -->
+
+---
+
+### Entry 053 — May 14, 2026
+
+| Field | Value |
+|-------|-------|
+| Company | JetBrains (jetbrains.com) |
+| Version | 2026-05-13-pipeline-v25 |
+| Dimension | All — especially Buyer & Budget, Value Unit, Pools & Packaging |
+| Subtest(s) | Multiple |
+| V1 Score | 6/16 |
+| V2 Score | 6/16 (no improvement despite new evidence) |
+| Root Cause | scorer — high-value pages analyzed but not cited in any dimension |
+| Caught By | Manual review (Michelle, 2026-05-14) |
+| Status | open 🔴 |
+
+**Root Cause Detail:**
+JetBrains AI pricing page (`/ai-ides/buy`) was scraped with rich content: 4 tiers (Free/Pro/Ultimate/Enterprise), explicit per-user pricing ($100/$300/$720/yr), AI Credits at $1 each with top-up and rollover, feature matrix with SSO/SCIM/audit logs, BYOK options. This should score 2/2 on Value Unit, Buyer & Budget, and Pools & Packaging at minimum. However, the scorer cited ZERO evidence from this page across all 8 dimensions.
+
+The scraper sent 11 pages to the scorer, including 5 irrelevant CLion help docs (accessibility, apache-derby, remote-hosts, build-actions, c-support). The LLM's attention was consumed by noise rather than the pricing/product signal. The product-path boost (`/ai-ides`) was applied to URL scoring but the irrelevant pages still made it into the final set because `jetbrains.com` is a massive multi-product domain.
+
+Potential fixes: (1) filter out pages that don't match the product path when a product path is active, (2) order pages in the scoring prompt by relevance score so pricing pages appear first, (3) add a content-relevance pre-filter that drops pages with zero pricing/product keywords.
+
+**Pattern Tag:** `pages-analyzed-not-used`, `multi-product-domain-noise`
 
 ---
 
