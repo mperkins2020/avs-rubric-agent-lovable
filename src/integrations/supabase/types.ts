@@ -301,6 +301,10 @@ export type Database = {
         Args: { p_result_json: Json; p_url_domain: string }
         Returns: string
       }
+      upsert_scan_result_cache: {
+        Args: { p_result_json: Json; p_url_domain: string }
+        Returns: string
+      }
     }
     Enums: {
       app_role: "admin" | "user"
