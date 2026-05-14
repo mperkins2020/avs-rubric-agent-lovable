@@ -311,7 +311,7 @@ export default function Results() {
             .hostname.replace(/^www\./, "");
           const { error: cacheErr } = await supabase.rpc("update_scan_result_cache", {
             p_url_domain: domain,
-            p_result_json: result as unknown as Record<string, unknown>,
+            p_result_json: result as never,
           });
           if (cacheErr) {
             console.error("Failed to persist rescore to cache:", cacheErr);
