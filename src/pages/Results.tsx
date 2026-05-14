@@ -304,6 +304,21 @@ export default function Results() {
           setCompanyProfile(result.companyProfile);
         }
 
+        // Persist updated result back to scan_results cache (rerun path doesn't write server-side)
+        try {
+          const domain = new URL(url.startsWith("http") ? url : `https://${url}`)
+            .hostname.replace(/^www\./, "");
+          const { error: cacheErr } = await supabase.rpc("update_scan_result_cache", {
+            p_url_domain: domain,
+            p_result_json: result as unknown as Record<string, unknown>,
+          });
+          if (cacheErr) {
+            console.error("Failed to persist rescore to cache:", cacheErr);
+          }
+        } catch (persistErr) {
+          console.error("Error persisting rescore to cache:", persistErr);
+        }
+
         // Show delta
         const changedDims = result.rubricScore.dimensionScores
           .filter((d, i) => {
