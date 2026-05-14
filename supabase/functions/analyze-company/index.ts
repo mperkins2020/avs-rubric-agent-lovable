@@ -1772,7 +1772,7 @@ Deno.serve(async (req) => {
       const content = page.markdown.toLowerCase();
 
       let score = 0;
-      if (/\/(pricing|plans?|billing|usage|credits|subscription)\b/.test(target)) score += 1200;
+      if (/\/(pricing|plans?|billing|usage|credits|subscription|buy)\b/.test(target)) score += 1200;
       if (/\/(templates?)\b/.test(target)) score += 350;
       if (/\/(terms|legal|privacy)\b/.test(target)) score += 450;
       if (/faq \/ accordion content/i.test(page.markdown)) score += 500;

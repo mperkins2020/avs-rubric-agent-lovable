@@ -196,7 +196,7 @@ const priorityPatterns = [
 ];
 
 const highIntentPaths = new Set([
-  '/pricing', '/plans', '/plan', '/billing', '/usage',
+  '/pricing', '/plans', '/plan', '/billing', '/usage', '/buy',
   '/subscription', '/features', '/feature', '/product',
   '/products', '/solutions',
   // Bundle 2: trust-center path pinning — same priority as /pricing
@@ -357,7 +357,7 @@ function scoreUrl(link: string, baseHost: string, communityUrlSet: Set<string>):
 
   // HIGH-VALUE CONTENT BOOST: pricing/billing/refund keywords anywhere in the path
   // (catches /faqs/pricing, /resources/pricing, /info/plans, /help/billing, /hc/refunds, etc.)
-  if (/\/(pricing|billing|plans?|credits|subscription|refund|cancel)\b/i.test(path) && !highIntentPaths.has(path)) {
+  if (/\/(pricing|billing|plans?|credits|subscription|refund|cancel|buy)\b/i.test(path) && !highIntentPaths.has(path)) {
     score += 800;
   }
 
@@ -424,7 +424,7 @@ const pricingJsonSchema = {
 };
 
 const isPricingPage = (url: string): boolean =>
-  /\/(pricing|plans?|billing|subscription|credits|cost|packages)\b/i.test(url);
+  /\/(pricing|plans?|billing|subscription|credits|cost|packages|buy)\b/i.test(url);
 
 const sanitizeEvidenceText = (value: string): string =>
   value
