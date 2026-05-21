@@ -20,7 +20,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Mail, ArrowRight, Loader2 } from "lucide-react";
-import { trackEvent } from "@/utils/analytics";
+import { trackEvent, trackReturningUserAndMark } from "@/utils/analytics";
 import {
   Tooltip,
   TooltipContent,
@@ -143,6 +143,7 @@ const Index = () => {
         const { error: anonError } = await supabase.auth.signInAnonymously();
         if (!anonError) {
           trackEvent('anon_session_start');
+          trackReturningUserAndMark();
         }
       }
     };
@@ -212,6 +213,7 @@ const Index = () => {
       if (!anonError && data.session) {
         activeSession = data.session;
         trackEvent('anon_session_start');
+        trackReturningUserAndMark();
       }
     }
     if (!activeSession) {
