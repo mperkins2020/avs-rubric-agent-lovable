@@ -117,6 +117,7 @@ export function useScan() {
         const domain = extractDomain(url);
         if (domain) {
           const resultPayload = {
+            success: true,
             companyProfile: analysisResult.companyProfile,
             rubricScore: analysisResult.rubricScore,
             observability: analysisResult.observability,
