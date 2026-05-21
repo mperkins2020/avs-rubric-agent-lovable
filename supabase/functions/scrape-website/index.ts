@@ -1026,7 +1026,7 @@ Deno.serve(async (req) => {
             // variant). help.gamma.app/en/articles/... is primary content, not a translated copy.
             const firstSeg = (segs[0] ?? '').toLowerCase();
             const isHelpSubdomainUrl = helpSubdomains.some(s => parsed.hostname === `${s}.${registrableDomain}`);
-            if (!isHelpSubdomainUrl && segs.length >= 2 && /^(?:fr|de|es|pt|ja|zh|ko|it|nl|pl|ru|ar|tr|sv|da|fi|nb|cs|hu|ro|uk|en|pt-br|zh-cn|zh-tw|es-mx|fr-ca)$/.test(firstSeg)) return false;
+            if (!isHelpSubdomainUrl && segs.length >= 2 && /^(?:fr|de|es|pt|ja|zh|cn|ko|it|nl|pl|ru|ar|tr|sv|da|fi|nb|cs|hu|ro|uk|en|id|th|vi|ms|hi|he|el)(?:-[a-z]{2,4})?$/.test(firstSeg)) return false;
           } catch { /* malformed URL — let downstream filters handle */ }
           // Community URLs always pass
           if (communityUrlSet.has(link)) return true;
@@ -1114,7 +1114,7 @@ Deno.serve(async (req) => {
           // Strip text fragment anchors (#:~:text=...) — same HTML document as the base URL
           parsed.hash = parsed.hash.startsWith('#:~:') ? '' : parsed.hash;
           // Strip locale path prefixes (/en/, /en-US/, /fr/, /de/, etc.)
-          parsed.pathname = parsed.pathname.replace(/^\/[a-z]{2}(-[A-Z]{2})?\//,  '/');
+          parsed.pathname = parsed.pathname.replace(/^\/[a-z]{2}(-[a-zA-Z]{2,4})?\//,  '/');
           // Collapse double slashes in path (e.g. //about → /about) — Firecrawl map
           // sometimes returns malformed URLs with double slashes that fool naive dedup.
           parsed.pathname = parsed.pathname.replace(/\/\/+/g, '/');

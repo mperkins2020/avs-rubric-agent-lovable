@@ -4,7 +4,7 @@
 **Usage:** When a report produces a questionable result, log it here. Run `Scan the debug log for recurring patterns` periodically to surface systemic issues.
 **Related:** See ENGINE_DEBUG_HISTORY.md for backfilled history from git.
 
-**Entries:** 53 | **Last updated:** May 14, 2026
+**Entries:** 54 | **Last updated:** May 20, 2026
 
 ---
 
@@ -18,6 +18,7 @@
 | gate_misfire | 0 | — |
 | confidence_miscalc | 0 | — |
 | prompt_drift | 1 | ICP and Job Clarity (D2) |
+| evidence_snippet_selection | 1 | ICP (D2), Value Unit (D4), Overages (D6), Safety Rails (D7), Evidence Coverage (D8) |
 | pipeline_miss | 23 | Value Unit, Cost Driver Mapping, Safety/Trust, Overages & Risk, URL filter |
 | contamination | 13 | Pricing Transparency, Enterprise/Compliance (D7/D8) |
 | calibration | 3 | Value unit (D4), ICP and Job Clarity (D2), Safety Rails (D8) |
@@ -30,6 +31,44 @@
 <!-- Newest first. To add an entry, copy the template below and fill it in. -->
 
 <!-- Next entry goes here -->
+
+---
+
+### Entry 054 — May 20, 2026
+
+| Field | Value |
+|-------|-------|
+| Company | Lovable (lovable.dev), Cursor (cursor.com) |
+| Version | 2026-05-05-pipeline-v21 (original) → rescan 2026-05-20 |
+| Dimension | D2 (ICP), D4 (Value Unit), D6 (Overages), D7 (Safety Rails), D8 (Evidence Coverage) |
+| Subtest(s) | Evidence snippet selection |
+| V1 Score | Lovable: 11/16 (69%) — D1=1 D2=1 D3=2 D4=2 D5=1 D6=2 D7=1 D8=1; Cursor: 12/16 (75%) — D1=1 D2=2 D3=2 D4=1 D5=1 D6=2 D7=1 D8=2 |
+| V2 Score | Lovable: 14/16 (88%) — D1=1 D2=2 D3=2 D4=2 D5=1 D6=2 D7=2 D8=2; Cursor: 13/16 (81%) — D1=1 D2=2 D3=2 D4=2 D5=1 D6=2 D7=1 D8=2 |
+| Root Cause | evidence_snippet_selection — scraper fed engine misleading excerpts from pages containing both favorable and unfavorable evidence |
+| Caught By | Manual review (Michelle, 2026-05-20/21) — score jumps triggered investigation |
+| Status | corrected ✅ (benchmark updated: Lovable 14/16, Cursor 13/16) |
+
+**Root Cause Detail:**
+Lovable's `docs.lovable.dev/introduction/plans-and-credits` page documents two distinct credit types: (1) daily free credits for paid users (do not accumulate day to day) and (2) monthly plan credits (roll over at end of billing cycle). The original May benchmark scan surfaced the daily credits snippet ("Unused daily credits will not accumulate from day to day"), and the engine interpreted this as a negative signal for overages/risk allocation, suppressing D6-adjacent scoring. The rescan surfaced the monthly rollover snippet instead, which correctly reflects Lovable's credit rollover policy.
+
+Similar pattern on D2: the rescan found `docs.lovable.dev` pages with explicit ICP segments ("Individual builders - Founders and entrepreneurs", "Product, design, and go-to-market teams") and `lovable.dev/solutions` that the original scan either missed or deprioritized.
+
+D7 and D8 also improved (1→2 each) with evidence from the same `docs.lovable.dev` pages. The original scan had the same source pages available but selected less relevant snippets.
+
+**Cursor detail:** D4 (Value Unit) went from 1→2. The old scan surfaced "model usage" language but the engine flagged "precise definition and metering formula for 'model usage' are not publicly available." The rescan extracted more complete evidence from the same pricing page including on-demand usage details and arrears billing terms. Same pattern: right page, wrong snippet.
+
+**Key finding:** Neither company changed their website or policies between scans. The improvements are entirely attributable to which snippets the scraper extracted from pages that contain mixed-signal content. This means the original scores were under-scores, not that the new scores are over-scores.
+
+**Broader risk:** Any company whose key evidence pages contain both favorable and unfavorable language (e.g., a credits page documenting both non-accumulating daily credits AND rollover monthly credits) is vulnerable to this same snippet selection variance. The engine scores what it sees — if the scraper feeds it the wrong excerpt from the right page, the score is suppressed silently.
+
+**Affected companies (potential):** Unknown. Any company in the May benchmark could have the same issue. Most likely to affect companies with complex, multi-section docs pages where credit/pricing policies vary by plan type or usage tier.
+
+**Recommended fixes:**
+1. Scraper: when a page matches multiple evidence-relevant sections, extract all sections rather than a single excerpt
+2. Engine: when evidence from a page produces a negative signal, check whether other sections of the same page contain countervailing evidence
+3. QA: flag any rescan with a 3+ point delta for manual review before accepting
+
+**Pattern Tag:** `evidence-snippet-selection`, `mixed-signal-page`, `silent-underscore`
 
 ---
 
