@@ -1021,12 +1021,14 @@ Deno.serve(async (req) => {
                /^[a-z0-9]+$/.test(lastToken) &&
                lastTokenDigits >= 2)
             ) return false;
-            // Locale-prefix filter — applies to main-domain paths only.
-            // Zendesk-style help subdomains use /en/ as a structural URL element (not a locale
-            // variant). help.gamma.app/en/articles/... is primary content, not a translated copy.
+            // Locale-prefix filter — drops non-English locale paths everywhere.
+            // Help subdomains (Zendesk-style) use /en/ as a structural element, so English
+            // locale paths are exempted on help subdomains only. Non-English locale paths
+            // (e.g. trust.tabnine.com/zh) are always filtered regardless of subdomain type.
             const firstSeg = (segs[0] ?? '').toLowerCase();
             const isHelpSubdomainUrl = helpSubdomains.some(s => parsed.hostname === `${s}.${registrableDomain}`);
-            if (!isHelpSubdomainUrl && segs.length >= 2 && /^(?:fr|de|es|pt|ja|zh|cn|ko|it|nl|pl|ru|ar|tr|sv|da|fi|nb|cs|hu|ro|uk|en|id|th|vi|ms|hi|he|el)(?:-[a-z]{2,4})?$/.test(firstSeg)) return false;
+            const isLocalePrefix = segs.length >= 1 && /^(?:fr|de|es|pt|ja|zh|cn|ko|it|nl|pl|ru|ar|tr|sv|da|fi|nb|cs|hu|ro|uk|en|id|th|vi|ms|hi|he|el)(?:-[a-z]{2,4})?$/.test(firstSeg);
+            if (isLocalePrefix && (!isHelpSubdomainUrl || !/^en(?:-[a-z]{2,4})?$/.test(firstSeg))) return false;
           } catch { /* malformed URL — let downstream filters handle */ }
           // Community URLs always pass
           if (communityUrlSet.has(link)) return true;
