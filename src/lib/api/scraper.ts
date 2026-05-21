@@ -136,6 +136,14 @@ export const scraperApi = {
         return { success: false, error: data.error };
       }
 
+      // Defensive: some cached payloads (written by older client versions)
+      // are missing the explicit `success: true` flag. If the response carries
+      // a companyProfile + rubricScore, treat it as a successful analysis so
+      // we don't show "Failed to analyze company" for a valid cache HIT.
+      if (data && data.success !== true && data.companyProfile && data.rubricScore) {
+        return { ...(data as object), success: true } as AnalysisResult;
+      }
+
       return data as AnalysisResult;
     } catch (err) {
       console.error('Analysis exception:', err);
