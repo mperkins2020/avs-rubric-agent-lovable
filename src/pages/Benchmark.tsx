@@ -9,6 +9,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { ChevronDown, ChevronUp, ArrowUp, ArrowDown, Minus, X, FileText, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { saveLastReport } from "@/utils/reportStorage";
 
 const SCORE_LABELS: Record<number, string> = { 0: "None", 1: "Partial", 2: "Verified" };
 
@@ -528,6 +529,13 @@ function LeaderboardCard({
         toast.error("No report available for this company yet.");
         return;
       }
+      saveLastReport({
+        companyProfile: r.companyProfile as never,
+        rubricScore: r.rubricScore as never,
+        observability: r.observability as never,
+        modelClassification: (r.modelClassification as never) ?? null,
+        pages: [],
+      });
       navigate("/results", {
         state: {
           companyProfile: r.companyProfile,
