@@ -172,7 +172,7 @@ const Index = () => {
     if (stored) {
       try {
         const data = JSON.parse(stored);
-        sessionStorage.removeItem('lastReport');
+        saveLastReport({ ...data, autoDownloadPdf: true });
         navigate('/results', { state: { ...data, autoDownloadPdf: true } });
       } catch {
         // sessionStorage data malformed — non-fatal, user is signed in at least
