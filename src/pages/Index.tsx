@@ -21,6 +21,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Mail, ArrowRight, Loader2 } from "lucide-react";
 import { trackEvent, trackReturningUserAndMark } from "@/utils/analytics";
+import { saveLastReport } from "@/utils/reportStorage";
 import {
   Tooltip,
   TooltipContent,
@@ -101,6 +102,7 @@ const Index = () => {
 
   useEffect(() => {
     if (status === 'complete' && companyProfile && rubricScore && observability) {
+      saveLastReport({ companyProfile, rubricScore, observability, modelClassification, pages });
       navigate("/results", {
         state: { companyProfile, rubricScore, observability, modelClassification, pages }
       });
@@ -170,7 +172,7 @@ const Index = () => {
     if (stored) {
       try {
         const data = JSON.parse(stored);
-        sessionStorage.removeItem('lastReport');
+        saveLastReport({ ...data, autoDownloadPdf: true });
         navigate('/results', { state: { ...data, autoDownloadPdf: true } });
       } catch {
         // sessionStorage data malformed — non-fatal, user is signed in at least

@@ -27,6 +27,7 @@ import { exportToPDF } from "@/lib/pdfExport";
 import { toast } from "sonner";
 import type { ChatMessage, CompanyProfile, RubricScore, ObservabilityData, ModelClassification } from "@/types/rubric";
 import { ResourcesDropdown } from "@/components/ResourcesDropdown";
+import { getLastReport, saveLastReport } from "@/utils/reportStorage";
 
 interface LocationState {
   companyProfile: CompanyProfile;
@@ -40,7 +41,7 @@ export default function Results() {
   const location = useLocation();
   const navigate = useNavigate();
   const { session } = useAuth();
-  const initialState = location.state as (LocationState & { autoDownloadPdf?: boolean }) | null;
+  const initialState = (location.state as (LocationState & { autoDownloadPdf?: boolean }) | null) ?? getLastReport();
 
   const [companyProfile, setCompanyProfile] = useState<CompanyProfile | null>(initialState?.companyProfile ?? null);
   const [rubricScore, setRubricScore] = useState<RubricScore | null>(initialState?.rubricScore ?? null);
@@ -56,25 +57,11 @@ export default function Results() {
   const [isChatLoading, setIsChatLoading] = useState(false);
   const [isRerunning, setIsRerunning] = useState(false);
 
-  // Redirect to home only if there was no state at mount time.
-  // Using an empty dep array prevents accidental redirects from later re-renders
-  // where location.state reference could shift.
-  useEffect(() => {
-    if (!initialState) {
-      navigate("/", { replace: true });
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
   // Track first_scan_completed and save report to sessionStorage for PDF gate recovery
   useEffect(() => {
     if (!companyProfile || !rubricScore || !observability) return;
     trackEvent('first_scan_completed', { score: rubricScore.totalScore });
-    try {
-      sessionStorage.setItem('lastReport', JSON.stringify({ companyProfile, rubricScore, observability, modelClassification, pages }));
-    } catch {
-      // sessionStorage unavailable — non-fatal
-    }
+    saveLastReport({ companyProfile, rubricScore, observability, modelClassification, pages });
   }, [companyProfile, rubricScore, observability]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Auto-download PDF after login redirect from PDF gate
@@ -354,15 +341,6 @@ export default function Results() {
       setIsRerunning(false);
     }
   }, [companyProfile, rubricScore, pages]);
-  // Loading state while redirecting
-  if (!initialState) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
-      </div>
-    );
-  }
-
   if (!companyProfile || !rubricScore || !observability) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
