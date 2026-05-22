@@ -546,13 +546,21 @@ function LeaderboardCard({
   };
 
   return (
-    <button
+    <div
+      role="button"
+      tabIndex={0}
       onMouseEnter={onHover}
       onMouseLeave={onLeave}
       onClick={onClick}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onClick();
+        }
+      }}
       className={cn(
-        "w-full text-left rounded-xl border bg-card p-4 transition-all",
-        "hover:shadow-[var(--shadow-sm)] hover:border-primary/40",
+        "w-full text-left rounded-xl border bg-card p-4 transition-all cursor-pointer",
+        "hover:shadow-[var(--shadow-sm)] hover:border-primary/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
         highlighted ? "border-primary/60 shadow-[var(--shadow-sm)]" : "border-border",
       )}
     >
@@ -600,7 +608,7 @@ function LeaderboardCard({
           </Button>
         </div>
       </div>
-    </button>
+    </div>
   );
 }
 
