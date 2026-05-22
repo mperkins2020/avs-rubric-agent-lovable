@@ -57,8 +57,6 @@ export default function Results() {
   const [isChatLoading, setIsChatLoading] = useState(false);
   const [isRerunning, setIsRerunning] = useState(false);
 
-  const hasReport = Boolean(companyProfile && rubricScore && observability);
-
   // Track first_scan_completed and save report to sessionStorage for PDF gate recovery
   useEffect(() => {
     if (!companyProfile || !rubricScore || !observability) return;
@@ -343,7 +341,7 @@ export default function Results() {
       setIsRerunning(false);
     }
   }, [companyProfile, rubricScore, pages]);
-  if (!hasReport) {
+  if (!companyProfile || !rubricScore || !observability) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
