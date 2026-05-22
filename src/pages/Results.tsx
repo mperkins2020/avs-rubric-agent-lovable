@@ -56,12 +56,15 @@ export default function Results() {
   const [isChatLoading, setIsChatLoading] = useState(false);
   const [isRerunning, setIsRerunning] = useState(false);
 
-  // Redirect to home if no state
+  // Redirect to home only if there was no state at mount time.
+  // Using an empty dep array prevents accidental redirects from later re-renders
+  // where location.state reference could shift.
   useEffect(() => {
     if (!initialState) {
       navigate("/", { replace: true });
     }
-  }, [initialState, navigate]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Track first_scan_completed and save report to sessionStorage for PDF gate recovery
   useEffect(() => {
