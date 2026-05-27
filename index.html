@@ -53,8 +53,13 @@
 
       // Consent Mode v2 — default to denied until user opts in
       var __vtConsent = null;
-      try { __vtConsent = localStorage.getItem('cookie_consent'); } catch (e) {}
-      var __vtGranted = __vtConsent === 'granted';
+      try {
+        var __vtMatch = document.cookie.match(/(?:^|;\s*)vt_consent=([^;]+)/);
+        __vtConsent = __vtMatch ? decodeURIComponent(__vtMatch[1]) : null;
+        // Clean up legacy localStorage key
+        try { localStorage.removeItem('cookie_consent'); } catch (e) {}
+      } catch (e) {}
+      var __vtGranted = __vtConsent === 'accepted';
       gtag('consent', 'default', {
         ad_storage: __vtGranted ? 'granted' : 'denied',
         ad_user_data: __vtGranted ? 'granted' : 'denied',

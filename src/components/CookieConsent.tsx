@@ -2,12 +2,28 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 
-const STORAGE_KEY = "cookie_consent";
+const COOKIE_NAME = "vt_consent";
+const COOKIE_MAX_AGE = 60 * 60 * 24 * 365; // 1 year
 
 declare global {
   interface Window {
     gtag?: (...args: unknown[]) => void;
   }
+}
+
+function readConsentCookie(): string | null {
+  if (typeof document === "undefined") return null;
+  const match = document.cookie.match(/(?:^|;\s*)vt_consent=([^;]+)/);
+  return match ? decodeURIComponent(match[1]) : null;
+}
+
+function writeConsentCookie(value: "accepted" | "dismissed") {
+  if (typeof document === "undefined") return;
+  const host = window.location.hostname;
+  const isValueTempo = /(^|\.)valuetempo\.com$/.test(host);
+  const domainAttr = isValueTempo ? "; domain=.valuetempo.com" : "";
+  const secureAttr = window.location.protocol === "https:" ? "; Secure" : "";
+  document.cookie = `${COOKIE_NAME}=${value}${domainAttr}; path=/; max-age=${COOKIE_MAX_AGE}; SameSite=Lax${secureAttr}`;
 }
 
 function updateConsent(granted: boolean) {
@@ -26,20 +42,26 @@ export const CookieConsent = () => {
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
+    // Clean up legacy localStorage key
     try {
-      const stored = localStorage.getItem(STORAGE_KEY);
-      if (!stored) setVisible(true);
+      localStorage.removeItem("cookie_consent");
     } catch {
+      // ignore
+    }
+
+    const stored = readConsentCookie();
+    if (stored === "accepted") {
+      updateConsent(true);
+      setVisible(false);
+    } else if (stored === "dismissed") {
+      setVisible(false);
+    } else {
       setVisible(true);
     }
   }, []);
 
   const decide = (granted: boolean) => {
-    try {
-      localStorage.setItem(STORAGE_KEY, granted ? "granted" : "denied");
-    } catch {
-      // ignore
-    }
+    writeConsentCookie(granted ? "accepted" : "dismissed");
     updateConsent(granted);
     setVisible(false);
   };
