@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import CookieConsent from "@/components/CookieConsent";
 import Index from "./pages/Index";
 import Results from "./pages/Results";
 import Methodology from "./pages/Methodology";
@@ -69,6 +70,7 @@ const App = () => (
         <AuthProvider>
           <ErrorBoundary>
             <AppRoutes />
+            <CookieConsent />
           </ErrorBoundary>
         </AuthProvider>
       </BrowserRouter>
