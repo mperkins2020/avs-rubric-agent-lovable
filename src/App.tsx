@@ -70,6 +70,7 @@ const App = () => (
         <AuthProvider>
           <ErrorBoundary>
             <AppRoutes />
+            <CookieConsent />
           </ErrorBoundary>
         </AuthProvider>
       </BrowserRouter>
