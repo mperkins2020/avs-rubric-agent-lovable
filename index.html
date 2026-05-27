@@ -50,6 +50,19 @@
       window.dataLayer = window.dataLayer || [];
       function gtag(){dataLayer.push(arguments);}
       gtag('js', new Date());
+
+      // Consent Mode v2 — default to denied until user opts in
+      var __vtConsent = null;
+      try { __vtConsent = localStorage.getItem('cookie_consent'); } catch (e) {}
+      var __vtGranted = __vtConsent === 'granted';
+      gtag('consent', 'default', {
+        ad_storage: __vtGranted ? 'granted' : 'denied',
+        ad_user_data: __vtGranted ? 'granted' : 'denied',
+        ad_personalization: __vtGranted ? 'granted' : 'denied',
+        analytics_storage: __vtGranted ? 'granted' : 'denied',
+        wait_for_update: 500
+      });
+
       gtag('config', 'G-PK220LY75P', {
         linker: { domains: ['www.valuetempo.com', 'app.valuetempo.com'] }
       });
