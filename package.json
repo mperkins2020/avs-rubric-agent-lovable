@@ -15,7 +15,8 @@
     "filter": "npx tsx tools/scraper-dev/test-url-filter.ts",
     "preview-urls": "npx tsx tools/scraper-dev/preview-scrape-urls.ts",
     "check-version": "npx tsx tools/scraper-dev/check-live-version.ts",
-    "diff-pages": "npx tsx tools/scraper-dev/diff-scan-pages.ts"
+    "diff-pages": "npx tsx tools/scraper-dev/diff-scan-pages.ts",
+    "backup": "bash tools/backup/pg_backup.sh"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",

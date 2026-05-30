@@ -24,3 +24,8 @@ dist-ssr
 *.sw?
 .env
 .env.local
+
+# Backups (contain PII — never commit). Keep the .example template tracked.
+tools/backup/dumps/
+tools/backup/.env.backup
+!tools/backup/.env.backup.example
