@@ -194,9 +194,9 @@ const Methodology = () => {
 
                 <div className="space-y-2 mb-4">
                   {[
-                    { layer: 4, name: "Enterprise Readiness", question: "Can the economic buyers easily find what they need to approve the deal?", opacity: "bg-primary/15 border-primary/40" },
-                    { layer: 3, name: "Operational Controls", question: "Can customers control spend & avoid surprises?", opacity: "bg-primary/5 border-primary/20" },
-                    { layer: 2, name: "Pricing Architecture", question: "Can customers predict what they'll pay?", opacity: "bg-primary/15 border-primary/40" },
+                    { layer: 4, name: "Enterprise Readiness", question: "Can buyers verify your security, compliance, and governance posture?", opacity: "bg-primary/15 border-primary/40" },
+                    { layer: 3, name: "Operational Controls", question: "Can customers forecast spend, control limits & avoid surprises?", opacity: "bg-primary/5 border-primary/20" },
+                    { layer: 2, name: "Pricing Architecture", question: "Do pricing tiers and units match how buyers actually purchase?", opacity: "bg-primary/15 border-primary/40" },
                     { layer: 1, name: "Product-ICP Clarity", question: "Do you know who you serve & what success looks like?", opacity: "bg-primary/5 border-primary/20" },
                   ].map((l, i) => (
                     <div key={l.layer}>
@@ -241,18 +241,18 @@ const Methodology = () => {
                     <DimensionAccordion
                       value="d3"
                       num={3}
-                      title="Value Unit"
-                      question="Is your billable unit predictable and auditable?"
-                      evaluate="Whether customers can track, verify, and forecast consumption of the unit you charge for (credits, characters, API calls, minutes, etc.)."
-                      matters="If customers can't independently verify what they've consumed, every bill feels like a black box. Trust erodes with each invoice."
+                      title="Buyer & Budget Alignment"
+                      question="Do your pricing plans map to how buyers actually purchase?"
+                      evaluate="Whether your pricing structure matches buyer authority levels (individual IC, team lead, department VP, procurement) and typical budget approval cycles (monthly self-serve, quarterly approval, annual contract)."
+                      matters="A user might love your product, but if the pricing doesn't match their approval authority or budget cycle, the sale stalls. Misalignment between product user and economic buyer kills conversion regardless of product quality."
                     />
                     <DimensionAccordion
                       value="d4"
                       num={4}
-                      title="Cost Driver Mapping"
-                      question="Can customers forecast their spend based on usage patterns?"
-                      evaluate="Whether the relationship between customer actions (generate audio, make API call, process document) and costs is explicitly documented with examples."
-                      matters='Opaque cost drivers lead to "surprise bills." When customers can&apos;t map their workflows to costs, they either under-consume (leaving value on table) or over-consume (creating churn-inducing billing surprises).'
+                      title="Value Unit"
+                      question="Is your billable unit predictable and auditable?"
+                      evaluate="Whether customers can track, verify, and forecast consumption of the unit you charge for (credits, characters, API calls, minutes, etc.)."
+                      matters="If customers can't independently verify what they've consumed, every bill feels like a black box. Trust erodes with each invoice."
                     />
                   </LayerGroup>
 
@@ -260,26 +260,26 @@ const Methodology = () => {
                     <DimensionAccordion
                       value="d5"
                       num={5}
+                      title="Cost Driver Mapping"
+                      question="Can customers forecast their spend based on usage patterns?"
+                      evaluate="Whether the relationship between customer actions (generate audio, make API call, process document) and costs is explicitly documented with examples."
+                      matters='Opaque cost drivers lead to "surprise bills." When customers can&apos;t map their workflows to costs, they either under-consume (leaving value on table) or over-consume (creating churn-inducing billing surprises).'
+                    />
+                    <DimensionAccordion
+                      value="d6"
+                      num={6}
                       title="Pools & Packaging"
                       question="Do your tiers separate exploration from production use appropriately?"
                       evaluate="Whether your pricing tiers match how customers actually adopt AI products (small tests → production rollout → scale) and whether limits align with real usage patterns by segment."
                       matters="Misaligned packaging forces customers into tiers that are either too restrictive (blocking expansion) or too expensive (premature commitment). Both create churn."
                     />
                     <DimensionAccordion
-                      value="d6"
-                      num={6}
+                      value="d7"
+                      num={7}
                       title="Overages & Risk Allocation"
                       question="Is limit behavior explicit and risk fairly shared?"
                       evaluate="What happens when customers hit plan limits — hard stops, automatic overages, pay-as-you-go rates, contact sales? And whether customers know this behavior before hitting limits."
                       matters="Surprise overages are the #1 trust destroyer for usage-based pricing. If risk isn't explicitly allocated in advance, customers default to assuming you're optimizing for surprise revenue."
-                    />
-                    <DimensionAccordion
-                      value="d7"
-                      num={7}
-                      title="Safety Rails & Trust Surfaces"
-                      question="Can users set guardrails to prevent billing surprises?"
-                      evaluate="Whether budget caps, usage alerts, rate limits, and spending controls are (a) available, (b) configurable by the customer, and (c) clearly documented with their trigger conditions and actions."
-                      matters="Without configurable safety rails, customers can't manage risk. High-value customers will either not adopt or will adopt with extreme caution, capping their usage far below what they'd pay for if they had control."
                     />
                   </LayerGroup>
 
@@ -287,10 +287,10 @@ const Methodology = () => {
                     <DimensionAccordion
                       value="d8"
                       num={8}
-                      title="Buyer & Budget Alignment"
-                      question="Do your pricing plans map to how buyers actually purchase?"
-                      evaluate="Whether your pricing structure matches buyer authority levels (individual IC, team lead, department VP, procurement) and typical budget approval cycles (monthly self-serve, quarterly approval, annual contract)."
-                      matters="A user might love your product, but if the pricing doesn't match their approval authority or budget cycle, the sale stalls. Misalignment between product user and economic buyer kills conversion regardless of product quality."
+                      title="Safety Rails & Trust Surfaces"
+                      question="Can users set guardrails to prevent billing surprises?"
+                      evaluate="Whether budget caps, usage alerts, rate limits, and spending controls are (a) available, (b) configurable by the customer, and (c) clearly documented with their trigger conditions and actions."
+                      matters="Without configurable safety rails, customers can't manage risk. High-value customers will either not adopt or will adopt with extreme caution, capping their usage far below what they'd pay for if they had control."
                     />
                   </LayerGroup>
                 </Accordion>
