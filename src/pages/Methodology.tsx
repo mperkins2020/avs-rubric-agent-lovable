@@ -242,9 +242,9 @@ const Methodology = () => {
                       value="d3"
                       num={3}
                       title="Buyer & Budget Alignment"
-                      question="Do your pricing plans map to how buyers actually purchase?"
-                      evaluate="Whether your pricing structure matches buyer authority levels (individual IC, team lead, department VP, procurement) and typical budget approval cycles (monthly self-serve, quarterly approval, annual contract)."
-                      matters="A user might love your product, but if the pricing doesn't match their approval authority or budget cycle, the sale stalls. Misalignment between product user and economic buyer kills conversion regardless of product quality."
+                      question="Do your pricing plans map to who buys and how they approve?"
+                      evaluate="Whether tiers target distinct buyer segments (individual, team, enterprise) with matching payment methods (card vs. invoice/PO), commercial terms (overage and cancellation policies), and a clear upgrade path from self-serve to enterprise."
+                      matters="A user might love your product, but if the pricing doesn't match their approval authority, payment method, or procurement process, the sale stalls. This dimension measures whether the right buyer can find the right plan and get it approved."
                     />
                     <DimensionAccordion
                       value="d4"
@@ -269,9 +269,9 @@ const Methodology = () => {
                       value="d6"
                       num={6}
                       title="Pools & Packaging"
-                      question="Do your tiers separate exploration from production use appropriately?"
-                      evaluate="Whether your pricing tiers match how customers actually adopt AI products (small tests → production rollout → scale) and whether limits align with real usage patterns by segment."
-                      matters="Misaligned packaging forces customers into tiers that are either too restrictive (blocking expansion) or too expensive (premature commitment). Both create churn."
+                      question="Are included units, pool mechanics, and add-on paths clearly defined?"
+                      evaluate="Whether each tier documents its included units, reset cadence (daily/monthly/annual), rollover rules, top-up options, and how usage pools are scoped (per-user vs. shared). Whether a free tier or trial separates exploration from production commitment."
+                      matters="Buyers need to forecast real spend from a pricing page. Without documented pool mechanics — what resets when, what rolls over, what happens if you need more mid-cycle — the plan looks simple but the bill is unpredictable."
                     />
                     <DimensionAccordion
                       value="d7"
