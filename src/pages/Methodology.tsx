@@ -277,9 +277,9 @@ const Methodology = () => {
                       value="d7"
                       num={7}
                       title="Overages & Risk Allocation"
-                      question="Is limit behavior explicit and risk fairly shared?"
-                      evaluate="What happens when customers hit plan limits — hard stops, automatic overages, pay-as-you-go rates, contact sales? And whether customers know this behavior before hitting limits."
-                      matters="Surprise overages are the #1 trust destroyer for usage-based pricing. If risk isn't explicitly allocated in advance, customers default to assuming you're optimizing for surprise revenue."
+                      question="What happens when usage exceeds the plan?"
+                      evaluate="Whether overage pricing, limit behavior (hard stop, soft limit, auto top-up), grace buffers, spike protection, and dispute/refund processes are documented before the customer hits a limit."
+                      matters="Surprise overages are the #1 trust destroyer for usage-based pricing. Buyers need to know the rules at the edges — what triggers an overage, what it costs, and what recourse they have — before committing, not after."
                     />
                   </LayerGroup>
 
@@ -288,9 +288,9 @@ const Methodology = () => {
                       value="d8"
                       num={8}
                       title="Safety Rails & Trust Surfaces"
-                      question="Can users set guardrails to prevent billing surprises?"
-                      evaluate="Whether budget caps, usage alerts, rate limits, and spending controls are (a) available, (b) configurable by the customer, and (c) clearly documented with their trigger conditions and actions."
-                      matters="Without configurable safety rails, customers can't manage risk. High-value customers will either not adopt or will adopt with extreme caution, capping their usage far below what they'd pay for if they had control."
+                      question="Is trust infrastructure — controls, visibility, and governance — published and verifiable?"
+                      evaluate="Whether budget caps, usage dashboards, audit logs, admin controls (RBAC, SCIM), compliance certifications (SOC 2, ISO 27001), and trust center documentation are available, configurable, and published."
+                      matters="Enterprise buyers require governance infrastructure before they can approve a purchase. Without published trust surfaces — admin controls, audit trails, compliance certifications, usage visibility — deals stall at procurement regardless of product quality."
                     />
                   </LayerGroup>
                 </Accordion>
