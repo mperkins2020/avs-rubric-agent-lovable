@@ -36,14 +36,14 @@ const categories = [
     label: "AI Revenue Intelligence",
     companies: [
       "Backstory", "Clari (+ Salesloft)", "Common Room", "Gong", "Grain",
-      "Jiminny", "Koala", "Momentum", "Salesmotion",
+      "Jiminny", "Koala", "Momentum",
     ],
   },
   {
     label: "AI Sales Intelligence",
     companies: [
       "6sense", "Amplemarket", "Apollo.io", "Autobound", "Bombora", "Clay",
-      "Cognism", "Demandbase", "Instantly.ai", "Lusha", "Seamless.ai",
+      "Cognism", "Demandbase", "Instantly.ai", "Lusha", "Salesmotion", "Seamless.ai",
       "ZoomInfo",
     ],
   },
