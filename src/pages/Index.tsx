@@ -38,9 +38,9 @@ import { FAQJsonLd } from "@/components/FAQJsonLd";
 
 const homepageFaqs = [
   {
-    question: "Who is the AVS Rubric built for?",
+    question: "Who is ValueTempo built for?",
     answer:
-      "The AVS Rubric is built for AI-native B2B products and AI-powered SaaS teams — product marketers, pricing leads, and GTM operators who need to understand how buyers evaluate their product before engaging sales.",
+      "ValueTempo is built for AI SaaS founders, product marketers, pricing leads, and GTM operators who need to make their product easier for buyers to understand, evaluate, trust, and buy before the first sales conversation.",
   },
   {
     question: "What is buyability?",
@@ -50,12 +50,22 @@ const homepageFaqs = [
   {
     question: "How is buyability measured?",
     answer:
-      "The AVS Rubric measures the trust infrastructure that enables buyability, scoring products across 8 buyer-confidence dimensions: from pricing clarity and cost driver mapping to operational controls and compliance visibility. Each dimension is scored from publicly available evidence — the same evidence a buyer or AI agent would encounter. When that infrastructure is strong, buyers can independently verify what they need to evaluate, budget for, and justify a product. That is buyability.",
+      "ValueTempo uses the AVS Rubric to evaluate published buyer-facing evidence across 8 key dimensions, including product clarity, ICP and job-to-be-done, budget clarity, value unit, cost drivers, packaging, overages and risk, and safety rails.",
   },
   {
-    question: "Why does buyability matter for AI agents?",
+    question: "Why does buyability matter for AI SaaS?",
     answer:
-      "AI agents are increasingly involved in vendor evaluation and purchasing decisions. An agent cannot ask follow-up questions or infer information behind a contact-us wall. If pricing, value units, and cost drivers are not structured and publicly available, the product is invisible to agent-led evaluation.",
+      "AI SaaS products often introduce new value units, usage patterns, pricing models, and operational risks. When buyers cannot understand those details before sales, evaluation slows down, trust weakens, and GTM teams have to explain the same commercial logic repeatedly.",
+  },
+  {
+    question: "What is the AI SaaS Buyability Benchmark?",
+    answer:
+      "The AI SaaS Buyability Benchmark is a ValueTempo report that evaluates how well AI SaaS companies publish the commercial evidence buyers need before the first sales conversation. The May 2026 edition scored 60 companies across 5 categories and 8 evidence dimensions.",
+  },
+  {
+    question: "What is a buyability score walkthrough?",
+    answer:
+      "A buyability score walkthrough is a session that identifies where a company's public buyer evidence is strong, where buyer-confidence gaps remain, and what to publish next to improve buyability.",
   },
 ];
 
