@@ -26,6 +26,7 @@ import ResetPassword from "./pages/ResetPassword";
 import Benchmark from "./pages/Benchmark";
 import BuyabilityBenchmarkMay2026 from "./pages/BuyabilityBenchmarkMay2026";
 import CompaniesEvaluatedMay2026 from "./pages/CompaniesEvaluatedMay2026";
+import BenchmarkThankYouMay2026 from "./pages/BenchmarkThankYouMay2026";
 
 const queryClient = new QueryClient();
 
@@ -60,6 +61,7 @@ const AppRoutes = () => (
     <Route path="/benchmark/:categorySlug" element={<Benchmark />} />
     <Route path="/ai-saas-buyability-benchmark-may-2026" element={<BuyabilityBenchmarkMay2026 />} />
     <Route path="/ai-saas-buyability-benchmark-may-2026/companies-evaluated" element={<CompaniesEvaluatedMay2026 />} />
+    <Route path="/ai-saas-buyability-benchmark-may-2026/thank-you" element={<BenchmarkThankYouMay2026 />} />
     
     
     <Route path="*" element={<NotFound />} />
