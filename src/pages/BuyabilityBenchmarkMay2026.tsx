@@ -447,8 +447,8 @@ export default function BuyabilityBenchmarkMay2026() {
                 Want to understand how your company would score?
               </h2>
               <p className="mt-3 text-base text-white/75 leading-relaxed max-w-2xl">
-                A score walkthrough helps identify where your public buyer evidence is strong, where
-                buyers still need sales to fill gaps, and what to publish next.
+                A buyability score walkthrough helps identify where your public buyer evidence is
+                strong, where buyers still need sales to fill gaps, and what to publish next.
               </p>
               <div className="mt-6 flex flex-wrap items-center gap-4">
                 <Button
@@ -457,7 +457,7 @@ export default function BuyabilityBenchmarkMay2026() {
                   className="bg-white text-vt-midnight hover:bg-white/90 rounded-[24px] h-12 px-7"
                 >
                   <a href="mailto:gtm@valuetempo.com?subject=Score%20walkthrough%20request">
-                    Request a score walkthrough
+                    Request a buyability score walkthrough
                   </a>
                 </Button>
                 <a
