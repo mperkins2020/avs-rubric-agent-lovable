@@ -224,10 +224,7 @@ export default function BuyabilityBenchmarkMay2026() {
                 call.
               </p>
               <p className="mt-5 text-base text-vt-midnight/70 leading-relaxed max-w-2xl">
-                The May 2026 AI SaaS Buyability Benchmark evaluates the public commercial evidence
-                buyers can verify before speaking with sales: pricing clarity, value unit
-                definition, packaging, cost drivers, limits, risk, and trust signals. Download the
-                report to see where AI SaaS companies are making evaluation easier, where
+                Download the report to see where AI SaaS companies are making evaluation easier, where
                 buyer-confidence gaps remain, and which publishing moves can help teams improve
                 buyability.
               </p>
@@ -336,12 +333,13 @@ export default function BuyabilityBenchmarkMay2026() {
                 Benchmark Context
               </span>
               <h2 className="mt-2 text-2xl md:text-3xl font-bold text-vt-midnight">
-                What the benchmark measures
+                What the buyability benchmark measures
               </h2>
               <div className="mt-4 space-y-4 text-base text-vt-midnight/80 leading-relaxed max-w-3xl">
                 <p>
-                  The AVS Benchmark measures published commercial evidence: the information a buyer
-                  can find, understand, and use before a sales conversation.
+                  The May 2026 AI SaaS Buyability Benchmark evaluates the public commercial evidence
+                  buyers can verify before speaking with sales: pricing clarity, value unit
+                  definition, packaging, cost drivers, limits, risk, and trust signals.
                 </p>
                 <p>
                   A higher score indicates stronger published buyer-facing evidence. It should not
