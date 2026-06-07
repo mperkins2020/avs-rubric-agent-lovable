@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ArrowRight, Download, Mail } from "lucide-react";
+import { ArrowRight, Download } from "lucide-react";
 import ValueTempoLogo from "@/assets/ValueTempo_Logo_main.png";
 import benchmarkCoverAsset from "@/assets/benchmark-cover.png.asset.json";
 import benchmarkContentsAsset from "@/assets/benchmark-contents.png.asset.json";
