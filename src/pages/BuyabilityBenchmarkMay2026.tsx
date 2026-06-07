@@ -3,7 +3,8 @@ import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ArrowRight, Download, Mail } from "lucide-react";
 import ValueTempoLogo from "@/assets/ValueTempo_Logo_main.png";
-import benchmarkCover from "@/assets/buyability-benchmark-cover.jpg";
+import benchmarkCoverAsset from "@/assets/benchmark-cover.png.asset.json";
+import benchmarkContentsAsset from "@/assets/benchmark-contents.png.asset.json";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -264,7 +265,7 @@ export default function BuyabilityBenchmarkMay2026() {
               transition={{ duration: 0.5, delay: 0.1 }}
               className="lg:col-span-5"
             >
-              <div className="relative mx-auto max-w-[360px] lg:max-w-none">
+              <div className="relative mx-auto max-w-[420px] lg:max-w-none">
                 <div
                   className="absolute -inset-6 rounded-[28px] opacity-60 blur-2xl"
                   style={{
@@ -272,13 +273,18 @@ export default function BuyabilityBenchmarkMay2026() {
                       "linear-gradient(135deg, hsl(var(--vt-violet) / 0.5), hsl(var(--vt-blue) / 0.4))",
                   }}
                 />
-                <img
-                  src={benchmarkCover}
-                  alt="AI SaaS Buyability Benchmark May 2026 Edition report cover"
-                  width={1024}
-                  height={1280}
-                  className="relative rounded-2xl shadow-vt-lg ring-1 ring-black/5 w-full h-auto"
-                />
+                <div className="relative grid grid-cols-2 gap-3 md:gap-4">
+                  <img
+                    src={benchmarkCoverAsset.url}
+                    alt="AI SaaS Buyability Benchmark May 2026 Edition — report cover"
+                    className="rounded-lg md:rounded-xl shadow-vt-lg ring-1 ring-black/5 w-full h-auto -rotate-2 origin-bottom-right"
+                  />
+                  <img
+                    src={benchmarkContentsAsset.url}
+                    alt="AI SaaS Buyability Benchmark — table of contents preview"
+                    className="rounded-lg md:rounded-xl shadow-vt-lg ring-1 ring-black/5 w-full h-auto rotate-2 origin-bottom-left mt-6"
+                  />
+                </div>
               </div>
             </motion.div>
           </div>
