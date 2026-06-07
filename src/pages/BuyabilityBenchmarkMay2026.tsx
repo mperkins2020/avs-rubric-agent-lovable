@@ -466,7 +466,11 @@ export default function BuyabilityBenchmarkMay2026() {
                   size="lg"
                   className="bg-white text-vt-midnight hover:bg-white/90 rounded-[24px] h-12 px-7"
                 >
-                  <a href="mailto:gtm@valuetempo.com?subject=Score%20walkthrough%20request">
+                  <a
+                    href="https://calendly.com/mlhperkins/30min"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
                     Request a buyability score walkthrough
                   </a>
                 </Button>
