@@ -26,6 +26,7 @@ import ResetPassword from "./pages/ResetPassword";
 import Benchmark from "./pages/Benchmark";
 import BuyabilityBenchmarkMay2026 from "./pages/BuyabilityBenchmarkMay2026";
 import CompaniesEvaluatedMay2026 from "./pages/CompaniesEvaluatedMay2026";
+import BenchmarkThankYouMay2026 from "./pages/BenchmarkThankYouMay2026";
 
 const queryClient = new QueryClient();
 
