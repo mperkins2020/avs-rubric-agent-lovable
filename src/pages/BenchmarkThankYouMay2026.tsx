@@ -75,7 +75,11 @@ export default function BenchmarkThankYouMay2026() {
                 size="lg"
                 className="bg-vt-midnight text-white hover:bg-vt-midnight/90 rounded-[24px] h-12 px-7"
               >
-                <a href="#" target="_blank" rel="noopener noreferrer">
+                <a
+                  href="https://app.valuetempo.com/__l5e/assets-v1/04bf1407-c675-4f4f-bebc-084dc3a22d9f/ai-saas-buyability-benchmark-may-2026.pdf"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
                   <Download className="mr-1 h-4 w-4" />
                   Download the report
                 </a>
