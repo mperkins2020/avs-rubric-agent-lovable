@@ -298,7 +298,7 @@ export default function BuyabilityBenchmarkMay2026() {
                   </a>
                 </Button>
                 <Link
-                  to="/benchmark"
+                  to="/ai-saas-buyability-benchmark-may-2026/companies-evaluated"
                   className="text-sm font-medium text-vt-midnight hover:text-[hsl(var(--vt-violet))] transition-colors inline-flex items-center gap-1"
                 >
                   View the companies evaluated <ArrowRight className="h-3.5 w-3.5" />
