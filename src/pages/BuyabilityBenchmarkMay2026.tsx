@@ -59,7 +59,7 @@ const faqs = [
   {
     question: "Which companies were evaluated?",
     answer:
-      "The May 2026 edition evaluated 60 AI B2B SaaS companies across five categories: AI Agent Platforms, AI Coding Assistants, AI Customer Support, AI Revenue Intelligence, and AI Sales Intelligence.",
+      "The May 2026 edition evaluated 60 AI B2B SaaS companies across five categories: AI Agent Platforms, AI Coding Assistants, AI Customer Support, AI Revenue Intelligence, and AI Sales Intelligence. See the list of companies evaluated.",
   },
   {
     question: "Does a higher score mean a better product?",
