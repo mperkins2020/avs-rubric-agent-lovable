@@ -109,9 +109,10 @@ export default function CompaniesEvaluatedMay2026() {
               Companies Evaluated in the May 2026 AI SaaS Buyability Benchmark
             </h1>
             <p className="mt-5 text-lg text-vt-midnight/80 leading-relaxed max-w-2xl">
-              The May 2026 benchmark evaluated 60 AI B2B SaaS companies across five
-              categories: AI Agent Platforms, AI Coding Assistants, AI Customer
-              Support, AI Revenue Intelligence, and AI Sales Intelligence.
+              The May 2026 benchmark evaluated the following 60 AI B2B SaaS
+              companies across five categories: AI Agent Platforms, AI Coding
+              Assistants, AI Customer Support, AI Revenue Intelligence, and AI
+              Sales Intelligence.
             </p>
           </div>
         </div>
