@@ -281,7 +281,7 @@ export default function BuyabilityBenchmarkMay2026() {
                 call.
               </p>
               <p className="mt-5 text-base text-vt-midnight/70 leading-relaxed max-w-2xl">
-                Download the report to see where AI SaaS companies are making evaluation easier, where
+                Download the 17-page report to see where AI SaaS companies are making evaluation easier, where
                 buyer-confidence gaps remain, and which publishing moves can help teams improve
                 buyability.
               </p>
