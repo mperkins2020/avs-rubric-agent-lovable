@@ -99,18 +99,28 @@ function FlipBook() {
         style={{ perspective: "2000px" }}
       >
         {/* Contents page (behind, revealed when cover opens) */}
-        <img
-          src={benchmarkContentsAsset.url}
-          alt="AI SaaS Buyability Benchmark — table of contents preview"
-          className="block w-full h-auto rounded-lg md:rounded-xl shadow-vt-lg ring-1 ring-black/5"
-        />
-        {/* Cover page (on top, flips open from the right edge) */}
+        <button
+          type="button"
+          onClick={() => setOpen(false)}
+          aria-label="Close cover"
+          aria-hidden={!open}
+          tabIndex={open ? 0 : -1}
+          className="block w-full cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--vt-violet))] rounded-lg md:rounded-xl"
+        >
+          <img
+            src={benchmarkContentsAsset.url}
+            alt="AI SaaS Buyability Benchmark — table of contents preview"
+            className="block w-full h-auto rounded-lg md:rounded-xl shadow-vt-lg ring-1 ring-black/5"
+            draggable={false}
+          />
+        </button>
+        {/* Cover page (on top, flips open from the left edge) */}
         <motion.button
           type="button"
           onClick={() => setOpen((v) => !v)}
           aria-label={open ? "Close cover" : "Open cover to see contents"}
-          className="absolute inset-0 origin-left cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--vt-violet))] rounded-lg md:rounded-xl"
-          style={{ transformStyle: "preserve-3d" }}
+          className="absolute inset-0 origin-left focus:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--vt-violet))] rounded-lg md:rounded-xl"
+          style={{ transformStyle: "preserve-3d", cursor: open ? "default" : "pointer", pointerEvents: open ? "none" : "auto" }}
           animate={{ rotateY: open ? -160 : 0 }}
           transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
         >
@@ -124,7 +134,7 @@ function FlipBook() {
         </motion.button>
       </div>
       <p className="mt-3 text-center text-xs text-muted-foreground">
-        {open ? "Click cover to close" : "Click the cover to peek inside"}
+        {open ? "Click the contents page to close" : "Click the cover to peek inside"}
       </p>
     </div>
   );
