@@ -255,34 +255,14 @@ export default function BuyabilityBenchmarkMay2026() {
               </div>
             </motion.div>
 
-            {/* Right: cover image */}
+            {/* Right: cover image that opens to contents */}
             <motion.div
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.1 }}
               className="lg:col-span-5"
             >
-              <div className="relative mx-auto max-w-[420px] lg:max-w-none">
-                <div
-                  className="absolute -inset-6 rounded-[28px] opacity-60 blur-2xl"
-                  style={{
-                    background:
-                      "linear-gradient(135deg, hsl(var(--vt-violet) / 0.5), hsl(var(--vt-blue) / 0.4))",
-                  }}
-                />
-                <div className="relative grid grid-cols-2 gap-3 md:gap-4">
-                  <img
-                    src={benchmarkCoverAsset.url}
-                    alt="AI SaaS Buyability Benchmark May 2026 Edition — report cover"
-                    className="rounded-lg md:rounded-xl shadow-vt-lg ring-1 ring-black/5 w-full h-auto -rotate-2 origin-bottom-right"
-                  />
-                  <img
-                    src={benchmarkContentsAsset.url}
-                    alt="AI SaaS Buyability Benchmark — table of contents preview"
-                    className="rounded-lg md:rounded-xl shadow-vt-lg ring-1 ring-black/5 w-full h-auto rotate-2 origin-bottom-left mt-6"
-                  />
-                </div>
-              </div>
+              <FlipBook />
             </motion.div>
           </div>
         </div>
