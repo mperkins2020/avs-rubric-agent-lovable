@@ -24,6 +24,7 @@ import BlogEngineTuning from "./pages/BlogEngineTuning";
 import BlogVerificationLoop from "./pages/BlogVerificationLoop";
 import ResetPassword from "./pages/ResetPassword";
 import Benchmark from "./pages/Benchmark";
+import BuyabilityBenchmarkMay2026 from "./pages/BuyabilityBenchmarkMay2026";
 
 const queryClient = new QueryClient();
 
@@ -56,6 +57,8 @@ const AppRoutes = () => (
     <Route path="/resources/blog/verification-loop" element={<BlogVerificationLoop />} />
     <Route path="/benchmark" element={<Benchmark />} />
     <Route path="/benchmark/:categorySlug" element={<Benchmark />} />
+    <Route path="/ai-saas-buyability-benchmark-may-2026" element={<BuyabilityBenchmarkMay2026 />} />
+    
     
     <Route path="*" element={<NotFound />} />
   </Routes>
