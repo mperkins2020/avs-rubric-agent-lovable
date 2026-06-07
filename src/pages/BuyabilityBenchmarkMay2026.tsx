@@ -414,7 +414,7 @@ export default function BuyabilityBenchmarkMay2026() {
                 What operators can do with the report
               </h2>
               <p className="mt-4 text-base text-vt-midnight/80 leading-relaxed max-w-3xl">
-                Use the benchmark to identify:
+                Use the buyability benchmark to identify:
               </p>
               <ul className="mt-4 space-y-2.5 max-w-3xl">
                 {[
