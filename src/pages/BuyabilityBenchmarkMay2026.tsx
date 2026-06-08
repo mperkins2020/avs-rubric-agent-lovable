@@ -312,10 +312,12 @@ export default function BuyabilityBenchmarkMay2026() {
               </p>
             </div>
 
-            {/* Mobile inline form */}
-            <div className="lg:hidden">
-              <SignupForm id="download-mobile-1" />
-            </div>
+            {/* Mobile inline form — rendered only on mobile viewport */}
+            {formVariant === "mobile" && (
+              <div>
+                <SignupForm id="download" />
+              </div>
+            )}
 
             {/* What the benchmark measures */}
             <div>
