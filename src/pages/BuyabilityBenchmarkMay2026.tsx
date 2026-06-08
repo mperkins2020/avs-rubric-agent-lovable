@@ -259,7 +259,7 @@ export default function BuyabilityBenchmarkMay2026() {
       <section className="container mx-auto px-5 md:px-10 py-14 md:py-20">
         <div className="grid lg:grid-cols-12 gap-10 lg:gap-14">
           {/* LEFT: scrolling content */}
-          <div className="lg:col-span-8 space-y-16">
+          <div className="lg:col-span-7 space-y-16">
             {/* Stats */}
             <div>
               <span className="text-[11px] font-semibold tracking-[0.18em] text-[hsl(var(--vt-violet))] uppercase">
