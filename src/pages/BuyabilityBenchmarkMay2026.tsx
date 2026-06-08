@@ -440,7 +440,7 @@ export default function BuyabilityBenchmarkMay2026() {
           </div>
 
           {/* RIGHT: sticky form */}
-          <aside className="hidden lg:block lg:col-span-4">
+          <aside className="hidden lg:block lg:col-span-5">
             <div className="sticky top-24">
               <SignupForm id="download" />
             </div>
