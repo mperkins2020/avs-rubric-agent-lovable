@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 
 const BREVO_STYLES = `
 @font-face { font-display: block; font-family: Roboto; src: url(https://assets.brevo.com/font/Roboto/Latin/normal/normal/7529907e9eaf8ebb5220c5f9850e3811.woff2) format("woff2"), url(https://assets.brevo.com/font/Roboto/Latin/normal/normal/25c678feafdc175a70922a116c9be3e7.woff) format("woff") }
@@ -166,17 +166,25 @@ interface Props {
 }
 
 export function BrevoSignupForm({ id }: Props) {
+  const formRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
     ensureBrevoLoaded();
 
     const enableButton = () => {
-      const btn = document.getElementById("sib-submit-btn") as HTMLButtonElement | null;
+      const btn = (formRef.current?.querySelector("button") ??
+        document.getElementById("sib-submit-btn")) as HTMLButtonElement | null;
       const label = document.getElementById("sib-submit-label");
       if (!btn) return;
       btn.disabled = false;
+      btn.removeAttribute("disabled");
       btn.style.cursor = "pointer";
       btn.style.opacity = "1";
-      if (label) label.textContent = "Download the report";
+      if (label) {
+        label.textContent = "Download the report";
+      } else {
+        btn.textContent = "Download the report";
+      }
     };
 
     const timer = window.setTimeout(() => {
@@ -189,5 +197,5 @@ export function BrevoSignupForm({ id }: Props) {
   }, []);
 
 
-  return <div id={id} dangerouslySetInnerHTML={{ __html: FORM_HTML }} />;
+  return <div ref={formRef} id={id} dangerouslySetInnerHTML={{ __html: FORM_HTML }} />;
 }
