@@ -13,6 +13,7 @@ import { Footer } from "@/components/Footer";
 import { ResourcesDropdown } from "@/components/ResourcesDropdown";
 import { SEOHead } from "@/components/SEOHead";
 import { FAQJsonLd } from "@/components/FAQJsonLd";
+import { BrevoSignupForm } from "@/components/BrevoSignupForm";
 
 const stats = [
   { value: "60", label: "Companies scored" },
@@ -140,78 +141,7 @@ function FlipBook() {
   );
 }
 
-function SignupForm({ id }: { id?: string }) {
-  const [submitted, setSubmitted] = useState(false);
-
-  return (
-    <div
-      id={id}
-      className="rounded-2xl border border-[hsl(var(--vt-violet)/0.25)] bg-white p-7 shadow-vt-lg"
-    >
-      <div className="mb-5">
-        <span className="text-[11px] font-semibold tracking-[0.18em] text-[hsl(var(--vt-violet))] uppercase">
-          Download
-        </span>
-        <h3 className="mt-2 text-2xl font-bold text-vt-midnight leading-tight">
-          Download the full report
-        </h3>
-        <p className="mt-2 text-sm text-muted-foreground leading-relaxed">
-          Get the May 2026 AI SaaS Buyability Benchmark, including the market overview, six
-          findings, operator takeaways, and methodology notes.
-        </p>
-      </div>
-
-      {submitted ? (
-        <div className="rounded-lg bg-[hsl(var(--vt-violet)/0.08)] p-4 text-sm text-vt-midnight">
-          Thanks — check your inbox for the report. If you don't see it, check spam or email{" "}
-          <a href="mailto:gtm@valuetempo.com" className="underline">
-            gtm@valuetempo.com
-          </a>
-          .
-        </div>
-      ) : (
-        <form
-          className="space-y-4"
-          onSubmit={(e) => {
-            e.preventDefault();
-            setSubmitted(true);
-          }}
-        >
-          {/* Embed placeholder for Brevo signup form — to be inserted after Brevo form is built */}
-          <div>
-            <Label htmlFor="bm-email" className="text-xs text-vt-midnight">
-              Work email
-            </Label>
-            <Input id="bm-email" type="email" required placeholder="you@company.com" className="mt-1" />
-          </div>
-          <div>
-            <Label htmlFor="bm-company" className="text-xs text-vt-midnight">
-              Company
-            </Label>
-            <Input id="bm-company" type="text" required placeholder="Company name" className="mt-1" />
-          </div>
-          <div>
-            <Label htmlFor="bm-role" className="text-xs text-vt-midnight">
-              Role
-            </Label>
-            <Input id="bm-role" type="text" required placeholder="e.g. Head of Product Marketing" className="mt-1" />
-          </div>
-          <Button
-            type="submit"
-            className="w-full bg-vt-midnight hover:bg-vt-midnight/90 text-white rounded-[20px] h-11"
-          >
-            <Download className="mr-1 h-4 w-4" />
-            Download the report
-          </Button>
-          <p className="text-[11px] leading-relaxed text-muted-foreground">
-            By submitting, you agree to receive the report and occasional updates from ValueTempo. You
-            can unsubscribe anytime.
-          </p>
-        </form>
-      )}
-    </div>
-  );
-}
+const SignupForm = BrevoSignupForm;
 
 export default function BuyabilityBenchmarkMay2026() {
   return (
@@ -499,10 +429,9 @@ export default function BuyabilityBenchmarkMay2026() {
               </Accordion>
             </div>
 
-            {/* Mobile end-of-page form */}
-            <div className="lg:hidden">
-              <SignupForm id="download-mobile-2" />
-            </div>
+            {/* Mobile end-of-page form intentionally omitted —
+                the Brevo embed must render only once per viewport
+                (duplicate #sib-form / #sib-captcha ids would break reCAPTCHA). */}
 
             <p className="text-sm text-muted-foreground italic border-t border-border pt-6">
               Published by ValueTempo. This benchmark measures published commercial evidence, not
