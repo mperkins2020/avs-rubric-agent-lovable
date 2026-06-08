@@ -315,8 +315,8 @@ const Index = () => {
       />
 
       {/* Announcement Bar */}
-      <a
-        href="https://app.valuetempo.com/ai-saas-buyability-benchmark-may-2026"
+      <Link
+        to="/ai-saas-buyability-benchmark-may-2026"
         className="block w-full bg-gradient-to-r from-vt-cyan via-vt-blue to-vt-violet text-white"
       >
         <div className="container mx-auto px-4 md:px-10 py-2.5 flex items-center justify-center gap-2 text-sm md:text-base flex-wrap">
@@ -330,7 +330,7 @@ const Index = () => {
             Get the report →
           </span>
         </div>
-      </a>
+      </Link>
 
       {/* Navbar */}
       <header className="sticky top-0 z-30 border-b border-border bg-white/75 backdrop-blur-md">
