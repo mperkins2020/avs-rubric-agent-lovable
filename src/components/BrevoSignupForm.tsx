@@ -75,9 +75,9 @@ const FORM_HTML = `
         </div>
         <div style="padding: 8px 0;">
           <div class="sib-form-block" style="text-align: left">
-            <button class="sib-form-block__button sib-form-block__button-with-loader" style="font-family:Helvetica, sans-serif; font-size:16px; font-weight:700; text-align:left; color:#FFFFFF; background-color:#3E4857; border-width:0px; border-radius:3px;" form="sib-form" type="submit">
+            <button id="sib-submit-btn" class="sib-form-block__button sib-form-block__button-with-loader" style="font-family:Helvetica, sans-serif; font-size:16px; font-weight:700; text-align:left; color:#FFFFFF; background-color:#3E4857; border-width:0px; border-radius:3px; opacity:0.6; cursor:not-allowed;" form="sib-form" type="submit" disabled>
               <svg class="icon clickable__icon progress-indicator__icon sib-hide-loader-icon" viewBox="0 0 512 512"><path d="M460.116 373.846l-20.823-12.022c-5.541-3.199-7.54-10.159-4.663-15.874 30.137-59.886 28.343-131.652-5.386-189.946-33.641-58.394-94.896-95.833-161.827-99.676C261.028 55.961 256 50.751 256 44.352V20.309c0-6.904 5.808-12.337 12.703-11.982 83.556 4.306 160.163 50.864 202.11 123.677 42.063 72.696 44.079 162.316 6.031 236.832-3.14 6.148-10.75 8.461-16.728 5.01z" /></svg>
-              Download the report
+              <span id="sib-submit-label">Loading…</span>
             </button>
           </div>
         </div>
@@ -168,6 +168,42 @@ interface Props {
 export function BrevoSignupForm({ id }: Props) {
   useEffect(() => {
     ensureBrevoLoaded();
+
+    let cancelled = false;
+    const start = Date.now();
+    const interval = window.setInterval(() => {
+      if (cancelled) return;
+      const w = window as any;
+      const btn = document.getElementById("sib-submit-btn") as HTMLButtonElement | null;
+      const label = document.getElementById("sib-submit-label");
+      const brevoReady =
+        !!document.querySelector('script[data-brevo="sib-main"]') &&
+        !!document.getElementById("sib-form");
+      const captchaReady =
+        !!w.grecaptcha &&
+        typeof w.grecaptcha.render === "function" &&
+        !!document.querySelector("#sib-captcha iframe");
+
+      if (btn && label && brevoReady && captchaReady) {
+        btn.disabled = false;
+        btn.style.opacity = "1";
+        btn.style.cursor = "pointer";
+        label.textContent = "Download the report";
+        window.clearInterval(interval);
+      } else if (Date.now() - start > 15000 && btn && label) {
+        // Failsafe: enable after 15s so users are never permanently blocked.
+        btn.disabled = false;
+        btn.style.opacity = "1";
+        btn.style.cursor = "pointer";
+        label.textContent = "Download the report";
+        window.clearInterval(interval);
+      }
+    }, 200);
+
+    return () => {
+      cancelled = true;
+      window.clearInterval(interval);
+    };
   }, []);
 
   return <div id={id} dangerouslySetInnerHTML={{ __html: FORM_HTML }} />;
