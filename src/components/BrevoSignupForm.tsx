@@ -168,43 +168,8 @@ interface Props {
 export function BrevoSignupForm({ id }: Props) {
   useEffect(() => {
     ensureBrevoLoaded();
-
-    let cancelled = false;
-    const start = Date.now();
-    const interval = window.setInterval(() => {
-      if (cancelled) return;
-      const w = window as any;
-      const btn = document.getElementById("sib-submit-btn") as HTMLButtonElement | null;
-      const label = document.getElementById("sib-submit-label");
-      const brevoReady =
-        !!document.querySelector('script[data-brevo="sib-main"]') &&
-        !!document.getElementById("sib-form");
-      const captchaReady =
-        !!w.grecaptcha &&
-        typeof w.grecaptcha.render === "function" &&
-        !!document.querySelector("#sib-captcha iframe");
-
-      if (btn && label && brevoReady && captchaReady) {
-        btn.disabled = false;
-        btn.style.opacity = "1";
-        btn.style.cursor = "pointer";
-        label.textContent = "Download the report";
-        window.clearInterval(interval);
-      } else if (Date.now() - start > 15000 && btn && label) {
-        // Failsafe: enable after 15s so users are never permanently blocked.
-        btn.disabled = false;
-        btn.style.opacity = "1";
-        btn.style.cursor = "pointer";
-        label.textContent = "Download the report";
-        window.clearInterval(interval);
-      }
-    }, 200);
-
-    return () => {
-      cancelled = true;
-      window.clearInterval(interval);
-    };
   }, []);
+
 
   return <div id={id} dangerouslySetInnerHTML={{ __html: FORM_HTML }} />;
 }
