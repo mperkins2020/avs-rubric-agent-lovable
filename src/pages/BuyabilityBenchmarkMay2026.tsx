@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ArrowRight, Download } from "lucide-react";
@@ -14,6 +14,26 @@ import { ResourcesDropdown } from "@/components/ResourcesDropdown";
 import { SEOHead } from "@/components/SEOHead";
 import { FAQJsonLd } from "@/components/FAQJsonLd";
 import { BrevoSignupForm } from "@/components/BrevoSignupForm";
+
+// Hook: returns 'mobile' | 'desktop' once known, debounced across resize so
+// the Brevo form only remounts when the actual breakpoint is crossed.
+const MOBILE_BREAKPOINT = 1024; // matches Tailwind `lg:`
+function useFormVariant(): "mobile" | "desktop" | null {
+  const [variant, setVariant] = useState<"mobile" | "desktop" | null>(() => {
+    if (typeof window === "undefined") return null;
+    return window.innerWidth < MOBILE_BREAKPOINT ? "mobile" : "desktop";
+  });
+  useEffect(() => {
+    const mql = window.matchMedia(`(max-width: ${MOBILE_BREAKPOINT - 1}px)`);
+    const onChange = (e: MediaQueryListEvent) => {
+      setVariant(e.matches ? "mobile" : "desktop");
+    };
+    setVariant(mql.matches ? "mobile" : "desktop");
+    mql.addEventListener("change", onChange);
+    return () => mql.removeEventListener("change", onChange);
+  }, []);
+  return variant;
+}
 
 const stats = [
   { value: "60", label: "Companies scored" },
