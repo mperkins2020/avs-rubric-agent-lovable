@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 
 const BREVO_STYLES = `
 @font-face { font-display: block; font-family: Roboto; src: url(https://assets.brevo.com/font/Roboto/Latin/normal/normal/7529907e9eaf8ebb5220c5f9850e3811.woff2) format("woff2"), url(https://assets.brevo.com/font/Roboto/Latin/normal/normal/25c678feafdc175a70922a116c9be3e7.woff) format("woff") }
@@ -166,48 +166,31 @@ interface Props {
 }
 
 export function BrevoSignupForm({ id }: Props) {
+  const formRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
     ensureBrevoLoaded();
 
     const enableButton = () => {
-      const btn = document.getElementById("sib-submit-btn") as HTMLButtonElement | null;
-      const label = document.getElementById("sib-submit-label");
-      if (!btn) return;
-      btn.disabled = false;
-      btn.style.cursor = "pointer";
-      btn.style.opacity = "1";
-      if (label) label.textContent = "Download the report";
+      const buttons = formRef.current?.querySelectorAll<HTMLButtonElement>("button") ?? [];
+      buttons.forEach((btn) => {
+        btn.disabled = false;
+        btn.removeAttribute("disabled");
+        btn.style.cursor = "pointer";
+        btn.style.opacity = "1";
+        btn.textContent = "Download the report";
+      });
     };
 
-    const isReady = () => {
-      const w = window as any;
-      if (typeof w.grecaptcha === "undefined") return false;
-      const captchaEl = document.getElementById("sib-captcha");
-      const iframe = document.querySelector(".g-recaptcha iframe");
-      return !!iframe || !!(captchaEl && captchaEl.children.length > 0);
-    };
-
-    let resolved = false;
-    const interval = window.setInterval(() => {
-      if (isReady()) {
-        resolved = true;
-        window.clearInterval(interval);
-        enableButton();
-      }
-    }, 120);
-
-    const failsafe = window.setTimeout(() => {
-      if (resolved) return;
-      window.clearInterval(interval);
+    const timer = window.setTimeout(() => {
       enableButton();
-    }, 3500);
+    }, 2000);
 
     return () => {
-      window.clearInterval(interval);
-      window.clearTimeout(failsafe);
+      window.clearTimeout(timer);
     };
   }, []);
 
 
-  return <div id={id} dangerouslySetInnerHTML={{ __html: FORM_HTML }} />;
+  return <div ref={formRef} id={id} dangerouslySetInnerHTML={{ __html: FORM_HTML }} />;
 }
