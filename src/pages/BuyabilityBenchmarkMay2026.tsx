@@ -166,7 +166,9 @@ const SignupForm = BrevoSignupForm;
 export default function BuyabilityBenchmarkMay2026() {
   const formVariant = useFormVariant();
 
+  return (
     <div className="min-h-screen bg-[hsl(var(--vt-bg-section))]">
+
       <SEOHead
         title="AI SaaS Buyability Benchmark, May 2026 Edition | ValueTempo"
         description="A benchmark of how 60 AI SaaS companies publish the commercial evidence buyers need to estimate cost, evaluate risk, and move forward before the first call."
