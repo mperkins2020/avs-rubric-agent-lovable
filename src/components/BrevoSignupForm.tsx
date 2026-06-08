@@ -172,19 +172,14 @@ export function BrevoSignupForm({ id }: Props) {
     ensureBrevoLoaded();
 
     const enableButton = () => {
-      const btn = (formRef.current?.querySelector("button") ??
-        document.getElementById("sib-submit-btn")) as HTMLButtonElement | null;
-      const label = document.getElementById("sib-submit-label");
-      if (!btn) return;
-      btn.disabled = false;
-      btn.removeAttribute("disabled");
-      btn.style.cursor = "pointer";
-      btn.style.opacity = "1";
-      if (label) {
-        label.textContent = "Download the report";
-      } else {
+      const buttons = formRef.current?.querySelectorAll<HTMLButtonElement>("button") ?? [];
+      buttons.forEach((btn) => {
+        btn.disabled = false;
+        btn.removeAttribute("disabled");
+        btn.style.cursor = "pointer";
+        btn.style.opacity = "1";
         btn.textContent = "Download the report";
-      }
+      });
     };
 
     const timer = window.setTimeout(() => {
