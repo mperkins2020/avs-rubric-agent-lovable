@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 
 const BREVO_STYLES = `
 @font-face { font-display: block; font-family: Roboto; src: url(https://assets.brevo.com/font/Roboto/Latin/normal/normal/7529907e9eaf8ebb5220c5f9850e3811.woff2) format("woff2"), url(https://assets.brevo.com/font/Roboto/Latin/normal/normal/25c678feafdc175a70922a116c9be3e7.woff) format("woff") }
@@ -12,7 +12,7 @@ const BREVO_STYLES = `
 #sib-container a { text-decoration: underline; color: #2BB2FC; }
 `;
 
-const createFormHtml = (isReady: boolean) => `
+const FORM_HTML = `
 <div class="sib-form" style="text-align: center; background-color: #EFF2F7;">
   <div id="sib-form-container" class="sib-form-container">
     <div id="error-message" class="sib-form-message-panel" style="font-family:Helvetica, sans-serif; font-size:16px; text-align:left; color:#661d1d; background-color:#ffeded; border-color:#ff4949; border-radius:3px; max-width:540px;">
@@ -75,9 +75,9 @@ const createFormHtml = (isReady: boolean) => `
         </div>
         <div style="padding: 8px 0;">
           <div class="sib-form-block" style="text-align: left">
-            <button id="sib-submit-btn" class="sib-form-block__button sib-form-block__button-with-loader" style="font-family:Helvetica, sans-serif; font-size:16px; font-weight:700; text-align:left; color:#FFFFFF; background-color:#3E4857; border-width:0px; border-radius:3px; cursor:${isReady ? "pointer" : "not-allowed"}; opacity:${isReady ? "1" : "0.6"};" form="sib-form" type="submit"${isReady ? "" : " disabled"}>
+            <button id="sib-submit-btn" class="sib-form-block__button sib-form-block__button-with-loader" style="font-family:Helvetica, sans-serif; font-size:16px; font-weight:700; text-align:left; color:#FFFFFF; background-color:#3E4857; border-width:0px; border-radius:3px; cursor:not-allowed; opacity:0.6;" form="sib-form" type="submit" disabled>
               <svg class="icon clickable__icon progress-indicator__icon sib-hide-loader-icon" viewBox="0 0 512 512"><path d="M460.116 373.846l-20.823-12.022c-5.541-3.199-7.54-10.159-4.663-15.874 30.137-59.886 28.343-131.652-5.386-189.946-33.641-58.394-94.896-95.833-161.827-99.676C261.028 55.961 256 50.751 256 44.352V20.309c0-6.904 5.808-12.337 12.703-11.982 83.556 4.306 160.163 50.864 202.11 123.677 42.063 72.696 44.079 162.316 6.031 236.832-3.14 6.148-10.75 8.461-16.728 5.01z" /></svg>
-              <span id="sib-submit-label">${isReady ? "Download the report" : "Loading…"}</span>
+              <span id="sib-submit-label">Loading…</span>
             </button>
           </div>
         </div>
