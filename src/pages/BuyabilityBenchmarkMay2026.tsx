@@ -464,12 +464,14 @@ export default function BuyabilityBenchmarkMay2026() {
             </p>
           </div>
 
-          {/* RIGHT: sticky form */}
-          <aside className="hidden lg:block lg:col-span-5">
-            <div className="sticky top-24">
-              <SignupForm id="download" />
-            </div>
-          </aside>
+          {/* RIGHT: sticky form — rendered only on desktop viewport */}
+          {formVariant === "desktop" && (
+            <aside className="lg:col-span-5">
+              <div className="sticky top-24">
+                <SignupForm id="download" />
+              </div>
+            </aside>
+          )}
         </div>
       </section>
 
