@@ -179,32 +179,12 @@ export function BrevoSignupForm({ id }: Props) {
       if (label) label.textContent = "Download the report";
     };
 
-    const isReady = () => {
-      const w = window as any;
-      if (typeof w.grecaptcha === "undefined") return false;
-      const captchaEl = document.getElementById("sib-captcha");
-      const iframe = document.querySelector(".g-recaptcha iframe");
-      return !!iframe || !!(captchaEl && captchaEl.children.length > 0);
-    };
-
-    let resolved = false;
-    const interval = window.setInterval(() => {
-      if (isReady()) {
-        resolved = true;
-        window.clearInterval(interval);
-        enableButton();
-      }
-    }, 120);
-
-    const failsafe = window.setTimeout(() => {
-      if (resolved) return;
-      window.clearInterval(interval);
+    const timer = window.setTimeout(() => {
       enableButton();
-    }, 3500);
+    }, 2000);
 
     return () => {
-      window.clearInterval(interval);
-      window.clearTimeout(failsafe);
+      window.clearTimeout(timer);
     };
   }, []);
 
