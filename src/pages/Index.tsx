@@ -317,7 +317,7 @@ const Index = () => {
       {/* Announcement Bar */}
       <a
         href="https://app.valuetempo.com/ai-saas-buyability-benchmark-may-2026"
-        className="block w-full bg-gradient-to-r from-vt-violet via-vt-blue to-vt-cyan text-white"
+        className="block w-full bg-gradient-to-r from-vt-cyan via-vt-blue to-vt-violet text-white"
       >
         <div className="container mx-auto px-4 md:px-10 py-2.5 flex items-center justify-center gap-2 text-sm md:text-base flex-wrap">
           <span className="inline-flex items-center rounded-full bg-white/20 px-2 py-0.5 text-xs font-semibold backdrop-blur-sm shrink-0">
