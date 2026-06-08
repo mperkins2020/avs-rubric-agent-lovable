@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 
 const BREVO_STYLES = `
 @font-face { font-display: block; font-family: Roboto; src: url(https://assets.brevo.com/font/Roboto/Latin/normal/normal/7529907e9eaf8ebb5220c5f9850e3811.woff2) format("woff2"), url(https://assets.brevo.com/font/Roboto/Latin/normal/normal/25c678feafdc175a70922a116c9be3e7.woff) format("woff") }
@@ -10,9 +10,13 @@ const BREVO_STYLES = `
 #sib-container input::placeholder { font-family: Helvetica, sans-serif; text-align: left; color: #c0ccda; }
 #sib-container textarea::placeholder { font-family: Helvetica, sans-serif; text-align: left; color: #c0ccda; }
 #sib-container a { text-decoration: underline; color: #2BB2FC; }
-/* Hide the auto-generated raw field-name label that Brevo prints above the opt-in checkbox */
 #sib-container label.entry__label[for="OPT_IN_VALUETEMPO"] { display: none !important; }
+.sib-form-message-panel--visible { display: block !important; padding: 14px; margin-bottom: 12px; border: 1px solid; }
+.sib-form-block__button[disabled] { opacity: 0.6; cursor: wait; }
 `;
+
+const FORM_ACTION =
+  "https://a7f4b675.sibforms.com/serve/MUIFANpR9ceU12108ezKT4osNIvDHClYAAe-S41zVxvldPfbk-SQvu-p5llEeZoMGXueILbWxa5knNTc25uC3mbW-9Ec5eNPaXlThP2P4KP1oQe4T5N9tkI7YVAVZQbv71aBF-h4fEcRzqPvtxR9RUXggANXWltv1TfznPBRxkA4fAwIeNuaRHIqq_ZKvcDIExqa_eaiqwSV1faG2g==";
 
 const FORM_HTML = `
 <div class="sib-form" style="text-align: center; background-color: #EFF2F7;">
@@ -31,8 +35,8 @@ const FORM_HTML = `
       </div>
     </div>
     <div></div>
-    <div id="sib-container" class="sib-container--large sib-container--vertical" style="max-width:540px; text-align:center; background-color:rgba(255,255,255,1); border-width:1px; border-style:solid; border-color:#C0CCD9; border-radius:3px; direction:ltr">
-      <form id="sib-form" method="POST" action="https://a7f4b675.sibforms.com/serve/MUIFANpR9ceU12108ezKT4osNIvDHClYAAe-S41zVxvldPfbk-SQvu-p5llEeZoMGXueILbWxa5knNTc25uC3mbW-9Ec5eNPaXlThP2P4KP1oQe4T5N9tkI7YVAVZQbv71aBF-h4fEcRzqPvtxR9RUXggANXWltv1TfznPBRxkA4fAwIeNuaRHIqq_ZKvcDIExqa_eaiqwSV1faG2g==" data-type="subscription">
+    <div id="sib-container" class="sib-container--large sib-container--vertical" style="max-width:540px; text-align:center; background-color:rgba(255,255,255,1); border-width:1px; border-style:solid; border-color:#C0CCD9; border-radius:3px; direction:ltr; padding: 16px;">
+      <form id="sib-form" method="POST" action="${FORM_ACTION}" data-type="subscription" novalidate>
         <div style="padding: 8px 0;">
           <div class="sib-form-block" style="font-family:Helvetica, sans-serif; font-size:32px; font-weight:700; text-align:left; color:#3C4858; background-color:transparent;">
             <p>Download the full report</p>
@@ -47,13 +51,12 @@ const FORM_HTML = `
           <div class="sib-input sib-form-block">
             <div class="form__entry entry_block">
               <div class="form__label-row ">
-                <label class="entry__label" style="font-weight: 700; text-align: left; font-family:Helvetica, sans-serif; font-size:16px; color:#3c4858;" for="EMAIL" data-required="*">Enter your WORK EMAIL</label>
+                <label class="entry__label" style="font-weight: 700; text-align: left; font-family:Helvetica, sans-serif; font-size:16px; color:#3c4858; display:block; margin-bottom:6px;" for="EMAIL">Enter your WORK EMAIL</label>
                 <div class="entry__field">
-                  <input class="input " type="text" id="EMAIL" name="EMAIL" autocomplete="off" value="" placeholder="EMAIL" data-required="true" required />
+                  <input class="input " type="email" id="EMAIL" name="EMAIL" autocomplete="email" value="" placeholder="you@yourcompany.com" required style="width:100%; padding:10px 12px; border:1px solid #C0CCD9; border-radius:3px; font-family:Helvetica, sans-serif; font-size:16px; box-sizing:border-box;" />
                 </div>
               </div>
-              <label class="entry__error entry__error--primary" style="font-family:Helvetica, sans-serif; font-size:16px; text-align:left; color:#661d1d; background-color:#ffeded; border-color:#ff4949; border-radius:3px;"></label>
-              <label class="entry__specification" style="font-family:Helvetica, sans-serif; font-size:12px; text-align:left; color:#8390A4;">Provide your work email address, e.g., abc@yourcompany.com</label>
+              <label class="entry__specification" style="font-family:Helvetica, sans-serif; font-size:12px; text-align:left; color:#8390A4; display:block; margin-top:4px;">Provide your work email address, e.g., abc@yourcompany.com</label>
             </div>
           </div>
         </div>
@@ -61,16 +64,12 @@ const FORM_HTML = `
           <div class="sib-optin sib-form-block">
             <div class="form__entry entry_mcq">
               <div class="form__label-row ">
-                <label class="entry__label" style="font-weight: 700; text-align: left; font-family:Helvetica, sans-serif; font-size:16px; color:#3c4858;" for="OPT_IN_VALUETEMPO">OPT_IN_VALUETEMPO</label>
-                <div class="entry__choice">
-                  <label>
-                    <input type="checkbox" class="input_replaced" value="1" id="OPT_IN_VALUETEMPO" name="OPT_IN_VALUETEMPO" />
-                    <span class="checkbox checkbox_tick_positive"></span><span style="font-family:Helvetica, sans-serif; font-size:14px; text-align:left; color:#3C4858; background-color:transparent;"><p>I agree to receive the AI SaaS Buyability Benchmark and occasional updates from ValueTempo. I can unsubscribe anytime.</p></span>
-                  </label>
+                <div class="entry__choice" style="display:flex; align-items:flex-start; gap:8px; text-align:left;">
+                  <input type="checkbox" value="1" id="OPT_IN_VALUETEMPO" name="OPT_IN_VALUETEMPO" required style="margin-top:4px;" />
+                  <label for="OPT_IN_VALUETEMPO" style="font-family:Helvetica, sans-serif; font-size:14px; text-align:left; color:#3C4858; background-color:transparent; cursor:pointer;">I agree to receive the AI SaaS Buyability Benchmark and occasional updates from ValueTempo. I can unsubscribe anytime.</label>
                 </div>
               </div>
-              <label class="entry__error entry__error--primary" style="font-family:Helvetica, sans-serif; font-size:16px; text-align:left; color:#661d1d; background-color:#ffeded; border-color:#ff4949; border-radius:3px;"></label>
-              <label class="entry__specification" style="font-family:Helvetica, sans-serif; font-size:12px; text-align:left; color:#8390A4;">We'll only use this to send the report and occasional updates — no spam.</label>
+              <label class="entry__specification" style="font-family:Helvetica, sans-serif; font-size:12px; text-align:left; color:#8390A4; display:block; margin-top:4px;">We'll only use this to send the report and occasional updates — no spam.</label>
             </div>
           </div>
         </div>
@@ -83,69 +82,25 @@ const FORM_HTML = `
         </div>
         <div style="padding: 8px 0;">
           <div class="sib-form-block" style="text-align: left">
-            <button class="sib-form-block__button sib-form-block__button-with-loader" style="font-family:Helvetica, sans-serif; font-size:16px; font-weight:700; text-align:left; color:#FFFFFF; background-color:#3E4857; border-width:0px; border-radius:3px;" form="sib-form" type="submit">
-              <svg class="icon clickable__icon progress-indicator__icon sib-hide-loader-icon" viewBox="0 0 512 512"><path d="M460.116 373.846l-20.823-12.022c-5.541-3.199-7.54-10.159-4.663-15.874 30.137-59.886 28.343-131.652-5.386-189.946-33.641-58.394-94.896-95.833-161.827-99.676C261.028 55.961 256 50.751 256 44.352V20.309c0-6.904 5.808-12.337 12.703-11.982 83.556 4.306 160.163 50.864 202.11 123.677 42.063 72.696 44.079 162.316 6.031 236.832-3.14 6.148-10.75 8.461-16.728 5.01z" /></svg>
-              Download the report
+            <button id="sib-submit-btn" class="sib-form-block__button sib-form-block__button-with-loader" style="font-family:Helvetica, sans-serif; font-size:16px; font-weight:700; text-align:center; color:#FFFFFF; background-color:#3E4857; border-width:0px; border-radius:3px; padding:12px 20px; cursor:pointer;" type="submit">
+              <span class="sib-submit-label">Download the report</span>
             </button>
           </div>
         </div>
-        <input type="text" name="email_address_check" value="" class="input--hidden">
-        <input type="hidden" name="locale" value="en">
+        <input type="text" name="email_address_check" value="" class="input--hidden" style="display:none;" tabindex="-1" autocomplete="off" />
+        <input type="hidden" name="locale" value="en" />
       </form>
     </div>
   </div>
 </div>
 `;
 
-let brevoInitialized = false;
-
-function ensureBrevoLoaded() {
-  if (brevoInitialized) return;
-  brevoInitialized = true;
-
-  const w = window as any;
-  w.REQUIRED_CODE_ERROR_MESSAGE = "Please choose a country code";
-  w.LOCALE = "en";
-  w.EMAIL_INVALID_MESSAGE = w.SMS_INVALID_MESSAGE =
-    "That email address doesn't look right. Please check the format and try again.";
-  w.REQUIRED_ERROR_MESSAGE = "Please enter your work email to continue. ";
-  w.GENERIC_INVALID_MESSAGE =
-    "That email address doesn't look right. Please check the format and try again.";
-  w.INVALID_NUMBER =
-    "That email address doesn't look right. Please check the format and try again.";
-  w.INVALID_DATE = "Please enter a valid date";
-  w.REQUIRED_MULTISELECT_MESSAGE = "Please select at least 1 option";
-  w.translation = {
-    common: {
-      selectedList: "{quantity} list selected",
-      selectedLists: "{quantity} lists selected",
-      selectedOption: "{quantity} selected",
-      selectedOptions: "{quantity} selected",
-    },
-  };
-  w.AUTOHIDE = false;
-
-  if (!document.querySelector('link[data-brevo="sib-styles"]')) {
-    const link = document.createElement("link");
-    link.rel = "stylesheet";
-    link.href = "https://sibforms.com/forms/end-form/build/sib-styles.css";
-    link.setAttribute("data-brevo", "sib-styles");
-    document.head.appendChild(link);
-  }
-
+function injectStyles() {
   if (!document.querySelector('style[data-brevo="sib-inline"]')) {
     const style = document.createElement("style");
     style.setAttribute("data-brevo", "sib-inline");
     style.textContent = BREVO_STYLES;
     document.head.appendChild(style);
-  }
-
-  if (!document.querySelector('script[data-brevo="sib-main"]')) {
-    const s = document.createElement("script");
-    s.src = "https://sibforms.com/forms/end-form/build/main.js";
-    s.defer = true;
-    s.setAttribute("data-brevo", "sib-main");
-    document.body.appendChild(s);
   }
 }
 
@@ -154,9 +109,98 @@ interface Props {
 }
 
 export function BrevoSignupForm({ id }: Props) {
+  const containerRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
-    ensureBrevoLoaded();
+    injectStyles();
+
+    const root = containerRef.current;
+    if (!root) return;
+
+    const form = root.querySelector<HTMLFormElement>("#sib-form");
+    const successPanel = root.querySelector<HTMLDivElement>("#success-message");
+    const errorPanel = root.querySelector<HTMLDivElement>("#error-message");
+    const submitBtn = root.querySelector<HTMLButtonElement>("#sib-submit-btn");
+    const submitLabel = root.querySelector<HTMLElement>(".sib-submit-label");
+    if (!form || !successPanel || !errorPanel || !submitBtn || !submitLabel) return;
+
+    const showPanel = (el: HTMLElement) => {
+      el.classList.add("sib-form-message-panel--visible");
+    };
+    const hidePanel = (el: HTMLElement) => {
+      el.classList.remove("sib-form-message-panel--visible");
+    };
+
+    const onSubmit = async (e: SubmitEvent) => {
+      e.preventDefault();
+      hidePanel(errorPanel);
+
+      const emailInput = form.querySelector<HTMLInputElement>("#EMAIL");
+      const optIn = form.querySelector<HTMLInputElement>("#OPT_IN_VALUETEMPO");
+      const honeypot = form.querySelector<HTMLInputElement>(
+        'input[name="email_address_check"]'
+      );
+
+      // Honeypot: silently drop if filled
+      if (honeypot && honeypot.value.trim() !== "") {
+        showPanel(successPanel);
+        form.style.display = "none";
+        return;
+      }
+
+      // Native HTML5 validation (required + type=email)
+      if (!form.checkValidity()) {
+        form.reportValidity();
+        return;
+      }
+
+      const email = emailInput?.value.trim() ?? "";
+      if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        emailInput?.focus();
+        return;
+      }
+      if (optIn && !optIn.checked) {
+        optIn.focus();
+        return;
+      }
+
+      submitBtn.disabled = true;
+      const originalLabel = submitLabel.textContent;
+      submitLabel.textContent = "Submitting…";
+
+      try {
+        const fd = new FormData(form);
+        // Brevo's serve endpoint does not return permissive CORS headers,
+        // so we POST in no-cors mode (fire-and-forget). The submission is
+        // still delivered; we just can't read the response body/status.
+        await fetch(FORM_ACTION, {
+          method: "POST",
+          mode: "no-cors",
+          body: fd,
+        });
+        showPanel(successPanel);
+        form.style.display = "none";
+        // Scroll the success panel into view
+        successPanel.scrollIntoView({ behavior: "smooth", block: "center" });
+      } catch (err) {
+        console.error("Brevo submission failed", err);
+        showPanel(errorPanel);
+        submitBtn.disabled = false;
+        submitLabel.textContent = originalLabel;
+      }
+    };
+
+    form.addEventListener("submit", onSubmit);
+    return () => {
+      form.removeEventListener("submit", onSubmit);
+    };
   }, []);
 
-  return <div id={id} dangerouslySetInnerHTML={{ __html: FORM_HTML }} />;
+  return (
+    <div
+      id={id}
+      ref={containerRef}
+      dangerouslySetInnerHTML={{ __html: FORM_HTML }}
+    />
+  );
 }
