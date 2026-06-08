@@ -144,7 +144,7 @@ export function BrevoSignupForm({ id }: Props) {
       // Honeypot: silently drop if filled
       if (honeypot && honeypot.value.trim() !== "") {
         showPanel(successPanel);
-        form.style.display = "none";
+        (root.querySelector<HTMLElement>("#sib-container") ?? form).style.display = "none";
         return;
       }
 
@@ -179,7 +179,7 @@ export function BrevoSignupForm({ id }: Props) {
           body: fd,
         });
         showPanel(successPanel);
-        form.style.display = "none";
+        (root.querySelector<HTMLElement>("#sib-container") ?? form).style.display = "none";
         // Scroll the success panel into view
         successPanel.scrollIntoView({ behavior: "smooth", block: "center" });
       } catch (err) {
