@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ArrowRight, Download } from "lucide-react";
@@ -14,6 +14,26 @@ import { ResourcesDropdown } from "@/components/ResourcesDropdown";
 import { SEOHead } from "@/components/SEOHead";
 import { FAQJsonLd } from "@/components/FAQJsonLd";
 import { BrevoSignupForm } from "@/components/BrevoSignupForm";
+
+// Hook: returns 'mobile' | 'desktop' once known, debounced across resize so
+// the Brevo form only remounts when the actual breakpoint is crossed.
+const MOBILE_BREAKPOINT = 1024; // matches Tailwind `lg:`
+function useFormVariant(): "mobile" | "desktop" | null {
+  const [variant, setVariant] = useState<"mobile" | "desktop" | null>(() => {
+    if (typeof window === "undefined") return null;
+    return window.innerWidth < MOBILE_BREAKPOINT ? "mobile" : "desktop";
+  });
+  useEffect(() => {
+    const mql = window.matchMedia(`(max-width: ${MOBILE_BREAKPOINT - 1}px)`);
+    const onChange = (e: MediaQueryListEvent) => {
+      setVariant(e.matches ? "mobile" : "desktop");
+    };
+    setVariant(mql.matches ? "mobile" : "desktop");
+    mql.addEventListener("change", onChange);
+    return () => mql.removeEventListener("change", onChange);
+  }, []);
+  return variant;
+}
 
 const stats = [
   { value: "60", label: "Companies scored" },
@@ -144,8 +164,11 @@ function FlipBook() {
 const SignupForm = BrevoSignupForm;
 
 export default function BuyabilityBenchmarkMay2026() {
+  const formVariant = useFormVariant();
+
   return (
     <div className="min-h-screen bg-[hsl(var(--vt-bg-section))]">
+
       <SEOHead
         title="AI SaaS Buyability Benchmark, May 2026 Edition | ValueTempo"
         description="A benchmark of how 60 AI SaaS companies publish the commercial evidence buyers need to estimate cost, evaluate risk, and move forward before the first call."
@@ -289,10 +312,12 @@ export default function BuyabilityBenchmarkMay2026() {
               </p>
             </div>
 
-            {/* Mobile inline form */}
-            <div className="lg:hidden">
-              <SignupForm id="download-mobile-1" />
-            </div>
+            {/* Mobile inline form — rendered only on mobile viewport */}
+            {formVariant === "mobile" && (
+              <div>
+                <SignupForm id="download" />
+              </div>
+            )}
 
             {/* What the benchmark measures */}
             <div>
@@ -439,12 +464,14 @@ export default function BuyabilityBenchmarkMay2026() {
             </p>
           </div>
 
-          {/* RIGHT: sticky form */}
-          <aside className="hidden lg:block lg:col-span-5">
-            <div className="sticky top-24">
-              <SignupForm id="download" />
-            </div>
-          </aside>
+          {/* RIGHT: sticky form — rendered only on desktop viewport */}
+          {formVariant === "desktop" && (
+            <aside className="lg:col-span-5">
+              <div className="sticky top-24">
+                <SignupForm id="download" />
+              </div>
+            </aside>
+          )}
         </div>
       </section>
 
