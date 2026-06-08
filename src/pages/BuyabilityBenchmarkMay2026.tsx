@@ -164,7 +164,8 @@ function FlipBook() {
 const SignupForm = BrevoSignupForm;
 
 export default function BuyabilityBenchmarkMay2026() {
-  return (
+  const formVariant = useFormVariant();
+
     <div className="min-h-screen bg-[hsl(var(--vt-bg-section))]">
       <SEOHead
         title="AI SaaS Buyability Benchmark, May 2026 Edition | ValueTempo"
