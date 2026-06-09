@@ -173,7 +173,7 @@ export default function BuyabilityBenchmarkMay2026() {
         title="AI SaaS Buyability Benchmark, May 2026 Edition | ValueTempo"
         description="A benchmark of how 60 AI SaaS companies publish the commercial evidence buyers need to estimate cost, evaluate risk, and move forward before the first call."
         canonicalUrl="https://app.valuetempo.com/ai-saas-buyability-benchmark-may-2026"
-        ogImage="https://app.valuetempo.com/ValueTempo_Logo.png"
+        ogImage="https://app.valuetempo.com/__l5e/assets-v1/2318efa1-04cf-405b-af50-3f743d4fc563/benchmark-cover.png"
         type="website"
       />
       <FAQJsonLd faqs={faqs} />
