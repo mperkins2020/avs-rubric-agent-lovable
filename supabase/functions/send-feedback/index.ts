@@ -110,7 +110,7 @@ Deno.serve(async (req) => {
         },
         body: JSON.stringify({
           from: "ValueTempo <onboarding@resend.dev>",
-          to: ["mlhperkins@gmail.com"],
+          to: ["support@valuetempo.com"],
           subject: `New Feedback: ${safeCompany} - ${rating}★`,
           html: `
             <h2>New Report Feedback</h2>
