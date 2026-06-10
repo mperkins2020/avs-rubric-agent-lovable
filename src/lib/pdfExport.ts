@@ -409,7 +409,7 @@ export function exportToPDF({ companyProfile, rubricScore, observability }: Expo
       { align: "center" }
     );
     doc.text(
-      "Created by ValueTempo. For more information about the report, contact us at gtm@valuetempo.com.",
+      "Created by ValueTempo. For more information about the report, contact us at hello@valuetempo.com.",
       pageWidth / 2,
       pageHeight - 9,
       { align: "center" }
