@@ -15,7 +15,7 @@ export function Footer() {
           </a>
           <span className="hidden sm:inline opacity-30">|</span>
           <a
-            href="mailto:info@valuetempo.com"
+            href="mailto:hello@valuetempo.com"
             className="hover:text-[hsl(var(--vt-text-on-dark))] transition-colors"
           >
             Contact
