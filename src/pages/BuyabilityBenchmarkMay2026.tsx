@@ -5,6 +5,7 @@ import { ArrowRight, Download } from "lucide-react";
 import ValueTempoLogo from "@/assets/ValueTempo_Logo_main.png";
 import benchmarkCoverAsset from "@/assets/benchmark-cover.png.asset.json";
 import benchmarkContentsAsset from "@/assets/benchmark-contents.png.asset.json";
+import pricingModelsAsset from "@/assets/pricing-models-evolving-by-category.png.asset.json";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -368,6 +369,40 @@ export default function BuyabilityBenchmarkMay2026() {
                   </li>
                 ))}
               </ol>
+            </div>
+
+            {/* Editorial Insight */}
+            <div>
+              <span className="text-[11px] font-semibold tracking-[0.18em] text-[hsl(var(--vt-violet))] uppercase">
+                Insight
+              </span>
+              <h2 className="mt-2 text-2xl md:text-3xl font-bold text-vt-midnight">
+                How pricing models are evolving by category
+              </h2>
+              <div className="mt-6 grid md:grid-cols-2 gap-8 lg:gap-12 items-start">
+                <div className="space-y-4 text-base text-vt-midnight/80 leading-relaxed">
+                  <p className="font-medium text-vt-midnight">
+                    In AI SaaS, seats are becoming the access layer. Usage is becoming the expansion layer.
+                  </p>
+                  <p>
+                    Across the benchmark, most categories have already moved to hybrid pricing: a base subscription for seats and access, plus variable AI usage for expansion. Seats still map cleanly to users, admin ownership, and procurement. Usage moves differently by category, from coding sessions and resolutions to credits, agent actions, enrichment, and workflow runs.
+                  </p>
+                  <p>
+                    That creates a stronger expansion path, and a new buyability challenge. Buyers now have to understand two layers: the base subscription and the variable usage logic. The companies that make the hybrid logic easy to understand will be easier to evaluate, easier to champion, and easier to expand.
+                  </p>
+                </div>
+                <div>
+                  <img
+                    src={pricingModelsAsset.url}
+                    alt="Matrix of pricing models by AI SaaS category. Most categories lean toward hybrid pricing, a base subscription plus variable AI usage, with usage as the expansion layer."
+                    className="w-full rounded-xl border border-border shadow-vt-sm"
+                    loading="lazy"
+                  />
+                  <p className="mt-2 text-xs text-muted-foreground text-center">
+                    A directional pattern across categories, not exact counts.
+                  </p>
+                </div>
+              </div>
             </div>
 
             {/* What operators can do */}
