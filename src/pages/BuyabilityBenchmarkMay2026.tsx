@@ -5,6 +5,7 @@ import { ArrowRight, Download } from "lucide-react";
 import ValueTempoLogo from "@/assets/ValueTempo_Logo_main.png";
 import benchmarkCoverAsset from "@/assets/benchmark-cover.png.asset.json";
 import benchmarkContentsAsset from "@/assets/benchmark-contents.png.asset.json";
+import pricingModelsAsset from "@/assets/pricing-models-evolving-by-category.png.asset.json";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
