@@ -112,28 +112,9 @@ export function useScan() {
         modelClassification: analysisResult.modelClassification || null,
       });
 
-      // Persist result to scan_results cache (edge function does not write back)
-      try {
-        const domain = extractDomain(url);
-        if (domain) {
-          const resultPayload = {
-            success: true,
-            companyProfile: analysisResult.companyProfile,
-            rubricScore: analysisResult.rubricScore,
-            observability: analysisResult.observability,
-            modelClassification: analysisResult.modelClassification,
-            categoryClassification: (analysisResult as unknown as { categoryClassification?: unknown }).categoryClassification,
-            analysisVersion: (analysisResult as unknown as { analysisVersion?: string }).analysisVersion,
-          };
-          const { error: cacheErr } = await supabase.rpc('upsert_scan_result_cache', {
-            p_url_domain: domain,
-            p_result_json: resultPayload as never,
-          });
-          if (cacheErr) console.warn('scan_results cache write failed:', cacheErr.message);
-        }
-      } catch (cacheErr) {
-        console.warn('scan_results cache write threw:', cacheErr);
-      }
+      // Fresh scan cache write happens server-side in analyze-company (service role).
+      // No client-side cache write — prevents cache-poisoning via the public RPC.
+
 
       return true;
     } catch (err) {
