@@ -295,20 +295,9 @@ export default function Results() {
           setCompanyProfile(result.companyProfile);
         }
 
-        // Persist updated result back to scan_results cache (rerun path doesn't write server-side)
-        try {
-          const domain = new URL(url.startsWith("http") ? url : `https://${url}`)
-            .hostname.replace(/^www\./, "");
-          const { error: cacheErr } = await supabase.rpc("update_scan_result_cache", {
-            p_url_domain: domain,
-            p_result_json: result as never,
-          });
-          if (cacheErr) {
-            console.error("Failed to persist rescore to cache:", cacheErr);
-          }
-        } catch (persistErr) {
-          console.error("Error persisting rescore to cache:", persistErr);
-        }
+        // Rerun results are rendered from the in-memory response only.
+        // No client-side cache write — prevents cache-poisoning via the public RPC.
+
 
         // Show delta
         const changedDims = result.rubricScore.dimensionScores
