@@ -34,7 +34,7 @@ interface Weakness {
 interface Company {
   company_name: string;
   domain: string;
-  notes: string | null;
+  
   scan_id: string | null;
   total_score: number | null;
   max_score: number | null;
