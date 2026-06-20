@@ -22,7 +22,6 @@ export type Database = {
           company_name: string
           domain: string
           id: string
-          notes: string | null
           phase: number
           sort_order: number
         }
@@ -33,7 +32,6 @@ export type Database = {
           company_name: string
           domain: string
           id?: string
-          notes?: string | null
           phase?: number
           sort_order?: number
         }
@@ -44,11 +42,42 @@ export type Database = {
           company_name?: string
           domain?: string
           id?: string
-          notes?: string | null
           phase?: number
           sort_order?: number
         }
         Relationships: []
+      }
+      benchmark_company_notes: {
+        Row: {
+          company_id: string
+          created_at: string
+          id: string
+          notes: string
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          id?: string
+          notes: string
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          id?: string
+          notes?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "benchmark_company_notes_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: true
+            referencedRelation: "benchmark_companies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       benchmark_run_log: {
         Row: {
