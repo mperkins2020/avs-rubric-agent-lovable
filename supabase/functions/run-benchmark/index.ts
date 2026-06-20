@@ -24,22 +24,18 @@ function currentMonth(): string {
 }
 
 /**
- * Decode the middle segment of a JWT without verification.
- * Used to detect the service_role key from inter-function callers.
- */
-function getJwtClaims(token: string): Record<string, unknown> | null {
-  try {
-    const b64 = token.split('.')[1];
-    if (!b64) return null;
-    return JSON.parse(atob(b64.replace(/-/g, '+').replace(/_/g, '/')));
-  } catch {
-    return null;
-  }
-}
-
-/**
- * Validate that the caller is a logged-in Supabase admin user.
- * Returns the userId on success, null on any auth failure.
+ * Validate that the caller is either:
+ *   - an internal/service caller presenting the literal service-role key as a Bearer token, OR
+ *   - a signed-in human user whose JWT verifies and who has the `admin` role.
+ *
+ * Returns 'service_role' for the internal path, the userId for the human path,
+ * or null on any auth failure.
+ *
+ * Security note: we deliberately do NOT decode JWT claims to detect the service
+ * role. A base64-decoded `role: service_role` claim is trivially forgeable
+ * without the signing secret. Instead we compare the bearer token byte-for-byte
+ * against SUPABASE_SERVICE_ROLE_KEY, and route every other token through
+ * Supabase's `getClaims()` which verifies the signature.
  */
 async function validateAdminAuth(
   req: Request,
@@ -50,11 +46,14 @@ async function validateAdminAuth(
 
   const token = authHeader.replace('Bearer ', '');
 
-  // Service role key → unconditionally admin (inter-function call from cron or scripts)
-  const claims = getJwtClaims(token);
-  if (claims?.role === 'service_role') return 'service_role';
+  // Internal/service caller: direct string compare against the actual secret.
+  // Same pattern used in scrape-website / analyze-company.
+  const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
+  if (serviceKey.length > 0 && token === serviceKey) {
+    return 'service_role';
+  }
 
-  // User JWT path: validate and check admin role
+  // Human-admin path: verify the JWT signature via getClaims(), then check the admin role.
   const authSb = createClient(
     Deno.env.get('SUPABASE_URL')!,
     Deno.env.get('SUPABASE_ANON_KEY')!,
@@ -70,6 +69,7 @@ async function validateAdminAuth(
 
   return userId;
 }
+
 
 // ── Poll until scan_results row appears after `afterTs` ──────────────────────
 async function pollForScanResult(
