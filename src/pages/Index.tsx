@@ -344,6 +344,9 @@ const Index = () => {
             <a href="https://www.valuetempo.com/methodology" className="text-sm text-foreground hover:text-primary transition-colors">
               Methodology
             </a>
+            <a href="https://www.valuetempo.com/about" className="text-sm text-foreground hover:text-primary transition-colors">
+              About
+            </a>
             <ResourcesDropdown />
             <Button
               size="sm"
@@ -404,6 +407,9 @@ const Index = () => {
               <nav className="flex flex-col gap-1 px-3 py-4 flex-1">
                 <a href="https://www.valuetempo.com/methodology" className="flex items-center px-3 py-2.5 rounded-lg text-sm text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors">
                   Methodology
+                </a>
+                <a href="https://www.valuetempo.com/about" className="flex items-center px-3 py-2.5 rounded-lg text-sm text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors">
+                  About
                 </a>
                 <ResourcesDropdown mobile onNavigate={() => setMobileMenuOpen(false)} />
               </nav>

@@ -10,6 +10,10 @@ export function Footer() {
         <div className="flex flex-wrap items-center justify-center gap-4 text-sm text-[hsl(var(--vt-text-on-dark-secondary))]">
           <span>© 2026 ValueTempo. All rights reserved.</span>
           <span className="hidden sm:inline opacity-30">|</span>
+          <a href="https://www.valuetempo.com/about" className="hover:text-[hsl(var(--vt-text-on-dark))] transition-colors">
+            About
+          </a>
+          <span className="hidden sm:inline opacity-30">|</span>
           <a href="https://www.valuetempo.com/privacy" className="hover:text-[hsl(var(--vt-text-on-dark))] transition-colors">
             Privacy Policy
           </a>
