@@ -19,21 +19,24 @@ function CircularProgress({ estimatedSeconds = 120 }: { estimatedSeconds?: numbe
     return () => clearInterval(id);
   }, [estimatedSeconds]);
 
-  const size = 22;
-  const stroke = 2.5;
+  const size = 28;
+  const stroke = 3;
   const radius = (size - stroke) / 2;
   const circ = 2 * Math.PI * radius;
-  const offset = circ - (progress / 100) * circ;
+  const offset = circ - (Math.max(progress, 2) / 100) * circ;
 
   return (
-    <span className="relative inline-flex items-center justify-center" style={{ width: size, height: size }}>
-      <svg width={size} height={size} className="-rotate-90">
+    <span
+      className="relative inline-flex items-center justify-center shrink-0"
+      style={{ width: size, height: size }}
+    >
+      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} style={{ transform: "rotate(-90deg)" }}>
         <circle
           cx={size / 2}
           cy={size / 2}
           r={radius}
           fill="none"
-          stroke="rgba(255,255,255,0.25)"
+          stroke="rgba(255,255,255,0.3)"
           strokeWidth={stroke}
         />
         <circle
@@ -41,15 +44,15 @@ function CircularProgress({ estimatedSeconds = 120 }: { estimatedSeconds?: numbe
           cy={size / 2}
           r={radius}
           fill="none"
-          stroke="#FF7A1A"
+          stroke="#FB923C"
           strokeWidth={stroke}
           strokeLinecap="round"
-          strokeDasharray={circ}
+          strokeDasharray={`${circ} ${circ}`}
           strokeDashoffset={offset}
           style={{ transition: "stroke-dashoffset 200ms linear" }}
         />
       </svg>
-      <span className="absolute text-[9px] font-semibold text-white tabular-nums">
+      <span className="absolute inset-0 flex items-center justify-center text-[9px] font-bold text-white tabular-nums leading-none">
         {Math.round(progress)}
       </span>
     </span>
