@@ -29,7 +29,7 @@ interface AnalyzeRequest {
 // Deno EdgeRuntime type for background processing
 declare const EdgeRuntime: { waitUntil: (p: Promise<unknown>) => void };
 
-const ANALYSIS_VERSION = '2026-05-21-pipeline-v27';
+const ANALYSIS_VERSION = '2026-06-30-pipeline-v28';
 
 const COMPANY_PROFILE_PROMPT = `You are an expert business analyst. Analyze the following website content and extract a company profile.
 
@@ -2115,6 +2115,57 @@ ${billingOnlyPages.map(u => `  - ${u}`).join('\n')}
     // Step 2: Score against rubric
     console.log('Scoring against AVS rubric...');
 
+    function getCategoryGuide(category: string): string {
+      if (category !== 'AI Speech Platform') return '';
+      return `
+CATEGORY-SPECIFIC SCORING GUIDE — AI Speech Platform (MANDATORY):
+This company operates in the AI Speech Platform category. Apply the following interpretation rules for every dimension. These rules override generic rubric defaults where they conflict.
+
+METADATA (populate in your rationale for D4 and D1):
+- Metering Model: classify as one of: per_audio_minute | per_voice_minute | per_character | per_token | per_credit | per_seat_plus_usage | hybrid | quote_based
+- Speech Stack Role: classify as one of: STT | TTS | voice_agent | creative_voice | full_speech_platform | enterprise_ASR
+
+D1 — NORTH STAR METRIC:
+Score 2 if the company publishes a measurable outcome: latency (TTFA, P90), word error rate (WER), transcription accuracy %, language coverage count, uptime SLA, or a verified third-party benchmark result (e.g., Artificial Analysis, TTS-Arena). Score 1 for vague claims ("industry-leading accuracy") without a number. Score 0 for no measurable claim.
+STT companies: evaluate on WER/accuracy. TTS companies: evaluate on TTFA or quality benchmarks. Voice agent platforms: evaluate on end-to-end latency or call completion rates.
+
+D2 — ICP / USE CASE CLARITY:
+Score 2 if the pricing or product page explicitly names buyer segments. Accepted segments: developer/API builder, GTM operator/sales team, contact center/telephony, creator/marketing team, enterprise platform team. Score 1 for generic language ("for teams," "for enterprise"). Score 0 for no buyer segment described.
+
+D3 — BUDGET CLARITY:
+Score 2 if a buyer can estimate their bill without contacting sales — accept a public pricing table with tier limits, a usage calculator, free credits with explicit cap, or a published per-unit rate with enough context to estimate volume costs. A calculator or "estimate your bill" tool counts as D3=2 even if no flat-rate tier table exists. Score 1 if some pricing exists but a full estimate requires sales. Score 0 if all pricing is gated.
+
+D4 — VALUE UNIT:
+Score 2 if the billing unit is explicitly named AND its conversion is defined. Examples that qualify: "1 audio minute = $0.0065" | "1 credit = 1,000 characters" | "$0.20 per voice minute" | "billed per token, 1M tokens = $X".
+Score 1 if a unit is named but no conversion or rate is published (e.g., "priced in credits" with no credit definition).
+Score 0 if no unit is named.
+CREDIT RULE: per_credit Metering Model scores D4=2 ONLY if the conversion to a physical unit (characters, minutes, tokens) is explicitly published. A named credit without a defined conversion = D4=1.
+In your rationale, state the Metering Model (e.g., "Metering Model: per_character").
+
+D5 — COST DRIVERS:
+Score 2 if at least three applicable cost factors are documented.
+For STT/transcription: model tier, language/accent, real-time streaming vs. async batch, diarization, add-on features (sentiment, PII redaction), storage.
+For TTS/voice generation: voice model tier, language, real-time vs. pre-rendered, custom/cloned voice premium, concurrent stream limits, storage.
+For voice agent platforms: LLM model tier, STT provider choice, TTS provider choice, PSTN/telephony pass-through, SIP trunking, concurrency, custom voice add-on.
+PSTN RULE: Documenting that PSTN costs are passed through at carrier rates = partial (contributes to D5=1 but not sufficient alone for D5=2). Publishing actual per-minute PSTN rates or a clear range = required for D5=2 if telephony is a material cost driver.
+Score 1 for one or two cost factors documented. Score 0 for none.
+
+D6 — POOLS & PACKAGING:
+Score 2 if tiers exist AND the company documents: what is included per tier, reset cadence (monthly/annual), overage or upgrade behavior, and whether a free tier or trial exists. Score 1 if tiers exist but key details are missing. Score 0 if no tier structure is published.
+
+D7 — OVERAGES / EDGE BEHAVIOR:
+Evidence varies by product type — do NOT penalize STT/TTS APIs for lacking mid-call behavior:
+For STT/TTS APIs: look for rate limit behavior (429 handling), credit/quota exhaustion (hard stop vs. auto-top-up), concurrency cap behavior, quota alert or notification.
+For voice agent platforms: look for what happens when credits run out mid-call, auto-billing or hard cap, call interruption behavior, email alerts, top-up mechanics, concurrency limit enforcement.
+Score 2 for explicit documentation of edge behavior appropriate to the product type. Score 1 for partial mention without detail. Score 0 for no documentation.
+
+D8 — SAFETY RAILS:
+Score 2 if two or more of the following are explicitly documented: SOC 2 / ISO 27001 / HIPAA, data retention and deletion policy, recording consent or compliance guidance (GDPR, CCPA, two-party consent), voice cloning safeguards (explicit consent requirements, identity verification, or abuse prevention documentation), admin controls (user roles, access management, audit logs), dedicated Trust Center or Security page.
+VOICE CLONING RULE: A generic Terms of Service or Acceptable Use Policy alone = D8=1 if no other qualifying evidence exists. Explicit consent flow documentation, a cloning abuse reporting mechanism, or a published data retention/deletion policy elevates to D8=2 when combined with at least one other qualifying item.
+Score 1 for one qualifying item. Score 0 for none.
+`;
+    }
+
     // Fix 2: Confidence penalty flag — if ≥30% of queued pages were unresolved,
     // the calling layer should apply a −0.15 confidence adjustment.
     const applyUnresolvedPenalty = typeof totalQueuedCount === 'number' &&
@@ -2168,6 +2219,7 @@ ${previousScores.map((s: { dimension: string; score: number; confidence: number 
 Since these are insider-only inputs, scores should remain the same as previous unless a public URL was provided in the answers.
 ` : ''}` : ''}
 
+${getCategoryGuide(categoryClassification.category_primary)}
 HIGH-SIGNAL EVIDENCE DIGEST (prioritized snippets from public pages):
 
 IMPORTANT — PRICING PAGE VERIFICATION:
