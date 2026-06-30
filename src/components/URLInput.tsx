@@ -52,7 +52,7 @@ function CircularProgress({ estimatedSeconds = 120 }: { estimatedSeconds?: numbe
           style={{ transition: "stroke-dashoffset 200ms linear" }}
         />
       </svg>
-      <span className="absolute inset-0 flex items-center justify-center text-[9px] font-bold text-white tabular-nums leading-none">
+      <span className="absolute inset-0 flex items-center justify-center text-[11px] font-bold text-white tabular-nums leading-none">
         {Math.round(progress)}
       </span>
     </span>
