@@ -19,8 +19,8 @@ function CircularProgress({ estimatedSeconds = 120 }: { estimatedSeconds?: numbe
     return () => clearInterval(id);
   }, [estimatedSeconds]);
 
-  const size = 58;
-  const stroke = 6;
+  const size = 87;
+  const stroke = 8;
   const radius = (size - stroke) / 2;
   const circ = 2 * Math.PI * radius;
   const visibleProgress = Math.max(progress, 14);
@@ -36,7 +36,12 @@ function CircularProgress({ estimatedSeconds = 120 }: { estimatedSeconds?: numbe
         height={size}
         viewBox={`0 0 ${size} ${size}`}
         className="overflow-visible"
-        style={{ transform: "rotate(-90deg)", filter: "drop-shadow(0 0 7px rgba(255, 122, 69, 0.65))" }}
+        style={{
+          width: size,
+          height: size,
+          transform: "rotate(-90deg)",
+          filter: "drop-shadow(0 0 7px rgba(255, 122, 69, 0.65))",
+        }}
       >
         <circle
           cx={size / 2}
@@ -132,7 +137,7 @@ export function URLInput({ onSubmit, isLoading = false }: URLInputProps) {
             type="submit"
             size="lg"
             disabled={isLoading}
-            className="relative min-h-16 px-7 bg-vt-midnight hover:bg-vt-midnight/90 text-white font-semibold rounded-[28px] transition-all shadow-vt-sm hover:shadow-[0_12px_40px_-10px_hsl(var(--vt-violet)/0.6)]"
+            className="relative min-h-24 px-7 bg-vt-midnight hover:bg-vt-midnight/90 text-white font-semibold rounded-[48px] transition-all shadow-vt-sm hover:shadow-[0_12px_40px_-10px_hsl(var(--vt-violet)/0.6)]"
           >
             {!isLoading && (
               <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-vt-coral ring-2 ring-card" aria-hidden="true" />
