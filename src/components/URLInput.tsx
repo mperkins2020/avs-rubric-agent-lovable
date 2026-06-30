@@ -100,7 +100,7 @@ export function URLInput({ onSubmit, isLoading = false }: URLInputProps) {
       <div className="mt-5 flex justify-center">
         <span className="inline-flex items-center gap-1.5 px-5 py-2 rounded-full border border-accent/40 bg-accent/10 text-sm font-semibold text-foreground tracking-wide shadow-sm">
           <span className="inline-block w-2 h-2 rounded-full bg-vt-cyan animate-pulse" />
-          Free · 3 analyses per week · ~1 minute
+          Free · 3 analyses per week · ~2 minutes
         </span>
       </div>
     </form>
