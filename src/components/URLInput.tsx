@@ -128,7 +128,10 @@ export function URLInput({ onSubmit, isLoading = false }: URLInputProps) {
               <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-vt-coral ring-2 ring-card" aria-hidden="true" />
             )}
             {isLoading ? (
-              <Loader2 className="w-5 h-5 animate-spin" />
+              <span className="inline-flex items-center gap-2">
+                <CircularProgress estimatedSeconds={120} />
+                <span className="text-sm">Analyzing…</span>
+              </span>
             ) : (
               <>
                 Check Your Buyability Score
