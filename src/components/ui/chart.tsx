@@ -89,8 +89,6 @@ ${colorConfig
 
 const ChartTooltip = RechartsPrimitive.Tooltip;
 
-const ChartTooltipContent = React.forwardRef<
-  HTMLDivElement,
 type ChartTooltipContentProps = {
   active?: boolean;
   payload?: any[];
@@ -107,7 +105,6 @@ type ChartTooltipContentProps = {
 } & React.ComponentProps<"div">;
 
 const ChartTooltipContent = React.forwardRef<HTMLDivElement, ChartTooltipContentProps>(
->(
   (
     {
       active,
