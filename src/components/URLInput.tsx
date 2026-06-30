@@ -1,8 +1,60 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Globe, ArrowRight, Loader2 } from "lucide-react";
+import { Globe, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+
+// Animated circular progress that fills over ~estimatedSeconds (eases out as it approaches 95%).
+function CircularProgress({ estimatedSeconds = 120 }: { estimatedSeconds?: number }) {
+  const [progress, setProgress] = useState(0);
+
+  useEffect(() => {
+    const start = Date.now();
+    const id = setInterval(() => {
+      const elapsed = (Date.now() - start) / 1000;
+      // Asymptotic to 95%: reaches ~63% at estimatedSeconds, ~95% at ~3x
+      const pct = 95 * (1 - Math.exp(-elapsed / estimatedSeconds));
+      setProgress(pct);
+    }, 200);
+    return () => clearInterval(id);
+  }, [estimatedSeconds]);
+
+  const size = 22;
+  const stroke = 2.5;
+  const radius = (size - stroke) / 2;
+  const circ = 2 * Math.PI * radius;
+  const offset = circ - (progress / 100) * circ;
+
+  return (
+    <span className="relative inline-flex items-center justify-center" style={{ width: size, height: size }}>
+      <svg width={size} height={size} className="-rotate-90">
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          fill="none"
+          stroke="rgba(255,255,255,0.25)"
+          strokeWidth={stroke}
+        />
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          fill="none"
+          stroke="#FF7A1A"
+          strokeWidth={stroke}
+          strokeLinecap="round"
+          strokeDasharray={circ}
+          strokeDashoffset={offset}
+          style={{ transition: "stroke-dashoffset 200ms linear" }}
+        />
+      </svg>
+      <span className="absolute text-[9px] font-semibold text-white tabular-nums">
+        {Math.round(progress)}
+      </span>
+    </span>
+  );
+}
 
 interface URLInputProps {
   onSubmit: (url: string) => void;
