@@ -19,8 +19,8 @@ function CircularProgress({ estimatedSeconds = 120 }: { estimatedSeconds?: numbe
     return () => clearInterval(id);
   }, [estimatedSeconds]);
 
-  const size = 28;
-  const stroke = 3;
+  const size = 36;
+  const stroke = 4;
   const radius = (size - stroke) / 2;
   const circ = 2 * Math.PI * radius;
   const offset = circ - (Math.max(progress, 2) / 100) * circ;
