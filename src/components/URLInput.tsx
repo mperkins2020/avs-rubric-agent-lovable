@@ -19,8 +19,8 @@ function CircularProgress({ estimatedSeconds = 120 }: { estimatedSeconds?: numbe
     return () => clearInterval(id);
   }, [estimatedSeconds]);
 
-  const size = 87;
-  const stroke = 8;
+  const size = 72;
+  const stroke = 7;
   const radius = (size - stroke) / 2;
   const circ = 2 * Math.PI * radius;
   const visibleProgress = Math.max(progress, 14);
@@ -137,7 +137,7 @@ export function URLInput({ onSubmit, isLoading = false }: URLInputProps) {
             type="submit"
             size="lg"
             disabled={isLoading}
-            className="relative min-h-24 px-7 bg-vt-midnight hover:bg-vt-midnight/90 text-white font-semibold rounded-[48px] transition-all shadow-vt-sm hover:shadow-[0_12px_40px_-10px_hsl(var(--vt-violet)/0.6)]"
+            className="relative px-7 bg-vt-midnight hover:bg-vt-midnight/90 text-white font-semibold rounded-[48px] transition-all shadow-vt-sm hover:shadow-[0_12px_40px_-10px_hsl(var(--vt-violet)/0.6)]"
           >
             {!isLoading && (
               <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-vt-coral ring-2 ring-card" aria-hidden="true" />
