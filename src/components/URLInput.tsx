@@ -19,24 +19,31 @@ function CircularProgress({ estimatedSeconds = 120 }: { estimatedSeconds?: numbe
     return () => clearInterval(id);
   }, [estimatedSeconds]);
 
-  const size = 48;
-  const stroke = 5;
+  const size = 58;
+  const stroke = 6;
   const radius = (size - stroke) / 2;
   const circ = 2 * Math.PI * radius;
-  const offset = circ - (Math.max(progress, 2) / 100) * circ;
+  const visibleProgress = Math.max(progress, 14);
+  const offset = circ - (visibleProgress / 100) * circ;
 
   return (
     <span
       className="relative inline-flex items-center justify-center shrink-0"
       style={{ width: size, height: size }}
     >
-      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} style={{ transform: "rotate(-90deg)" }}>
+      <svg
+        width={size}
+        height={size}
+        viewBox={`0 0 ${size} ${size}`}
+        className="overflow-visible"
+        style={{ transform: "rotate(-90deg)", filter: "drop-shadow(0 0 7px rgba(255, 122, 69, 0.65))" }}
+      >
         <circle
           cx={size / 2}
           cy={size / 2}
           r={radius}
           fill="none"
-          stroke="rgba(255,255,255,0.3)"
+          stroke="rgba(255,255,255,0.38)"
           strokeWidth={stroke}
         />
         <circle
@@ -52,7 +59,7 @@ function CircularProgress({ estimatedSeconds = 120 }: { estimatedSeconds?: numbe
           style={{ transition: "stroke-dashoffset 200ms linear" }}
         />
       </svg>
-      <span className="absolute inset-0 flex items-center justify-center text-[14px] font-bold text-white tabular-nums leading-none">
+      <span className="absolute inset-0 flex items-center justify-center text-[12px] font-bold text-white tabular-nums leading-none">
         {Math.round(progress)}
       </span>
     </span>
@@ -125,13 +132,13 @@ export function URLInput({ onSubmit, isLoading = false }: URLInputProps) {
             type="submit"
             size="lg"
             disabled={isLoading}
-            className="relative h-12 px-6 bg-vt-midnight hover:bg-vt-midnight/90 text-white font-semibold rounded-[20px] transition-all shadow-vt-sm hover:shadow-[0_12px_40px_-10px_hsl(var(--vt-violet)/0.6)]"
+            className="relative min-h-16 px-7 bg-vt-midnight hover:bg-vt-midnight/90 text-white font-semibold rounded-[28px] transition-all shadow-vt-sm hover:shadow-[0_12px_40px_-10px_hsl(var(--vt-violet)/0.6)]"
           >
             {!isLoading && (
               <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-vt-coral ring-2 ring-card" aria-hidden="true" />
             )}
             {isLoading ? (
-              <span className="inline-flex items-center gap-2">
+              <span className="inline-flex items-center gap-3">
                 <CircularProgress estimatedSeconds={120} />
                 <span className="text-sm">Analyzing…</span>
               </span>
