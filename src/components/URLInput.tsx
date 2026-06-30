@@ -36,7 +36,12 @@ function CircularProgress({ estimatedSeconds = 120 }: { estimatedSeconds?: numbe
         height={size}
         viewBox={`0 0 ${size} ${size}`}
         className="overflow-visible"
-        style={{ transform: "rotate(-90deg)", filter: "drop-shadow(0 0 7px rgba(255, 122, 69, 0.65))" }}
+        style={{
+          width: size,
+          height: size,
+          transform: "rotate(-90deg)",
+          filter: "drop-shadow(0 0 7px rgba(255, 122, 69, 0.65))",
+        }}
       >
         <circle
           cx={size / 2}
