@@ -460,7 +460,7 @@ export default function Benchmark() {
             </section>
 
             {/* Zone 3 — Pulse */}
-            {stats && (
+            {!isPlaceholder && stats && (
               <section className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <PulseCard label="Category average" sub={`${stats.total_scanned} of ${stats.total_in_category} companies scanned`}>
                   <div className="flex items-center gap-3">
