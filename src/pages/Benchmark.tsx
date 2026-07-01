@@ -294,11 +294,9 @@ export default function Benchmark() {
                   )}
                 >
                   {c.name}
-                  {isActive && (
-                    <Badge variant="secondary" className="text-[10px] font-normal">
-                      {formatMonth(month)}
-                    </Badge>
-                  )}
+                  <Badge variant="secondary" className="text-[10px] font-normal">
+                    {formatMonth(c.month)}
+                  </Badge>
                 </button>
               );
             })}
