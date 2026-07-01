@@ -259,8 +259,10 @@ export default function Benchmark() {
     (r) => r.status === "running" || r.status === "error",
   );
 
+  const isPlaceholder = activeCategoryObj.placeholder ?? false;
+
   const empty =
-    !loading && (!companies.length || companies.every((c) => c.total_score == null));
+    !isPlaceholder && !loading && (!companies.length || companies.every((c) => c.total_score == null));
 
   return (
     <div className="min-h-screen bg-background">
