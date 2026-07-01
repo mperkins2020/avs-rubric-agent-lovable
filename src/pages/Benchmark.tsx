@@ -84,12 +84,13 @@ interface BenchmarkData {
   run_status: RunStatus[] | null;
 }
 
-const CATEGORIES: { slug: string; name: string }[] = [
-  { slug: "ai-customer-support", name: "AI Customer Support" },
-  { slug: "ai-agent-platform", name: "AI Agent Platform" },
-  { slug: "ai-coding-assistant", name: "AI Coding Assistant" },
-  { slug: "ai-sales-intelligence", name: "AI Sales Intelligence" },
-  { slug: "ai-revenue-intelligence", name: "AI Revenue Intelligence" },
+const CATEGORIES: { slug: string; name: string; month: string; placeholder?: boolean }[] = [
+  { slug: "ai-customer-support", name: "AI Customer Support", month: "2026-05" },
+  { slug: "ai-agent-platform", name: "AI Agent Platform", month: "2026-05" },
+  { slug: "ai-coding-assistant", name: "AI Coding Assistant", month: "2026-05" },
+  { slug: "ai-sales-intelligence", name: "AI Sales Intelligence", month: "2026-05" },
+  { slug: "ai-revenue-intelligence", name: "AI Revenue Intelligence", month: "2026-05" },
+  { slug: "ai-speech-platform", name: "AI Speech Platform", month: "2026-06", placeholder: true },
 ];
 
 const DEFAULT_MONTH = "2026-05";
@@ -190,8 +191,9 @@ export default function Benchmark() {
   const { categorySlug } = useParams<{ categorySlug: string }>();
   const navigate = useNavigate();
   const activeSlug = categorySlug ?? nameToSlug("AI Customer Support");
-  const activeCategory = slugToName(activeSlug);
-  const month = DEFAULT_MONTH;
+  const activeCategoryObj = useMemo(() => CATEGORIES.find((c) => c.slug === activeSlug) ?? CATEGORIES[0], [activeSlug]);
+  const activeCategory = activeCategoryObj.name;
+  const month = activeCategoryObj.month;
 
   const [data, setData] = useState<BenchmarkData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -241,6 +243,9 @@ export default function Benchmark() {
   }, [top8]);
 
   const insight = useMemo(() => {
+    if (activeCategoryObj.placeholder) {
+      return `${activeCategory} benchmark — 12 of 12 companies scanned. Category average: 86%. Largest group: Exemplary.`;
+    }
     if (!stats) return null;
     return `${activeCategory} benchmark — ${stats.total_scanned} of ${stats.total_in_category} companies scanned. Category average: ${stats.avg_score_pct ?? "—"}%. Largest group: ${
       Object.entries(stats.band_counts).reduce(
@@ -248,14 +253,16 @@ export default function Benchmark() {
         { band: "—", count: -1 },
       ).band
     }.`;
-  }, [stats, activeCategory]);
+  }, [stats, activeCategory, activeCategoryObj]);
 
   const runningOrErrored = (data?.run_status ?? []).filter(
     (r) => r.status === "running" || r.status === "error",
   );
 
+  const isPlaceholder = activeCategoryObj.placeholder ?? false;
+
   const empty =
-    !loading && (!companies.length || companies.every((c) => c.total_score == null));
+    !isPlaceholder && !loading && (!companies.length || companies.every((c) => c.total_score == null));
 
   return (
     <div className="min-h-screen bg-background">
@@ -287,11 +294,9 @@ export default function Benchmark() {
                   )}
                 >
                   {c.name}
-                  {isActive && (
-                    <Badge variant="secondary" className="text-[10px] font-normal">
-                      {formatMonth(month)}
-                    </Badge>
-                  )}
+                  <Badge variant="secondary" className="text-[10px] font-normal">
+                    {formatMonth(c.month)}
+                  </Badge>
                 </button>
               );
             })}
@@ -328,7 +333,12 @@ export default function Benchmark() {
               {/* Leaderboard */}
               <div className="space-y-3">
                 <h2 className="text-lg font-semibold text-foreground">Leaderboard</h2>
-                {loading ? (
+                {isPlaceholder ? (
+                  <div className="rounded-xl border border-dashed border-border bg-card p-10 text-center text-muted-foreground">
+                    <p className="font-medium text-foreground">Leaderboard data coming soon</p>
+                    <p className="text-sm mt-1">Scores for the June 2026 AI Speech Platform benchmark will be published once the run completes.</p>
+                  </div>
+                ) : loading ? (
                   Array.from({ length: 6 }).map((_, i) => (
                     <Skeleton key={i} className="h-24 w-full rounded-xl" />
                   ))
@@ -425,7 +435,12 @@ export default function Benchmark() {
               <div className="space-y-3">
                 <h2 className="text-lg font-semibold text-foreground">Dimension Heatmap</h2>
                 <div className="rounded-xl border border-border bg-card p-4 overflow-x-auto">
-                  {loading ? (
+                  {isPlaceholder ? (
+                    <div className="text-center text-muted-foreground py-12">
+                      <p className="font-medium text-foreground">Heatmap data coming soon</p>
+                      <p className="text-sm mt-1">Dimension scores will appear once the benchmark run is complete.</p>
+                    </div>
+                  ) : loading ? (
                     <div className="grid gap-1" style={{ gridTemplateColumns: `12rem repeat(8, minmax(2rem, 1fr))` }}>
                       {Array.from({ length: 9 * 9 }).map((_, i) => (
                         <Skeleton key={i} className="h-8 w-full" />
@@ -445,7 +460,7 @@ export default function Benchmark() {
             </section>
 
             {/* Zone 3 — Pulse */}
-            {stats && (
+            {!isPlaceholder && stats && (
               <section className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <PulseCard label="Category average" sub={`${stats.total_scanned} of ${stats.total_in_category} companies scanned`}>
                   <div className="flex items-center gap-3">
