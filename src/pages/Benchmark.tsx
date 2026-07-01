@@ -460,7 +460,27 @@ export default function Benchmark() {
             </section>
 
             {/* Zone 3 — Pulse */}
-            {!isPlaceholder && stats && (
+            {isPlaceholder ? (
+              <section className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <PulseCard label="Category average" sub="12 of 12 companies scanned">
+                  <div className="flex items-center gap-3">
+                    <div className="text-4xl font-semibold tabular-nums">86%</div>
+                  </div>
+                </PulseCard>
+
+                <PulseCard label="Band distribution" sub="Data coming soon">
+                  <div className="flex h-8 w-full rounded-md border border-dashed border-border bg-muted/30 items-center justify-center text-xs text-muted-foreground">
+                    Awaiting run
+                  </div>
+                </PulseCard>
+
+                <PulseCard label="Pricing model mix" sub="Data coming soon">
+                  <div className="flex h-8 w-full rounded-md border border-dashed border-border bg-muted/30 items-center justify-center text-xs text-muted-foreground">
+                    Awaiting run
+                  </div>
+                </PulseCard>
+              </section>
+            ) : (!isPlaceholder && stats && (
               <section className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <PulseCard label="Category average" sub={`${stats.total_scanned} of ${stats.total_in_category} companies scanned`}>
                   <div className="flex items-center gap-3">
@@ -479,7 +499,7 @@ export default function Benchmark() {
                   <ModelMix counts={stats.model_type_counts} />
                 </PulseCard>
               </section>
-            )}
+            ))}
           </>
         )}
       </main>
