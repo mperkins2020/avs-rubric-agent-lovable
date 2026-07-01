@@ -333,7 +333,12 @@ export default function Benchmark() {
               {/* Leaderboard */}
               <div className="space-y-3">
                 <h2 className="text-lg font-semibold text-foreground">Leaderboard</h2>
-                {loading ? (
+                {isPlaceholder ? (
+                  <div className="rounded-xl border border-dashed border-border bg-card p-10 text-center text-muted-foreground">
+                    <p className="font-medium text-foreground">Leaderboard data coming soon</p>
+                    <p className="text-sm mt-1">Scores for the June 2026 AI Speech Platform benchmark will be published once the run completes.</p>
+                  </div>
+                ) : loading ? (
                   Array.from({ length: 6 }).map((_, i) => (
                     <Skeleton key={i} className="h-24 w-full rounded-xl" />
                   ))
