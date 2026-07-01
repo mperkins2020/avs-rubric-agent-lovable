@@ -191,8 +191,9 @@ export default function Benchmark() {
   const { categorySlug } = useParams<{ categorySlug: string }>();
   const navigate = useNavigate();
   const activeSlug = categorySlug ?? nameToSlug("AI Customer Support");
-  const activeCategory = slugToName(activeSlug);
-  const month = DEFAULT_MONTH;
+  const activeCategoryObj = useMemo(() => CATEGORIES.find((c) => c.slug === activeSlug) ?? CATEGORIES[0], [activeSlug]);
+  const activeCategory = activeCategoryObj.name;
+  const month = activeCategoryObj.month;
 
   const [data, setData] = useState<BenchmarkData | null>(null);
   const [loading, setLoading] = useState(true);
