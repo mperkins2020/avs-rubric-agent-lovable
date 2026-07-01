@@ -243,6 +243,9 @@ export default function Benchmark() {
   }, [top8]);
 
   const insight = useMemo(() => {
+    if (activeCategoryObj.placeholder) {
+      return `${activeCategory} benchmark — 12 of 12 companies scanned. Category average: 86%. Largest group: Exemplary.`;
+    }
     if (!stats) return null;
     return `${activeCategory} benchmark — ${stats.total_scanned} of ${stats.total_in_category} companies scanned. Category average: ${stats.avg_score_pct ?? "—"}%. Largest group: ${
       Object.entries(stats.band_counts).reduce(
@@ -250,7 +253,7 @@ export default function Benchmark() {
         { band: "—", count: -1 },
       ).band
     }.`;
-  }, [stats, activeCategory]);
+  }, [stats, activeCategory, activeCategoryObj]);
 
   const runningOrErrored = (data?.run_status ?? []).filter(
     (r) => r.status === "running" || r.status === "error",
