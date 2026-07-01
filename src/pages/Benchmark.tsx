@@ -84,12 +84,13 @@ interface BenchmarkData {
   run_status: RunStatus[] | null;
 }
 
-const CATEGORIES: { slug: string; name: string }[] = [
-  { slug: "ai-customer-support", name: "AI Customer Support" },
-  { slug: "ai-agent-platform", name: "AI Agent Platform" },
-  { slug: "ai-coding-assistant", name: "AI Coding Assistant" },
-  { slug: "ai-sales-intelligence", name: "AI Sales Intelligence" },
-  { slug: "ai-revenue-intelligence", name: "AI Revenue Intelligence" },
+const CATEGORIES: { slug: string; name: string; month: string; placeholder?: boolean }[] = [
+  { slug: "ai-customer-support", name: "AI Customer Support", month: "2026-05" },
+  { slug: "ai-agent-platform", name: "AI Agent Platform", month: "2026-05" },
+  { slug: "ai-coding-assistant", name: "AI Coding Assistant", month: "2026-05" },
+  { slug: "ai-sales-intelligence", name: "AI Sales Intelligence", month: "2026-05" },
+  { slug: "ai-revenue-intelligence", name: "AI Revenue Intelligence", month: "2026-05" },
+  { slug: "ai-speech-platform", name: "AI Speech Platform", month: "2026-06", placeholder: true },
 ];
 
 const DEFAULT_MONTH = "2026-05";
