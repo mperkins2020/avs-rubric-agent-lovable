@@ -435,7 +435,12 @@ export default function Benchmark() {
               <div className="space-y-3">
                 <h2 className="text-lg font-semibold text-foreground">Dimension Heatmap</h2>
                 <div className="rounded-xl border border-border bg-card p-4 overflow-x-auto">
-                  {loading ? (
+                  {isPlaceholder ? (
+                    <div className="text-center text-muted-foreground py-12">
+                      <p className="font-medium text-foreground">Heatmap data coming soon</p>
+                      <p className="text-sm mt-1">Dimension scores will appear once the benchmark run is complete.</p>
+                    </div>
+                  ) : loading ? (
                     <div className="grid gap-1" style={{ gridTemplateColumns: `12rem repeat(8, minmax(2rem, 1fr))` }}>
                       {Array.from({ length: 9 * 9 }).map((_, i) => (
                         <Skeleton key={i} className="h-8 w-full" />
