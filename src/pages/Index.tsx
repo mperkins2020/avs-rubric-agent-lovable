@@ -100,6 +100,7 @@ const Index = () => {
     status,
     statusMessage,
     error,
+    errorCode,
     startScan,
     companyProfile,
     rubricScore,
