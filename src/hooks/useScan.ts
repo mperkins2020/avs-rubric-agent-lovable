@@ -13,6 +13,7 @@ function extractDomain(rawUrl: string): string | null {
 }
 
 export type ScanStatus = 'idle' | 'scraping' | 'analyzing' | 'complete' | 'error';
+export type ScanErrorCode = 'anon_limit' | 'weekly_limit' | null;
 
 interface ScanState {
   status: ScanStatus;
@@ -24,6 +25,7 @@ interface ScanState {
   observability: ObservabilityData | null;
   modelClassification: ModelClassification | null;
   error: string | null;
+  errorCode: ScanErrorCode;
   chatMessages: ChatMessage[];
   isChatLoading: boolean;
 }
@@ -38,6 +40,7 @@ const initialState: ScanState = {
   observability: null,
   modelClassification: null,
   error: null,
+  errorCode: null,
   chatMessages: [],
   isChatLoading: false,
 };
@@ -60,6 +63,7 @@ export function useScan() {
       observability: null,
       modelClassification: null,
       error: null,
+      errorCode: null,
       chatMessages: [],
     });
 
@@ -69,10 +73,31 @@ export function useScan() {
       const scrapeResult = await scraperApi.scrapeWebsite(url);
 
       if (!scrapeResult.success || !scrapeResult.pages) {
+        // Detect anonymous-user free-scan-exhausted case so the UI can open
+        // the sign-up modal instead of showing a generic error toast.
+        let errorCode: ScanErrorCode = null;
+        let errorMessage = scrapeResult.error || 'Failed to scrape website';
+        try {
+          const { data: { session } } = await supabase.auth.getSession();
+          if (session?.user?.is_anonymous) {
+            const { data: prior } = await supabase
+              .from('scan_usage')
+              .select('id')
+              .eq('user_id', session.user.id)
+              .limit(1);
+            if (prior && prior.length > 0) {
+              errorCode = 'anon_limit';
+              errorMessage = 'Free scan used. Create a free account to run more analyses.';
+            }
+          }
+        } catch {
+          // best-effort — fall back to raw error
+        }
         updateState({
           status: 'error',
           statusMessage: '',
-          error: scrapeResult.error || 'Failed to scrape website',
+          error: errorMessage,
+          errorCode,
         });
         return false;
       }

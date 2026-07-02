@@ -100,6 +100,7 @@ const Index = () => {
     status,
     statusMessage,
     error,
+    errorCode,
     startScan,
     companyProfile,
     rubricScore,
@@ -143,9 +144,16 @@ const Index = () => {
 
   useEffect(() => {
     if (status === 'error' && error) {
-      toast.error("Scan Failed", { description: error });
+      if (errorCode === 'anon_limit') {
+        setAuthModalReason('second-run');
+        setShowAuthModal(true);
+        trackEvent('second_run_gate_hit');
+        trackEvent('signup_modal_opened', { reason: 'second_run_fallback' });
+      } else {
+        toast.error("Scan Failed", { description: error });
+      }
     }
-  }, [status, error]);
+  }, [status, error, errorCode]);
 
   // Silent anonymous sign-in for first-time visitors
   useEffect(() => {
@@ -238,11 +246,12 @@ const Index = () => {
     }
     // Anonymous users are capped at 1 free scan
     if (activeSession.user.is_anonymous) {
-      const { count } = await supabase
+      const { data: priorScans } = await supabase
         .from('scan_usage')
-        .select('*', { count: 'exact', head: true })
-        .eq('user_id', activeSession.user.id);
-      if ((count ?? 0) >= 1) {
+        .select('id')
+        .eq('user_id', activeSession.user.id)
+        .limit(1);
+      if (priorScans && priorScans.length >= 1) {
         setPendingUrl(url);
         setAuthModalReason('second-run');
         setShowAuthModal(true);
