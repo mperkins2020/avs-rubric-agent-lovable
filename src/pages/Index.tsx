@@ -144,9 +144,16 @@ const Index = () => {
 
   useEffect(() => {
     if (status === 'error' && error) {
-      toast.error("Scan Failed", { description: error });
+      if (errorCode === 'anon_limit') {
+        setAuthModalReason('second-run');
+        setShowAuthModal(true);
+        trackEvent('second_run_gate_hit');
+        trackEvent('signup_modal_opened', { reason: 'second_run_fallback' });
+      } else {
+        toast.error("Scan Failed", { description: error });
+      }
     }
-  }, [status, error]);
+  }, [status, error, errorCode]);
 
   // Silent anonymous sign-in for first-time visitors
   useEffect(() => {
