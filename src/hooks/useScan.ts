@@ -13,6 +13,7 @@ function extractDomain(rawUrl: string): string | null {
 }
 
 export type ScanStatus = 'idle' | 'scraping' | 'analyzing' | 'complete' | 'error';
+export type ScanErrorCode = 'anon_limit' | 'weekly_limit' | null;
 
 interface ScanState {
   status: ScanStatus;
@@ -24,6 +25,7 @@ interface ScanState {
   observability: ObservabilityData | null;
   modelClassification: ModelClassification | null;
   error: string | null;
+  errorCode: ScanErrorCode;
   chatMessages: ChatMessage[];
   isChatLoading: boolean;
 }
@@ -38,6 +40,7 @@ const initialState: ScanState = {
   observability: null,
   modelClassification: null,
   error: null,
+  errorCode: null,
   chatMessages: [],
   isChatLoading: false,
 };
