@@ -246,11 +246,12 @@ const Index = () => {
     }
     // Anonymous users are capped at 1 free scan
     if (activeSession.user.is_anonymous) {
-      const { count } = await supabase
+      const { data: priorScans } = await supabase
         .from('scan_usage')
-        .select('*', { count: 'exact', head: true })
-        .eq('user_id', activeSession.user.id);
-      if ((count ?? 0) >= 1) {
+        .select('id')
+        .eq('user_id', activeSession.user.id)
+        .limit(1);
+      if (priorScans && priorScans.length >= 1) {
         setPendingUrl(url);
         setAuthModalReason('second-run');
         setShowAuthModal(true);
