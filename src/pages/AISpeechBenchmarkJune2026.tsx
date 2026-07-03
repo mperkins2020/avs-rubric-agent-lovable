@@ -137,8 +137,19 @@ function ImagePlaceholder({ alt, aspect = "aspect-[4/5]" }: { alt: string; aspec
   );
 }
 
+const previewPages = [
+  { src: previewCoverAsset.url, alt: "AI Speech Platform Buyability Benchmark, June 2026 Edition — Cover page", label: "Cover" },
+  { src: previewContentsAsset.url, alt: "June 2026 Benchmark — Contents page", label: "Contents" },
+  { src: previewExecSummaryAsset.url, alt: "June 2026 Benchmark — Executive Summary page", label: "Executive Summary" },
+];
+
 export default function AISpeechBenchmarkJune2026() {
   const formVariant = useFormVariant();
+  const [previewIndex, setPreviewIndex] = useState<number | null>(null);
+  const openPreview = (i: number) => setPreviewIndex(i);
+  const closePreview = () => setPreviewIndex(null);
+  const nextPreview = () => setPreviewIndex((i) => (i === null ? 0 : (i + 1) % previewPages.length));
+  const prevPreview = () => setPreviewIndex((i) => (i === null ? 0 : (i - 1 + previewPages.length) % previewPages.length));
 
   return (
     <div className="min-h-screen bg-[hsl(var(--vt-bg-section))]">
