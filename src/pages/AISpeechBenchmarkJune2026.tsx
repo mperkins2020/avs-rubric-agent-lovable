@@ -122,24 +122,63 @@ const faqs = [
 
 const SignupForm = BrevoSignupFormJune2026;
 
-// Placeholder image slot — swap in real assets when uploaded.
-function ImagePlaceholder({ alt, aspect = "aspect-[4/5]" }: { alt: string; aspect?: string }) {
+function FlipBook() {
+  const [open, setOpen] = useState(false);
   return (
-    <div
-      className={`w-full ${aspect} rounded-lg md:rounded-xl border border-dashed border-[hsl(var(--vt-violet)/0.4)] bg-white/60 shadow-vt-sm flex items-center justify-center p-4`}
-      role="img"
-      aria-label={alt}
-    >
-      <span className="text-xs text-muted-foreground text-center leading-relaxed">{alt}</span>
+    <div className="relative mx-auto max-w-[420px] lg:max-w-none">
+      <div
+        className="absolute -inset-6 rounded-[28px] opacity-60 blur-2xl"
+        style={{
+          background:
+            "linear-gradient(135deg, hsl(var(--vt-violet) / 0.5), hsl(var(--vt-blue) / 0.4))",
+        }}
+      />
+      <div className="relative" style={{ perspective: "2000px" }}>
+        {/* Contents page (behind, revealed when cover opens) */}
+        <button
+          type="button"
+          onClick={() => setOpen(false)}
+          aria-label="Close cover"
+          aria-hidden={!open}
+          tabIndex={open ? 0 : -1}
+          className="block w-full cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--vt-violet))] rounded-lg md:rounded-xl"
+        >
+          <img
+            src={previewContentsAsset.url}
+            alt="AI Speech Platform Buyability Benchmark — table of contents preview"
+            className="block w-full h-auto rounded-lg md:rounded-xl shadow-vt-lg ring-1 ring-black/5"
+            draggable={false}
+          />
+        </button>
+        {/* Cover page (on top, flips open from the left edge) */}
+        <motion.button
+          type="button"
+          onClick={() => setOpen((v) => !v)}
+          aria-label={open ? "Close cover" : "Open cover to see contents"}
+          className="absolute inset-0 origin-left focus:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--vt-violet))] rounded-lg md:rounded-xl"
+          style={{
+            transformStyle: "preserve-3d",
+            cursor: open ? "default" : "pointer",
+            pointerEvents: open ? "none" : "auto",
+          }}
+          animate={{ rotateY: open ? -160 : 0 }}
+          transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
+        >
+          <img
+            src={previewCoverAsset.url}
+            alt="AI Speech Platform Buyability Benchmark June 2026 Edition — report cover"
+            className="block w-full h-auto rounded-lg md:rounded-xl shadow-vt-lg ring-1 ring-black/5"
+            style={{ backfaceVisibility: "hidden" }}
+            draggable={false}
+          />
+        </motion.button>
+      </div>
+      <p className="mt-3 text-center text-xs text-muted-foreground">
+        {open ? "Click the contents page to close" : "Click the cover to peek inside"}
+      </p>
     </div>
   );
 }
-
-const previewPages = [
-  { src: previewCoverAsset.url, alt: "AI Speech Platform Buyability Benchmark, June 2026 Edition — Cover page", label: "Cover" },
-  { src: previewContentsAsset.url, alt: "June 2026 Benchmark — Contents page", label: "Contents" },
-  { src: previewExecSummaryAsset.url, alt: "June 2026 Benchmark — Executive Summary page", label: "Executive Summary" },
-];
 
 export default function AISpeechBenchmarkJune2026() {
   const formVariant = useFormVariant();
