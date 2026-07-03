@@ -182,11 +182,6 @@ function FlipBook() {
 
 export default function AISpeechBenchmarkJune2026() {
   const formVariant = useFormVariant();
-  const [previewIndex, setPreviewIndex] = useState<number | null>(null);
-  const openPreview = (i: number) => setPreviewIndex(i);
-  const closePreview = () => setPreviewIndex(null);
-  const nextPreview = () => setPreviewIndex((i) => (i === null ? 0 : (i + 1) % previewPages.length));
-  const prevPreview = () => setPreviewIndex((i) => (i === null ? 0 : (i - 1 + previewPages.length) % previewPages.length));
 
   return (
     <div className="min-h-screen bg-[hsl(var(--vt-bg-section))]">
