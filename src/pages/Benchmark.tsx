@@ -90,7 +90,7 @@ const CATEGORIES: { slug: string; name: string; month: string; placeholder?: boo
   { slug: "ai-coding-assistant", name: "AI Coding Assistant", month: "2026-05" },
   { slug: "ai-sales-intelligence", name: "AI Sales Intelligence", month: "2026-05" },
   { slug: "ai-revenue-intelligence", name: "AI Revenue Intelligence", month: "2026-05" },
-  { slug: "ai-speech-platform", name: "AI Speech Platform", month: "2026-06", placeholder: true },
+  { slug: "ai-speech-platform", name: "AI Speech Platform", month: "2026-06" },
 ];
 
 const DEFAULT_MONTH = "2026-05";
