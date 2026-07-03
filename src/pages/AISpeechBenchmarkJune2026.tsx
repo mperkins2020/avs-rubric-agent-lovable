@@ -1,15 +1,13 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ArrowRight, ChevronLeft, ChevronRight, X } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import ValueTempoLogo from "@/assets/ValueTempo_Logo_main.png";
 import slopeChartAsset from "@/assets/june-2026-avs-category-averages-slope.png.asset.json";
 import previewCoverAsset from "@/assets/june-2026-preview-1-cover.png.asset.json";
 import previewContentsAsset from "@/assets/june-2026-preview-2-contents.png.asset.json";
-import previewExecSummaryAsset from "@/assets/june-2026-preview-3-executive-summary.png.asset.json";
 import { Button } from "@/components/ui/button";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Footer } from "@/components/Footer";
 import { ResourcesDropdown } from "@/components/ResourcesDropdown";
 import { SEOHead } from "@/components/SEOHead";
@@ -124,32 +122,66 @@ const faqs = [
 
 const SignupForm = BrevoSignupFormJune2026;
 
-// Placeholder image slot — swap in real assets when uploaded.
-function ImagePlaceholder({ alt, aspect = "aspect-[4/5]" }: { alt: string; aspect?: string }) {
+function FlipBook() {
+  const [open, setOpen] = useState(false);
   return (
-    <div
-      className={`w-full ${aspect} rounded-lg md:rounded-xl border border-dashed border-[hsl(var(--vt-violet)/0.4)] bg-white/60 shadow-vt-sm flex items-center justify-center p-4`}
-      role="img"
-      aria-label={alt}
-    >
-      <span className="text-xs text-muted-foreground text-center leading-relaxed">{alt}</span>
+    <div className="relative mx-auto max-w-[420px] lg:max-w-none">
+      <div
+        className="absolute -inset-6 rounded-[28px] opacity-60 blur-2xl"
+        style={{
+          background:
+            "linear-gradient(135deg, hsl(var(--vt-violet) / 0.5), hsl(var(--vt-blue) / 0.4))",
+        }}
+      />
+      <div className="relative" style={{ perspective: "2000px" }}>
+        {/* Contents page (behind, revealed when cover opens) */}
+        <button
+          type="button"
+          onClick={() => setOpen(false)}
+          aria-label="Close cover"
+          aria-hidden={!open}
+          tabIndex={open ? 0 : -1}
+          className="block w-full cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--vt-violet))] rounded-lg md:rounded-xl"
+        >
+          <img
+            src={previewContentsAsset.url}
+            alt="AI Speech Platform Buyability Benchmark — table of contents preview"
+            className="block w-full h-auto rounded-lg md:rounded-xl shadow-vt-lg ring-1 ring-black/5"
+            draggable={false}
+          />
+        </button>
+        {/* Cover page (on top, flips open from the left edge) */}
+        <motion.button
+          type="button"
+          onClick={() => setOpen((v) => !v)}
+          aria-label={open ? "Close cover" : "Open cover to see contents"}
+          className="absolute inset-0 origin-left focus:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--vt-violet))] rounded-lg md:rounded-xl"
+          style={{
+            transformStyle: "preserve-3d",
+            cursor: open ? "default" : "pointer",
+            pointerEvents: open ? "none" : "auto",
+          }}
+          animate={{ rotateY: open ? -160 : 0 }}
+          transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
+        >
+          <img
+            src={previewCoverAsset.url}
+            alt="AI Speech Platform Buyability Benchmark June 2026 Edition — report cover"
+            className="block w-full h-auto rounded-lg md:rounded-xl shadow-vt-lg ring-1 ring-black/5"
+            style={{ backfaceVisibility: "hidden" }}
+            draggable={false}
+          />
+        </motion.button>
+      </div>
+      <p className="mt-3 text-center text-xs text-muted-foreground">
+        {open ? "Click the contents page to close" : "Click the cover to peek inside"}
+      </p>
     </div>
   );
 }
 
-const previewPages = [
-  { src: previewCoverAsset.url, alt: "AI Speech Platform Buyability Benchmark, June 2026 Edition — Cover page", label: "Cover" },
-  { src: previewContentsAsset.url, alt: "June 2026 Benchmark — Contents page", label: "Contents" },
-  { src: previewExecSummaryAsset.url, alt: "June 2026 Benchmark — Executive Summary page", label: "Executive Summary" },
-];
-
 export default function AISpeechBenchmarkJune2026() {
   const formVariant = useFormVariant();
-  const [previewIndex, setPreviewIndex] = useState<number | null>(null);
-  const openPreview = (i: number) => setPreviewIndex(i);
-  const closePreview = () => setPreviewIndex(null);
-  const nextPreview = () => setPreviewIndex((i) => (i === null ? 0 : (i + 1) % previewPages.length));
-  const prevPreview = () => setPreviewIndex((i) => (i === null ? 0 : (i - 1 + previewPages.length) % previewPages.length));
 
   return (
     <div className="min-h-screen bg-[hsl(var(--vt-bg-section))]">
@@ -216,18 +248,7 @@ export default function AISpeechBenchmarkJune2026() {
             </motion.div>
 
             <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.1 }} className="lg:col-span-5">
-              <button
-                type="button"
-                onClick={() => openPreview(0)}
-                className="block w-full rounded-lg md:rounded-xl overflow-hidden border border-[hsl(var(--vt-violet)/0.25)] bg-white shadow-vt-md hover:shadow-vt-lg transition-shadow"
-                aria-label="Open report preview"
-              >
-                <img
-                  src={previewCoverAsset.url}
-                  alt="June 2026 AI Speech Platform AVS Benchmark report cover"
-                  className="w-full h-auto block"
-                />
-              </button>
+              <FlipBook />
             </motion.div>
           </div>
         </div>
@@ -320,23 +341,6 @@ export default function AISpeechBenchmarkJune2026() {
                 </li>
               </ul>
 
-              <p className="mt-6 text-sm text-muted-foreground">Click any page to flip through the preview.</p>
-              <div className="mt-3 grid grid-cols-1 sm:grid-cols-3 gap-4">
-                {previewPages.map((p, i) => (
-                  <button
-                    key={p.label}
-                    type="button"
-                    onClick={() => openPreview(i)}
-                    className="group relative block rounded-lg md:rounded-xl overflow-hidden border border-border bg-white shadow-vt-sm hover:shadow-vt-md hover:-translate-y-0.5 transition-all text-left"
-                    aria-label={`Open preview: ${p.label}`}
-                  >
-                    <img src={p.src} alt={p.alt} className="w-full h-auto block aspect-[3/4] object-cover object-top" loading="lazy" />
-                    <span className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-vt-midnight/80 to-transparent text-white text-xs font-medium px-3 py-2">
-                      {i + 1}. {p.label}
-                    </span>
-                  </button>
-                ))}
-              </div>
             </div>
 
             {/* Editorial insight */}
@@ -348,11 +352,10 @@ export default function AISpeechBenchmarkJune2026() {
                 When the top of a category is 86%, the remaining gaps are the signal
               </h2>
               <div className="mt-5 space-y-4 text-base text-vt-midnight/80 leading-relaxed max-w-3xl">
-                <p>When a category scores 86% on average — 17 points above the next highest — the gaps that remain tell you more than the gaps that were closed.</p>
-                <p>In AI Speech, the basic buyability problems are solved. Pricing is visible. Value units are named. Packaging is clear. Buyers can estimate spend from public sources before talking to anyone. That's what developer-first, usage-based GTM forces: when your primary buyer reads the documentation before scheduling a call, commercial transparency has to be there.</p>
-                <p>What's left is harder. Performance claims that can't be independently verified without running a proof of concept. Production-edge behavior — rate limits, credit exhaustion, call termination — left undocumented until after deployment. Post-purchase commercial terms: no configurable spend caps, no dispute process for contested charges, no published refund policy.</p>
-                <p>The gaps have moved. They're not about whether buyers can understand the offer. They're about whether buyers can trust what happens in production.</p>
-                <p>One more pattern the data reveals: pure consumption models outperform hybrid models by 9.5 points on average (92.5% vs. 83.0%). The simpler the pricing structure, the easier it is to document performance claims and production-edge behavior cleanly. All four companies with verifiable performance claims (D1) are consumption-model companies. Two of the three with full production-edge documentation (D7) are as well.</p>
+                <p>The chart below shows five May 2026 categories clustered between 59% and 69% — all below the 75% Exemplary floor. AI Speech Platform lands at 86%, 17 points above the highest May category.</p>
+                <p>That gap is structural. In AI Speech, the primary buyer reads the documentation before engaging sales. Developer-first, usage-based GTM forces pricing visibility, named billing units, and packaging clarity because the buyer needs them to self-qualify. And the dimensions that were hardest across May's five categories — value unit, buyer alignment, and packaging — scored perfectly across all 12 companies here.</p>
+                <p>What the chart doesn't show is where the remaining gaps sit. They're not in the dimensions May struggled with. They're in the layers that come after a buyer understands the offer: performance claims they can't independently verify without running a proof of concept, production-edge behavior left undocumented or unclear until after deployment, and post-purchase commercial terms no rubric dimension currently captures.</p>
+                <p>One more pattern worth noting: consumption-model companies averaged 92.5% vs. 83.0% for hybrid — a 9.5-point gap that concentrates in D1 (verifiable performance claims) and D7 (production-edge behavior). A single billing unit is easier to anchor a benchmark claim to. A single exhaustion event is easier to document than the two-layer failure modes of a hybrid model.</p>
               </div>
 
               <figure className="mt-8">
@@ -535,46 +538,6 @@ export default function AISpeechBenchmarkJune2026() {
         </div>
       </section>
 
-      <Dialog open={previewIndex !== null} onOpenChange={(o) => !o && closePreview()}>
-        <DialogContent className="max-w-4xl p-0 overflow-hidden bg-white">
-          {previewIndex !== null && (
-            <div className="relative">
-              <img
-                src={previewPages[previewIndex].src}
-                alt={previewPages[previewIndex].alt}
-                className="w-full h-auto max-h-[85vh] object-contain bg-[hsl(var(--vt-bg-section))]"
-              />
-              <button
-                type="button"
-                onClick={prevPreview}
-                className="absolute left-3 top-1/2 -translate-y-1/2 h-10 w-10 rounded-full bg-white/90 hover:bg-white shadow-md flex items-center justify-center"
-                aria-label="Previous page"
-              >
-                <ChevronLeft className="h-5 w-5 text-vt-midnight" />
-              </button>
-              <button
-                type="button"
-                onClick={nextPreview}
-                className="absolute right-3 top-1/2 -translate-y-1/2 h-10 w-10 rounded-full bg-white/90 hover:bg-white shadow-md flex items-center justify-center"
-                aria-label="Next page"
-              >
-                <ChevronRight className="h-5 w-5 text-vt-midnight" />
-              </button>
-              <button
-                type="button"
-                onClick={closePreview}
-                className="absolute right-3 top-3 h-9 w-9 rounded-full bg-white/90 hover:bg-white shadow-md flex items-center justify-center"
-                aria-label="Close preview"
-              >
-                <X className="h-4 w-4 text-vt-midnight" />
-              </button>
-              <div className="absolute bottom-3 left-1/2 -translate-x-1/2 rounded-full bg-vt-midnight/85 text-white text-xs font-medium px-3 py-1">
-                {previewIndex + 1} / {previewPages.length} · {previewPages[previewIndex].label}
-              </div>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
       <Footer />
     </div>
   );
