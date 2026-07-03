@@ -322,14 +322,17 @@ export default function AISpeechBenchmarkJune2026() {
                 <p>One more pattern the data reveals: pure consumption models outperform hybrid models by 9.5 points on average (92.5% vs. 83.0%). The simpler the pricing structure, the easier it is to document performance claims and production-edge behavior cleanly. All four companies with verifiable performance claims (D1) are consumption-model companies. Two of the three with full production-edge documentation (D7) are as well.</p>
               </div>
 
-              <div className="mt-8">
+              <figure className="mt-8">
+                <figcaption className="mb-3 text-sm font-semibold text-vt-midnight">
+                  AVS Category Averages — May 2026 vs. June 2026 Spotlight
+                </figcaption>
                 <img
-                  src={figure2Asset.url}
-                  alt="Slope chart: May 2026 category averages vs AI Speech Platform 86%"
+                  src={slopeChartAsset.url}
+                  alt="Slope chart: May 2026 AVS category averages (59%–69%) vs. June 2026 AI Speech Platform at 86%"
                   className="w-full max-w-3xl rounded-xl border border-border shadow-vt-sm"
                   loading="lazy"
                 />
-              </div>
+              </figure>
             </div>
 
             {/* Findings cards */}
