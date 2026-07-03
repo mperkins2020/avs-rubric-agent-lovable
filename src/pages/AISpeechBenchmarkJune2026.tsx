@@ -42,33 +42,27 @@ const stats = [
 const findings = [
   {
     title: "Developer-first GTM sets a new transparency floor",
-    body:
-      "86% category average — 17 points above May's top category. When the pricing page does the work a sales rep would otherwise handle, commercial clarity follows structurally.",
+    body: "86% category average — 17 points above May's top category. When the pricing page does the work a sales rep would otherwise handle, commercial clarity follows structurally.",
   },
   {
     title: "Four dimensions scored perfectly. Two exposed the shared gap.",
-    body:
-      "ICP clarity, budget alignment, value unit, and packaging scored 2.0 across all 12 companies. The gaps concentrate in verifiable performance claims and production-edge behavior.",
+    body: "ICP clarity, budget alignment, value unit, and packaging scored 2.0 across all 12 companies. The gaps concentrate in verifiable performance claims and production-edge behavior.",
   },
   {
     title: "Verifiable performance claims are the GTM liability most companies are ignoring",
-    body:
-      "8 of 12 companies make claims buyers can't independently verify. All four that scored full marks on this dimension are consumption-model companies.",
+    body: "8 of 12 companies make claims buyers can't independently verify. All four that scored full marks on this dimension are consumption-model companies.",
   },
   {
     title: "The shared floor is what happens when production hits a limit",
-    body:
-      "9 of 12 companies don't document rate limit behavior, credit exhaustion, or overage handling. For operators building on this infrastructure, that's an unquantified production risk.",
+    body: "9 of 12 companies don't document rate limit behavior, credit exhaustion, or overage handling. For operators building on this infrastructure, that's an unquantified production risk.",
   },
   {
     title: "Sub-type drives score variation within the Exemplary band",
-    body:
-      "Full Speech Platforms averaged 93.8%. Voice Agent Platforms 89.6%. TTS 84.4%. STT 81.3%. All Exemplary — but the gap within the band is driven by D5 and D7 documentation depth.",
+    body: "Full Speech Platforms averaged 93.8%. Voice Agent Platforms 89.6%. TTS 84.4%. STT 81.3%. All Exemplary — but the gap within the band is driven by D5 and D7 documentation depth.",
   },
   {
     title: "100% is not the ceiling",
-    body:
-      "Deepgram and Retell AI both scored 16/16 and still have named gaps in spend controls, billing disputes, and refund policies that informed buyers will surface.",
+    body: "Deepgram and Retell AI both scored 16/16 and still have named gaps in spend controls, billing disputes, and refund policies that informed buyers will surface.",
   },
 ];
 
@@ -101,7 +95,7 @@ const faqs = [
   {
     question: "Why did AI Speech score so much higher than May's categories?",
     answer:
-      "Developer-first, usage-based products document pricing, billing units, and buyer segments in detail because their primary customer reads the documentation before talking to anyone. That expectation forces commercial transparency that sales-led categories can defer to a discovery call. The result: buyer questions in AI Speech have moved past \"what does this cost?\" toward \"what happens in production when something goes wrong?\"",
+      'Developer-first, usage-based products document pricing, billing units, and buyer segments in detail because their primary customer reads the documentation before talking to anyone. That expectation forces commercial transparency that sales-led categories can defer to a discovery call. The result: buyer questions in AI Speech have moved past "what does this cost?" toward "what happens in production when something goes wrong?"',
   },
   {
     question: "All 12 companies scored Exemplary — does that mean they're equivalent?",
@@ -129,8 +123,7 @@ function FlipBook() {
       <div
         className="absolute -inset-6 rounded-[28px] opacity-60 blur-2xl"
         style={{
-          background:
-            "linear-gradient(135deg, hsl(var(--vt-violet) / 0.5), hsl(var(--vt-blue) / 0.4))",
+          background: "linear-gradient(135deg, hsl(var(--vt-violet) / 0.5), hsl(var(--vt-blue) / 0.4))",
         }}
       />
       <div className="relative" style={{ perspective: "2000px" }}>
@@ -203,7 +196,11 @@ export default function AISpeechBenchmarkJune2026() {
               Methodology
             </Link>
             <ResourcesDropdown />
-            <Button asChild size="sm" className="bg-vt-midnight text-white hover:bg-vt-midnight/90 rounded-[20px] px-5 h-9">
+            <Button
+              asChild
+              size="sm"
+              className="bg-vt-midnight text-white hover:bg-vt-midnight/90 rounded-[20px] px-5 h-9"
+            >
               <a href="#download">Download</a>
             </Button>
           </nav>
@@ -212,12 +209,23 @@ export default function AISpeechBenchmarkJune2026() {
 
       {/* Hero */}
       <section className="relative overflow-hidden border-b border-[hsl(var(--vt-violet)/0.12)] bg-gradient-to-br from-[#EEEAFB] via-[#F4F1FC] to-[#E8F0FF]">
-        <div className="pointer-events-none absolute -top-32 -right-32 h-[480px] w-[480px] rounded-full opacity-60 blur-3xl" style={{ background: "radial-gradient(circle at 30% 30%, hsl(var(--vt-violet) / 0.55), transparent 60%)" }} />
-        <div className="pointer-events-none absolute -bottom-40 -left-20 h-[420px] w-[420px] rounded-full opacity-50 blur-3xl" style={{ background: "radial-gradient(circle at 70% 30%, hsl(var(--vt-blue) / 0.5), transparent 60%)" }} />
+        <div
+          className="pointer-events-none absolute -top-32 -right-32 h-[480px] w-[480px] rounded-full opacity-60 blur-3xl"
+          style={{ background: "radial-gradient(circle at 30% 30%, hsl(var(--vt-violet) / 0.55), transparent 60%)" }}
+        />
+        <div
+          className="pointer-events-none absolute -bottom-40 -left-20 h-[420px] w-[420px] rounded-full opacity-50 blur-3xl"
+          style={{ background: "radial-gradient(circle at 70% 30%, hsl(var(--vt-blue) / 0.5), transparent 60%)" }}
+        />
 
         <div className="container mx-auto px-5 md:px-10 py-14 md:py-20 relative">
           <div className="grid lg:grid-cols-12 gap-10 lg:gap-16 items-start">
-            <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} className="lg:col-span-7">
+            <motion.div
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
+              className="lg:col-span-7"
+            >
               <span className="text-[11px] font-semibold tracking-[0.2em] text-[hsl(var(--vt-violet))] uppercase">
                 Benchmark Report · June 2026
               </span>
@@ -226,28 +234,47 @@ export default function AISpeechBenchmarkJune2026() {
                 <br className="hidden md:block" /> June 2026
               </h1>
               <p className="mt-5 text-lg md:text-xl text-vt-midnight/80 leading-relaxed max-w-2xl">
-                We scored 12 AI speech companies — STT providers, TTS platforms, and voice agent builders — on what a buyer can evaluate independently.
+                We scored 12 AI speech companies — STT providers, TTS platforms, and voice agent builders — on what a
+                buyer can evaluate independently.
               </p>
               <p className="mt-5 text-base text-vt-midnight/70 leading-relaxed max-w-2xl">
-                First category in the AVS Benchmark where every company scored Exemplary. When basic buyability is largely solved, the remaining gaps become the signal worth paying attention to.
+                First category in the AVS Benchmark where every company scored Exemplary. When basic buyability is
+                largely solved, the remaining gaps become the signal worth paying attention to.
               </p>
 
               <div className="mt-7 flex flex-nowrap items-center gap-x-6 gap-y-3 whitespace-nowrap overflow-x-auto">
-                <Button asChild size="lg" className="bg-vt-midnight text-white hover:bg-vt-midnight/90 rounded-[24px] h-12 px-6 flex-shrink-0">
+                <Button
+                  asChild
+                  size="lg"
+                  className="bg-vt-midnight text-white hover:bg-vt-midnight/90 rounded-[24px] h-12 px-6 flex-shrink-0"
+                >
                   <a href="#download">
                     Download the report <ArrowRight className="ml-1 h-4 w-4" />
                   </a>
                 </Button>
-                <a href="https://calendly.com/mlhperkins/30min" target="_blank" rel="noopener noreferrer" className="text-sm font-medium text-vt-midnight hover:text-[hsl(var(--vt-violet))] transition-colors inline-flex items-center gap-1 flex-shrink-0">
+                <a
+                  href="https://calendly.com/mlhperkins/30min"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-sm font-medium text-vt-midnight hover:text-[hsl(var(--vt-violet))] transition-colors inline-flex items-center gap-1 flex-shrink-0"
+                >
                   Request a score walkthrough <ArrowRight className="h-3.5 w-3.5" />
                 </a>
-                <Link to="/methodology" className="text-sm font-medium text-vt-midnight hover:text-[hsl(var(--vt-violet))] transition-colors inline-flex items-center gap-1 flex-shrink-0">
+                <Link
+                  to="/methodology"
+                  className="text-sm font-medium text-vt-midnight hover:text-[hsl(var(--vt-violet))] transition-colors inline-flex items-center gap-1 flex-shrink-0"
+                >
                   Read the methodology <ArrowRight className="h-3.5 w-3.5" />
                 </Link>
               </div>
             </motion.div>
 
-            <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.1 }} className="lg:col-span-5">
+            <motion.div
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.1 }}
+              className="lg:col-span-5"
+            >
               <FlipBook />
             </motion.div>
           </div>
@@ -262,17 +289,22 @@ export default function AISpeechBenchmarkJune2026() {
               <span className="text-[11px] font-semibold tracking-[0.18em] text-[hsl(var(--vt-violet))] uppercase">
                 Who the report is for
               </span>
-              <h2 className="mt-2 text-2xl md:text-3xl font-bold text-vt-midnight">
-                This report is for you if:
-              </h2>
+              <h2 className="mt-2 text-2xl md:text-3xl font-bold text-vt-midnight">This report is for you if:</h2>
               <ul className="mt-5 space-y-3 max-w-3xl">
                 <li className="flex gap-3 text-base text-vt-midnight/80 leading-relaxed">
                   <span className="mt-2 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-[hsl(var(--vt-violet))]" />
-                  <span>You're a <strong>founder</strong> building an AI voice product and want to see how your commercial transparency stacks up against category peers</span>
+                  <span>
+                    You're a <strong>founder</strong> building an AI voice product and want to see how your commercial
+                    transparency stacks up against category peers
+                  </span>
                 </li>
                 <li className="flex gap-3 text-base text-vt-midnight/80 leading-relaxed">
                   <span className="mt-2 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-[hsl(var(--vt-violet))]" />
-                  <span>You're a <strong>GTM operator, practitioner, or product marketer</strong> who wants to see what commercial evidence looks like at the top of this category — and what the gaps reveal about where AI speech GTM still falls short</span>
+                  <span>
+                    You're a <strong>GTM operator, practitioner, or product marketer</strong> who wants to see what
+                    commercial evidence looks like at the top of this category — and what the gaps reveal about where AI
+                    speech GTM still falls short
+                  </span>
                 </li>
               </ul>
             </div>
@@ -288,7 +320,11 @@ export default function AISpeechBenchmarkJune2026() {
               <div className="mt-6 grid grid-cols-2 md:grid-cols-3 gap-4">
                 {stats.map((s) => (
                   <div key={s.label} className="rounded-xl border border-border bg-white p-5 shadow-vt-sm">
-                    <div className={`font-bold text-vt-midnight leading-tight whitespace-pre-line ${s.valueClass ?? "text-2xl md:text-3xl"}`}>{s.value}</div>
+                    <div
+                      className={`font-bold text-vt-midnight leading-tight whitespace-pre-line ${s.valueClass ?? "text-2xl md:text-3xl"}`}
+                    >
+                      {s.value}
+                    </div>
                     <div className="mt-1 text-xs md:text-sm text-muted-foreground leading-snug">{s.label}</div>
                   </div>
                 ))}
@@ -310,11 +346,11 @@ export default function AISpeechBenchmarkJune2026() {
               <span className="text-[11px] font-semibold tracking-[0.18em] text-[hsl(var(--vt-violet))] uppercase">
                 Benchmark Context
               </span>
-              <h2 className="mt-2 text-2xl md:text-3xl font-bold text-vt-midnight">
-                What the AVS Benchmark measures
-              </h2>
+              <h2 className="mt-2 text-2xl md:text-3xl font-bold text-vt-midnight">What the AVS Benchmark measures</h2>
               <p className="mt-4 text-base text-vt-midnight/80 leading-relaxed max-w-3xl">
-                The AVS (Adaptive Value System) Benchmark scores the published commercial evidence buyers can find on pricing pages, documentation, and other public surfaces. A higher score means stronger published evidence. Product quality, company strength, and customer satisfaction are outside the scope.
+                The AVS (Adaptive Value System) Benchmark scores the published commercial evidence buyers can find on
+                pricing pages, documentation, and other public surfaces. A higher score means stronger published
+                evidence. Product quality, company strength, and customer satisfaction are outside the scope.
               </p>
             </div>
 
@@ -327,10 +363,30 @@ export default function AISpeechBenchmarkJune2026() {
                 When the top of a category is 86%, the remaining gaps are the signal
               </h2>
               <div className="mt-5 space-y-4 text-base text-vt-midnight/80 leading-relaxed max-w-3xl">
-                <p>The chart below shows five May 2026 categories clustered between 59% and 69% — all below the 75% Exemplary floor. AI Speech Platform lands at 86%, 17 points above the highest May category.</p>
-                <p>That gap is structural. In AI Speech, the primary buyer reads the documentation before engaging sales. Developer-first, usage-based GTM forces pricing visibility, named billing units, and packaging clarity because the buyer needs them to self-qualify. And the dimensions that were hardest across May's five categories — value unit, buyer alignment, and packaging — scored perfectly across all 12 companies here.</p>
-                <p>What the chart doesn't show is where the remaining gaps sit. They're not in the dimensions May struggled with. They're in the layers that come after a buyer understands the offer: performance claims they can't independently verify without running a proof of concept, production-edge behavior left undocumented or unclear until after deployment, and post-purchase commercial terms no rubric dimension currently captures.</p>
-                <p>One more pattern worth noting: consumption-model companies averaged 92.5% vs. 83.0% for hybrid — a 9.5-point gap that concentrates in D1 (verifiable performance claims) and D7 (production-edge behavior). A single billing unit is easier to anchor a benchmark claim to. A single exhaustion event is easier to document than the two-layer failure modes of a hybrid model.</p>
+                <p>
+                  The chart below shows five May 2026 categories clustered between 58% and 69% — all below the 75%
+                  Exemplary floor. AI Speech Platform lands at 86%, 17 points above the highest May category.
+                </p>
+                <p>
+                  That gap is structural. In AI Speech, the primary buyer reads the documentation before engaging sales.
+                  Developer-first, usage-based GTM forces pricing visibility, named billing units, and packaging clarity
+                  because the buyer needs them to self-qualify. And the dimensions that were hardest across May's five
+                  categories — value unit, buyer alignment, and packaging — scored perfectly across all 12 companies
+                  here.
+                </p>
+                <p>
+                  What the chart doesn't show is where the remaining gaps sit. They're not in the dimensions May
+                  struggled with. They're in the layers that come after a buyer understands the offer: performance
+                  claims they can't independently verify without running a proof of concept, production-edge behavior
+                  left undocumented or unclear until after deployment, and post-purchase commercial terms no rubric
+                  dimension currently captures.
+                </p>
+                <p>
+                  One more pattern worth noting: consumption-model companies averaged 92.5% vs. 83.0% for hybrid — a
+                  9.5-point gap that concentrates in D1 (verifiable performance claims) and D7 (production-edge
+                  behavior). A single billing unit is easier to anchor a benchmark claim to. A single exhaustion event
+                  is easier to document than the two-layer failure modes of a hybrid model.
+                </p>
               </div>
 
               <figure className="mt-8">
@@ -339,12 +395,12 @@ export default function AISpeechBenchmarkJune2026() {
                 </figcaption>
                 <img
                   src={slopeChartAsset.url}
-                  alt="Slope chart: May 2026 AVS category averages (59%–69%) vs. June 2026 AI Speech Platform at 86%"
+                  alt="Slope chart: May 2026 AVS category averages (58%–69%) vs. June 2026 AI Speech Platform at 86%"
                   className="w-full max-w-3xl rounded-xl border border-border shadow-vt-sm"
                   loading="lazy"
                 />
                 <figcaption className="mt-3 text-sm text-vt-midnight/70">
-                  May 2026 categories scored between 59%–69%. AI Speech Platform: 86%.
+                  May 2026 categories scored between 58%–69%. AI Speech Platform: 86%.
                 </figcaption>
               </figure>
             </div>
@@ -354,12 +410,13 @@ export default function AISpeechBenchmarkJune2026() {
               <span className="text-[11px] font-semibold tracking-[0.18em] text-[hsl(var(--vt-violet))] uppercase">
                 6 FINDINGS INSIDE
               </span>
-              <h2 className="mt-2 text-2xl md:text-3xl font-bold text-vt-midnight">
-                What the benchmark found
-              </h2>
+              <h2 className="mt-2 text-2xl md:text-3xl font-bold text-vt-midnight">What the benchmark found</h2>
               <ol className="mt-6 space-y-4">
                 {findings.map((f, i) => (
-                  <li key={f.title} className="rounded-xl border border-border bg-white p-5 md:p-6 shadow-vt-sm flex gap-4">
+                  <li
+                    key={f.title}
+                    className="rounded-xl border border-border bg-white p-5 md:p-6 shadow-vt-sm flex gap-4"
+                  >
                     <div className="flex-shrink-0 h-9 w-9 rounded-full bg-[hsl(var(--vt-violet)/0.12)] text-[hsl(var(--vt-violet))] font-bold flex items-center justify-center text-sm">
                       {i + 1}
                     </div>
@@ -417,7 +474,10 @@ export default function AISpeechBenchmarkJune2026() {
                 Want to go deeper than the public report?
               </h2>
               <p className="mt-3 text-base text-white/75 leading-relaxed max-w-2xl">
-                The full analyst report covers what this public version doesn't: dimension-level scores for all 12 companies, individual company profiles with specific improvement areas per dimension, how the scoring guide rules were applied company by company, and sub-segment analysis by dimension. A score walkthrough covers the full analysis and what it means for your company or vendor evaluation.
+                The full analyst report covers what this public version doesn't: dimension-level scores for all 12
+                companies, individual company profiles with specific improvement areas per dimension, how the scoring
+                guide rules were applied company by company, and sub-segment analysis by dimension. A score walkthrough
+                covers the full analysis and what it means for your company or vendor evaluation.
               </p>
               <ul className="mt-5 space-y-2.5 max-w-2xl text-sm text-white/80">
                 {[
@@ -434,12 +494,19 @@ export default function AISpeechBenchmarkJune2026() {
                 ))}
               </ul>
               <div className="mt-6 flex flex-wrap items-center gap-4">
-                <Button asChild size="lg" className="bg-white text-vt-midnight hover:bg-white/90 rounded-[24px] h-12 px-7">
+                <Button
+                  asChild
+                  size="lg"
+                  className="bg-white text-vt-midnight hover:bg-white/90 rounded-[24px] h-12 px-7"
+                >
                   <a href="https://calendly.com/mlhperkins/30min" target="_blank" rel="noopener noreferrer">
                     Request a score walkthrough →
                   </a>
                 </Button>
-                <a href="mailto:michelle@valuetempo.com" className="text-sm text-white/80 hover:text-white underline underline-offset-4">
+                <a
+                  href="mailto:michelle@valuetempo.com"
+                  className="text-sm text-white/80 hover:text-white underline underline-offset-4"
+                >
                   Or contact Michelle Perkins directly — michelle@valuetempo.com
                 </a>
               </div>
@@ -450,10 +517,12 @@ export default function AISpeechBenchmarkJune2026() {
               <span className="text-[11px] font-semibold tracking-[0.18em] text-[hsl(var(--vt-violet))] uppercase">
                 FAQ
               </span>
-              <h2 className="mt-2 text-2xl md:text-3xl font-bold text-vt-midnight">
-                Frequently asked questions
-              </h2>
-              <Accordion type="single" collapsible className="mt-6 rounded-xl border border-border bg-white px-5 shadow-vt-sm">
+              <h2 className="mt-2 text-2xl md:text-3xl font-bold text-vt-midnight">Frequently asked questions</h2>
+              <Accordion
+                type="single"
+                collapsible
+                className="mt-6 rounded-xl border border-border bg-white px-5 shadow-vt-sm"
+              >
                 {faqs.map((f, i) => (
                   <AccordionItem key={f.question} value={`item-${i}`} className="border-b last:border-b-0">
                     <AccordionTrigger className="text-left text-base font-semibold text-vt-midnight">
@@ -487,7 +556,8 @@ export default function AISpeechBenchmarkJune2026() {
             </div>
 
             <p className="text-sm text-muted-foreground italic border-t border-border pt-6">
-              The AVS Benchmark is produced by ValueTempo. Scores reflect publicly observable, buyer-facing evidence as of June 30, 2026. This report does not constitute an endorsement or recommendation of any scored company.
+              The AVS Benchmark is produced by ValueTempo. Scores reflect publicly observable, buyer-facing evidence as
+              of June 30, 2026. This report does not constitute an endorsement or recommendation of any scored company.
             </p>
           </div>
 
@@ -503,7 +573,8 @@ export default function AISpeechBenchmarkJune2026() {
                     Get the full June 2026 AI Speech Platform Benchmark
                   </h2>
                   <p className="mb-4 text-sm text-vt-midnight/75 leading-relaxed">
-                    12 companies. 8 dimensions. The highest-scoring category in the benchmark — and a clear map of what's still missing at the top.
+                    12 companies. 8 dimensions. The highest-scoring category in the benchmark — and a clear map of
+                    what's still missing at the top.
                   </p>
                 </div>
                 <SignupForm id="download" />
