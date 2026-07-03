@@ -226,7 +226,7 @@ export default function AISpeechBenchmarkJune2026() {
                 <br className="hidden md:block" /> June 2026
               </h1>
               <p className="mt-5 text-lg md:text-xl text-vt-midnight/80 leading-relaxed max-w-2xl">
-                We scored 12 AI speech companies — STT providers, TTS platforms, and voice agent builders — on what buyers can independently verify before the first sales conversation.
+                We scored 12 AI speech companies — STT providers, TTS platforms, and voice agent builders — on what a buyer can evaluate independently.
               </p>
               <p className="mt-5 text-base text-vt-midnight/70 leading-relaxed max-w-2xl">
                 First category in the AVS Benchmark where every company scored Exemplary. When basic buyability is largely solved, the remaining gaps become the signal worth paying attention to.
