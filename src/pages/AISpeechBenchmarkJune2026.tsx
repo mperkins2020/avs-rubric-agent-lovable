@@ -1,15 +1,13 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ArrowRight, ChevronLeft, ChevronRight, X } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import ValueTempoLogo from "@/assets/ValueTempo_Logo_main.png";
 import slopeChartAsset from "@/assets/june-2026-avs-category-averages-slope.png.asset.json";
 import previewCoverAsset from "@/assets/june-2026-preview-1-cover.png.asset.json";
 import previewContentsAsset from "@/assets/june-2026-preview-2-contents.png.asset.json";
-import previewExecSummaryAsset from "@/assets/june-2026-preview-3-executive-summary.png.asset.json";
 import { Button } from "@/components/ui/button";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Footer } from "@/components/Footer";
 import { ResourcesDropdown } from "@/components/ResourcesDropdown";
 import { SEOHead } from "@/components/SEOHead";
