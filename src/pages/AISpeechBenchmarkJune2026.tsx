@@ -538,46 +538,6 @@ export default function AISpeechBenchmarkJune2026() {
         </div>
       </section>
 
-      <Dialog open={previewIndex !== null} onOpenChange={(o) => !o && closePreview()}>
-        <DialogContent className="max-w-4xl p-0 overflow-hidden bg-white">
-          {previewIndex !== null && (
-            <div className="relative">
-              <img
-                src={previewPages[previewIndex].src}
-                alt={previewPages[previewIndex].alt}
-                className="w-full h-auto max-h-[85vh] object-contain bg-[hsl(var(--vt-bg-section))]"
-              />
-              <button
-                type="button"
-                onClick={prevPreview}
-                className="absolute left-3 top-1/2 -translate-y-1/2 h-10 w-10 rounded-full bg-white/90 hover:bg-white shadow-md flex items-center justify-center"
-                aria-label="Previous page"
-              >
-                <ChevronLeft className="h-5 w-5 text-vt-midnight" />
-              </button>
-              <button
-                type="button"
-                onClick={nextPreview}
-                className="absolute right-3 top-1/2 -translate-y-1/2 h-10 w-10 rounded-full bg-white/90 hover:bg-white shadow-md flex items-center justify-center"
-                aria-label="Next page"
-              >
-                <ChevronRight className="h-5 w-5 text-vt-midnight" />
-              </button>
-              <button
-                type="button"
-                onClick={closePreview}
-                className="absolute right-3 top-3 h-9 w-9 rounded-full bg-white/90 hover:bg-white shadow-md flex items-center justify-center"
-                aria-label="Close preview"
-              >
-                <X className="h-4 w-4 text-vt-midnight" />
-              </button>
-              <div className="absolute bottom-3 left-1/2 -translate-x-1/2 rounded-full bg-vt-midnight/85 text-white text-xs font-medium px-3 py-1">
-                {previewIndex + 1} / {previewPages.length} · {previewPages[previewIndex].label}
-              </div>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
       <Footer />
     </div>
   );
