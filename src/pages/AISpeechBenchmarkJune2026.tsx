@@ -36,7 +36,7 @@ const stats = [
   { value: "100%", label: "Of companies scored Exemplary (first time in the benchmark)" },
   { value: "4 of 8", label: "Dimensions scored perfectly across all 12 companies" },
   { value: "9 of 12", label: "Companies don't document what happens when production hits a rate limit" },
-  { value: "7 Hybrid\n5 Consumption", label: "Pricing models", valueClass: "text-xl md:text-2xl" },
+  { value: "7 Hybrid\n5 Consumption", label: "Pricing models", valueClass: "text-lg md:text-xl" },
 ];
 
 const findings = [
