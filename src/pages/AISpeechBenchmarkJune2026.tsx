@@ -36,7 +36,7 @@ const stats = [
   { value: "100%", label: "Of companies scored Exemplary (first time in the benchmark)" },
   { value: "4 of 8", label: "Dimensions scored perfectly across all 12 companies" },
   { value: "9 of 12", label: "Companies don't document what happens when production hits a rate limit" },
-  { value: "7 Hybrid\n5 Consumption", label: "Pricing models" },
+  { value: "7 Hybrid\n5 Consumption", label: "Pricing models", valueClass: "text-xl md:text-2xl" },
 ];
 
 const findings = [
@@ -288,7 +288,7 @@ export default function AISpeechBenchmarkJune2026() {
               <div className="mt-6 grid grid-cols-2 md:grid-cols-3 gap-4">
                 {stats.map((s) => (
                   <div key={s.label} className="rounded-xl border border-border bg-white p-5 shadow-vt-sm">
-                    <div className="text-2xl md:text-3xl font-bold text-vt-midnight leading-tight whitespace-pre-line">{s.value}</div>
+                    <div className={`font-bold text-vt-midnight leading-tight whitespace-pre-line ${s.valueClass ?? "text-2xl md:text-3xl"}`}>{s.value}</div>
                     <div className="mt-1 text-xs md:text-sm text-muted-foreground leading-snug">{s.label}</div>
                   </div>
                 ))}
