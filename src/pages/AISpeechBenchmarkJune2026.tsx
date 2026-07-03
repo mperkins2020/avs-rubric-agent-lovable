@@ -1,11 +1,15 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ArrowRight, Download } from "lucide-react";
+import { ArrowRight, ChevronLeft, ChevronRight, X } from "lucide-react";
 import ValueTempoLogo from "@/assets/ValueTempo_Logo_main.png";
-import figure2Asset from "@/assets/june-2026-figure-2-slope-chart.png.asset.json";
+import slopeChartAsset from "@/assets/june-2026-avs-category-averages-slope.png.asset.json";
+import previewCoverAsset from "@/assets/june-2026-preview-1-cover.png.asset.json";
+import previewContentsAsset from "@/assets/june-2026-preview-2-contents.png.asset.json";
+import previewExecSummaryAsset from "@/assets/june-2026-preview-3-executive-summary.png.asset.json";
 import { Button } from "@/components/ui/button";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Footer } from "@/components/Footer";
 import { ResourcesDropdown } from "@/components/ResourcesDropdown";
 import { SEOHead } from "@/components/SEOHead";
@@ -133,8 +137,19 @@ function ImagePlaceholder({ alt, aspect = "aspect-[4/5]" }: { alt: string; aspec
   );
 }
 
+const previewPages = [
+  { src: previewCoverAsset.url, alt: "AI Speech Platform Buyability Benchmark, June 2026 Edition — Cover page", label: "Cover" },
+  { src: previewContentsAsset.url, alt: "June 2026 Benchmark — Contents page", label: "Contents" },
+  { src: previewExecSummaryAsset.url, alt: "June 2026 Benchmark — Executive Summary page", label: "Executive Summary" },
+];
+
 export default function AISpeechBenchmarkJune2026() {
   const formVariant = useFormVariant();
+  const [previewIndex, setPreviewIndex] = useState<number | null>(null);
+  const openPreview = (i: number) => setPreviewIndex(i);
+  const closePreview = () => setPreviewIndex(null);
+  const nextPreview = () => setPreviewIndex((i) => (i === null ? 0 : (i + 1) % previewPages.length));
+  const prevPreview = () => setPreviewIndex((i) => (i === null ? 0 : (i - 1 + previewPages.length) % previewPages.length));
 
   return (
     <div className="min-h-screen bg-[hsl(var(--vt-bg-section))]">
@@ -185,24 +200,34 @@ export default function AISpeechBenchmarkJune2026() {
                 First category in the AVS Benchmark where every company scored Exemplary. When basic buyability is largely solved, the remaining gaps become the signal worth paying attention to.
               </p>
 
-              <div className="mt-7 flex flex-wrap items-center gap-4">
-                <Button asChild size="lg" className="bg-vt-midnight text-white hover:bg-vt-midnight/90 rounded-[24px] h-12 px-7">
+              <div className="mt-7 flex flex-nowrap items-center gap-x-6 gap-y-3 whitespace-nowrap overflow-x-auto">
+                <Button asChild size="lg" className="bg-vt-midnight text-white hover:bg-vt-midnight/90 rounded-[24px] h-12 px-6 flex-shrink-0">
                   <a href="#download">
-                    <Download className="mr-1 h-4 w-4" />
-                    Download the report
+                    Download the report <ArrowRight className="ml-1 h-4 w-4" />
                   </a>
                 </Button>
-                <a href="https://calendly.com/mlhperkins/30min" target="_blank" rel="noopener noreferrer" className="text-sm font-medium text-vt-midnight hover:text-[hsl(var(--vt-violet))] transition-colors inline-flex items-center gap-1">
-                  Or request a score walkthrough for your company <ArrowRight className="h-3.5 w-3.5" />
+                <a href="https://calendly.com/mlhperkins/30min" target="_blank" rel="noopener noreferrer" className="text-sm font-medium text-vt-midnight hover:text-[hsl(var(--vt-violet))] transition-colors inline-flex items-center gap-1 flex-shrink-0">
+                  Request a score walkthrough <ArrowRight className="h-3.5 w-3.5" />
                 </a>
-                <Link to="/methodology" className="text-sm font-medium text-vt-midnight hover:text-[hsl(var(--vt-violet))] transition-colors inline-flex items-center gap-1">
+                <Link to="/methodology" className="text-sm font-medium text-vt-midnight hover:text-[hsl(var(--vt-violet))] transition-colors inline-flex items-center gap-1 flex-shrink-0">
                   Read the methodology <ArrowRight className="h-3.5 w-3.5" />
                 </Link>
               </div>
             </motion.div>
 
             <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.1 }} className="lg:col-span-5">
-              <ImagePlaceholder alt="June 2026 AI Speech Platform AVS Benchmark report cover" />
+              <button
+                type="button"
+                onClick={() => openPreview(0)}
+                className="block w-full rounded-lg md:rounded-xl overflow-hidden border border-[hsl(var(--vt-violet)/0.25)] bg-white shadow-vt-md hover:shadow-vt-lg transition-shadow"
+                aria-label="Open report preview"
+              >
+                <img
+                  src={previewCoverAsset.url}
+                  alt="June 2026 AI Speech Platform AVS Benchmark report cover"
+                  className="w-full h-auto block"
+                />
+              </button>
             </motion.div>
           </div>
         </div>
@@ -295,11 +320,22 @@ export default function AISpeechBenchmarkJune2026() {
                 </li>
               </ul>
 
-              <div className="mt-8 grid grid-cols-2 md:grid-cols-4 gap-4">
-                <ImagePlaceholder alt="June 2026 AI Speech Platform AVS Benchmark report cover" aspect="aspect-[3/4]" />
-                <ImagePlaceholder alt="Report preview page 1" aspect="aspect-[3/4]" />
-                <ImagePlaceholder alt="Report preview page 2" aspect="aspect-[3/4]" />
-                <ImagePlaceholder alt="Report preview page 3" aspect="aspect-[3/4]" />
+              <p className="mt-6 text-sm text-muted-foreground">Click any page to flip through the preview.</p>
+              <div className="mt-3 grid grid-cols-1 sm:grid-cols-3 gap-4">
+                {previewPages.map((p, i) => (
+                  <button
+                    key={p.label}
+                    type="button"
+                    onClick={() => openPreview(i)}
+                    className="group relative block rounded-lg md:rounded-xl overflow-hidden border border-border bg-white shadow-vt-sm hover:shadow-vt-md hover:-translate-y-0.5 transition-all text-left"
+                    aria-label={`Open preview: ${p.label}`}
+                  >
+                    <img src={p.src} alt={p.alt} className="w-full h-auto block aspect-[3/4] object-cover object-top" loading="lazy" />
+                    <span className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-vt-midnight/80 to-transparent text-white text-xs font-medium px-3 py-2">
+                      {i + 1}. {p.label}
+                    </span>
+                  </button>
+                ))}
               </div>
             </div>
 
@@ -319,14 +355,17 @@ export default function AISpeechBenchmarkJune2026() {
                 <p>One more pattern the data reveals: pure consumption models outperform hybrid models by 9.5 points on average (92.5% vs. 83.0%). The simpler the pricing structure, the easier it is to document performance claims and production-edge behavior cleanly. All four companies with verifiable performance claims (D1) are consumption-model companies. Two of the three with full production-edge documentation (D7) are as well.</p>
               </div>
 
-              <div className="mt-8">
+              <figure className="mt-8">
+                <figcaption className="mb-3 text-sm font-semibold text-vt-midnight">
+                  AVS Category Averages — May 2026 vs. June 2026 Spotlight
+                </figcaption>
                 <img
-                  src={figure2Asset.url}
-                  alt="Slope chart: May 2026 category averages vs AI Speech Platform 86%"
+                  src={slopeChartAsset.url}
+                  alt="Slope chart: May 2026 AVS category averages (59%–69%) vs. June 2026 AI Speech Platform at 86%"
                   className="w-full max-w-3xl rounded-xl border border-border shadow-vt-sm"
                   loading="lazy"
                 />
-              </div>
+              </figure>
             </div>
 
             {/* Findings cards */}
@@ -496,6 +535,46 @@ export default function AISpeechBenchmarkJune2026() {
         </div>
       </section>
 
+      <Dialog open={previewIndex !== null} onOpenChange={(o) => !o && closePreview()}>
+        <DialogContent className="max-w-4xl p-0 overflow-hidden bg-white">
+          {previewIndex !== null && (
+            <div className="relative">
+              <img
+                src={previewPages[previewIndex].src}
+                alt={previewPages[previewIndex].alt}
+                className="w-full h-auto max-h-[85vh] object-contain bg-[hsl(var(--vt-bg-section))]"
+              />
+              <button
+                type="button"
+                onClick={prevPreview}
+                className="absolute left-3 top-1/2 -translate-y-1/2 h-10 w-10 rounded-full bg-white/90 hover:bg-white shadow-md flex items-center justify-center"
+                aria-label="Previous page"
+              >
+                <ChevronLeft className="h-5 w-5 text-vt-midnight" />
+              </button>
+              <button
+                type="button"
+                onClick={nextPreview}
+                className="absolute right-3 top-1/2 -translate-y-1/2 h-10 w-10 rounded-full bg-white/90 hover:bg-white shadow-md flex items-center justify-center"
+                aria-label="Next page"
+              >
+                <ChevronRight className="h-5 w-5 text-vt-midnight" />
+              </button>
+              <button
+                type="button"
+                onClick={closePreview}
+                className="absolute right-3 top-3 h-9 w-9 rounded-full bg-white/90 hover:bg-white shadow-md flex items-center justify-center"
+                aria-label="Close preview"
+              >
+                <X className="h-4 w-4 text-vt-midnight" />
+              </button>
+              <div className="absolute bottom-3 left-1/2 -translate-x-1/2 rounded-full bg-vt-midnight/85 text-white text-xs font-medium px-3 py-1">
+                {previewIndex + 1} / {previewPages.length} · {previewPages[previewIndex].label}
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
       <Footer />
     </div>
   );
