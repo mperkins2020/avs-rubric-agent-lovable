@@ -185,17 +185,16 @@ export default function AISpeechBenchmarkJune2026() {
                 First category in the AVS Benchmark where every company scored Exemplary. When basic buyability is largely solved, the remaining gaps become the signal worth paying attention to.
               </p>
 
-              <div className="mt-7 flex flex-wrap items-center gap-4">
-                <Button asChild size="lg" className="bg-vt-midnight text-white hover:bg-vt-midnight/90 rounded-[24px] h-12 px-7">
+              <div className="mt-7 flex flex-nowrap items-center gap-x-6 gap-y-3 whitespace-nowrap overflow-x-auto">
+                <Button asChild size="lg" className="bg-vt-midnight text-white hover:bg-vt-midnight/90 rounded-[24px] h-12 px-6 flex-shrink-0">
                   <a href="#download">
-                    <Download className="mr-1 h-4 w-4" />
-                    Download the report
+                    Download the report <ArrowRight className="ml-1 h-4 w-4" />
                   </a>
                 </Button>
-                <a href="https://calendly.com/mlhperkins/30min" target="_blank" rel="noopener noreferrer" className="text-sm font-medium text-vt-midnight hover:text-[hsl(var(--vt-violet))] transition-colors inline-flex items-center gap-1">
-                  Or request a score walkthrough for your company <ArrowRight className="h-3.5 w-3.5" />
+                <a href="https://calendly.com/mlhperkins/30min" target="_blank" rel="noopener noreferrer" className="text-sm font-medium text-vt-midnight hover:text-[hsl(var(--vt-violet))] transition-colors inline-flex items-center gap-1 flex-shrink-0">
+                  Request a score walkthrough <ArrowRight className="h-3.5 w-3.5" />
                 </a>
-                <Link to="/methodology" className="text-sm font-medium text-vt-midnight hover:text-[hsl(var(--vt-violet))] transition-colors inline-flex items-center gap-1">
+                <Link to="/methodology" className="text-sm font-medium text-vt-midnight hover:text-[hsl(var(--vt-violet))] transition-colors inline-flex items-center gap-1 flex-shrink-0">
                   Read the methodology <ArrowRight className="h-3.5 w-3.5" />
                 </Link>
               </div>
