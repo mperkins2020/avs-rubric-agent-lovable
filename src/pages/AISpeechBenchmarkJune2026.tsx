@@ -216,7 +216,18 @@ export default function AISpeechBenchmarkJune2026() {
             </motion.div>
 
             <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.1 }} className="lg:col-span-5">
-              <ImagePlaceholder alt="June 2026 AI Speech Platform AVS Benchmark report cover" />
+              <button
+                type="button"
+                onClick={() => openPreview(0)}
+                className="block w-full rounded-lg md:rounded-xl overflow-hidden border border-[hsl(var(--vt-violet)/0.25)] bg-white shadow-vt-md hover:shadow-vt-lg transition-shadow"
+                aria-label="Open report preview"
+              >
+                <img
+                  src={previewCoverAsset.url}
+                  alt="June 2026 AI Speech Platform AVS Benchmark report cover"
+                  className="w-full h-auto block"
+                />
+              </button>
             </motion.div>
           </div>
         </div>
