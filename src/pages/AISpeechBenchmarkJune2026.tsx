@@ -318,31 +318,6 @@ export default function AISpeechBenchmarkJune2026() {
               </p>
             </div>
 
-            {/* Report preview / teaser */}
-            <div>
-              <span className="text-[11px] font-semibold tracking-[0.18em] text-[hsl(var(--vt-violet))] uppercase">
-                6 findings inside
-              </span>
-              <h2 className="mt-2 text-2xl md:text-3xl font-bold text-vt-midnight">
-                What the benchmark found
-              </h2>
-              <ul className="mt-5 space-y-3 max-w-3xl text-base text-vt-midnight/80 leading-relaxed">
-                <li className="flex gap-3">
-                  <ArrowRight className="mt-1 h-4 w-4 flex-shrink-0 text-[hsl(var(--vt-violet))]" />
-                  <span>Developer-first, usage-based GTM structurally requires commercial transparency: buyers read the docs before talking to anyone, which forces pricing, billing units, and packaging clarity that sales-led categories can defer — 17 points above May's top category</span>
-                </li>
-                <li className="flex gap-3">
-                  <ArrowRight className="mt-1 h-4 w-4 flex-shrink-0 text-[hsl(var(--vt-violet))]" />
-                  <span>Vague performance claims are a GTM liability: 8 of 12 companies make claims buyers can't verify without a proof of concept</span>
-                </li>
-                <li className="flex gap-3">
-                  <ArrowRight className="mt-1 h-4 w-4 flex-shrink-0 text-[hsl(var(--vt-violet))]" />
-                  <span>Even the two 16/16 scorers have specific, named gaps in commercial terms that the rubric doesn't capture</span>
-                </li>
-              </ul>
-
-            </div>
-
             {/* Editorial insight */}
             <div>
               <span className="text-[11px] font-semibold tracking-[0.18em] text-[hsl(var(--vt-violet))] uppercase">
@@ -374,10 +349,10 @@ export default function AISpeechBenchmarkJune2026() {
             {/* Findings cards */}
             <div>
               <span className="text-[11px] font-semibold tracking-[0.18em] text-[hsl(var(--vt-violet))] uppercase">
-                Six Findings
+                6 FINDINGS INSIDE
               </span>
               <h2 className="mt-2 text-2xl md:text-3xl font-bold text-vt-midnight">
-                Preview of what's inside
+                What the benchmark found
               </h2>
               <ol className="mt-6 space-y-4">
                 {findings.map((f, i) => (
