@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ArrowRight } from "lucide-react";
 import ValueTempoLogo from "@/assets/ValueTempo_Logo_main.png";
-import slopeChartAsset from "@/assets/june-2026-avs-category-averages-slope.png.asset.json";
+import slopeChartAsset from "@/assets/june-2026-category-slope-chart.png.asset.json";
 import previewCoverAsset from "@/assets/june-2026-preview-1-cover.png.asset.json";
 import previewContentsAsset from "@/assets/june-2026-preview-2-contents.png.asset.json";
 import { Button } from "@/components/ui/button";
@@ -314,7 +314,7 @@ export default function AISpeechBenchmarkJune2026() {
                 What the AVS Benchmark measures
               </h2>
               <p className="mt-4 text-base text-vt-midnight/80 leading-relaxed max-w-3xl">
-                The AVS (Adaptive Value System) Benchmark measures published commercial evidence — what a buyer can independently verify on pricing pages, documentation, and other public surfaces before engaging sales. A higher score means stronger published evidence. It is not a judgment of product quality.
+                The AVS (Adaptive Value System) Benchmark scores the published commercial evidence buyers can find on pricing pages, documentation, and other public surfaces. A higher score means stronger published evidence. Product quality, company strength, and customer satisfaction are outside the scope.
               </p>
             </div>
 
