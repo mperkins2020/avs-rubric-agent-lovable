@@ -343,6 +343,9 @@ export default function AISpeechBenchmarkJune2026() {
                   className="w-full max-w-3xl rounded-xl border border-border shadow-vt-sm"
                   loading="lazy"
                 />
+                <figcaption className="mt-3 text-sm text-vt-midnight/70">
+                  May 2026 categories scored between 59%–69%. AI Speech Platform: 86%.
+                </figcaption>
               </figure>
             </div>
 
