@@ -573,8 +573,7 @@ export default function AISpeechBenchmarkJune2026() {
                     Get the full June 2026 AI Speech Platform Benchmark
                   </h2>
                   <p className="mb-4 text-sm text-vt-midnight/75 leading-relaxed">
-                    12 companies. 8 dimensions. The highest-scoring category in the benchmark — and a clear map of
-                    what's still missing at the top.
+                    12 companies scored. 86% category average. A clear map of what's solved and what isn't.
                   </p>
                 </div>
                 <SignupForm id="download" />
