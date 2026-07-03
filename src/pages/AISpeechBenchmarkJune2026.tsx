@@ -320,11 +320,22 @@ export default function AISpeechBenchmarkJune2026() {
                 </li>
               </ul>
 
-              <div className="mt-8 grid grid-cols-2 md:grid-cols-4 gap-4">
-                <ImagePlaceholder alt="June 2026 AI Speech Platform AVS Benchmark report cover" aspect="aspect-[3/4]" />
-                <ImagePlaceholder alt="Report preview page 1" aspect="aspect-[3/4]" />
-                <ImagePlaceholder alt="Report preview page 2" aspect="aspect-[3/4]" />
-                <ImagePlaceholder alt="Report preview page 3" aspect="aspect-[3/4]" />
+              <p className="mt-6 text-sm text-muted-foreground">Click any page to flip through the preview.</p>
+              <div className="mt-3 grid grid-cols-1 sm:grid-cols-3 gap-4">
+                {previewPages.map((p, i) => (
+                  <button
+                    key={p.label}
+                    type="button"
+                    onClick={() => openPreview(i)}
+                    className="group relative block rounded-lg md:rounded-xl overflow-hidden border border-border bg-white shadow-vt-sm hover:shadow-vt-md hover:-translate-y-0.5 transition-all text-left"
+                    aria-label={`Open preview: ${p.label}`}
+                  >
+                    <img src={p.src} alt={p.alt} className="w-full h-auto block aspect-[3/4] object-cover object-top" loading="lazy" />
+                    <span className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-vt-midnight/80 to-transparent text-white text-xs font-medium px-3 py-2">
+                      {i + 1}. {p.label}
+                    </span>
+                  </button>
+                ))}
               </div>
             </div>
 
