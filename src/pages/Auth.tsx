@@ -108,12 +108,12 @@ export default function Auth() {
           password,
         });
         if (error) throw error;
-        navigate("/");
+        navigate(nextPath);
       } else {
         const { error } = await supabase.auth.signUp({
           email: trimmedEmail,
           password,
-          options: { emailRedirectTo: window.location.origin },
+          options: { emailRedirectTo: `${window.location.origin}${nextPath}` },
         });
         if (error) throw error;
         toast.success("Check your email for a confirmation link.");
