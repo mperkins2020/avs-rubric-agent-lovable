@@ -270,14 +270,14 @@ export default function Auth() {
           className="w-full gap-2"
           onClick={async () => {
             const result = await lovable.auth.signInWithOAuth("google", {
-              redirect_uri: window.location.origin,
+              redirect_uri: `${window.location.origin}${nextPath}`,
             });
             if (result.error) {
               toast.error(result.error.message || "Google sign-in failed");
               return;
             }
             if (result.redirected) return;
-            navigate("/");
+            navigate(nextPath);
           }}
         >
           <svg className="w-4 h-4" viewBox="0 0 24 24">
