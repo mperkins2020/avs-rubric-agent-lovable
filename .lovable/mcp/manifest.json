@@ -1,0 +1,71 @@
+{
+  "version": 1,
+  "sdk_version": "0.20.0",
+  "path": "/functions/v1/mcp",
+  "auth": {
+    "type": "oauth",
+    "issuer": "https://jntwewypahlzknvcczgl.supabase.co/auth/v1",
+    "accepted_audiences": [
+      "authenticated"
+    ]
+  },
+  "mcp": {
+    "server": {
+      "name": "valuetempo-avs-rubric-mcp",
+      "version": "0.1.0",
+      "title": "ValueTempo AVS Rubric"
+    },
+    "tools": [
+      {
+        "name": "list_my_scans",
+        "title": "List my scans",
+        "description": "List the AVS Rubric scans the signed-in user has run, most recent first.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "limit": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50,
+              "description": "Max number of scans to return (default 20)."
+            }
+          },
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "get_scan_result",
+        "title": "Get scan result",
+        "description": "Fetch the full AVS Rubric scan result (company profile, dimension scores, strengths, weaknesses) for a given URL domain. Returns the most recent non-expired scan for that domain.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "url_domain": {
+              "type": "string",
+              "minLength": 1,
+              "description": "The URL domain of the scan to retrieve (e.g. 'example.com')."
+            }
+          },
+          "required": [
+            "url_domain"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      }
+    ]
+  }
+}

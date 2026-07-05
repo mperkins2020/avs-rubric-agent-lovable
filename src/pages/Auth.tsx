@@ -1,6 +1,19 @@
 import { useState, useRef } from "react";
 import ValueTempoLogo from "@/assets/ValueTempo_Logo_main.png";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, useSearchParams, Link } from "react-router-dom";
+
+function safeNextPath(raw: string | null): string {
+  if (!raw) return "/";
+  try {
+    // Must be a same-origin relative path starting with a single slash.
+    if (!raw.startsWith("/") || raw.startsWith("//")) return "/";
+    const url = new URL(raw, window.location.origin);
+    if (url.origin !== window.location.origin) return "/";
+    return url.pathname + url.search + url.hash;
+  } catch {
+    return "/";
+  }
+}
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable";
 import { Button } from "@/components/ui/button";
@@ -30,6 +43,8 @@ function isWorkEmail(email: string): boolean {
 
 export default function Auth() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const nextPath = safeNextPath(searchParams.get("next"));
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLogin, setIsLogin] = useState(true);
@@ -93,12 +108,12 @@ export default function Auth() {
           password,
         });
         if (error) throw error;
-        navigate("/");
+        navigate(nextPath);
       } else {
         const { error } = await supabase.auth.signUp({
           email: trimmedEmail,
           password,
-          options: { emailRedirectTo: window.location.origin },
+          options: { emailRedirectTo: `${window.location.origin}${nextPath}` },
         });
         if (error) throw error;
         toast.success("Check your email for a confirmation link.");
@@ -255,14 +270,14 @@ export default function Auth() {
           className="w-full gap-2"
           onClick={async () => {
             const result = await lovable.auth.signInWithOAuth("google", {
-              redirect_uri: window.location.origin,
+              redirect_uri: `${window.location.origin}${nextPath}`,
             });
             if (result.error) {
               toast.error(result.error.message || "Google sign-in failed");
               return;
             }
             if (result.redirected) return;
-            navigate("/");
+            navigate(nextPath);
           }}
         >
           <svg className="w-4 h-4" viewBox="0 0 24 24">

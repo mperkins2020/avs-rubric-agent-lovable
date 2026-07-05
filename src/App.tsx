@@ -28,6 +28,7 @@ import BuyabilityBenchmarkMay2026 from "./pages/BuyabilityBenchmarkMay2026";
 import AISpeechBenchmarkJune2026 from "./pages/AISpeechBenchmarkJune2026";
 import CompaniesEvaluatedMay2026 from "./pages/CompaniesEvaluatedMay2026";
 import BenchmarkThankYouMay2026 from "./pages/BenchmarkThankYouMay2026";
+import OAuthConsent from "./pages/OAuthConsent";
 
 const queryClient = new QueryClient();
 
@@ -41,6 +42,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 const AppRoutes = () => (
   <Routes>
     <Route path="/auth" element={<Auth />} />
+    <Route path="/.lovable/oauth/consent" element={<OAuthConsent />} />
     <Route path="/reset-password" element={<ResetPassword />} />
     <Route path="/" element={<Index />} />
     <Route path="/results" element={<ProtectedRoute><Results /></ProtectedRoute>} />
