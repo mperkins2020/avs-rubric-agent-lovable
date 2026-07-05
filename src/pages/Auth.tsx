@@ -1,6 +1,19 @@
 import { useState, useRef } from "react";
 import ValueTempoLogo from "@/assets/ValueTempo_Logo_main.png";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, useSearchParams, Link } from "react-router-dom";
+
+function safeNextPath(raw: string | null): string {
+  if (!raw) return "/";
+  try {
+    // Must be a same-origin relative path starting with a single slash.
+    if (!raw.startsWith("/") || raw.startsWith("//")) return "/";
+    const url = new URL(raw, window.location.origin);
+    if (url.origin !== window.location.origin) return "/";
+    return url.pathname + url.search + url.hash;
+  } catch {
+    return "/";
+  }
+}
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable";
 import { Button } from "@/components/ui/button";
