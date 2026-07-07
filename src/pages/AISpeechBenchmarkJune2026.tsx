@@ -69,7 +69,7 @@ const findings = [
 const companies = [
   ["AssemblyAI", "assemblyai.com", "STT", "Consumption"],
   ["Bland.ai", "bland.ai", "Voice Agent Platform", "Hybrid (access + consumption)"],
-  ["Cartesia", "cartesia.ai", "TTS", "Hybrid (access + consumption)"],
+  ["Cartesia", "cartesia.ai", "TTS / STT / Voice Agent", "Hybrid (access + consumption)"],
   ["Deepgram", "deepgram.com", "Full Speech Platform", "Consumption"],
   ["ElevenLabs", "elevenlabs.io", "TTS", "Hybrid (access + consumption)"],
   ["LMNT", "lmnt.com", "TTS", "Hybrid (access + consumption)"],
