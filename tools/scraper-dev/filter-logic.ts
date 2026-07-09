@@ -1,12 +1,23 @@
 /**
  * filter-logic.ts
  * ─────────────────────────────────────────────────────────────────────────────
- * Single source of truth for URL filter + scoring logic used by the scraper.
- * Kept in sync manually with supabase/functions/scrape-website/index.ts.
+ * Local mirror of the URL filter + scoring logic in the production scraper
+ * (supabase/functions/scrape-website/index.ts). Powers the `filter` and
+ * `preview-urls` dev tools.
  *
- * When you change a filter rule in the scraper, update it here too.
- * Run `npx tsx tools/scraper-dev/test-url-filter.ts <url>` to verify.
+ * ⚠️  This is a MANUAL mirror — it can drift from the scraper.
+ * When you change a filter rule in the scraper, update it here too, then bump
+ * SYNCED_WITH_ANALYSIS_VERSION below to the scraper's new ANALYSIS_VERSION.
+ *
+ * A guardrail test (filter-logic-drift.test.ts) fails whenever the regexes,
+ * scoring weights, or version string here diverge from the scraper. Run it with
+ * `npm test` (or `npx vitest run filter-logic-drift`) after any scraper change.
  */
+
+// The ANALYSIS_VERSION this mirror was last verified against. The drift test
+// asserts this equals the scraper's ANALYSIS_VERSION — bump it here whenever
+// you re-sync, so a scraper version bump can't silently outrun this file.
+export const SYNCED_WITH_ANALYSIS_VERSION = '2026-07-09-pipeline-v29';
 
 // ─── URL scoring & helpers ────────────────────────────────────────────────────
 
@@ -62,7 +73,7 @@ export const priorityPatterns = [
 ];
 
 export const highIntentPaths = new Set([
-  '/pricing', '/plans', '/plan', '/billing', '/usage',
+  '/pricing', '/plans', '/plan', '/billing', '/usage', '/buy',
   '/subscription', '/features', '/feature', '/product',
   '/products', '/solutions',
   '/security', '/trust', '/compliance', '/privacy',
@@ -72,8 +83,8 @@ export const highIntentPaths = new Set([
 
 export const exclusionPatterns = [
   /\.(pdf|zip|png|jpg|jpeg|gif|svg|css|js|woff|woff2|ttf|eot|txt)$/i,
-  /\/(blog|news|press|careers|jobs|cookie|author|tag|category)\//i,
-  /\/(blog|news|press|careers|jobs|cookie|author|tag|category)$/i,
+  /\/(blog|news|press|careers|jobs|cookie|author|tag|category|insights?)\//i,
+  /\/(blog|news|press|careers|jobs|cookie|author|tag|category|insights?)$/i,
   /\/(wp-content|wp-admin|wp-includes|wp-json)\//i,
   /\/dashboard\b/i,
   /\/(login|signup|sign-up|sign-in|register|cart|checkout)\b/i,
@@ -85,6 +96,16 @@ export const exclusionPatterns = [
   /\/events?\b$/i,
   /\/webinars?\b/i,
   /\/integrations\/[^/]+$/i,
+  // Expert/instructor profiles, courses, academy, tutorials, learn content —
+  // user-generated/educational, zero pricing signal (Issue 8, deployed 2026-05-08)
+  /\/experts?\/[^/]+/i,
+  /\/courses?\//i,
+  /\/courses?\b$/i,
+  /\/academy\//i,
+  /\/academy\b$/i,
+  /\/tutorials?\//i,
+  /\/tutorials?\b$/i,
+  /\/learn\//i,
   /\/marketplace\/[^/]+$/i,
   /\/what-is-[^/]+/i,
   /\/how-to-[^/]+/i,
@@ -94,6 +115,17 @@ export const exclusionPatterns = [
   /\/collections\//i,
   /\/partners\b/i,
   /^https?:\/\/developers?\./i,
+  // Prompt library pages — user-facing AI prompt templates, zero pricing signal
+  /\/prompts?\//i,
+  /\/prompts?\b$/i,
+  /\/prompts?\/[^/]+/i,
+  // Founders / team profiles — no pricing evidence
+  /\/founders?\b/i,
+  // Lecture and playlist pages — educational content, same principle as /courses/
+  /\/[^/]+-lectures?\//i,
+  /\/[^/]+-lectures?\b$/i,
+  /\/[^/]+-playlist\//i,
+  /\/[^/]+-playlist\b$/i,
 ];
 
 export const fullContentPatterns = [
@@ -184,7 +216,7 @@ export function scoreUrlWithBreakdown(
     } catch { /* skip */ }
   }
 
-  if (/\/(pricing|billing|plans?|credits|subscription|refund|cancel)\b/i.test(path) && !highIntentPaths.has(path)) {
+  if (/\/(pricing|billing|plans?|credits|subscription|refund|cancel|buy)\b/i.test(path) && !highIntentPaths.has(path)) {
     score += 800; lines.push('+800   highValue billing keyword (non-highIntent path)');
   }
 
@@ -291,7 +323,9 @@ export function normaliseForDedup(link: string): string {
   try {
     const parsed = new URL(link);
     parsed.hash = parsed.hash.startsWith('#:~:') ? '' : parsed.hash;
-    parsed.pathname = parsed.pathname.replace(/^\/[a-z]{2}(-[A-Z]{2})?\//,  '/');
+    parsed.pathname = parsed.pathname.replace(/^\/[a-z]{2}(-[a-zA-Z]{2,4})?\//,  '/');
+    // Collapse double slashes in path (//about → /about) — Issue 7 fix
+    parsed.pathname = parsed.pathname.replace(/\/\/+/g, '/');
     if (parsed.pathname.length > 1) parsed.pathname = parsed.pathname.replace(/\/$/, '');
     parsed.hostname = parsed.hostname.replace(/^www\./, '');
     parsed.protocol = 'https:';

@@ -29,7 +29,7 @@ interface AnalyzeRequest {
 // Deno EdgeRuntime type for background processing
 declare const EdgeRuntime: { waitUntil: (p: Promise<unknown>) => void };
 
-const ANALYSIS_VERSION = '2026-06-30-pipeline-v28';
+const ANALYSIS_VERSION = '2026-07-09-pipeline-v29';
 
 const COMPANY_PROFILE_PROMPT = `You are an expert business analyst. Analyze the following website content and extract a company profile.
 
@@ -102,6 +102,7 @@ EVIDENCE QUALITY RULES (MANDATORY — apply before scoring every dimension):
 7. TIER ATTRIBUTION: When citing plan-specific features, policies, or constraints, name the EXACT plan tier the evidence belongs to (e.g., "Team plan allows custom overage pricing for seats over 20"). Never generalize a tier-specific feature to a different tier. If a feature applies to multiple tiers, list each tier explicitly. Enterprise "custom pricing" is NOT the same as a Team plan's seat overage policy.
 8. LEGAL vs PRODUCT EVIDENCE: Privacy policies, biometric notices, data processing addenda, and compliance legal pages describe COMPANY obligations to regulators — NOT customer-facing safety rails or admin controls. Do NOT cite legal compliance language (e.g., "monitor usage of our Service") as evidence for Safety rails, budget caps, or trust surfaces. Safety rails evidence must come from product pages, pricing pages, docs, or trust centers — not legal boilerplate.
 9. STRUCTURED DATA CAVEAT: Sections labeled "Machine-Extracted — NOT direct quotes" contain AI-paraphrased data. Use them as scoring context but do NOT cite their text as direct quotes in sourceEvidence. Always prefer the original markdown content for direct citations.
+10. COUNTERVAILING EVIDENCE ON A SINGLE PAGE: When one page presents BOTH favorable and unfavorable evidence for the same dimension, weigh ALL of it together — never score off a single excerpt read in isolation. Before scoring a dimension, scan the full content of each relevant page for sections that qualify, contradict, or complete a policy you already found. Example: a credits/billing page may state "unused daily free credits do not accumulate" (unfavorable for rollover) AND, elsewhere on the same page, "unused monthly plan credits roll over automatically" (favorable) — these describe different tiers and BOTH must be scored, naming the tier each applies to per Rule 7. A single unfavorable snippet MUST NOT suppress a dimension when the same page documents a favorable policy for another tier, plan, or scope.
 
 PRICING MODEL CATEGORY AWARENESS (MANDATORY — apply throughout all dimension scoring):
 The "Pricing Model" in the user content tells you the pricing category. Apply these overrides wherever they conflict with individual subtest defaults:

@@ -68,7 +68,7 @@ VALUES ('company.com', 'https://help.company.com/en/articles/...');
 
 ## Scraper Dev Tools
 
-Four local tools in `tools/scraper-dev/` — run from the repo root.
+Four local tools in `tools/scraper-dev/` (plus a drift guardrail test) — run from the repo root.
 
 | Command | What it does |
 |---|---|
@@ -82,13 +82,28 @@ Four local tools in `tools/scraper-dev/` — run from the repo root.
 **check-version**: Run this before every Lovable deploy to prevent the "stale code deployed silently" problem.
 **diff-pages** example: `npm run diff-pages zoominfo.com`
 
+### Keeping the mirror in sync (IMPORTANT)
+
+`filter` and `preview-urls` run against `filter-logic.ts`, a **hand-maintained mirror**
+of the filter/scoring rules in `scrape-website/index.ts`. If the scraper changes and
+the mirror doesn't, those two tools silently report the wrong scrape decisions.
+
+A guardrail test — `filter-logic-drift.test.ts`, part of `npm test` — fails whenever the
+regexes, scoring weights, or version pin diverge. **After any change to `scrape-website`:**
+
+1. Mirror the same rule change into `tools/scraper-dev/filter-logic.ts`.
+2. Bump `SYNCED_WITH_ANALYSIS_VERSION` in that file to the new `ANALYSIS_VERSION`.
+3. Run `npx vitest run filter-logic-drift` — the failure message names exactly what drifted.
+
+(`check-version` and `diff-pages` do not use the mirror and are always accurate.)
+
 ---
 
 ## ANALYSIS_VERSION
 
 Bump `ANALYSIS_VERSION` in `supabase/functions/analyze-company/index.ts` every time either edge function is meaningfully changed. Format: `'YYYY-MM-DD-pipeline-vN'`. Without a bump, the 7-day cache serves stale results.
 
-Current version as of last session: `2026-05-05-pipeline-v21`
+Current version as of last session: `2026-07-09-pipeline-v29`
 
 ---
 
