@@ -1,0 +1,1 @@
+UPDATE public.scan_results SET expires_at = now() - interval '1 second' WHERE url_domain = 'lovable.dev' AND (is_benchmark IS NULL OR is_benchmark = false);
