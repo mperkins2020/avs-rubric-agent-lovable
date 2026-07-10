@@ -29,7 +29,7 @@ interface AnalyzeRequest {
 // Deno EdgeRuntime type for background processing
 declare const EdgeRuntime: { waitUntil: (p: Promise<unknown>) => void };
 
-const ANALYSIS_VERSION = '2026-07-09-pipeline-v29';
+const ANALYSIS_VERSION = '2026-07-09-pipeline-v30';
 
 const COMPANY_PROFILE_PROMPT = `You are an expert business analyst. Analyze the following website content and extract a company profile.
 
@@ -1080,6 +1080,15 @@ THE 8 DIMENSIONS:
    - If any tier has overage_enabled == true and both tiers[].cap_policy == none AND tiers[].alert_policy == none AND forecasting_surfaces.alerts == none: cap final score at 1.
    - If policies.overage_behavior == auto_topup and any tier has topup_available == true but tiers[].topup_increment is missing: cap final score at 1.
    - If an enterprise segment exists and R5 fails: cap final score at 1.
+
+   #### MANDATORY SCORING PROCEDURE — D7 (do NOT score holistically)
+   Assign the D7 score by executing the rubric arithmetic, not by overall impression:
+   1. Mark each applicable subtest R1–R6 as PASS or FAIL against the fields above (R5 applies only if an enterprise segment exists; otherwise NA and excluded from the count).
+   2. points = number of PASS; apply the mapping (0–2 → 0, 3–4 → 1, 5–6 → 2).
+   3. Apply every hard gate above; a triggered gate OVERRIDES the mapping. In particular: if R4 fails, at most 4 of the 5 non-enterprise subtests can pass, so the score CANNOT exceed 1 unless an enterprise segment independently reaches 5–6 points; and if an enterprise segment exists but R5 fails, cap at 1.
+   4. Set "score" to EXACTLY the value this procedure yields. Never round up because controls "feel" strong or because more pages were analyzed — richer evidence changes which subtests pass, not the points→score mapping or the gates.
+   5. Begin the D7 "rationale" with a compact, machine-readable audit in EXACTLY this format, then the prose:
+      "[D7 audit: R1=P|F R2=P|F R3=P|F R4=P|F R5=P|F|NA R6=P|F | pts=N/M | gate=<none, or which cap applied> | score=X] "
 
    ## Confidence (separate from score)
    Compute confidence per subtest:
