@@ -29,7 +29,7 @@ interface AnalyzeRequest {
 // Deno EdgeRuntime type for background processing
 declare const EdgeRuntime: { waitUntil: (p: Promise<unknown>) => void };
 
-const ANALYSIS_VERSION = '2026-07-09-pipeline-v31';
+const ANALYSIS_VERSION = '2026-07-10-pipeline-v32';
 
 const COMPANY_PROFILE_PROMPT = `You are an expert business analyst. Analyze the following website content and extract a company profile.
 
@@ -706,8 +706,13 @@ THE 8 DIMENSIONS:
    AND
    - each driver has component, driver_unit, and variable_or_fixed.
 
+   PER-DRIVER EVIDENCE JUSTIFICATION (required for C1 to pass):
+   - Each driver counted toward the ≥3 threshold must be backed by its OWN fact in facts[] with an evidence_ref, quoting page language that explicitly names or prices THAT driver. The same sentence or quote cannot be counted as two drivers.
+   - Drivers inferred from general knowledge of how AI products work ("it probably uses LLM tokens"), from another company's pricing constructs, or supported only by assumption-type facts do NOT count toward the threshold.
+
    **C2 Deterministic driver formulas**
    Pass if at least 2 drivers have non-empty driver_formula that links product behavior to driver quantity.
+   Each counted formula must be quoted or directly paraphrased from a specific page (own fact + evidence_ref); the same quote cannot back two formulas. Formulas constructed from assumptions do not count.
 
    **C3 Driver to workflow linkage**
    Pass if for the scored workflow:
@@ -746,6 +751,18 @@ THE 8 DIMENSIONS:
    #### Gates (hard enforcement caps)
    - If C3 fails: cap score at 1. You cannot claim driver mapping without linking to a workflow and value unit.
    - If C6 fails: cap score at 1. Forecasting without visibility and alerts is not operational. EXCEPTION: For seat-based products, see PRICING MODEL CATEGORY AWARENESS — C6 gate does not apply.
+
+   #### MANDATORY SCORING PROCEDURE — D5 (do NOT score holistically)
+   Assign the D5 score by executing the rubric arithmetic, not by overall impression:
+   1. Mark each subtest C1–C6 as PASS or FAIL against the fields above (apply PRICING MODEL CATEGORY AWARENESS overrides where they apply).
+   2. points = number of PASS; apply the mapping (0–2 → 0, 3–4 → 1, 5–6 → 2).
+   3. Apply the gates above; a triggered gate OVERRIDES the mapping.
+   4. Set "score" to EXACTLY the value this procedure yields. Never round up because the pricing page "feels" thorough — richer evidence changes which subtests pass, not the points→score mapping or the gates.
+   5. Begin the D5 "rationale" with a compact, machine-readable audit in EXACTLY this format, then the prose:
+      "[D5 audit: C1=P|F C2=P|F C3=P|F C4=P|F C5=P|F C6=P|F | pts=N/6 | gate=<none, or which cap applied> | score=X] "
+   6. Immediately after the audit, add a per-subtest evidence line in EXACTLY this format, then the prose:
+      "[D5 evidence: C1←<driver1@page-path + driver2@page-path + driver3@page-path>; C2←<formula fields@page-path>; C3←<field@page-path>; C4←<published rate@page-path>; C5←<field@page-path>; C6←<field@page-path>] "
+      Rules for this line: for each PASS, name the specific driver/field(s) that passed and the page path (e.g., "input_tokens@/pricing") of the fact backing each one; for a subtest that passes via a PRICING MODEL CATEGORY AWARENESS override, write "auto(seat-based)"; for FAIL, write "none". A subtest marked P whose evidence entry is "none", counts the same citation twice toward a threshold, or cites only assumption-type facts is INVALID — re-mark it F and recompute points, the mapping, and the gates before setting "score".
 
    ## Confidence (separate from score)
    Compute confidence per subtest:
@@ -1037,6 +1054,12 @@ THE 8 DIMENSIONS:
    - policies.spike_protection != none
    - policies.dispute_refund_process != none
 
+   PER-CONDITION EVIDENCE JUSTIFICATION (required for R4 to pass):
+   - Each of the two (or more) qualifying policy fields must be backed by its OWN fact in facts[] with an evidence_ref, quoting page language that explicitly documents THAT policy: buffer/leeway language for grace_buffer, spike/anomaly/surge-limit language for spike_protection, a stated dispute or refund process for dispute_refund_process.
+   - The same sentence or quote CANNOT justify two different policy fields. If two of the three fields trace back to the same quote, count that quote toward the ONE policy it most explicitly documents and set the other field to none.
+   - A policy field set by inference — from generic goodwill language ("we're here to help", "fair billing"), from another company's conventions, or from how similar products usually work — does NOT count. If the page does not explicitly document the policy, the field is none and does not count toward the two required.
+   - If fewer than two policy fields survive these checks, R4 FAILS.
+
    APPLICABILITY NOTE ON ROLLOVER:
    - Rollover (policies.rollover_rules) is ONLY relevant when the product offers top-ups, add-ons, or prepaid credit packs. If the pricing model is purely seat-based, flat-rate, or usage-based without prepaid allowances/top-ups, rollover is NOT applicable and should NOT be treated as a gap or weakness.
    - Similarly, if no tier offers topup_available == true and no add-on credits exist, do NOT cite "missing rollover policy" as a weakness or trust breakpoint.
@@ -1053,6 +1076,12 @@ THE 8 DIMENSIONS:
    - tiers[].overage_enabled == true implies tiers[].overage_unit_price is present
 
    If enterprise segment does not exist, mark R5 as not applicable and exclude from points.
+
+   PER-CONDITION EVIDENCE JUSTIFICATION (required for R5 to pass):
+   - Each of the three conditions must be backed by its OWN fact in facts[] with an evidence_ref. The same quote CANNOT satisfy more than one condition.
+   - Payment methods: invoice or PO must be explicitly stated on a page (e.g., "pay by invoice", "purchase orders accepted", "ACH/wire available"). Do NOT infer invoice/po from the mere existence of an enterprise tier, "contact sales", or sales-led contracting.
+   - enterprise_true_up: must quote language explicitly describing usage reconciliation or true-up billing (e.g., "quarterly true-up", "annual usage reconciliation", "committed use with settlement"). Generic phrases — "custom pricing", "flexible billing", "volume discounts", "custom contracts" — do NOT establish a true-up policy; leave enterprise_true_up = none and FAIL R5.
+   - If any condition's only support is an assumption-type fact or reused evidence from another condition, that condition fails and R5 FAILS.
 
    **R6 No-surprise operability**
    Pass if:
@@ -1089,6 +1118,9 @@ THE 8 DIMENSIONS:
    4. Set "score" to EXACTLY the value this procedure yields. Never round up because controls "feel" strong or because more pages were analyzed — richer evidence changes which subtests pass, not the points→score mapping or the gates.
    5. Begin the D7 "rationale" with a compact, machine-readable audit in EXACTLY this format, then the prose:
       "[D7 audit: R1=P|F R2=P|F R3=P|F R4=P|F R5=P|F|NA R6=P|F | pts=N/M | gate=<none, or which cap applied> | score=X] "
+   6. Immediately after the audit, add a per-subtest evidence line in EXACTLY this format, then the prose:
+      "[D7 evidence: R1←<field@page-path>; R2←<field@page-path>; R3←<field@page-path>; R4←<policy1@page-path + policy2@page-path>; R5←<invoice/po@page-path + true_up@page-path + overage_behavior@page-path>; R6←<field@page-path>] "
+      Rules for this line: for each PASS, name the specific field(s) that passed and the page path (e.g., "grace_buffer@/pricing") of the fact backing each one; for a subtest that passes via a PRICING MODEL CATEGORY AWARENESS override, write "auto(seat-based)"; for FAIL or NA, write "none". A subtest marked P whose evidence entry is "none", duplicates another condition's citation, or cites only assumption-type facts is INVALID — re-mark it F and recompute points, the mapping, and the gates before setting "score".
 
    ## Confidence (separate from score)
    Compute confidence per subtest:
@@ -1303,7 +1335,7 @@ THE 8 DIMENSIONS:
 
 
 CRITICAL OUTPUT RULES:
-- Keep rationale to 1-2 sentences max per dimension. Each rationale MUST reference a specific page URL or section (e.g., "Pricing page shows...") — never cite footers, nav items, or copyright notices.
+- Keep rationale to 1-2 sentences max per dimension. Each rationale MUST reference a specific page URL or section (e.g., "Pricing page shows...") — never cite footers, nav items, or copyright notices. The bracketed [D5/D7 audit] and [D5/D7 evidence] blocks required by the MANDATORY SCORING PROCEDURE sections do NOT count toward this sentence limit and must never be omitted to satisfy it.
 - ANTI-HALLUCINATION: Your rationale MUST only describe pricing constructs that are EXPLICITLY present in the scraped content. Do NOT assert that a company uses credits, tokens, usage-based pricing, rollovers, top-ups, or any other model unless you can point to a specific quote from the evidence. If the company uses flat-rate seat-based pricing, say so. If cost drivers are not publicly documented, say "not publicly documented" — do NOT fabricate a model.
 - REFUND/TERMS COMPLETENESS: When analyzing terms, refund, or cancellation policies, cite ALL material conditions found on the page — not just the first one. If a refund policy has multiple conditions (e.g., processing fees, pro-rata charges, trial conversion rules), list each one.
 - Keep observed arrays to max 3 items per dimension. Each observed item MUST be a concrete, specific fact from page content — NOT from footers, navigation, cookie banners, or boilerplate. If you cannot find 3 quality observations, include fewer rather than padding with weak evidence.
