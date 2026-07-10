@@ -29,7 +29,7 @@ interface AnalyzeRequest {
 // Deno EdgeRuntime type for background processing
 declare const EdgeRuntime: { waitUntil: (p: Promise<unknown>) => void };
 
-const ANALYSIS_VERSION = '2026-07-10-pipeline-v32';
+const ANALYSIS_VERSION = '2026-07-10-pipeline-v33';
 
 const COMPANY_PROFILE_PROMPT = `You are an expert business analyst. Analyze the following website content and extract a company profile.
 
@@ -763,6 +763,7 @@ THE 8 DIMENSIONS:
    6. Immediately after the audit, add a per-subtest evidence line in EXACTLY this format, then the prose:
       "[D5 evidence: C1←<driver1@page-path + driver2@page-path + driver3@page-path>; C2←<formula fields@page-path>; C3←<field@page-path>; C4←<published rate@page-path>; C5←<field@page-path>; C6←<field@page-path>] "
       Rules for this line: for each PASS, name the specific driver/field(s) that passed and the page path (e.g., "input_tokens@/pricing") of the fact backing each one; for a subtest that passes via a PRICING MODEL CATEGORY AWARENESS override, write "auto(seat-based)"; for FAIL, write "none". A subtest marked P whose evidence entry is "none", counts the same citation twice toward a threshold, or cites only assumption-type facts is INVALID — re-mark it F and recompute points, the mapping, and the gates before setting "score".
+      EXACT FIELD NAMES REQUIRED: each evidence entry must reference the fields from THAT subtest's Pass conditions (drivers for C1, driver_formula for C2, workflow linkage fields for C3, published rates for C4, boundary behavior for C5, forecasting_surfaces fields for C6) — an entry naming anything else does NOT count toward the pass. "@user_input" may only be cited when the scan actually received insider inputs for that field; every other page path must be a page present in the scraped evidence set.
 
    ## Confidence (separate from score)
    Compute confidence per subtest:
@@ -1121,6 +1122,10 @@ THE 8 DIMENSIONS:
    6. Immediately after the audit, add a per-subtest evidence line in EXACTLY this format, then the prose:
       "[D7 evidence: R1←<field@page-path>; R2←<field@page-path>; R3←<field@page-path>; R4←<policy1@page-path + policy2@page-path>; R5←<invoice/po@page-path + true_up@page-path + overage_behavior@page-path>; R6←<field@page-path>] "
       Rules for this line: for each PASS, name the specific field(s) that passed and the page path (e.g., "grace_buffer@/pricing") of the fact backing each one; for a subtest that passes via a PRICING MODEL CATEGORY AWARENESS override, write "auto(seat-based)"; for FAIL or NA, write "none". A subtest marked P whose evidence entry is "none", duplicates another condition's citation, or cites only assumption-type facts is INVALID — re-mark it F and recompute points, the mapping, and the gates before setting "score".
+      EXACT FIELD NAMES REQUIRED: each evidence entry must use the exact schema field names from THAT subtest's Pass conditions — an entry naming anything else does NOT count toward the pass and the subtest must be re-marked F if the remaining entries no longer satisfy the conditions. Specifically:
+      - R4 entries may ONLY name grace_buffer, spike_protection, or dispute_refund_process. Usage limits, caps, alerts, or dashboards do NOT count toward R4 — those belong to R3/R6.
+      - R5 entries MUST name all three of: payment_methods (with the quoted invoice/PO language), enterprise_true_up, and overage_behavior, each with its own page path. "Enterprise pricing", "custom plans", or the existence of an enterprise tier do NOT count.
+      - "@user_input" may only be cited when the scan actually received insider inputs for that field; every other page path must be a page present in the scraped evidence set.
 
    ## Confidence (separate from score)
    Compute confidence per subtest:

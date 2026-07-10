@@ -1,5 +1,6 @@
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import { splitRationale } from "@/lib/rationale";
 import type { CompanyProfile, RubricScore, ObservabilityData } from "@/types/rubric";
 
 interface ExportData {
@@ -157,11 +158,12 @@ export function exportToPDF({ companyProfile, rubricScore, observability }: Expo
   doc.text("Dimension Scores", 20, yPos);
   yPos += 8;
 
-  // Helper: clean internal floor notes from rationales for customer-facing output
+  // Helper: clean internal floor notes and D5/D7 audit/evidence blocks from
+  // rationales for customer-facing output
   const cleanRationale = (rationale: string): string => {
     // Remove "[Score floored to X based on N public evidence signals.]" and similar internal notes
-    return rationale
-      .replace(/\s*\[Score floored to \d+ based on \d+ public evidence signals?\.\]\s*/gi, "")
+    return splitRationale(rationale)
+      .prose.replace(/\s*\[Score floored to \d+ based on \d+ public evidence signals?\.\]\s*/gi, "")
       .replace(/\s*\[Score floored[^\]]*\]\s*/gi, "")
       .trim();
   };

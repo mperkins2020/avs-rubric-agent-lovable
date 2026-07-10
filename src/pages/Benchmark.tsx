@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { splitRationale } from "@/lib/rationale";
 import { ChevronDown, ChevronUp, ArrowUp, ArrowDown, Minus, X, FileText, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -721,7 +722,7 @@ function Heatmap({
                   <div className="font-semibold">{c.company_name}</div>
                   <div className="text-xs text-muted-foreground">{dim}</div>
                   <div className="text-xs mt-1">Score: {score != null ? `${SCORE_LABELS[score]} (${score})` : "—"}</div>
-                  {ds?.rationale && <div className="text-xs mt-1">{ds.rationale}</div>}
+                  {ds?.rationale && <div className="text-xs mt-1">{splitRationale(ds.rationale).prose}</div>}
                 </TooltipContent>
               </Tooltip>
             );

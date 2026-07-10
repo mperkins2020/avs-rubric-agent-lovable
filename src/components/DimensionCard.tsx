@@ -4,6 +4,7 @@ import { ChevronDown, AlertCircle, Info, ExternalLink, FileText } from "lucide-r
 import { GlassCard } from "@/components/ui/GlassCard";
 import { ScoreBadge } from "@/components/ScoreBadge";
 import { cn } from "@/lib/utils";
+import { splitRationale } from "@/lib/rationale";
 import type { DimensionScore } from "@/types/rubric";
 
 interface DimensionCardProps {
@@ -13,6 +14,7 @@ interface DimensionCardProps {
 
 export function DimensionCard({ dimension, index }: DimensionCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
+  const { auditBlocks, prose } = splitRationale(dimension.rationale);
 
   const getConfidenceLabel = () => {
     if (dimension.notObservable) return "Not observable";
@@ -89,9 +91,25 @@ export function DimensionCard({ dimension, index }: DimensionCardProps) {
                       Rationale
                     </h4>
                     <p className="text-sm text-foreground/90">
-                      {dimension.rationale}
+                      {prose}
                     </p>
                   </div>
+
+                  {/* Subtest audit — engine QA blocks (D5/D7), kept out of the prose */}
+                  {auditBlocks.length > 0 && (
+                    <details className="bg-muted/30 rounded-lg p-3" onClick={(e) => e.stopPropagation()}>
+                      <summary className="text-xs font-medium text-muted-foreground uppercase tracking-wider cursor-pointer select-none">
+                        Subtest audit
+                      </summary>
+                      <div className="mt-2 space-y-1.5">
+                        {auditBlocks.map((block, i) => (
+                          <p key={i} className="font-mono text-xs text-muted-foreground break-all">
+                            {block}
+                          </p>
+                        ))}
+                      </div>
+                    </details>
+                  )}
 
                   {/* Evidence — merged observed + source evidence */}
                   {dimension.sourceEvidence && dimension.sourceEvidence.length > 0 ? (
