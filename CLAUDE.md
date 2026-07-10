@@ -103,7 +103,7 @@ regexes, scoring weights, or version pin diverge. **After any change to `scrape-
 
 Bump `ANALYSIS_VERSION` in `supabase/functions/analyze-company/index.ts` every time either edge function is meaningfully changed. Format: `'YYYY-MM-DD-pipeline-vN'`. Without a bump, the 7-day cache serves stale results.
 
-Current version as of last session: `2026-07-09-pipeline-v31`
+Current version as of last session: `2026-07-10-pipeline-v34`
 
 ---
 

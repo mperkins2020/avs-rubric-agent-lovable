@@ -1141,6 +1141,10 @@ Deno.serve(async (req) => {
           // Strip trailing slash from pathname (root '/' is preserved)
           // /pricing/ ≡ /pricing — Firecrawl map often returns both variants
           if (parsed.pathname.length > 1) parsed.pathname = parsed.pathname.replace(/\/$/, '');
+          // Lowercase the hostname — Relevanceai.com ≡ relevanceai.com. Case-variant
+          // hostnames (e.g. from map results or hand-entered probes) otherwise survive
+          // dedup and consume an extra evidence slot for what is the same page.
+          parsed.hostname = parsed.hostname.toLowerCase();
           // Strip www. prefix — www.example.com/path ≡ example.com/path
           parsed.hostname = parsed.hostname.replace(/^www\./, '');
           // Normalize http → https — http://example.com/pricing ≡ https://example.com/pricing
