@@ -91,9 +91,9 @@ export default function Results() {
     }
     trackEvent('pdf_downloaded');
     if (companyProfile && rubricScore && observability) {
-      exportToPDF({ companyProfile, rubricScore, observability });
+      exportToPDF({ companyProfile, rubricScore, observability, pages });
     }
-  }, [session, companyProfile, rubricScore, observability, navigate]);
+  }, [session, companyProfile, rubricScore, observability, pages, navigate]);
 
   const handleDimensionClick = useCallback((dimension: string) => {
     const element = document.getElementById(
