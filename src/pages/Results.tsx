@@ -69,8 +69,8 @@ export default function Results() {
     if (!initialState?.autoDownloadPdf) return;
     if (!companyProfile || !rubricScore || !observability) return;
     trackEvent('pdf_downloaded');
-    exportToPDF({ companyProfile, rubricScore, observability });
-  }, [initialState?.autoDownloadPdf, companyProfile, rubricScore, observability]); // eslint-disable-line react-hooks/exhaustive-deps
+    exportToPDF({ companyProfile, rubricScore, observability, pages });
+  }, [initialState?.autoDownloadPdf, companyProfile, rubricScore, observability, pages]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Show PDF hint popup after 2 seconds (anonymous users only)
   useEffect(() => {
@@ -91,9 +91,9 @@ export default function Results() {
     }
     trackEvent('pdf_downloaded');
     if (companyProfile && rubricScore && observability) {
-      exportToPDF({ companyProfile, rubricScore, observability });
+      exportToPDF({ companyProfile, rubricScore, observability, pages });
     }
-  }, [session, companyProfile, rubricScore, observability, navigate]);
+  }, [session, companyProfile, rubricScore, observability, pages, navigate]);
 
   const handleDimensionClick = useCallback((dimension: string) => {
     const element = document.getElementById(
