@@ -96,7 +96,14 @@ function isUnsafeUrl(urlString: string): string | null {
 
 // ─── Helper: call Firecrawl /map (with retry on empty/rate-limited response) ──
 async function mapDomain(apiKey: string, url: string, limit = 200, includeSubdomains = false, search?: string): Promise<string[]> {
-  const MIN_EXPECTED_URLS = 3; // if we get fewer than this, treat as a rate-limit/partial failure
+  // Below this, suspect a rate-limited PARTIAL map, not just total failure.
+  // Observed: /map returned 300 URLs then 0 URLs for the same domain seconds
+  // apart; partial subsets between those extremes shift page selection and
+  // move dimension scores run-to-run (lovable.dev analyzed 6/9/9/8 pages
+  // across four otherwise-identical scans). Was 3 — blind to partial results.
+  // Cost of the higher threshold: sites that genuinely map < 12 URLs pay one
+  // extra 12s retry; the union below still keeps every URL either attempt found.
+  const MIN_EXPECTED_URLS = 12;
   const RETRY_DELAY_MS = 12000; // wait 12s before retrying
 
   async function attemptMap(): Promise<string[]> {
@@ -126,17 +133,21 @@ async function mapDomain(apiKey: string, url: string, limit = 200, includeSubdom
   const firstAttempt = await attemptMap();
   if (firstAttempt.length >= MIN_EXPECTED_URLS) return firstAttempt;
 
-  // Too few URLs — likely a rate-limit or transient failure. Wait and retry once.
-  console.warn(`Map returned only ${firstAttempt.length} URLs for ${url} — retrying after ${RETRY_DELAY_MS}ms`);
+  // Too few URLs — likely a rate-limit or partial failure. Wait and retry once.
+  console.warn(`Map returned only ${firstAttempt.length} URLs for ${url} — possible rate-limited partial map; retrying after ${RETRY_DELAY_MS}ms`);
   await new Promise(resolve => setTimeout(resolve, RETRY_DELAY_MS));
   const secondAttempt = await attemptMap();
-  if (secondAttempt.length > firstAttempt.length) {
-    console.log(`Map retry succeeded for ${url}: ${secondAttempt.length} URLs`);
-    return secondAttempt;
-  }
 
-  // Return whichever attempt got more URLs
-  return secondAttempt.length >= firstAttempt.length ? secondAttempt : firstAttempt;
+  // UNION the two attempts rather than picking the larger: rate-limited maps
+  // can return different partial subsets, so the union recovers URLs that
+  // neither attempt alone would provide.
+  const union = [...new Set([...firstAttempt, ...secondAttempt])];
+  if (union.length > Math.max(firstAttempt.length, secondAttempt.length)) {
+    console.log(`Map retry union improved coverage for ${url}: ${firstAttempt.length} + ${secondAttempt.length} → ${union.length} URLs`);
+  } else if (secondAttempt.length > firstAttempt.length) {
+    console.log(`Map retry succeeded for ${url}: ${secondAttempt.length} URLs`);
+  }
+  return union;
 }
 
 // ─── URL scoring & helpers ─────────────────────────────────────────────────
@@ -785,6 +796,13 @@ Deno.serve(async (req) => {
     let fix2UnresolvedPageCount = 0;
     let fix2TotalQueuedCount = 0;
     let fix2ConfirmedMissUrls: string[] = [];
+    // Coverage observability (see coverage block in the response): tracks how
+    // complete discovery + scraping were this run, so thin scans are visible
+    // downstream instead of silently scoring on less evidence.
+    let coverageDiscoveredCount = 0;
+    let coverageSelectedCount = 0;
+    let coverageResolvedCount = 0;
+    let coverageBackfilledCount = 0;
 
     const urlObj = new URL(formattedUrl);
     const baseHost = urlObj.hostname.replace(/^www\./, '');
@@ -1239,6 +1257,8 @@ Deno.serve(async (req) => {
         } catch { return link; }
       };
       const allUrlsToScrape = [...finalDedupMap.values()].map(sanitiseForScrape);
+      coverageDiscoveredCount = allDiscovered.length;
+      coverageSelectedCount = allUrlsToScrape.length;
 
       const scrapePromises = allUrlsToScrape.map(pageUrl => scrapePage(apiKey, pageUrl));
       const scrapedPages = await Promise.all(scrapePromises);
@@ -1436,6 +1456,48 @@ Deno.serve(async (req) => {
       for (const page of additionalRetryPages) {
         pages.push(page);
       }
+
+      // ═════════════════════════════════════════════════════════════════════
+      // Coverage backfill: when selected pages fail to resolve (fetch error,
+      // 404, bot block) below Fix 2's 30% retry threshold, the analyzed set
+      // silently shrinks — and dimension scores move with evidence coverage.
+      // Refill the shortfall from the next-ranked eligible candidates so the
+      // analyzed page count stays stable run-to-run. Bounded to keep latency
+      // predictable (Issue 13).
+      // ═════════════════════════════════════════════════════════════════════
+      coverageResolvedCount = resolvedPages.length + additionalRetryPages.length;
+      const MAX_BACKFILL = 3;
+      const coverageShortfall = allUrlsToScrape.length - coverageResolvedCount;
+      if (coverageShortfall > 0) {
+        // Same 404/5xx content detection used for the primary batch and Fix 2
+        // retries above; duplicated deliberately so existing paths stay untouched.
+        const looksLike404 = (p: ScrapedPage): boolean =>
+          /\b(404|not found|page not found|page doesn['']t exist|this page (doesn['']t|does not) exist)\b/i.test(p.title || '') ||
+          /\(5\d{2}\)/.test(p.title || '') ||
+          /\b(technical difficulties|internal server error|service unavailable|bad gateway|something went wrong)\b/i.test(p.title || '') ||
+          p.markdown?.trimStart().startsWith('# 404') ||
+          /^#\s*(404|Page Not Found)/m.test(p.markdown || '') ||
+          (!p.markdown?.trim() && !p.title?.trim());
+
+        const alreadyAttempted = new Set([...allUrlsToScrape, formattedUrl].map(normaliseForDedup));
+        const backupCandidates = dedupedScoredLinks
+          .map(({ link }) => link)
+          .filter(link => !alreadyAttempted.has(normaliseForDedup(link)))
+          .slice(0, Math.min(coverageShortfall, MAX_BACKFILL));
+
+        if (backupCandidates.length > 0) {
+          console.log(`Coverage backfill: ${coverageShortfall} selected page(s) failed to resolve — scraping ${backupCandidates.length} next-ranked backup(s):`, backupCandidates);
+          const backfillResults = await Promise.all(backupCandidates.map(u => scrapePage(apiKey, sanitiseForScrape(u))));
+          for (const page of backfillResults) {
+            if (page && !looksLike404(page)) {
+              pages.push(page);
+              coverageBackfilledCount++;
+            }
+          }
+          coverageResolvedCount += coverageBackfilledCount;
+          console.log(`Coverage backfill complete: ${coverageBackfilledCount} page(s) recovered.`);
+        }
+      }
     }
 
     console.log(`Scraping complete. Total pages: ${pages.length}`);
@@ -1449,6 +1511,20 @@ Deno.serve(async (req) => {
         unresolvedPageCount: fix2UnresolvedPageCount,
         totalQueuedCount: fix2TotalQueuedCount,
         confirmedMissUrls: fix2ConfirmedMissUrls,
+        // Coverage observability: how complete discovery + scraping were this
+        // run. coverageWarning=true means the evidence set is thinner than
+        // normal and scores should not be trusted as final (QA Gate 1 hook:
+        // benchmark runs should rescan instead of accepting a thin scan).
+        coverage: {
+          discoveredUrlCount: coverageDiscoveredCount,
+          selectedCount: coverageSelectedCount,
+          resolvedCount: coverageResolvedCount,
+          backfilledCount: coverageBackfilledCount,
+          confirmedMissCount: fix2ConfirmedMissUrls.length,
+          coverageWarning:
+            (coverageSelectedCount > 0 && coverageResolvedCount < Math.ceil(0.6 * coverageSelectedCount)) ||
+            coverageDiscoveredCount < 12,
+        },
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );

@@ -17,7 +17,7 @@
 // The ANALYSIS_VERSION this mirror was last verified against. The drift test
 // asserts this equals the scraper's ANALYSIS_VERSION — bump it here whenever
 // you re-sync, so a scraper version bump can't silently outrun this file.
-export const SYNCED_WITH_ANALYSIS_VERSION = '2026-07-09-pipeline-v30';
+export const SYNCED_WITH_ANALYSIS_VERSION = '2026-07-09-pipeline-v31';
 
 // ─── URL scoring & helpers ────────────────────────────────────────────────────
 

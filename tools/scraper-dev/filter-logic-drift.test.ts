@@ -39,6 +39,11 @@ const scraperSrc = readFileSync(
   'utf-8',
 );
 const mirrorSrc = readFileSync(join(here, 'filter-logic.ts'), 'utf-8');
+// preview-scrape-urls.ts carries its own INLINE copy of the scraper's shape
+// filters (locale prefixes, Rules A–D) that filter-logic.ts does not export —
+// a second drift surface, discovered 2026-07-09 when the tool selected
+// lovable.dev/hi/pricing that production correctly drops.
+const previewSrc = readFileSync(join(here, 'preview-scrape-urls.ts'), 'utf-8');
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Mini-lexer: walk source once, classify comments / strings / regex literals so
@@ -246,6 +251,20 @@ describe('filter-logic mirror is in sync with the production scraper', () => {
     const pr = balancedRange(scraperSrc, scraper.neutralized, 'const isEvidenceEligible =', '{');
     const mr = balancedRange(mirrorSrc, mirror.neutralized, 'function checkEvidenceEligible(', '{');
     expectSameMultiset('isEvidenceEligible', regexesInRange(scraper, pr), regexesInRange(mirror, mr));
+  });
+
+  it('locale-prefix filter matches (preview tool inline copy)', () => {
+    // Extract the locale-list regex literal (starts /^(?:fr|de|es…) from both
+    // the production scraper and the preview tool's inline filter block.
+    const grabLocale = (src: string) => src.match(/\/\^\(\?:fr\|de\|es.*?\$\//)?.[0];
+    const prod = grabLocale(scraperSrc);
+    const prev = grabLocale(previewSrc);
+    expect(prod, 'locale regex not found in scraper — update grabLocale anchor').toBeTruthy();
+    expect(
+      prev,
+      'locale regex not found in preview-scrape-urls.ts — update grabLocale anchor',
+    ).toBeTruthy();
+    expect(prev, 'preview-scrape-urls locale-prefix regex drifted from scraper').toBe(prod);
   });
 
   it('normaliseForDedup regexes match', () => {

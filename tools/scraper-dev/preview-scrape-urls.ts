@@ -164,7 +164,12 @@ const afterExclusion = allDiscovered.filter(link => {
     ) return false;
     const firstSeg = (segs[0] ?? '').toLowerCase();
     const isHelpSubdomainUrl = helpSubdomains.some(s => parsed.hostname === `${s}.${registrableDomain}`);
-    if (!isHelpSubdomainUrl && segs.length >= 2 && /^(?:fr|de|es|pt|ja|zh|ko|it|nl|pl|ru|ar|tr|sv|da|fi|nb|cs|hu|ro|uk|en|pt-br|zh-cn|zh-tw|es-mx|fr-ca)$/.test(firstSeg)) return false;
+    // Mirror of the production locale-prefix filter (scrape-website ~line 1030).
+    // Re-synced 2026-07-09: was the pre-Issue-11 form (missing cn/id/th/vi/ms/hi/he/el,
+    // required 2+ segments, no en-exemption structure) — the tool selected
+    // lovable.dev/hi/pricing that production correctly drops.
+    const isLocalePrefix = segs.length >= 1 && /^(?:fr|de|es|pt|ja|zh|cn|ko|it|nl|pl|ru|ar|tr|sv|da|fi|nb|cs|hu|ro|uk|en|id|th|vi|ms|hi|he|el)(?:-[a-z]{2,4})?$/.test(firstSeg);
+    if (isLocalePrefix && (!isHelpSubdomainUrl || !/^en(?:-[a-z]{2,4})?$/.test(firstSeg))) return false;
   } catch { /* malformed — let downstream filters handle */ }
   if (isShallowSameDomainPath(link, baseHost)) return true;
   if (priorityPatterns.some(p => p.test(link))) return true;
