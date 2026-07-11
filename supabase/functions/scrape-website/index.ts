@@ -437,6 +437,15 @@ const pricingJsonSchema = {
 const isPricingPage = (url: string): boolean =>
   /\/(pricing|plans?|billing|subscription|credits|cost|packages|buy)\b/i.test(url);
 
+// Naive `<[^>]+>` tag stripping breaks on attribute values that contain a
+// literal `>` — e.g. Tailwind/Radix arbitrary-variant classes like
+// `[&[data-state=open]>svg]:rotate-180`. The `>` inside the quoted class
+// value terminates the match early, leaving the tag's tail (a fragment of
+// the class string, or a sibling tag's attributes) treated as page text and
+// leaking into evidence citations. Match quoted attribute values as opaque
+// units so an embedded `>` can't end the tag early.
+const stripHtmlTags = (html: string): string => html.replace(/<(?:[^>"']|"[^"]*"|'[^']*')*>/g, ' ');
+
 const sanitizeEvidenceText = (value: string): string =>
   value
     .replace(/!\[[^\]]*\]\([^\)]+\)/g, ' ')
@@ -577,21 +586,31 @@ async function scrapePage(apiKey: string, pageUrl: string): Promise<ScrapedPage 
 
       const pushExtracted = (value: string) => {
         const plainText = sanitizeEvidenceText(
-          value
-            .replace(/<[^>]+>/g, ' ')
+          stripHtmlTags(value)
             .replace(/&nbsp;/g, ' ')
             .replace(/&amp;/g, '&')
             .replace(/\s+/g, ' ')
             .trim()
         );
         if (plainText.length < 30) return;
+        // Reject leaked HTML attribute/CSS-class soup (aria-*, data-*, Tailwind
+        // utility runs) that survived tag stripping — not evidence-quality content.
+        if (/\b(aria|data)-[\w-]+\s*=\s*["']|\bclass\s*=\s*["']|(?:\bhover:|dark:hover:|rounded-\w|\[&[[_])/i.test(plainText)) return;
         const normalized = plainText.slice(0, 420);
         if (seenExtracted.has(normalized)) return;
         seenExtracted.add(normalized);
         extractedTexts.push(normalized);
       };
 
-      const accordionContentRegex = /<(?:div|section|p|span|li|details)[^>]*(?:data-(?:state|radix|orientation)|role="region"|aria-labelledby|aria-controls|accordion|collapse)[^>]*>([\s\S]*?)<\/(?:div|section|p|span|li|details)>/gi;
+      // Attribute-safe "not-yet-closed" fragment: quoted values (e.g. Tailwind/Radix
+      // arbitrary-variant classes like `[&[data-state=open]>svg]:rotate-180`) can
+      // contain a literal `>` — treat quoted spans as opaque so they can't be
+      // mistaken for the tag's closing `>`.
+      const ATTR = `(?:[^>"']|"[^"]*"|'[^']*')*`;
+      const accordionContentRegex = new RegExp(
+        `<(?:div|section|p|span|li|details)${ATTR}(?:data-(?:state|radix|orientation)|role="region"|aria-labelledby|aria-controls|accordion|collapse)${ATTR}>([\\s\\S]*?)<\\/(?:div|section|p|span|li|details)>`,
+        'gi'
+      );
       let match;
       while ((match = accordionContentRegex.exec(html)) !== null) {
         pushExtracted(match[1]);
@@ -601,7 +620,7 @@ async function scrapePage(apiKey: string, pageUrl: string): Promise<ScrapedPage 
       while ((match = tableRowRegex.exec(html)) !== null) {
         const rowHtml = match[1];
         const cells = Array.from(rowHtml.matchAll(/<t[hd][^>]*>([\s\S]*?)<\/t[hd]>/gi))
-          .map((cellMatch) => cellMatch[1].replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim())
+          .map((cellMatch) => stripHtmlTags(cellMatch[1]).replace(/\s+/g, ' ').trim())
           .filter(Boolean);
         if (cells.length >= 2) pushExtracted(cells.join(' | '));
       }
@@ -609,10 +628,12 @@ async function scrapePage(apiKey: string, pageUrl: string): Promise<ScrapedPage 
       // Targeted "What is a credit?" FAQ extraction
       const creditFaqIndex = html.toLowerCase().indexOf('what is a credit?');
       if (creditFaqIndex >= 0) {
-        const creditFaqSegment = html.slice(creditFaqIndex, creditFaqIndex + 18000)
-          .replace(/<script[\s\S]*?<\/script>/gi, ' ')
-          .replace(/<style[\s\S]*?<\/style>/gi, ' ')
-          .replace(/<[^>]+>/g, ' ')
+        const creditFaqSegment = stripHtmlTags(
+          html
+            .slice(creditFaqIndex, creditFaqIndex + 18000)
+            .replace(/<script[\s\S]*?<\/script>/gi, ' ')
+            .replace(/<style[\s\S]*?<\/style>/gi, ' ')
+        )
           .replace(/\s+/g, ' ')
           .trim();
 
