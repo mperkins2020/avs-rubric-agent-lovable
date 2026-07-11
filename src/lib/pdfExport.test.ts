@@ -163,4 +163,32 @@ describe('exportToPDF()', () => {
     expect(stem).not.toMatch(/[&.]/);
     expect(stem).toMatch(/^[a-z0-9_]+$/);
   });
+
+  it('collapses letter-spaced evidence snippets before rendering', async () => {
+    const { exportToPDF } = await import('./pdfExport');
+    exportToPDF({
+      companyProfile: mockCompanyProfile,
+      observability: mockObservability,
+      rubricScore: {
+        ...mockRubricScore,
+        dimensionScores: [
+          {
+            ...mockRubricScore.dimensionScores[0],
+            sourceEvidence: [
+              {
+                url: 'https://example.com/pricing',
+                snippet: 'F e a t u r e   F r e e   P r o   T e a m   E n t e r p r i s e',
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    const renderedText = mockDocInstance.text.mock.calls
+      .map((call) => String(call[0]))
+      .join('\n');
+    expect(renderedText).toContain('"Feature Free Pro Team Enterprise"');
+    expect(renderedText).not.toContain('F e a t u r e');
+  });
 });
