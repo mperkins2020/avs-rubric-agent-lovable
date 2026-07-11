@@ -29,7 +29,7 @@ interface AnalyzeRequest {
 // Deno EdgeRuntime type for background processing
 declare const EdgeRuntime: { waitUntil: (p: Promise<unknown>) => void };
 
-const ANALYSIS_VERSION = '2026-07-10-pipeline-v36';
+const ANALYSIS_VERSION = '2026-07-10-pipeline-v37';
 
 const COMPANY_PROFILE_PROMPT = `You are an expert business analyst. Analyze the following website content and extract a company profile.
 
@@ -933,6 +933,23 @@ THE 8 DIMENSIONS:
    - If P3 fails for the highest-priority segment: cap final dimension score at 1.
    - If the highest-priority segment is team or enterprise and P4 fails: cap final dimension score at 1.
 
+   #### MANDATORY SCORING PROCEDURE — D6 (do NOT score holistically)
+   Assign the D6 score by executing the rubric arithmetic, not by overall impression:
+   1. Mark each subtest P1–P6 as PASS or FAIL against the fields above (apply PRICING MODEL CATEGORY AWARENESS overrides where they apply), per segment.
+   2. points = number of PASS per segment; apply the mapping (0–2 → 0, 3–4 → 1, 5–6 → 2), then apply dimension aggregation.
+   3. Apply the gates above; a triggered gate OVERRIDES the mapping.
+   4. Set "score" to EXACTLY the value this procedure yields. Never round up because the packaging "feels" well-structured — richer evidence changes which subtests pass, not the points→score mapping or the gates.
+   5. Begin the D6 "rationale" with a compact, machine-readable audit in EXACTLY this format, then the prose:
+      "[D6 audit: P1=P|F P2=P|F P3=P|F P4=P|F P5=P|F P6=P|F | pts=N/6 | gate=<none, or which cap applied> | score=X] "
+   6. Immediately after the audit, add a per-subtest evidence line in EXACTLY this format, then the prose:
+      "[D6 evidence: P1←<field@page-path>; P2←<exploration_offering@page-path + production_offering@page-path + distinct-construct@page-path>; P3←<pool1 fields@page-path + pool2 fields@page-path>; P4←<field@page-path>; P5←<field@page-path>; P6←<overage_unit_price@page-path + unit_name@page-path + included_units-or-pool@page-path>] "
+      Rules for this line: for each PASS, name the specific field(s) that passed and the page path of the fact backing each one; for a subtest that passes via a PRICING MODEL CATEGORY AWARENESS override, write "auto(seat-based)"; for FAIL, write "none". A subtest marked P whose evidence entry is "none", reuses the same citation across multiple conditions or multiple pools, or cites only assumption-type facts is INVALID — re-mark it F and recompute points, the mapping, and the gates before setting "score".
+      EXACT FIELD NAMES REQUIRED: each evidence entry must reference the fields from THAT subtest's Pass conditions — an entry naming anything else does NOT count toward the pass. Specifically:
+      - P2 entries MUST name exploration_offering, production_offering, AND the distinct exploration construct (a pool with pool_type == exploration, or a low-friction tier), each with its own page path. A single "free trial" mention cannot back both exploration_offering and the distinct-construct requirement unless it is quoted twice from genuinely separate page language.
+      - P3 entries are per-pool: each pool in segment_pools needs its own unit_name/included_units/reset_cadence citations (plus rollover_rules/topup_increment where applicable). The same quote cannot back two different pools, and a fact about one pool cannot be cited for another pool's fields.
+      - P6 entries MUST name all three of: overage_unit_price, unit_name (matching packaging.primary_unit_name), and included_units or pool_name, each with its own page path. Generic "overage pricing available" language does NOT satisfy overage_unit_price without a quoted rate.
+      - "@user_input" may only be cited when the scan actually received insider inputs for that field; every other page path must be a page present in the scraped evidence set.
+
    ## Confidence (separate from score)
    Compute confidence per subtest:
    - subtest_confidence = max(facts[].reliability among facts used by that subtest)
@@ -1301,6 +1318,23 @@ THE 8 DIMENSIONS:
    - If T2 fails for the highest-priority segment: cap final dimension score at 1. EXCEPTION: For seat-based products, T2 is assessed under the seat-based interpretation (admin team/subscription visibility). If T2 passes under that interpretation, this gate does not apply.
    - If any tier has overage_enabled == true and both caps and alerts are absent for that tier (no cap_policy and no alert_policy and forecasting_surfaces.alerts == none): cap final score at 1.
 
+   #### MANDATORY SCORING PROCEDURE — D8 (do NOT score holistically)
+   Assign the D8 score by executing the rubric arithmetic, not by overall impression:
+   1. Mark each subtest T1–T6 as PASS or FAIL against the fields above (apply PRICING MODEL CATEGORY AWARENESS overrides where they apply), per segment.
+   2. points = number of PASS per segment; apply the mapping (0–2 → 0, 3–4 → 1, 5–6 → 2), then apply dimension aggregation.
+   3. Apply the gates above; a triggered gate OVERRIDES the mapping.
+   4. Set "score" to EXACTLY the value this procedure yields. Never round up because controls "feel" mature — richer evidence changes which subtests pass, not the points→score mapping or the gates.
+   5. Begin the D8 "rationale" with a compact, machine-readable audit in EXACTLY this format, then the prose:
+      "[D8 audit: T1=P|F T2=P|F T3=P|F T4=P|F T5=P|F T6=P|F | pts=N/6 | gate=<none, or which cap applied> | score=X] "
+   6. Immediately after the audit, add a per-subtest evidence line in EXACTLY this format, then the prose:
+      "[D8 evidence: T1←<cap@page-path + admin-config@page-path>; T2←<field@page-path>; T3←<field@page-path>; T4←<field@page-path>; T5←<path-used:rbac_path|soc2_path>:<field1@page-path + field2@page-path>; T6←<limit_behavior_docs@page-path + rail@page-path[ + overage_behavior@page-path]>] "
+      Rules for this line: for each PASS, name the specific field(s) that passed and the page path of the fact backing each one; for a subtest that passes via a PRICING MODEL CATEGORY AWARENESS override, write "auto(seat-based)"; for FAIL, write "none". A subtest marked P whose evidence entry is "none", reuses the same citation across multiple ANDed conditions within a pass path, or cites only assumption-type facts is INVALID — re-mark it F and recompute points, the mapping, and the gates before setting "score".
+      EXACT FIELD NAMES REQUIRED: each evidence entry must reference the fields from THAT subtest's Pass conditions — an entry naming anything else does NOT count toward the pass. Specifically:
+      - T1 entries for team/enterprise segments MUST separately cite the base cap evidence (cap_policy or a budget_cap/usage_cap rail) AND the admin-configurability evidence (admin_cap, or a rail's configurable_by == admin/both). The same quote cannot satisfy both unless it explicitly names both the cap mechanism and who administers it.
+      - T5 rbac_path entries MUST name both (rbac or admin) AND (audit_logs or audit_export), each with its own page path — a security or trust-center page mentioning access control in general does NOT establish rbac/admin without naming that specific control, and does NOT separately establish audit_logs without its own citation. T5 soc2_path entries MUST name both the soc2 feature/tier AND the publicly linked trust center or compliance page (compliance_cert, or evidence_url from a trust center domain), each with its own citation — a bare "SOC 2 compliant" marketing claim without a linked trust center page does NOT satisfy soc2_path.
+      - T6 entries MUST name both limit_behavior_docs AND the specific risk-limiter rail_type (rate_limit, concurrency_limit, retry_limit, circuit_breaker, kill_switch, or approval_gate), each with its own page path — generic "usage limits" or "fair use policy" language does NOT count as a rail_type without naming the specific mechanism and its trigger/action. If overage_enabled is true for any tier, T6 must also separately cite policies.overage_behavior — the citation used for limit_behavior_docs or the rail cannot double as this citation.
+      - "@user_input" may only be cited when the scan actually received insider inputs for that field; every other page path must be a page present in the scraped evidence set.
+
    ## Confidence (separate from score)
    Compute confidence per subtest:
    - subtest_confidence = max(facts[].reliability among facts used by that subtest)
@@ -1340,7 +1374,7 @@ THE 8 DIMENSIONS:
 
 
 CRITICAL OUTPUT RULES:
-- Keep rationale to 1-2 sentences max per dimension. Each rationale MUST reference a specific page URL or section (e.g., "Pricing page shows...") — never cite footers, nav items, or copyright notices. The bracketed [D5/D7 audit] and [D5/D7 evidence] blocks required by the MANDATORY SCORING PROCEDURE sections do NOT count toward this sentence limit and must never be omitted to satisfy it.
+- Keep rationale to 1-2 sentences max per dimension. Each rationale MUST reference a specific page URL or section (e.g., "Pricing page shows...") — never cite footers, nav items, or copyright notices. The bracketed [D5/D6/D7/D8 audit] and [D5/D6/D7/D8 evidence] blocks required by the MANDATORY SCORING PROCEDURE sections do NOT count toward this sentence limit and must never be omitted to satisfy it.
 - ANTI-HALLUCINATION: Your rationale MUST only describe pricing constructs that are EXPLICITLY present in the scraped content. Do NOT assert that a company uses credits, tokens, usage-based pricing, rollovers, top-ups, or any other model unless you can point to a specific quote from the evidence. If the company uses flat-rate seat-based pricing, say so. If cost drivers are not publicly documented, say "not publicly documented" — do NOT fabricate a model.
 - REFUND/TERMS COMPLETENESS: When analyzing terms, refund, or cancellation policies, cite ALL material conditions found on the page — not just the first one. If a refund policy has multiple conditions (e.g., processing fees, pro-rata charges, trial conversion rules), list each one.
 - Keep observed arrays to max 3 items per dimension. Each observed item MUST be a concrete, specific fact from page content — NOT from footers, navigation, cookie banners, or boilerplate. If you cannot find 3 quality observations, include fewer rather than padding with weak evidence.
