@@ -56,29 +56,29 @@ const hexExample: ExampleData = {
   company: "Hex",
   band: "Trusted",
   bandClass: "text-score-medium bg-score-medium/10 border-score-medium/30",
-  bandDesc: "Strong packaging — credit metering transparency is the gap",
-  score: 11,
+  bandDesc: "Strong foundation — closing remaining gaps can unlock 2–5% ARR uplift",
+  score: 12,
   maxScore: 16,
-  percentage: "69%",
+  percentage: "75%",
   strengths: {
     title: "ICP and job clarity",
-    desc: "Hex clearly defines its target audience as data teams and business users, with specific use cases and customer testimonials illustrating value.",
-    enables: "Enables: Faster qualification and reduced sales friction.",
+    desc: "Hex clearly identifies its target audience as data teams (analysts, scientists, leaders) and provides concrete examples of analytical jobs and workflows, such as building retention charts or sales forecasts with AI agents.",
+    enables: "Enables: Potential customers quickly understand if Hex fits their data challenges, reducing sales friction and improving adoption.",
   },
   weaknesses: {
-    title: "Value unit",
-    desc: "While 'credits' are a billable unit, their definition and metering formula are not explicitly detailed — it's unclear how actions translate into credit consumption.",
-    impact: "Impact: Customer confusion and unexpected costs erode trust.",
+    title: "Product north star",
+    desc: "Hex lacks a single, clearly articulated and measurable primary outcome metric with a defined target. Examples of AI agent tasks exist, but a universal 'north star' metric is not evident.",
+    impact: "Impact: Harder to quantify business impact and justify ROI around a shared success metric.",
   },
   breakpoints: [
-    { title: "Opaque Credit Metering", desc: "The exact formula linking AI features (agentic notebooks, quick edits) to credit consumption is not documented." },
-    { title: "Missing Overage Controls", desc: "Cap policies, alert mechanisms, and grace buffers for credit overages are not publicly detailed." },
+    { title: "Unexpected Credit Consumption", desc: "The 'complexity of task' for AI features is a vague cost driver — without clear formulas or a pre-flight estimator, users may consume more credits than anticipated." },
+    { title: "Lack of Granular Cost Control", desc: "Explicit configurable budget caps and detailed usage alerts for credits and compute are not publicly documented, risking overspend before users are aware." },
   ],
   dimensions: [
-    { n: "01", name: "Product north star", conf: "Low", score: "1/2", color: "text-score-medium bg-score-medium/10" },
-    { n: "02", name: "ICP and job clarity", conf: "High", score: "2/2", color: "text-score-high bg-score-high/10" },
-    { n: "03", name: "Buyer and budget alignment", conf: "High", score: "2/2", color: "text-score-high bg-score-high/10" },
-    { n: "04", name: "Value unit", conf: "Medium", score: "1/2", color: "text-score-medium bg-score-medium/10" },
+    { n: "01", name: "Product north star", conf: "Medium", score: "1/2", color: "text-score-medium bg-score-medium/10" },
+    { n: "02", name: "ICP and job clarity", conf: "Medium", score: "2/2", color: "text-score-high bg-score-high/10" },
+    { n: "03", name: "Buyer and budget alignment", conf: "Medium", score: "2/2", color: "text-score-high bg-score-high/10" },
+    { n: "04", name: "Value unit", conf: "Medium", score: "2/2", color: "text-score-high bg-score-high/10" },
   ],
 };
 
@@ -87,64 +87,33 @@ const deepgramExample: ExampleData = {
   company: "Deepgram",
   band: "Exemplary",
   bandClass: "text-score-high bg-score-high/10 border-score-high/30",
-  bandDesc: "Transparent unit pricing — supports confident developer adoption",
-  score: 13,
+  bandDesc: "Enterprise-ready trust infrastructure — supports fastest sales cycles",
+  score: 16,
   maxScore: 16,
-  percentage: "81%",
+  percentage: "100%",
   strengths: {
     title: "Value unit",
-    desc: "Deepgram uses precise, value-linked billing units (per-second audio minutes, per-character TTS, per-token AI features) and clearly defines how multichannel audio is calculated.",
-    enables: "Enables: Accurate cost prediction and efficient resource planning.",
+    desc: "Deepgram provides exceptionally clear and granular definitions for its billing units, including per-second billing for audio and per-character for TTS, with explicit calculations for multichannel audio.",
+    enables: "Enables: Customers can precisely understand and predict costs, fostering trust and accurate budgeting for their AI applications.",
   },
   weaknesses: {
-    title: "Cost driver mapping",
-    desc: "Per-unit pricing is published, but explicit formulas linking specific product behaviors to driver quantities are not detailed, and no in-product cost estimator is documented.",
-    impact: "Impact: Hard to forecast costs for complex usage patterns.",
+    title: "No material weaknesses",
+    desc: "All scored dimensions land at 2/2 with High confidence. Remaining opportunities are refinements, not gaps — see Trust Breakpoints for forward-looking risks.",
+    impact: "Impact: Buyers can evaluate independently with minimal follow-up questions.",
   },
   breakpoints: [
-    { title: "Concurrency Limit Surprises", desc: "Pay-As-You-Go requests above concurrency limits may be queued or rejected — limit behavior is not consolidated in docs." },
-    { title: "No Public Budget Caps", desc: "Configurable budget caps, granular dashboards, and explicit alerting policies are not publicly visible across tiers." },
+    { title: "Cost Forecasting", desc: "Customers may experience unexpected costs if they cannot accurately estimate usage before deployment, especially with complex AI models and add-ons, due to the absence of public forecasting tools." },
+    { title: "Usage Visibility", desc: "Without granular usage dashboards or explicit alerts for cost/usage thresholds, customers may lack the controls to manage spend proactively." },
   ],
   dimensions: [
     { n: "01", name: "Product north star", conf: "High", score: "2/2", color: "text-score-high bg-score-high/10" },
     { n: "02", name: "ICP and job clarity", conf: "High", score: "2/2", color: "text-score-high bg-score-high/10" },
-    { n: "03", name: "Value unit", conf: "High", score: "2/2", color: "text-score-high bg-score-high/10" },
-    { n: "04", name: "Cost driver mapping", conf: "Medium", score: "1/2", color: "text-score-medium bg-score-medium/10" },
+    { n: "03", name: "Buyer and budget alignment", conf: "High", score: "2/2", color: "text-score-high bg-score-high/10" },
+    { n: "04", name: "Value unit", conf: "High", score: "2/2", color: "text-score-high bg-score-high/10" },
   ],
 };
 
-const momentumExample: ExampleData = {
-  label: "Momentum AI report example",
-  company: "Momentum AI",
-  band: "Trusted",
-  bandClass: "text-score-medium bg-score-medium/10 border-score-medium/30",
-  bandDesc: "Clear ICP — usage-based add-on lacks pricing transparency",
-  score: 9,
-  maxScore: 16,
-  percentage: "56%",
-  strengths: {
-    title: "ICP and job clarity",
-    desc: "Momentum AI clearly identifies its target buyer roles (CROs, RevOps, Sales Managers) and explicitly states the core GTM workflows it automates.",
-    enables: "Enables: Faster lead qualification and reduced sales friction.",
-  },
-  weaknesses: {
-    title: "Cost driver mapping",
-    desc: "Underlying cost drivers (tokens, call minutes, API calls) are not publicly disclosed, nor how they relate to per-user pricing or 'usage-based credits' for Deep Research.",
-    impact: "Impact: Customers cannot forecast usage or AI feature costs.",
-  },
-  breakpoints: [
-    { title: "Undefined Deep Research Credits", desc: "The 'usage-based credits' add-on lacks definition, overage pricing, and customer controls — creating surprise risk." },
-    { title: "Missing Safety Rails", desc: "Budget caps, usage caps, rate limits, and audit dashboards are not publicly documented for any tier." },
-  ],
-  dimensions: [
-    { n: "01", name: "Product north star", conf: "Low", score: "1/2", color: "text-score-medium bg-score-medium/10" },
-    { n: "02", name: "ICP and job clarity", conf: "Medium", score: "2/2", color: "text-score-high bg-score-high/10" },
-    { n: "03", name: "Value unit", conf: "Low", score: "1/2", color: "text-score-medium bg-score-medium/10" },
-    { n: "04", name: "Cost driver mapping", conf: "Low", score: "1/2", color: "text-score-medium bg-score-medium/10" },
-  ],
-};
-
-const examples = [lovableExample, hexExample, deepgramExample, momentumExample];
+const examples = [lovableExample, hexExample, deepgramExample];
 
 const slideVariants = {
   enter: { x: "100%", opacity: 0 },
