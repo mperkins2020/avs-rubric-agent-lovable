@@ -49,21 +49,69 @@ function getBandColor(band: string): [number, number, number] {
   }
 }
 
-// Collapse letter-spaced text (e.g. "F e a t u r e   F r e e" → "Feature Free").
-// If any run of 5+ single-char tokens appears, treat the whole string as
-// letter-spaced: split by 2+ spaces (real word breaks), and within each chunk,
-// if the majority of tokens are single characters, join them into one word.
-function collapseLetterSpacing(s: string): string {
-  if (!/(?:\S ){5,}\S/.test(s)) return s;
+const UNICODE_SPACING_RE = /[\u00A0\u1680\u2000-\u200A\u202F\u205F\u3000]/g;
+const ZERO_WIDTH_RE = /[\u200B-\u200D\u2060\uFEFF]/g;
+
+function normalizePdfWhitespace(s: string): string {
   return s
+    .replace(UNICODE_SPACING_RE, " ")
+    .replace(ZERO_WIDTH_RE, "")
+    .replace(/[\t\r\n]+/g, " ");
+}
+
+function isLetterToken(token: string): boolean {
+  const core = token.replace(/^["'“‘`(\[]+/, "").replace(/["'”’`.,!?;:)\]]+$/, "");
+  return core.length === 1 && /[\p{L}\p{N}]/u.test(core);
+}
+
+function hasLetterSpacedRun(s: string): boolean {
+  let runLength = 0;
+  for (const token of s.split(/\s+/).filter(Boolean)) {
+    if (isLetterToken(token)) {
+      runLength += 1;
+      if (runLength >= 5) return true;
+    } else {
+      runLength = 0;
+    }
+  }
+  return false;
+}
+
+function collapseLetterSpacedChunk(chunk: string): string {
+  const tokens = chunk.split(/\s+/).filter(Boolean);
+  if (tokens.length < 3) return chunk.trim();
+
+  const letterTokens = tokens.filter(isLetterToken).length;
+  const mostlyLetterSpaced = letterTokens / tokens.length >= 0.55;
+  if (!mostlyLetterSpaced) {
+    return tokens
+      .reduce<string[]>((parts, token) => {
+        const previous = parts[parts.length - 1];
+        if (previous && isLetterToken(previous) && isLetterToken(token)) {
+          parts[parts.length - 1] = `${previous}${token}`;
+        } else {
+          parts.push(token);
+        }
+        return parts;
+      }, [])
+      .join(" ");
+  }
+
+  return tokens.join("");
+}
+
+// Collapse letter-spaced text (e.g. "F e a t u r e   F r e e" → "Feature Free").
+// PDF extraction may use non-breaking/thin spaces, and real word breaks usually
+// survive as wider 2+ space gaps. Normalize those first, then collapse only runs
+// that are mostly single-character tokens so normal prose is left untouched.
+function collapseLetterSpacing(s: string): string {
+  const normalized = normalizePdfWhitespace(s);
+  if (!hasLetterSpacedRun(normalized)) return normalized;
+
+  return normalized
+    .replace(/(?:^|\s)(?:['"`]\s*){2,}(?=\s|$)/g, " ")
     .split(/ {2,}/)
-    .map((chunk) => {
-      const tokens = chunk.split(" ").filter(Boolean);
-      if (tokens.length < 3) return chunk;
-      const singles = tokens.filter((t) => t.length === 1).length;
-      if (singles / tokens.length >= 0.6) return tokens.join("");
-      return chunk;
-    })
+    .map(collapseLetterSpacedChunk)
     .join(" ");
 }
 
@@ -78,8 +126,7 @@ function sanitizeText(s: string): string {
     .replace(/\u2026/g, "...")
     .replace(/\u2265/g, ">=")
     .replace(/\u2264/g, "<=")
-    .replace(/\u00A0/g, " ")
-    .replace(/[\t\r\n]+/g, " ");
+    .replace(/\u2212/g, "-");
   return collapseLetterSpacing(normalized).replace(/ {2,}/g, " ").trim();
 }
 
