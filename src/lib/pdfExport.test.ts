@@ -191,4 +191,40 @@ describe('exportToPDF()', () => {
     expect(renderedText).toContain('"Feature Free Pro Team Enterprise"');
     expect(renderedText).not.toContain('F e a t u r e');
   });
+
+  it('replaces non-Latin-1 glyphs (arrows, checkmarks) instead of letting them corrupt kerning', async () => {
+    const { exportToPDF } = await import('./pdfExport');
+    exportToPDF({
+      companyProfile: mockCompanyProfile,
+      observability: mockObservability,
+      rubricScore: {
+        ...mockRubricScore,
+        dimensionScores: [
+          {
+            ...mockRubricScore.dimensionScores[0],
+            sourceEvidence: [
+              {
+                url: 'https://example.com',
+                snippet: 'Tasks run / mo 1.24M ↑ 4.9× this year',
+              },
+              {
+                url: 'https://example.com/pricing',
+                snippet: 'SSO (SAML) ✓✓✓✓',
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    const renderedText = mockDocInstance.text.mock.calls
+      .map((call) => String(call[0]))
+      .join('\n');
+    // jsPDF's default Helvetica font has no glyph for U+2191 (↑) or U+2713 (✓) —
+    // rendering them corrupts kerning for the whole line, which round-trips as
+    // letter-spaced garbage text when the PDF is read back.
+    expect(renderedText).toContain('Tasks run / mo 1.24M up 4.9');
+    expect(renderedText).toContain('SSO (SAML) YesYesYesYes');
+    expect(renderedText).not.toMatch(/T a s k s/);
+  });
 });

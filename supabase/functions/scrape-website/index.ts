@@ -980,6 +980,45 @@ Deno.serve(async (req) => {
         console.error('Failed to load community evidence (non-fatal):', ceErr);
       }
 
+      // Normalise a URL for deduplication.
+      // Strips: #:~:text= fragments, locale prefixes, www prefix, trailing slash, http→https.
+      // Preserves: query params — e.g. elevenlabs.io/pricing?price.platform=api is genuinely
+      // different content from elevenlabs.io/pricing and must keep its own slot.
+      // Exception: billing/payment support pages have no content-differentiating query params —
+      // strip them entirely so tracking variants don't consume multiple slots.
+      // Defined before STEP 3 so the homepage-exclusion filter below can use the same
+      // normalisation as every other dedup pass — a raw string-equality check misses
+      // www/protocol/trailing-slash variants of the homepage URL, letting the already
+      // force-scraped homepage (Step 1) get queued and scraped a second time.
+      const BILLING_DEDUP_PATHS = /\/(?:about\/payments?|billing(?:-support)?|invoice|payments?|billing-and-invoices|payment-support)\b/i;
+      const normaliseForDedup = (link: string): string => {
+        try {
+          const parsed = new URL(link);
+          // Strip text fragment anchors (#:~:text=...) — same HTML document as the base URL
+          parsed.hash = parsed.hash.startsWith('#:~:') ? '' : parsed.hash;
+          // Strip locale path prefixes (/en/, /en-US/, /fr/, /de/, etc.)
+          parsed.pathname = parsed.pathname.replace(/^\/[a-z]{2}(-[a-zA-Z]{2,4})?\//,  '/');
+          // Collapse double slashes in path (e.g. //about → /about) — Firecrawl map
+          // sometimes returns malformed URLs with double slashes that fool naive dedup.
+          parsed.pathname = parsed.pathname.replace(/\/\/+/g, '/');
+          // Strip trailing slash from pathname (root '/' is preserved)
+          // /pricing/ ≡ /pricing — Firecrawl map often returns both variants
+          if (parsed.pathname.length > 1) parsed.pathname = parsed.pathname.replace(/\/$/, '');
+          // Lowercase the hostname — Relevanceai.com ≡ relevanceai.com. Case-variant
+          // hostnames (e.g. from map results or hand-entered probes) otherwise survive
+          // dedup and consume an extra evidence slot for what is the same page.
+          parsed.hostname = parsed.hostname.toLowerCase();
+          // Strip www. prefix — www.example.com/path ≡ example.com/path
+          parsed.hostname = parsed.hostname.replace(/^www\./, '');
+          // Normalize http → https — http://example.com/pricing ≡ https://example.com/pricing
+          parsed.protocol = 'https:';
+          // Strip query params and hash fragments from billing support pages — section anchors
+          // and tracking variants all resolve to the same content and must not consume separate slots.
+          if (BILLING_DEDUP_PATHS.test(parsed.pathname)) { parsed.search = ''; parsed.hash = ''; }
+          return parsed.toString();
+        } catch { return link; }
+      };
+
       // ═════════════════════════════════════════════════════════════════════
       // STEP 3: SCORE & SELECT — only from discovered + community URLs
       // ═════════════════════════════════════════════════════════════════════
@@ -1000,10 +1039,17 @@ Deno.serve(async (req) => {
         return baseScore;
       };
 
+      // Normalized comparison, not raw string equality — the homepage was already
+      // force-scraped in Step 1 (line ~875). A raw `link === formattedUrl` check
+      // misses www/protocol/trailing-slash/case variants that Firecrawl's map
+      // commonly returns (e.g. "https://www.relevanceai.com/" vs "https://relevanceai.com"),
+      // letting the homepage slip into the candidate pool and get scraped a second
+      // time as a duplicate "Pages Analyzed" entry.
+      const normalisedHomepage = normaliseForDedup(formattedUrl);
       const scoredLinks = allDiscovered
         .filter((link: string) => {
           if (exclusionPatterns.some(p => p.test(link))) return false;
-          if (link === formattedUrl || link === formattedUrl + '/') return false;
+          if (normaliseForDedup(link) === normalisedHomepage) return false;
           try {
             const parsed = new URL(link);
             const segs = parsed.pathname.split('/').filter(Boolean);
@@ -1140,41 +1186,6 @@ Deno.serve(async (req) => {
           if (/^(subscription|usage|account|accounts|dashboard|settings|login|signin|sign-in|sign-up|signup|register)$/.test(firstSeg)) return false;
           return true;
         } catch { return false; }
-      };
-
-      // Normalise a URL for deduplication.
-      // Strips: #:~:text= fragments, locale prefixes, www prefix, trailing slash, http→https.
-      // Preserves: query params — e.g. elevenlabs.io/pricing?price.platform=api is genuinely
-      // different content from elevenlabs.io/pricing and must keep its own slot.
-      // Exception: billing/payment support pages have no content-differentiating query params —
-      // strip them entirely so tracking variants don't consume multiple slots.
-      const BILLING_DEDUP_PATHS = /\/(?:about\/payments?|billing(?:-support)?|invoice|payments?|billing-and-invoices|payment-support)\b/i;
-      const normaliseForDedup = (link: string): string => {
-        try {
-          const parsed = new URL(link);
-          // Strip text fragment anchors (#:~:text=...) — same HTML document as the base URL
-          parsed.hash = parsed.hash.startsWith('#:~:') ? '' : parsed.hash;
-          // Strip locale path prefixes (/en/, /en-US/, /fr/, /de/, etc.)
-          parsed.pathname = parsed.pathname.replace(/^\/[a-z]{2}(-[a-zA-Z]{2,4})?\//,  '/');
-          // Collapse double slashes in path (e.g. //about → /about) — Firecrawl map
-          // sometimes returns malformed URLs with double slashes that fool naive dedup.
-          parsed.pathname = parsed.pathname.replace(/\/\/+/g, '/');
-          // Strip trailing slash from pathname (root '/' is preserved)
-          // /pricing/ ≡ /pricing — Firecrawl map often returns both variants
-          if (parsed.pathname.length > 1) parsed.pathname = parsed.pathname.replace(/\/$/, '');
-          // Lowercase the hostname — Relevanceai.com ≡ relevanceai.com. Case-variant
-          // hostnames (e.g. from map results or hand-entered probes) otherwise survive
-          // dedup and consume an extra evidence slot for what is the same page.
-          parsed.hostname = parsed.hostname.toLowerCase();
-          // Strip www. prefix — www.example.com/path ≡ example.com/path
-          parsed.hostname = parsed.hostname.replace(/^www\./, '');
-          // Normalize http → https — http://example.com/pricing ≡ https://example.com/pricing
-          parsed.protocol = 'https:';
-          // Strip query params and hash fragments from billing support pages — section anchors
-          // and tracking variants all resolve to the same content and must not consume separate slots.
-          if (BILLING_DEDUP_PATHS.test(parsed.pathname)) { parsed.search = ''; parsed.hash = ''; }
-          return parsed.toString();
-        } catch { return link; }
       };
 
       const filteredScoredLinks = scoredLinks.filter(({ link }) => isEvidenceEligible(link));

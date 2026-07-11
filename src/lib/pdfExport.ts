@@ -126,7 +126,20 @@ function sanitizeText(s: string): string {
     .replace(/\u2026/g, "...")
     .replace(/\u2265/g, ">=")
     .replace(/\u2264/g, "<=")
-    .replace(/\u2212/g, "-");
+    .replace(/\u2212/g, "-")
+    .replace(/[\u2191\u2197]/g, " up ")
+    .replace(/[\u2193\u2198]/g, " down ")
+    .replace(/[\u2192\u21D2]/g, "->")
+    .replace(/[\u2713\u2714]/g, "Yes")
+    .replace(/[\u2717\u2718\u2715]/g, "No")
+    .replace(/[\u2022\u25CF\u25E6\u2023]/g, "-")
+    // Any character still outside Latin-1 (e.g. an unmapped emoji or symbol
+    // scraped from a pricing/feature table) has no glyph width in jsPDF's
+    // default Helvetica font. One such character corrupts kerning for the
+    // rest of the line, which round-trips as letter-spaced garbage text
+    // ("T a s k s   r u n"). Strip anything left outside the safe range
+    // rather than let it silently corrupt the surrounding evidence quote.
+    .replace(/[^ -\u00FF\t\r\n]/g, "");
   return collapseLetterSpacing(normalized).replace(/ {2,}/g, " ").trim();
 }
 
