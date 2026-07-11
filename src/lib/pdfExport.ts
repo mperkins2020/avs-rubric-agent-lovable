@@ -49,18 +49,33 @@ function getBandColor(band: string): [number, number, number] {
   }
 }
 
+// Collapse runs of single characters separated by single spaces, which appear
+// when scraped text comes from letter-spaced UI (e.g. "F e a t u r e   F r e e"
+// → "Feature Free"). We detect 4+ single-char tokens in a row and rejoin them,
+// treating a double-space as the real word boundary.
+function collapseLetterSpacing(s: string): string {
+  return s.replace(/(?:\S ){3,}\S/g, (run) => {
+    return run
+      .split("  ")
+      .map((word) => word.replace(/ /g, ""))
+      .join(" ");
+  });
+}
+
 // Normalize typographic quotes and control chars so the built-in helvetica
 // font renders them without weird spacing / boxes.
 function sanitizeText(s: string): string {
   if (!s) return "";
-  return s
+  const normalized = s
     .replace(/[\u2018\u2019\u02BC]/g, "'")
     .replace(/[\u201C\u201D]/g, '"')
     .replace(/[\u2013\u2014]/g, "-")
     .replace(/\u2026/g, "...")
     .replace(/\u00A0/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
+    .replace(/[\t\r\n]+/g, " ");
+  // Collapse letter-spacing BEFORE squashing all whitespace, because the
+  // heuristic relies on double-space word boundaries.
+  return collapseLetterSpacing(normalized).replace(/ {2,}/g, " ").trim();
 }
 
 export function exportToPDF({ companyProfile, rubricScore, observability, pages }: ExportData): void {
