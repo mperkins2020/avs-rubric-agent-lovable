@@ -536,6 +536,14 @@ export function exportToPDF({ companyProfile, rubricScore, observability, pages 
     yPos += 5;
   });
 
+  // ─── Full Disclosure ──────────────────────────────────────────────────────
+  doc.addPage();
+  yPos = MARGIN_TOP;
+  sectionHeading("Disclosure");
+  doc.setFontSize(9);
+  doc.setTextColor(...COLORS.muted);
+  writeWrapped(fullDisclaimer, MARGIN_LEFT, 4.8, contentWidth);
+
   // ─── Footer on every page ─────────────────────────────────────────────────
   const pageCount = doc.getNumberOfPages();
   for (let i = 1; i <= pageCount; i++) {
