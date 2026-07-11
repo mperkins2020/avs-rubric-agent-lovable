@@ -113,7 +113,38 @@ const deepgramExample: ExampleData = {
   ],
 };
 
-const examples = [lovableExample, hexExample, deepgramExample];
+const relevanceExample: ExampleData = {
+  label: "Relevance AI report example",
+  company: "Relevance AI",
+  band: "Exemplary",
+  bandClass: "text-score-high bg-score-high/10 border-score-high/30",
+  bandDesc: "Enterprise-ready trust infrastructure — supports fastest sales cycles",
+  score: 13,
+  maxScore: 16,
+  percentage: "81%",
+  strengths: {
+    title: "ICP and job clarity",
+    desc: "The target audience (Sales, CS, Marketing, HR leaders) and their specific job-to-be-done (automating workflows, personalizing outreach) are clearly articulated across the homepage and use case pages.",
+    enables: "Enables: Potential customers quickly identify if the product is a fit, reducing sales friction and improving marketing effectiveness.",
+  },
+  weaknesses: {
+    title: "Cost driver mapping",
+    desc: "Explicit formulas detailing how product behavior translates into specific quantities of 'Actions' or 'Vendor Credits' are not publicly documented.",
+    impact: "Impact: Without clear metering formulas, customers can struggle to forecast usage and costs for complex workflows, leading to potential billing surprises.",
+  },
+  breakpoints: [
+    { title: "Cost predictability for complex workflows", desc: "Without explicit metering formulas for 'Actions' and 'Vendor Credits', customers might struggle to accurately predict costs for intricate agent workflows, leading to unexpected bills." },
+    { title: "Overage management without explicit caps", desc: "While usage alerts exist, the absence of publicly documented hard caps or clear grace buffers for overages could lead to uncontrolled spend if alerts are missed." },
+  ],
+  dimensions: [
+    { n: "01", name: "Product north star", conf: "Medium", score: "1/2", color: "text-score-medium bg-score-medium/10" },
+    { n: "02", name: "ICP and job clarity", conf: "High", score: "2/2", color: "text-score-high bg-score-high/10" },
+    { n: "03", name: "Buyer and budget alignment", conf: "High", score: "2/2", color: "text-score-high bg-score-high/10" },
+    { n: "04", name: "Value unit", conf: "High", score: "2/2", color: "text-score-high bg-score-high/10" },
+  ],
+};
+
+const examples = [lovableExample, hexExample, deepgramExample, relevanceExample];
 
 const slideVariants = {
   enter: { x: "100%", opacity: 0 },
