@@ -49,17 +49,22 @@ function getBandColor(band: string): [number, number, number] {
   }
 }
 
-// Collapse runs of single characters separated by single spaces, which appear
-// when scraped text comes from letter-spaced UI (e.g. "F e a t u r e   F r e e"
-// → "Feature Free"). We detect 4+ single-char tokens in a row and rejoin them,
-// treating a double-space as the real word boundary.
+// Collapse letter-spaced text (e.g. "F e a t u r e   F r e e" → "Feature Free").
+// If any run of 5+ single-char tokens appears, treat the whole string as
+// letter-spaced: split by 2+ spaces (real word breaks), and within each chunk,
+// if the majority of tokens are single characters, join them into one word.
 function collapseLetterSpacing(s: string): string {
-  return s.replace(/(?:\S ){3,}\S/g, (run) => {
-    return run
-      .split("  ")
-      .map((word) => word.replace(/ /g, ""))
-      .join(" ");
-  });
+  if (!/(?:\S ){5,}\S/.test(s)) return s;
+  return s
+    .split(/ {2,}/)
+    .map((chunk) => {
+      const tokens = chunk.split(" ").filter(Boolean);
+      if (tokens.length < 3) return chunk;
+      const singles = tokens.filter((t) => t.length === 1).length;
+      if (singles / tokens.length >= 0.6) return tokens.join("");
+      return chunk;
+    })
+    .join(" ");
 }
 
 // Normalize typographic quotes and control chars so the built-in helvetica
@@ -71,10 +76,10 @@ function sanitizeText(s: string): string {
     .replace(/[\u201C\u201D]/g, '"')
     .replace(/[\u2013\u2014]/g, "-")
     .replace(/\u2026/g, "...")
+    .replace(/\u2265/g, ">=")
+    .replace(/\u2264/g, "<=")
     .replace(/\u00A0/g, " ")
     .replace(/[\t\r\n]+/g, " ");
-  // Collapse letter-spacing BEFORE squashing all whitespace, because the
-  // heuristic relies on double-space word boundaries.
   return collapseLetterSpacing(normalized).replace(/ {2,}/g, " ").trim();
 }
 
