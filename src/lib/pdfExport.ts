@@ -239,6 +239,9 @@ export function exportToPDF({ companyProfile, rubricScore, observability, pages 
 
   // ─── Key Strengths ────────────────────────────────────────────────────────
   if (rubricScore.strengths.length > 0) {
+    // Always start Key Strengths on a new page for a clean layout.
+    doc.addPage();
+    yPos = MARGIN_TOP;
     sectionHeading("Key Strengths", COLORS.success);
     autoTable(doc, {
       startY: yPos,
