@@ -19,7 +19,7 @@ export function SEOHead({
   title,
   description,
   canonicalUrl,
-  ogImage = `${SITE_URL}/og-image.png`,
+  ogImage = `${SITE_URL}/og-image-v2.png`,
   publishedDate,
   modifiedDate,
   authorName = "ValueTempo",
