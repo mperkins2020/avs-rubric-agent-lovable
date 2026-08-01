@@ -4,7 +4,7 @@
 **Usage:** When a report produces a questionable result, log it here. Run `Scan the debug log for recurring patterns` periodically to surface systemic issues.
 **Related:** See ENGINE_DEBUG_HISTORY.md for backfilled history from git.
 
-**Entries:** 54 | **Last updated:** May 20, 2026
+**Entries:** 60 | **Last updated:** July 31, 2026
 
 ---
 
@@ -17,12 +17,12 @@
 | evidence_gap | 0 | — |
 | gate_misfire | 0 | — |
 | confidence_miscalc | 0 | — |
-| prompt_drift | 1 | ICP and Job Clarity (D2) |
+| prompt_drift | 2 | ICP and Job Clarity (D2); D6/D8 evidence-block leak (Entry 060) |
 | evidence_snippet_selection | 1 | ICP (D2), Value Unit (D4), Overages (D6), Safety Rails (D7), Evidence Coverage (D8) |
-| pipeline_miss | 23 | Value Unit, Cost Driver Mapping, Safety/Trust, Overages & Risk, URL filter |
+| pipeline_miss | 24 | Value Unit, Cost Driver Mapping, Safety/Trust, Overages & Risk, URL filter; forced-page resolution gap (Entry 059) |
 | contamination | 13 | Pricing Transparency, Enterprise/Compliance (D7/D8) |
 | calibration | 3 | Value unit (D4), ICP and Job Clarity (D2), Safety Rails (D8) |
-| other | 1 | N/A — architecture decision |
+| other | 4 | Architecture/merge-level (Entries 056–058): instrument drift, single-pass classification gating, pass-1 narrative bias |
 
 ---
 
@@ -31,6 +31,184 @@
 <!-- Newest first. To add an entry, copy the template below and fill it in. -->
 
 <!-- Next entry goes here -->
+
+---
+
+### Entry 060 — July 31, 2026
+
+| Field | Value |
+|-------|-------|
+| Company | Grain (grain.com) — v37 repeatability test, Run 3 of 4 |
+| Version | 2026-07-10-pipeline-v37 |
+| Dimension | D6 (Pools & Packaging), D7 (Overages & Risk), D8 (Safety Rails) |
+| Subtest(s) | `[D6 evidence: ...]` / `[D7 evidence: ...]` / `[D8 evidence: ...]` block scoping |
+| V1 Score | N/A |
+| V2 Score | Run 3: 11/16 (69%) — scores not disputed; output contamination is the defect |
+| Root Cause | prompt_drift — the mandated evidence-citation block is emitted but mis-scoped into the customer-facing `rationale` field instead of the audit prefix, and no server-side stripping catches it |
+| Caught By | Manual QA review of 4-run v37 repeatability test PDFs (Michelle + Claude Code, 2026-07-31) |
+| Status | fix_specified |
+
+**Root Cause Detail:**
+
+Run 3's rendered PDF (page 3, Dimension Scores table) shows raw evidence-block syntax inside the customer-facing rationale prose for D6, D7, and D8 — literal fragments like `.unit_name@https://support.grain.com/en/articles/9253220-plans; P2packaging.exploration_offering@https://grain.com + ... P6tiers[Starter].overage_unit_price@user_input` (D6) and `.payment_methods@... + policies.overage_behavior@user_input; R6none]` (D7). The leading `[D6 evidence:` marker is missing but the tail (including a closing `]`) runs straight into the prose, so the block wasn't dropped (Entry 055's failure) — it was malformed/mis-scoped, and the rendering pipeline's bracket extraction couldn't isolate it. This is the same contamination class the v33 fix (`e43eaa8`, "Keep D5/D7 audit blocks out of customer-facing prose") addressed for D5/D7, now recurring on the v37 D6/D8 blocks — and it reached a generated customer-facing PDF, not just a log.
+
+Also notable: the citations that leaked include multiple `@user_input` page paths (e.g., `P4pools[Free Notetaker seat].scope@user_input`, `policies.overage_behavior@user_input`) on a scan that received NO insider inputs — a direct violation of the D7 procedure's rule that `@user_input` may only be cited when insider inputs exist. Subtests passed on fabricated user_input citations should have been re-marked F per the procedure's own INVALID rule; nothing enforces this server-side.
+
+**Resolution:** Fix direction (not yet implemented): server-side post-processing that (1) extracts/strips ALL bracketed audit and evidence blocks from `rationale` before render, tolerating malformed/partial markers; (2) rejects or re-marks subtests whose evidence entries cite `@user_input` on scans with no insider answers; (3) treats a malformed evidence block the same as a missing one (Entry 055's proposed retry/flag path). Same enforcement layer as Entries 055/057-C.
+
+**Pattern Tag:** `audit-block-leak`, `customer-facing-contamination`, `fabricated-user-input-citation`, `d6-d8-evidence-block`
+
+---
+
+### Entry 059 — July 31, 2026
+
+| Field | Value |
+|-------|-------|
+| Company | Grain (grain.com) — 4 identical fresh scans, same day, cache cleared between each |
+| Version | 2026-07-10-pipeline-v37 (all four runs) |
+| Dimension | Evidence pipeline (all dimensions downstream); D4 (Value Unit) and D3 (Buyer & Budget) most affected |
+| Subtest(s) | Page selection/resolution; D4 safety-net override; D3 pricing-page-absent gate |
+| V1 Score | Runs 1/4: 9/16 (56%) — /pricing absent, D4=0/2 |
+| V2 Score | Runs 2/3: 11/16 (69%) — Run 2 had /pricing, Run 3 recovered D4=1/2 via FAQ safety net |
+| Root Cause | pipeline_miss — forced pricing pages have mandatory *selection* but not mandatory *resolution*; a single failed scrape below the 30% retry threshold silently drops /pricing |
+| Caught By | v37 repeatability test (4 runs, Michelle, 2026-07-31) designed to separate run variance from instrument drift (Entries 056/057) |
+| Status | fix_specified |
+
+**Root Cause Detail:**
+
+Four identical reruns produced 5, 8, 8, and 6 pages analyzed; `grain.com/pricing` appeared in the evidence set in only 1 of 4 runs (Run 2). Result: a 2-point (12.5pp) total-score swing on identical input, driven by D4 flipping 0↔1 with the pricing page's presence. `model_type_l1` was "hybrid" in all four runs — Entry 057's classification-flip hypothesis was tested and NOT confirmed as the variance driver in this experiment (the architecture risk stands; it just isn't what moved these runs).
+
+Mechanism, traced in `scrape-website/index.ts`:
+1. Canonical probe (line ~1243) correctly force-adds `/pricing`, `/plans`, `/billing` to the scrape list, prepended so the page-budget slice can't cut them. Selection is guaranteed.
+2. All pages then scrape concurrently via `Promise.all`. An individually failed `/pricing` fetch (timeout, Firecrawl rate limit, empty render) is marked unresolved and silently dropped. The retry pass fires only when ≥30% of ALL pages are unresolved — 1 failure in 8 pages (12.5%) gets zero retries, no flag, no report annotation.
+3. `/pricing` is the page MOST likely to fail: it carries the heaviest scrape config (waitFor:3000 for accordions + LLM structured-extraction call on a 30s budget) while sitting in the concurrent burst most exposed to rate limiting. Back-to-back reruns likely aggravated this.
+4. Compounding gate failure: per methodology, D3 (Buyer & Budget) must auto-score 0 when the primary pricing page is absent from the evidence set. Runs 1, 3, 4 all scored D3=2/2 with no /pricing analyzed — the Pricing Page Assertion Check only regex-detects the LLM *claiming* "no pricing page"; it never verifies evidence-set membership. Run 1 scored D3=2/2 from 5 pages containing no pricing surface at all.
+5. Working-as-designed note: Run 3 recovered D4 to 1/2 without /pricing via the documented FAQ safety-net override — that mechanism functioned correctly and masked the pipeline miss rather than causing it.
+
+Related history: v31 (`fb26e85`) fixed Firecrawl /map ordering nondeterminism — that fix addressed *discovery* variance. This is *resolution* variance, a distinct leak the v31 fix never covered.
+
+**Resolution:** Fix direction (not yet implemented): (1) per-page retry with URL-variant fallbacks for canonical-probe and community-evidence URLs regardless of the 30% threshold; (2) hard flag on the scan result (and report) when a forced page fails to resolve — a scan without /pricing should say so, not silently proceed; (3) D3 gate should check evidence-set membership directly (deterministic, server-side), not rely on LLM self-report; (4) consider serializing or jittering the scrape batch to reduce rate-limit exposure on the heavy pricing fetch.
+
+**Pattern Tag:** `forced-page-resolution-gap`, `pricing-page-drop`, `retry-threshold-blind-spot`, `d3-gate-not-enforced`, `run-variance`
+
+---
+
+### Entry 058 — July 31, 2026
+
+| Field | Value |
+|-------|-------|
+| Company | Systemic — affects every scan (surfaced during Grain May-vs-July investigation) |
+| Version | 2026-07-10-pipeline-v37 (mechanism present since 3-pass merge was introduced, v23+) |
+| Dimension | All — narrative sections (strengths, weaknesses, trust breakpoints, recommended focus) |
+| Subtest(s) | N/A — merge logic, not subtest logic |
+| V1 Score | N/A |
+| V2 Score | N/A |
+| Root Cause | other — 3-pass merge artifact: narrative sections always come from Pass 1, even when Pass 1 lost the majority vote |
+| Caught By | Code review of the 3-pass merge (Michelle + Claude Code, 2026-07-31) |
+| Status | fix_specified |
+
+**Root Cause Detail:**
+
+In the 3-pass merge ([index.ts:2364-2411](supabase/functions/analyze-company/index.ts)), the winning dimension score and rationale come from the highest-confidence pass in the majority group. But `strengths`, `weaknesses`, `trustBreakpoints`, and `recommendedFocus` are taken unconditionally from Pass 1 ([index.ts:2483-2503](supabase/functions/analyze-company/index.ts)). When Pass 1 is the outlier vote on a dimension, the report's narrative describes reasoning that lost the vote — e.g., a trust breakpoint premised on D7=0 while the published score is D7=1. The only existing guard is filtering out weaknesses for dimensions whose stabilized score is 2/2; breakpoints and recommendedFocus have no guard at all, and weaknesses premised on the wrong *rationale* (rather than a 2/2 score) pass through. This produces reports whose reasoning visibly contradicts their own scores — one of the two inaccuracy classes reported on 2026-07-31.
+
+**Resolution:** Fix direction (not yet implemented): source narrative sections from the same pass that won each dimension's vote, or generate them in a post-merge step that takes the stabilized scores as input. At minimum, extend the 2/2 weakness guard to trustBreakpoints and recommendedFocus.
+
+**Pattern Tag:** `merge-artifact`, `narrative-score-mismatch`, `pass1-narrative-bias`
+
+---
+
+### Entry 057 — July 31, 2026
+
+| Field | Value |
+|-------|-------|
+| Company | Systemic — observed via Grain (grain.com) July individual scan |
+| Version | 2026-07-10-pipeline-v37 (classification single-pass since v18 classifier consolidation) |
+| Dimension | D5, D6, D7, D8 — every dimension with PRICING MODEL CATEGORY AWARENESS overrides |
+| Subtest(s) | D5 C1/C4/C5/C6, D6 P3, D7 R1/R2/R3/R6 + overage_behavior gate, D8 T1/T2/T3/T6 |
+| V1 Score | Grain May benchmark: 12/16 (75%) |
+| V2 Score | Grain July individual scan: significantly divergent (exact row pending DB pull) |
+| Root Cause | other — architecture: the entire seat-based override block is gated on `model_type_l1` from a SINGLE un-voted LLM profile pass; a one-run classification flip silently toggles ~15 subtest interpretations |
+| Caught By | Manual QA review of Grain May-vs-July reports (Michelle) + code trace (Claude Code, 2026-07-31) |
+| Status | fix_specified |
+
+**Root Cause Detail:**
+
+**(A) Classification is a single point of failure.** The 3-pass majority vote covers only the scoring call ([index.ts:2332-2336](supabase/functions/analyze-company/index.ts)). The company-profile extraction that produces `model_type_l1` is one un-voted call ([index.ts:2130](supabase/functions/analyze-company/index.ts)), and Gemini 2.5 Flash at temperature 0 is not bit-deterministic. The scoring prompt's PRICING MODEL CATEGORY AWARENESS block ([index.ts:107-131](supabase/functions/analyze-company/index.ts)) keys every seat-based override on `Pricing Model == "access"`. If a run classifies Grain as `hybrid` (plausible: free-plan "45 minutes per meeting" / "30-day history" limit language pattern-matches consumption signals), the harsher hybrid rule applies — "the lower-passing component is binding" for D7 R1–R6 — and a pure seat product gets interrogated for metered-overage mechanics it doesn't have. This is the suspected mechanism behind reasoning output that demands limit-behavior explanations from a seat-based product whose upgrade path is already documented (pricing table + FAQ stating no overages, no credits).
+
+**(B) The deterministic classifier is dead code.** `classifyModelType.ts` (352 lines, regex-based, fully deterministic, with hybrid detection and confidence scoring) is not imported anywhere in `index.ts` since the v18 single-LLM-classifier consolidation. The one component that would make the override switch reproducible run-to-run is unused.
+
+**(C) Even when classification is correct, override application is prompt-only.** Entry 055 documents the model misapplying D7's R4-fail heuristic as an unconditional cap and skipping the mandated evidence block under v37 — no server-side code parses the audit line, recomputes points→score, or verifies that overrides fired (`auto(seat-based)` entries). Score = whatever the LLM asserts.
+
+**Resolution:** Fix direction (not yet implemented, ordered by leverage): (1) reinstate `classifyModelType.ts` as a deterministic validator/fallback — when LLM classification disagrees with the deterministic classifier or confidence < 0.50, flag or use the deterministic result; (2) run classification through the same 3-pass vote as scoring; (3) per Entry 055's working theory, enforce audit/evidence blocks server-side and recompute gate arithmetic in code rather than trusting LLM-asserted scores. Verification before fixing: pull both Grain scan rows and compare `model_type_l1`, `ANALYSIS_VERSION`, and D7 audit/evidence lines; run `npm run diff-pages grain.com`.
+
+**Pattern Tag:** `classification-single-pass`, `override-gating-flip`, `dead-code-deterministic-classifier`, `seat-based-misinterpretation`
+
+**Addendum (2026-07-31, post 4-run repeatability test):** The classification-flip hypothesis was tested — `model_type_l1` came back "hybrid" in all 4 v37 reruns, so classification variance was NOT the driver of the observed Grain score swing (that was the forced-page resolution gap, Entry 059). The architecture risk documented here stands (single un-voted pass gating ~15 subtest interpretations), but note the separate question it raises: "hybrid" was stable for a product that is arguably pure seat-based — whether that classification is *correct* (vs. merely consistent) is unresolved and directly controls which D5–D8 override rules apply. See Entry 059 for the confirmed variance mechanism.
+
+---
+
+### Entry 056 — July 31, 2026
+
+| Field | Value |
+|-------|-------|
+| Company | Grain (grain.com) — representative case; applies to all May-benchmark companies rescanned post-v27 |
+| Version | May benchmark: ~v23–v25 → July individual scan: 2026-07-10-pipeline-v37 |
+| Dimension | All 8 — instrument-level, not dimension-specific |
+| Subtest(s) | N/A |
+| V1 Score | May 2026 benchmark: 12/16 (75%), top of AI Revenue Intelligence category |
+| V2 Score | July 2026 individual scan: significantly divergent (exact row pending DB pull) |
+| Root Cause | other — instrument drift: cross-version score comparison treated as company drift; ≥12 pipeline versions (v25→v37) changed both evidence extraction and scoring rules between the two scans |
+| Caught By | Manual QA review of Grain May-vs-July reports (Michelle, 2026-07-31) |
+| Status | fix_specified |
+
+**Root Cause Detail:**
+
+A May benchmark score and a July individual scan are outputs of two different measuring instruments. Between v25 and v37: v27 locale-page filtering, v30 forced D7 subtest arithmetic, v31 Firecrawl /map rate-limit nondeterminism fix (May scans predate this — May's evidence sets had a live page-count randomness source), v32/v33 per-subtest evidence justification for D7 R4/R5 + D5 C1–C6, v35 HTML-attribute leak fix, v36 homepage double-scrape fix, v37 D6/D8 mandatory scoring procedures. "No noticeable evidence differences" in the rendered reports does not establish identical model input — char budgets, page priority, dedup, and locale filtering all changed what entered the context window. Score deltas across versions cannot be attributed to the company without controlling for the instrument. Note the Calibration Anchors section exists for exactly this failure mode but contains no Grain anchor, and no anchor check runs automatically on version bumps.
+
+**Resolution:** Fix direction (not yet implemented): (1) for any benchmark-to-benchmark or benchmark-to-scan comparison, re-score the prior cohort under the current ANALYSIS_VERSION before claiming movement — never compare raw scores across versions; (2) store `ANALYSIS_VERSION` prominently on every published report so cross-version comparisons are visible at review time; (3) add Grain to Calibration Anchors once the July divergence is root-caused (see Entry 057); (4) consider an automated calibration-anchor regression check on each version bump. Verification: `npm run diff-pages grain.com` + pull both scan rows for per-pass `[3-pass]` logs and audit lines.
+
+**Pattern Tag:** `instrument-drift`, `cross-version-comparison`, `benchmark-comparability`, `calibration-anchor-gap`
+
+---
+
+### Entry 055 — July 10, 2026
+
+| Field | Value |
+|-------|-------|
+| Company | Relevance AI (relevanceai.com) |
+| Version | 2026-07-10-pipeline-v37 (first production scan after D6/D8 MANDATORY SCORING PROCEDURE added) |
+| Dimension | D5 (Cost Driver Mapping), D6 (Pools & Packaging), D7 (Overages & Risk), D8 (Safety Rails) |
+| Subtest(s) | D7 gate logic (R4/R5); D8 T1, T3, T4, T6; missing `[D_ evidence: ...]` block, all four dimensions |
+| V1 Score | N/A — not a rescan, first scan under v37 |
+| V2 Score | 13/16 (81%) — D5=1/2 D6=2/2 D7=1/2 D8=2/2 (D7 and D8 both suspected mis-scored, see below) |
+| Root Cause | prompt_drift — model skips the mandated per-subtest evidence-citation block, and independently misapplies D7's R4-fail heuristic as an unconditional cap |
+| Caught By | Manual QA review (Michelle + Claude Code, 2026-07-10) of the first scan run under the new D6/D8 audit-block procedure |
+| Status | monitoring 👀 — logged for tracking; fix not yet implemented |
+
+**Root Cause Detail:**
+
+**(A) The mandatory `[D_ evidence: ...]` block is missing across the board, not just on the newly-added dimensions.** The D5/D6/D7/D8 MANDATORY SCORING PROCEDURE requires two bracketed lines per dimension: an `audit` line (step 5, P/F marks + points + score) and an `evidence` line (step 6, per-subtest field+page-path citations — the actual anti-reuse mechanism). On this scan, only the `audit` line appears in the rendered "Subtest audit" panel for all four dimensions ([DimensionCard.tsx:99-112](src/components/DimensionCard.tsx:99) renders every bracket [rationale.ts](src/lib/rationale.ts:6) finds, so this isn't a display bug — the model simply never emitted the evidence bracket). Without it, the P/F marks are unverifiable; nothing forces per-field citation discipline at inference time, which defeats the purpose of today's D6/D8 addition.
+
+**(B) D7 audit line is internally inconsistent — points don't match the declared score.**
+`[D7 audit: R1=P R2=P R3=P R4=F R5=P R6=P | pts=5/6 | gate=none | score=1]`
+R5=P means this is the enterprise segment. Per the dimension's own points-to-score mapping, 5–6 points → score 2. The D7 procedure's step 3 explicitly carves out this exact case: *"if R4 fails, at most 4 of the 5 non-enterprise subtests can pass... **unless an enterprise segment independently reaches 5–6 points**"* ([index.ts:1135](supabase/functions/analyze-company/index.ts:1135)). This scan hit 5/6 with R4 as the only failure — the stated exception should apply, score should be 2. Instead the engine reported score=1 with `gate=none` (no gate cited to justify the cap). The model appears to be pattern-matching "R4 fail → cap at 1" as an unconditional rule and ignoring its own written exception.
+
+**(C) D8's `pts=6/6 → score=2` looks like a genuine over-pass, not a false alarm.** Checked each PASS against the evidence panel actually shown:
+- T1 (budget/usage caps) — only alert and balance-counter quotes exist; no evidence names an actual cap (hard stop, admin-set spend limit). Alerts are T2's evidence, not T1's.
+- T3 (pre-spend estimation) — the credits counter shows *current remaining balance*, not a pre-spend cost estimate/calculator (`estimation_surface`).
+- T4 (breakdown) — the counter is a single running total (`dashboard_total`); no `breakdown_level` (by_project/by_user/by_workflow) evidence exists, which T4 requires.
+- T6 (risk-limiter rail) — SOC 2/SSO/RBAC/audit logs are compliance/access surfaces, not the `rate_limit | concurrency_limit | retry_limit | circuit_breaker | kill_switch | approval_gate` enum T6 requires. Nothing quoted names a technical rail.
+- T2 and T5 look legitimately supported (T5's RBAC + audit_logs are both explicitly named on the security page evidence).
+
+If T1/T3/T4/T6 are corrected to F, D8 drops from 6/6 to 2/6 — score 0, not 2. That's a 2-point swing on the 16-point total, and it's the exact compound-condition-citation-reuse failure mode the D5/D7 fix (and today's D6/D8 extension) was built to catch — just surfacing on generic "usage alerts" and "SOC 2 compliant" language instead of the original "usage limits"/"Enterprise Pricing" case.
+
+**(D) D6's P4 (pool scope matches org/workspace, shared_pool) is also unsupported by anything in its evidence panel**, though less clear-cut than D8's issues — worth a second look once (A) is fixed and a real per-subtest evidence line exists to check against.
+
+**Working theory:** prompt instructions alone aren't forcing step 6 to run — the model treats the evidence block as droppable, so nothing stops it from holistically judging "strong safety rails" for T1/T3/T4/T6 even though field-level evidence doesn't exist for those specific fields. Tightening the wording again probably won't fix a step the model is already skipping outright; likely needs a post-processing check in `index.ts` that treats an `audit` block without a matching `evidence` block as invalid (retry the dimension or flag for review) rather than trusting the P/F marks as-is.
+
+**Resolution:** Not yet implemented — logged for tracking per user request before deciding on a fix approach.
+
+**Pattern Tag:** `missing-evidence-block`, `audit-line-unverifiable`, `d7-r4-gate-misapplication`, `d8-compound-condition-overpass`
 
 ---
 
