@@ -4,7 +4,7 @@
 **Usage:** When a report produces a questionable result, log it here. Run `Scan the debug log for recurring patterns` periodically to surface systemic issues.
 **Related:** See ENGINE_DEBUG_HISTORY.md for backfilled history from git.
 
-**Entries:** 60 | **Last updated:** July 31, 2026
+**Entries:** 62 | **Last updated:** August 1, 2026
 
 ---
 
@@ -18,8 +18,8 @@
 | gate_misfire | 0 | — |
 | confidence_miscalc | 0 | — |
 | prompt_drift | 2 | ICP and Job Clarity (D2); D6/D8 evidence-block leak (Entry 060) |
-| evidence_snippet_selection | 1 | ICP (D2), Value Unit (D4), Overages (D6), Safety Rails (D7), Evidence Coverage (D8) |
-| pipeline_miss | 24 | Value Unit, Cost Driver Mapping, Safety/Trust, Overages & Risk, URL filter; forced-page resolution gap (Entry 059) |
+| evidence_snippet_selection | 2 | ICP (D2), Value Unit (D4), Overages (D6), Safety Rails (D7), Evidence Coverage (D8); same-page-different-read on D4 (Entry 062) |
+| pipeline_miss | 25 | Value Unit, Cost Driver Mapping, Safety/Trust, Overages & Risk, URL filter; forced-page resolution gap (Entry 059); session-load evidence degradation (Entry 061) |
 | contamination | 13 | Pricing Transparency, Enterprise/Compliance (D7/D8) |
 | calibration | 3 | Value unit (D4), ICP and Job Clarity (D2), Safety Rails (D8) |
 | other | 4 | Architecture/merge-level (Entries 056–058): instrument drift, single-pass classification gating, pass-1 narrative bias |
@@ -31,6 +31,66 @@
 <!-- Newest first. To add an entry, copy the template below and fill it in. -->
 
 <!-- Next entry goes here -->
+
+---
+
+### Entry 062 — August 1, 2026
+
+| Field | Value |
+|-------|-------|
+| Company | AthenaHQ (athenahq.ai) |
+| Version | 2026-07-10-pipeline-v37 |
+| Dimension | D4 (Value Unit) primarily; touches D5 (Cost Driver Mapping) framing |
+| Subtest(s) | V1/V2 (unit definition, metering) — an evidence-utilization failure, not a subtest-logic gate misfire |
+| V1 Score | Individual scan (10 pages, `/credit-calculator` in evidence): Value Unit 1/2 — rationale: "the definition and metering formula for 'credits' are not provided" |
+| V2 Score | Isolated `run-benchmark` rescan (7 pages, `/credit-calculator` also in evidence): Value Unit 2/2 — rationale quotes "1 credit = 1 AI response" and the formula "prompts × locations × credits/response × days × 4.33 weeks" from the SAME page |
+| Root Cause | evidence_snippet_selection — the same source page was present in both evidence sets; the LLM extracted and used its content inconsistently across independent runs |
+| Caught By | Manual QA (Michelle + Claude Code) comparing an individual-scan PDF against a subsequent isolated `run-benchmark` rescan for the same company, while investigating a 9/16 vs. 14/16 total-score swing that survived the evidence-completeness explanation (see Entry 061) |
+| Status | monitoring 👀 — mechanism identified, fix not yet implemented |
+
+**Root Cause Detail:**
+
+Two runs on AthenaHQ, both with `/credit-calculator` in their evidence set, produced opposite conclusions about whether a metering formula was publicly documented. The higher-scoring run (V2, 14/16 total) carried clean, well-formed `[D5 audit: ...]`/`[D5 evidence: ...]` blocks for D5–D8 with real field-level citations tied to quoted page content (`C2←prompts × locations × credits/response × days × 4.33 weeks@/credit-calculator`), and its gates applied correctly to the genuinely thin dimensions — Overages capped at 1/2 because R3/R4 failed, Safety Rails capped at 1/2 because T2/T6 failed. On its own terms, V2's audit trail is trustworthy: D5–D8 all show the MANDATORY SCORING PROCEDURE working as designed.
+
+The defect surfaces specifically at D4. There is currently no equivalent mandatory audit/evidence-citation procedure for D1–D4 — the MANDATORY SCORING PROCEDURE audit blocks (per Entries 032/033/037) only cover D5–D8. Nothing forces the model to name the specific field and page backing a V1–V6 pass/fail the way C1–C6 or T1–T6 must. That gap is the likely mechanism: dimensions without a mandatory per-subtest citation requirement are more exposed to this kind of silent evidence-utilization drift, because a scoring pass can simply fail to surface a fact that's sitting in its own evidence set, with no structural check catching the omission.
+
+**Resolution:** Fix direction (not yet implemented): extend the MANDATORY SCORING PROCEDURE audit/evidence-block requirement to D1–D4, starting with D4 (Value Unit) given this concrete failure case. Forcing an explicit per-subtest field+page citation for V1–V6, the same way C1–C6/T1–T6 are already required, would very likely have caught the individual scan's under-read of `/credit-calculator` before it reached the customer-facing report.
+
+**Pattern Tag:** `evidence-utilization-drift`, `d4-audit-block-gap`, `same-evidence-different-read`
+
+---
+
+### Entry 061 — August 1, 2026
+
+| Field | Value |
+|-------|-------|
+| Company | Systemic — peec.ai, conductor.com, athenahq.ai (representative cases); observed across the full 11-company Marketing Intelligence benchmark run |
+| Version | 2026-07-10-pipeline-v37 |
+| Dimension | Evidence pipeline (all dimensions downstream); most visibly D3/D4 (pricing-page-dependent) |
+| Subtest(s) | Page selection/resolution — same class of failure as Entry 059, with a newly confirmed causal variable |
+| V1 Score | Original same-session batch runs: peec.ai 6/16 (1 page, no pricing), conductor.com 4/16 (1 page, no pricing), athenahq.ai 9/16 (1 page, no pricing) ×2 attempts |
+| V2 Score | Isolated/later reruns: peec.ai 10/16 (4 pages, pricing present), conductor.com 9/16 (7 pages, pricing present), athenahq.ai 14/16 (7 pages, pricing present) |
+| Root Cause | pipeline_miss — extends Entry 059's forced-page-resolution-gap mechanism; evidence discovery quality degrades measurably when many companies are scanned back-to-back in the same session, independent of per-company site characteristics |
+| Caught By | Manual QA (Michelle + Claude Code) during the first Marketing Intelligence benchmark run, 2026-07-31/08-01 — pattern became undeniable after 3-for-3 isolated reruns all improved substantially |
+| Status | monitoring 👀 — practical mitigation identified and validated; root layer not yet isolated |
+
+**Root Cause Detail:**
+
+Entry 059 established that forced-pricing pages are selected but not guaranteed to resolve, and that a single company's silent scrape failure falls below the 30%-unresolved retry threshold. Tonight's run extends that finding: the failure rate wasn't randomly distributed across the 11-company category — it was concentrated in whichever companies happened to be scanned while the session was busiest, and it reversed cleanly on isolated retry.
+
+Alternative explanations were checked and ruled out:
+- `x-benchmark-runner` header (set on all `run-benchmark`-triggered calls): confirmed via grep to be a no-op, never read anywhere in `scrape-website` or `analyze-company`.
+- `maxPages`: the individual-scan UI path actually defaults to a *smaller* budget (15) than `run-benchmark` (20), so a larger crawl allowance isn't the explanation for the individual scan's better result.
+- Domain path: AthenaHQ's successful isolated retry used the bare root domain, the same as its failed same-session attempts — the earlier `/plans`-path workaround wasn't what fixed it; isolation was.
+
+Three candidate mechanisms, not yet distinguished without direct access to Firecrawl's own logs/dashboard:
+1. Firecrawl account-level rate/concurrency limiting, degrading gracefully (returning a thin/partial `/map` result) rather than failing hard — would look exactly like what was observed.
+2. Target-site bot-protection reacting more aggressively to a burst traffic pattern (many companies scraped in quick succession, possibly from a shared IP pool) than to an isolated single request.
+3. Supabase edge-runtime resource contention across multiple concurrently-alive `EdgeRuntime.waitUntil` background tasks spanning several batches.
+
+**Resolution:** Not yet implemented at the engine level. Practical mitigation adopted as process (see `process_benchmark_end_to_end.md` Phase 1b): batch in small groups (3 companies at a time) with `active`-flag scoping rather than triggering a full category at once, and isolate the rescan of any company whose confidence stays low or evidence looks thin rather than assuming the company itself is the problem. Possible code-level fixes for later investigation: stagger delay between batch iterations (not just within a batch), reduce `BATCH_SIZE` further, add a distinct retry path for near-empty `/map` results (separate from the existing 30%-unresolved threshold, which only fires on individual page failures, not degraded discovery), or inspect Firecrawl's actual rate-limit response headers to detect throttling directly instead of inferring it after the fact from thin results.
+
+**Pattern Tag:** `session-load-degradation`, `batch-concurrency-evidence-thinning`, `isolated-rerun-recovery`
 
 ---
 
