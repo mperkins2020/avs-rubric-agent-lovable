@@ -1,0 +1,1 @@
+DELETE FROM public.scan_results WHERE lower(url_domain) = 'grain.com' AND (is_benchmark IS NULL OR is_benchmark = false);
