@@ -91,6 +91,8 @@ Related history: v31 (`fb26e85`) fixed Firecrawl /map ordering nondeterminism �
 
 **Pattern Tag:** `forced-page-resolution-gap`, `pricing-page-drop`, `retry-threshold-blind-spot`, `d3-gate-not-enforced`, `run-variance`
 
+**Addendum (2026-07-31, Run 5 of 5):** A fifth same-day rerun scored **12/16 (75%) on 12 pages** — the most complete evidence set of any run, including `/pricing` AND two support-article deep links (`support.grain.com/.../how-to-purchase-a-grain-plan`, `.../which-grain-plan-is-right-for-me`) absent from all four prior runs. This score is an exact match to the May 2026 benchmark score, independently confirming both scans converge on the same result once evidence is complete — see the new Grain Calibration Anchor entry below. This is the control case that isolates the variable: it confirms the scoring logic itself is reproducible, and evidence-set completeness (not instrument drift, not classification variance) is the dominant driver of the score spread observed across Runs 1–5 (9, 11, 11, 9, 12 out of 16). Also confirms D7=1/2 is the correct structural-ceiling outcome for a documented "Overage Policy: N/A" seat-based product, not a scoring defect — worth remembering given the original question that started this investigation thread. Open question still unresolved: why page count/resolution varies so widely run-to-run (5 to 12 pages) on identical input — that's the remaining piece of the fix in items 1–4 above.
+
 ---
 
 ### Entry 058 — July 31, 2026
@@ -2011,6 +2013,8 @@ These are locked reference scores for companies that have been fully validated. 
 | ZoomInfo.com | Value Unit | 1/2 | 50% | V1 is authoritative. Confirmed again at v18 post scraper fixes — billing page dedup removal eliminated dimension bleed that had inflated this to 2/2 in the broken run. Credit metering formula and auditability surfaces not publicly documented — genuine gap, not pipeline miss. |
 | Relevance AI | Overall | 63% (10/16) | 64% | V2 post-fix. 4 pages. Pricing page present via canonical path probing. Remaining gaps (Value Unit 1/2, overage policy) reflect deliberate non-disclosure — accurate, not pipeline misses. |
 | Relevance AI | Overages & Risk | 1/2 | 45% | Pricing page explicitly states "Overage Policy: None specified." Score is accurate. Do not adjust upward without new public evidence of an actual overage policy. |
+| Grain.com | Overall | 75% (12/16) | 68% | Confirmed by TWO independent full-evidence scans: May 2026 benchmark AND the July 31 v37 repeatability test Run 5 (12 pages, /pricing + support-article deep links present). Convergent result — treat as the authoritative score whenever the evidence set is complete. See Entry 059: four other same-day v37 reruns (5–8 pages, /pricing missing in 3 of them) scored 9–11/16 — those are pipeline evidence-completeness misses, not genuine instability. Any future Grain score below 12/16 should be checked against Appendix A for /pricing and support.grain.com plan-article presence before treating it as a real score change. |
+| Grain.com | Overages & Risk | 1/2 | 60% | Structural ceiling per methodology, not a pipeline miss: "Overage Policy: N/A" on a seat-based flat-rate product caps at 1/2 without enterprise true-up language (Dimension 7 gates). Confirmed correct at full evidence (Run 5). Do not adjust upward without new public evidence of enterprise true-up terms. |
 
 ---
 
