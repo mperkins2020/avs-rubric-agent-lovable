@@ -4,7 +4,7 @@
 **Usage:** When a report produces a questionable result, log it here. Run `Scan the debug log for recurring patterns` periodically to surface systemic issues.
 **Related:** See ENGINE_DEBUG_HISTORY.md for backfilled history from git.
 
-**Entries:** 64 | **Last updated:** August 1, 2026
+**Entries:** 66 | **Last updated:** August 2, 2026
 
 ---
 
@@ -15,9 +15,9 @@
 | Root Cause | Count | Most Affected Dimension |
 |------------|-------|------------------------|
 | evidence_gap | 0 | — |
-| gate_misfire | 0 | — |
+| gate_misfire | 1 | D7/D8 cap-gate-misapplied-as-floor across 6 companies (Entry 066) |
 | confidence_miscalc | 0 | — |
-| prompt_drift | 3 | ICP and Job Clarity (D2); D6/D8 evidence-block leak (Entry 060); D7 audit arithmetic error (Entry 064) |
+| prompt_drift | 4 | ICP and Job Clarity (D2); D6/D8 evidence-block leak (Entry 060); D7 audit arithmetic error (Entry 064); D5-D8 evidence block missing across 4 whole companies (Entry 065) |
 | evidence_snippet_selection | 2 | ICP (D2), Value Unit (D4), Overages (D6), Safety Rails (D7), Evidence Coverage (D8); same-page-different-read on D4 (Entry 062) |
 | pipeline_miss | 26 | Value Unit, Cost Driver Mapping, Safety/Trust, Overages & Risk, URL filter; forced-page resolution gap (Entry 059); session-load evidence degradation (Entry 061); product-surface mismatch (Entry 063) |
 | contamination | 13 | Pricing Transparency, Enterprise/Compliance (D7/D8) |
@@ -31,6 +31,74 @@
 <!-- Newest first. To add an entry, copy the template below and fill it in. -->
 
 <!-- Next entry goes here -->
+
+---
+
+### Entry 066 — August 2, 2026
+
+| Field | Value |
+|-------|-------|
+| Company | Systemic — confirmed on Ahrefs, HubSpot, Peec AI (×2), Scrunch AI, Semrush, Similarweb (already Entry 064) across the Marketing Intelligence benchmark |
+| Version | 2026-07-10-pipeline-v37 |
+| Dimension | D7 (Overages), D8 (Safety Rails) — any dimension using a cap-type gate |
+| Subtest(s) | Cap-gate application logic |
+| V1 Score | Recorded totals: Ahrefs 11, HubSpot 11, Peec AI 10, Scrunch AI 10, Semrush 10 |
+| V2 Score | Corrected totals: Ahrefs 10, HubSpot 10, Peec AI 8, Scrunch AI 9, Semrush 9 |
+| Root Cause | gate_misfire — a "score capped at N" gate is being applied as "score = N" regardless of whether the raw points-to-score mapping already falls at or below N. Caps should only ever lower a score that would otherwise exceed them; here they're inflating scores that were already at or below the cap. |
+| Caught By | Manual QA (Michelle + Claude Code) applying `process_benchmark_eval_qa.md` Step 2 systematically across all 11 companies' D5–D8 audit blocks, 2026-08-02 — Entry 064 (Similarweb) was the first individual instance; checking the full cohort revealed it as a repeating, identifiable pattern rather than a one-off |
+| Status | monitoring 👀 — mechanism precisely isolated, no fix implemented |
+
+**Root Cause Detail:**
+
+Confirmed instances — cap gate cited, raw points already at or below the cap, score wrongly matches the cap value instead of the raw mapping, no `[Score floored...]` note present to justify the override:
+
+| Company | Dimension | Raw points | Correct score | Recorded score |
+|---|---|---|---|---|
+| Ahrefs | D8 | 1/6 | 0 | 1 |
+| HubSpot | D8 | 2/6 | 0 | 1 |
+| Peec AI | D7 | 2/6 | 0 | 1 |
+| Peec AI | D8 | 1/6 | 0 | 1 |
+| Scrunch AI | D8 | 2/6 | 0 | 1 |
+| Semrush | D8 | 1/6 | 0 | 1 |
+| Similarweb | D7 | 2/6 (denominator also wrong, shown as /5) | 0 | 1 — Entry 064 |
+
+**Confirmed correct behavior, for contrast** — proves the model CAN apply caps correctly when they're actually binding: OtterlyAI D6, Peec AI D6, and Semrush D6 all had 5/6 raw points (which maps to 2) correctly capped down to 1 by a genuinely-binding P3 gate. The defect only fires when the cap is cited but non-binding (raw score already ≤ the cap) — in that case the model appears to read the gate's mere presence as an instruction to set the score to the cap value, rather than recognizing the cap is irrelevant and the raw mapped score should stand.
+
+Every confirmed instance is D7 or D8 specifically — both dimensions whose gate language is phrased as "cap final score at N," which may itself be part of the mechanism (a phrasing that reads more like an assignment than a ceiling). Worth checking whether other dimensions with differently-worded cap gates show the same failure once more scans accumulate.
+
+**Separately noted, different mechanism:** Profound's D5 shows 5/6 raw points (which should map to score 2) recorded as score 1, with `gate=none` — no gate cited at all. This is NOT the same cap-misapplication pattern (no gate is involved), and moves the score in the opposite direction (too low, not too high). Flagged for tracking but not yet understood; corrected total for Profound is 12, not 11.
+
+**Impact:** 7 of 11 companies in this benchmark cycle have a wrong recorded total right now, all systematically inflated by exactly 1 point per affected dimension except Profound's separate deflation. This is no longer a spot-check-worthy anomaly — it's the dominant, most consequential finding of this entire QA pass.
+
+**Resolution:** Not yet implemented. Direction: server-side recomputation of the points→score mapping from raw P/F marks, applying any cited cap as `MIN(raw_mapped_score, cap_value)` rather than trusting the LLM's own arithmetic — this single change would have caught every instance in the table above. Given the gate-phrasing hypothesis, also worth testing whether rewording cap-gate language from "cap final score at N" to something less assignment-shaped (e.g., "score may not exceed N") changes the failure rate, as a cheaper interim mitigation while server-side validation is built.
+
+**Pattern Tag:** `cap-gate-misfire`, `gate-as-floor-not-ceiling`, `systemic-score-inflation`, `d7-d8-safety-overages`
+
+---
+
+### Entry 065 — August 2, 2026
+
+| Field | Value |
+|-------|-------|
+| Company | Conductor, HubSpot, Peec AI, Scrunch AI — all four D5–D8 dimensions missing the evidence-citation block, not just one |
+| Version | 2026-07-10-pipeline-v37 |
+| Dimension | D5, D6, D7, D8 for the four companies listed |
+| Subtest(s) | Mandatory evidence-citation block presence (`[D_ evidence: ...]`) |
+| V1 Score | N/A |
+| V2 Score | N/A — scores may still be numerically consistent (see Entry 066 for the arithmetic-level check); this entry is specifically about citations being unverifiable, not about the numbers being wrong |
+| Root Cause | prompt_drift — same failure Entry 055 first identified (audit block present, evidence block absent), now confirmed recurring at whole-company scale across a fresh benchmark cycle, two-plus versions after 055 was logged |
+| Caught By | Manual QA (Michelle + Claude Code) applying `process_benchmark_eval_qa.md` Step 2 across all 11 Marketing Intelligence companies, 2026-08-02 |
+| Status | monitoring 👀 — same unresolved recommendation as Entry 055 |
+
+**Root Cause Detail:**
+
+Entry 055 found this failure mode on isolated dimensions for one company (Relevance AI) and treated it as a possible one-off prompt-following lapse. Checking the full Marketing Intelligence cohort shows it recurring across *every* D5–D8 dimension for four separate companies (Conductor, HubSpot, Peec AI, Scrunch AI) — the `[D_ audit: ...]` block is present and well-formed, but the `[D_ evidence: ...]` block that names the specific field+page backing each pass/fail mark never appears, for any of the four dimensions, for any of these four companies. This means none of their D5–D8 subtest marks are independently verifiable — the audit-arithmetic check in Entry 066 could still be run on them (the P/F marks and points are visible), but there's no way to confirm those marks are actually backed by real evidence rather than holistic impression, which is the entire purpose the evidence block exists to serve.
+
+This is not isolated to a hard case (Entry 055's original was Relevance AI, a company with a missing pricing page) — Conductor, HubSpot, Peec AI, and Scrunch AI all have decent evidence sets in this cycle. The missing block doesn't correlate with evidence scarcity; it looks like an inconsistent prompt-following failure that can happen regardless of how much evidence is available.
+
+**Resolution:** Same open recommendation as Entry 055, still not implemented: treat an audit block without a matching evidence block as invalid, and either retry the dimension or flag the result for review rather than trusting the P/F marks as-is.
+
+**Pattern Tag:** `missing-evidence-block`, `audit-line-unverifiable`, `whole-company-recurrence`
 
 ---
 
