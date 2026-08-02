@@ -4,7 +4,7 @@
 **Usage:** When a report produces a questionable result, log it here. Run `Scan the debug log for recurring patterns` periodically to surface systemic issues.
 **Related:** See ENGINE_DEBUG_HISTORY.md for backfilled history from git.
 
-**Entries:** 62 | **Last updated:** August 1, 2026
+**Entries:** 64 | **Last updated:** August 1, 2026
 
 ---
 
@@ -17,9 +17,9 @@
 | evidence_gap | 0 | — |
 | gate_misfire | 0 | — |
 | confidence_miscalc | 0 | — |
-| prompt_drift | 2 | ICP and Job Clarity (D2); D6/D8 evidence-block leak (Entry 060) |
+| prompt_drift | 3 | ICP and Job Clarity (D2); D6/D8 evidence-block leak (Entry 060); D7 audit arithmetic error (Entry 064) |
 | evidence_snippet_selection | 2 | ICP (D2), Value Unit (D4), Overages (D6), Safety Rails (D7), Evidence Coverage (D8); same-page-different-read on D4 (Entry 062) |
-| pipeline_miss | 25 | Value Unit, Cost Driver Mapping, Safety/Trust, Overages & Risk, URL filter; forced-page resolution gap (Entry 059); session-load evidence degradation (Entry 061) |
+| pipeline_miss | 26 | Value Unit, Cost Driver Mapping, Safety/Trust, Overages & Risk, URL filter; forced-page resolution gap (Entry 059); session-load evidence degradation (Entry 061); product-surface mismatch (Entry 063) |
 | contamination | 13 | Pricing Transparency, Enterprise/Compliance (D7/D8) |
 | calibration | 3 | Value unit (D4), ICP and Job Clarity (D2), Safety Rails (D8) |
 | other | 4 | Architecture/merge-level (Entries 056–058): instrument drift, single-pass classification gating, pass-1 narrative bias |
@@ -31,6 +31,56 @@
 <!-- Newest first. To add an entry, copy the template below and fill it in. -->
 
 <!-- Next entry goes here -->
+
+---
+
+### Entry 064 — August 1, 2026
+
+| Field | Value |
+|-------|-------|
+| Company | Similarweb (similarweb.com/packages/ai-search/) |
+| Version | 2026-07-10-pipeline-v37 |
+| Dimension | D7 (Overages and Risk Allocation) |
+| Subtest(s) | D7 audit arithmetic — points-to-score mapping violated; subtest denominator miscounted |
+| V1 Score | Prior scan (wrong product surface, see Entry 063): D7 audit `pts=3/6, gate=R4-cap, score=1` |
+| V2 Score | Corrected-product rescan: D7 audit `[R1=P R2=F R3=F R4=P R5=F R6=F | pts=2/5 | gate=none | score=1]` |
+| Root Cause | prompt_drift — same class as Entry 055: declared score doesn't match the audit block's own arithmetic, and no gate is cited to justify the discrepancy |
+| Caught By | Manual QA (Michelle + Claude Code) applying `process_benchmark_eval_qa.md` Step 2 (audit-block compliance) to a fresh Similarweb rescan, 2026-08-01 |
+| Status | monitoring 👀 — no server-side enforcement exists yet to catch this class of error |
+
+**Root Cause Detail:**
+
+All six R1–R6 subtests are explicitly marked (`P` or `F`, none `NA`), so the points denominator should be 6 — the audit declares `pts=2/5`, an internal miscount. Worse, 2 points under the documented mapping (0–2 pts → score 0, 3–4 → score 1, 5–6 → score 2) should produce **score = 0**, not the recorded `score = 1`. No `[Score floored to N...]` note is present to explain an override — contrast with D5 and D8 in this same scan, which correctly cite `[Score floored to 1 based on N evidence signals]` whenever that guardrail actually fires. Its absence here confirms this isn't a floor case; it's a plain arithmetic error. The scan's recorded total (9/16) is therefore itself wrong — a corrected D7 brings the true total to 8/16.
+
+**Resolution:** Same open recommendation as Entry 055 — not yet implemented. Reinforces the case for server-side parsing of audit blocks: recompute the points→score mapping from the raw P/F marks rather than trusting the LLM's declared `score`, validate the subtest count against the expected denominator (6, or 5 only for D3 which has one fewer subtest), and reject/flag any declared score that doesn't match before accepting the block.
+
+**Pattern Tag:** `audit-arithmetic-error`, `points-score-mapping-violation`, `d7-denominator-miscount`
+
+---
+
+### Entry 063 — August 1, 2026
+
+| Field | Value |
+|-------|-------|
+| Company | Similarweb (similarweb.com) |
+| Version | 2026-07-10-pipeline-v37 |
+| Dimension | All — most visibly D4 (Value Unit); affects the whole evidence basis for the company |
+| Subtest(s) | Evidence source selection — the canonical pricing-page probe found a different product line's pricing than the one relevant to this benchmark category |
+| V1 Score | Scanned against bare domain (`similarweb.com`): canonical probe found Web Intelligence's general `/pricing` page, D4 rationale cited undefined "monthly visits" — D4 = 1/2, 25% confidence |
+| V2 Score | Scanned against `similarweb.com/packages/ai-search/`: correctly cites AI Search's actual terms ("1 User", "150 tracked prompts") — D4 = 1/2, 35% confidence (score unchanged, but now grounded in the right product; independently verified via WebFetch that "tracked prompts" metering is genuinely undefined on the AI Search page — confirming D4=1 is now a legitimate ceiling, not a wrong-product artifact) |
+| Root Cause | pipeline_miss — for multi-product companies, canonical `/pricing`/`/plans`/`/billing` probing and general `/map` discovery default to whichever pricing surface is easiest to find (often the flagship/oldest product line), with no mechanism to detect that a different, category-relevant product exists at a separate URL |
+| Caught By | Manual QA (Michelle + Claude Code) applying `process_benchmark_eval_qa.md` Step 4 (evidence-fidelity cross-check) to Similarweb's Marketing Intelligence scan, 2026-08-01 — caught because the reviewer had direct product knowledge that Similarweb sells AI Search as a distinct package |
+| Status | fix_specified — practical fix applied and verified for Similarweb specifically; systemic detection not yet implemented |
+
+**Root Cause Detail:**
+
+Similarweb sells multiple distinct product lines (Web Intelligence/traffic analytics, AI Search Intelligence, Sales Intelligence, etc.), each with its own pricing page and, in this case, genuinely different pricing *models* — Web Intelligence's public pricing is visits/usage-oriented, while AI Search is flat seat-based tiering by feature/data-depth ($99/$333/$542 per month, 1 user, zero usage metering). The scan seeded at the bare domain found and scored the wrong product's pricing entirely. This is a distinct failure mode from Entry 059 (a selected page failing to *resolve*) — here the wrong page resolved perfectly fine and produced a plausible-looking, product-mismatched score. It's also distinct from — and the mirror image of — the HubSpot AEO question raised earlier in this same benchmark cycle: HubSpot's AEO is a free bundled feature with no separate pricing at all, so narrowing its seed URL would not have helped. Similarweb's AI Search has genuinely separate commercial terms, so narrowing was exactly right. **This has to be checked per company; it cannot be resolved with a blanket rule either way.**
+
+Notably, fixing this did **not** change Similarweb's total score (9/16 either way, before Entry 064's separately-found D7 arithmetic correction) — the value was making the score's basis accurate for the category, not moving the number. This is very likely not isolated to Similarweb: the Marketing Intelligence category's whole theme is legacy tools bolting AI-visibility features onto existing products, so Semrush's "AI Visibility Toolkit" and Ahrefs' "Brand Radar" are plausible candidates for the same issue — not yet checked.
+
+**Resolution:** Fix direction (not yet implemented systemically): during company selection/seeding (`process_benchmark_end_to_end.md` Phase 0), check whether the category-relevant capability has its own dedicated pricing page distinct from the company's primary product, and seed `benchmark_companies.domain` at that specific page when it exists (same domain-path pattern already used for scrape-failure workarounds, repurposed here for product-surface correctness). No engine-level detection exists yet — this currently requires a human with product knowledge to catch. Added as a consideration to `process_benchmark_eval_qa.md` Step 4. Recommend checking Semrush and Ahrefs in this category for the same issue before finalizing the benchmark.
+
+**Pattern Tag:** `product-surface-mismatch`, `multi-product-company`, `category-relevant-pricing-page`, `wrong-product-scored`
 
 ---
 
