@@ -3,6 +3,8 @@
 The following files are maintained exclusively by Claude Code. Lovable must NEVER edit them:
 
 - `supabase/functions/analyze-company/index.ts` — scoring engine
+- `supabase/functions/analyze-company/rubric-audit.ts` — audit-block validation layer (D5–D8 score correction)
+- `supabase/functions/analyze-company/rubric-audit.test.ts` — validation layer test fixtures
 - `supabase/functions/scrape-website/index.ts` — scraper
 - `src/lib/api/scraper.ts` — client API layer
 - `tasks/` — calibration docs and todos
@@ -103,7 +105,7 @@ regexes, scoring weights, or version pin diverge. **After any change to `scrape-
 
 Bump `ANALYSIS_VERSION` in `supabase/functions/analyze-company/index.ts` every time either edge function is meaningfully changed. Format: `'YYYY-MM-DD-pipeline-vN'`. Without a bump, the 7-day cache serves stale results.
 
-Current version as of last session: `2026-07-10-pipeline-v34`
+Current version as of last session: `2026-08-02-pipeline-v38`
 
 ---
 

@@ -1,5 +1,6 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { correctDimensionScore, AUDITED_DIMENSION_NUMBER_BY_NAME } from "./rubric-audit.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -29,7 +30,7 @@ interface AnalyzeRequest {
 // Deno EdgeRuntime type for background processing
 declare const EdgeRuntime: { waitUntil: (p: Promise<unknown>) => void };
 
-const ANALYSIS_VERSION = '2026-07-10-pipeline-v37';
+const ANALYSIS_VERSION = '2026-08-02-pipeline-v38';
 
 const COMPANY_PROFILE_PROMPT = `You are an expert business analyst. Analyze the following website content and extract a company profile.
 
@@ -2852,6 +2853,83 @@ ${truncatedContent}`;
       }
     }
 
+    // ── Rubric audit-block validation (D5-D8) ──────────────────────────
+    // The LLM's declared score frequently disagreed with its own audit
+    // block's arithmetic — see ENGINE_DEBUG_LOG.md Entries 055, 064, 065,
+    // 066. This recomputes the correct score deterministically from the
+    // audit block's P/F marks and gate, rather than trusting the LLM's
+    // self-reported score. Runs last, after applyDigestFloor and the
+    // pricing-contradiction fix, so it sees the final rationale text
+    // (including any code-appended floor note) before totals are computed.
+    const rubricCorrections: Array<{
+      dimension: string;
+      correctionReason: string;
+      declaredScore: number;
+      correctedScore: number;
+      gateText?: string;
+      evidenceBlockMissing: boolean;
+    }> = [];
+
+    for (const dim of dimensionScores as Array<{
+      dimension: string;
+      score: number;
+      confidence: number;
+      rationale: string;
+      evidenceQuality?: string;
+      scoreCorrected?: boolean;
+      auditParseFailed?: boolean;
+    }>) {
+      const dimensionNumber = AUDITED_DIMENSION_NUMBER_BY_NAME[dim.dimension];
+      if (!dimensionNumber) {
+        // D1-D4 have no mandatory audit-block procedure — pass through
+        // untouched, default to 'verified' so the field is populated
+        // uniformly across all 8 dimensions (see rubric.ts DimensionScore).
+        dim.evidenceQuality = 'verified';
+        continue;
+      }
+
+      const declaredScore = dim.score;
+      const result = correctDimensionScore(dim.rationale, dimensionNumber);
+
+      dim.auditParseFailed = result.auditParseFailed;
+
+      if (result.scoreWasCorrected) {
+        console.warn(
+          `[RubricAudit] "${dim.dimension}" at ${url} — ${result.correctionReason}: ` +
+          `declared=${declaredScore} → corrected=${result.correctedScore}`
+        );
+        dim.score = result.correctedScore;
+        dim.scoreCorrected = true;
+        rubricCorrections.push({
+          dimension: dim.dimension,
+          correctionReason: result.correctionReason,
+          declaredScore,
+          correctedScore: result.correctedScore,
+          gateText: result.gateText,
+          evidenceBlockMissing: result.evidenceBlockMissing,
+        });
+      } else {
+        dim.scoreCorrected = false;
+      }
+
+      // Evidence Quality Flag: unverified > flagged > verified.
+      if (result.auditParseFailed || result.evidenceBlockMissing) {
+        dim.evidenceQuality = 'unverified';
+      } else if (
+        result.scoreWasCorrected ||
+        result.correctionReason === 'unrecognized-gate-not-corrected' ||
+        (dim.confidence ?? 0) < 0.45
+      ) {
+        dim.evidenceQuality = 'flagged';
+      } else {
+        dim.evidenceQuality = 'verified';
+      }
+    }
+
+    if (rubricCorrections.length > 0) {
+      console.warn(`[RubricAudit] ${rubricCorrections.length} correction(s) applied for ${url}:`, rubricCorrections);
+    }
+
     const totalScore = dimensionScores.reduce((sum, d) => sum + d.score, 0);
     const maxScore = dimensionScores.length * 2;
 
@@ -2897,6 +2975,7 @@ ${truncatedContent}`;
         trustBreakpoints: rubricData.trustBreakpoints || [],
         recommendedFocus: rubricData.recommendedFocus || null,
       },
+      rubricCorrections,
       observability: {
         level: observabilityLevel,
         confidenceScore: Math.round(avgConfidence * 100),
