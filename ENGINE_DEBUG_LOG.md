@@ -82,6 +82,10 @@ Notably, fixing this did **not** change Similarweb's total score (9/16 either wa
 
 **Pattern Tag:** `product-surface-mismatch`, `multi-product-company`, `category-relevant-pricing-page`, `wrong-product-scored`
 
+**Addendum (2026-08-02, Semrush and Ahrefs checked for the same issue):** Checking the rest of the Marketing Intelligence cohort sharpened the deciding rule beyond "does a separate pricing page exist." Semrush's AI Visibility Toolkit has its own dedicated page (`semrush.com/pricing/ai/`) — structurally similar to Similarweb — but should **not** get the same fix. Research confirmed it's explicitly sold as an *add-on to the flagship platform* (bundles into Semrush One, cross-sold alongside core SEO plans, marketed as a module within the broader toolkit), not a standalone competing product the way Similarweb's AI Search is (a distinct "package" with its own disconnected pricing model, no bundling into Web Intelligence at all). The real test: is the AI capability a genuinely separate product line, or an add-on within the flagship's own pricing story? Semrush is the latter — scoring the bare `semrush.com` domain is correct for this benchmark, which specifically groups Semrush into a "legacy platform bolting AI-visibility onto an existing product" bucket; evaluating the platform's whole commercial model, not the narrow add-on in isolation, is the right scope for that analytical purpose. Ahrefs' Brand Radar was checked too and turned out to be a different case entirely — see the Entry 062 addendum below.
+
+**Decision rule, refined:** separate product line with its own disconnected pricing model (Similarweb) → reseed at the product-specific page. Add-on bundled into the flagship's own pricing/GTM (Semrush) → keep the bare domain. Add-on whose pricing lives on the SAME general page as the base plans (Ahrefs) → not a scoping problem at all, see Entry 062.
+
 ---
 
 ### Entry 062 — August 1, 2026
@@ -107,6 +111,8 @@ The defect surfaces specifically at D4. There is currently no equivalent mandato
 **Resolution:** Fix direction (not yet implemented): extend the MANDATORY SCORING PROCEDURE audit/evidence-block requirement to D1–D4, starting with D4 (Value Unit) given this concrete failure case. Forcing an explicit per-subtest field+page citation for V1–V6, the same way C1–C6/T1–T6 are already required, would very likely have caught the individual scan's under-read of `/credit-calculator` before it reached the customer-facing report.
 
 **Pattern Tag:** `evidence-utilization-drift`, `d4-audit-block-gap`, `same-evidence-different-read`
+
+**Addendum (2026-08-02, Ahrefs — confirmed repeatable, not a one-off):** Checked Ahrefs (`ahrefs.com`) for the same pattern found on AthenaHQ. Its Brand Radar AI-visibility pricing is genuinely present on `ahrefs.com/pricing` — independently confirmed via direct fetch: "$199/mo" standalone base, "Basic $50/mo, Growth $100/mo, Scale $250/mo" custom prompt packages, "271M+ organic prompts" database. None of it appeared in either of two independent scans' D4/D5 rationale — both cited only base-toolkit terms (tracked keywords, crawl credits, users). A rescan (fresh scrape, cache cleared) reproduced the identical miss. Two independent scans missing the same real, present content in the same way upgrades this from "worth checking" to a confirmed, repeatable gap specific to this page — likely because Brand Radar's pricing sits in a secondary section of a page dominated by the main tier-comparison table, and the model's attention doesn't reliably reach it. No fix available without the D1–D4 audit-block extension (see Resolution above); retrying further isn't expected to help. Treat Ahrefs' current D4/D5 scores as a documented underestimate — its actual AI-visibility pricing transparency is better than the score reflects, not because of a pipeline miss but because of this citation gap.
 
 ---
 
