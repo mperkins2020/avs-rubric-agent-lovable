@@ -1,0 +1,1 @@
+UPDATE public.benchmark_companies SET active = true WHERE domain = 'ahrefs.com';
