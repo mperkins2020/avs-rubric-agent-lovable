@@ -132,7 +132,24 @@ Every confirmed instance is D7 or D8 specifically — both dimensions whose gate
 
 **Resolution:** Not yet implemented. Direction: server-side recomputation of the points→score mapping from raw P/F marks, applying any cited cap as `MIN(raw_mapped_score, cap_value)` rather than trusting the LLM's own arithmetic — this single change would have caught every instance in the table above. Given the gate-phrasing hypothesis, also worth testing whether rewording cap-gate language from "cap final score at N" to something less assignment-shaped (e.g., "score may not exceed N") changes the failure rate, as a cheaper interim mitigation while server-side validation is built.
 
-**Pattern Tag:** `cap-gate-misfire`, `gate-as-floor-not-ceiling`, `systemic-score-inflation`, `d7-d8-safety-overages`
+**Addendum (2026-08-03, Resolution IMPLEMENTED + cross-category check):** The server-side corrector described in "Resolution" above shipped in pipeline-v38 (see Entries 065/067/068) and is now live. Separately, the "Every confirmed instance is D7 or D8 specifically" claim (line above) has been superseded — the corrector has since caught the identical `cap-misapplied-as-floor` and `unexplained-mismatch` patterns on D6 as well, both within Marketing Intelligence (HubSpot D6: 1→2, `unexplained-mismatch`, 2026-08-03) and outside it (see below). The mechanism isn't D7/D8-specific; it's a general property of any dimension using the "cap final score at N" gate phrasing or a plain points→score mismatch.
+
+**Cross-category check (2026-08-03):** Tested whether Marketing Intelligence's correction rate (6 of 11 companies, 55%, corrector-confirmed) generalizes to a category scored under a much older engine version. Sampled 4 AI Agent Platform companies from the May 2026 benchmark (pipeline-v25) via individual one-off scans on v39 — explicitly NOT via `run-benchmark`, to avoid touching the original May `scan_results` rows (verified untouched after each scan; see `process-benchmark-end-to-end` for the safeguard method used).
+
+| Company | May 2026 (v25) | v39 rescan | Corrections |
+|---|---|---|---|
+| Zapier | 13/16 | 15/16 | none |
+| Relevance AI | 12/16 | 15/16 | none |
+| Stack AI | 10/16 | 8/16 | D8: 1→0 (`cap-misapplied-as-floor`) |
+| CrewAI | 9/16 | 10/16 | D6: 1→2 (`unexplained-mismatch`), D7: 1→0 (`cap-misapplied-as-floor`) |
+
+**Findings:**
+- **The correction mechanism is systemic, not category-specific.** 2 of 4 companies (50%) received at least one correction — nearly identical to Marketing Intelligence's 55% rate. This confirms the defect generalizes across categories and engine-version gaps (these companies were last scored on v25, three major versions before the corrector existed).
+- **The dimension distribution does NOT concentrate on D8 outside Marketing Intelligence.** This sample hit D6, D7, and D8 once each — no single dimension dominated the way D8 did in Marketing Intelligence (6 of 6 corrections there were D8). The safer general claim is "any D5-D8 dimension has roughly even odds of carrying an uncaught error in a pre-v38 scan," not "D8 specifically is overstated everywhere."
+- **Half the sample needed no correction at all**, and where score changed without a correction (Zapier, Relevance AI), it was driven by genuinely richer evidence on rescan (6-8 pages vs. whatever the May scan captured), not an engine defect.
+- **Practical implication:** the May 2026 benchmark's published totals for other categories are likely mildly overstated on some D5-D8 dimension for roughly half of scored companies, but a correction pass — if ever done — needs to check all four dimensions per company, not just D8. Not yet checked: whether this same ~50% rate holds for AI Coding Assistant, AI Customer Support, AI Revenue Intelligence, or AI Sales Intelligence — this check used a single 4-company sample from one category.
+
+**Pattern Tag:** `cap-gate-misfire`, `gate-as-floor-not-ceiling`, `systemic-score-inflation`, `d5-d8-general-not-d8-specific`, `cross-category-confirmed`
 
 ---
 
