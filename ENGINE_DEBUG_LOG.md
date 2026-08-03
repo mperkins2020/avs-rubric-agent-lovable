@@ -4,7 +4,7 @@
 **Usage:** When a report produces a questionable result, log it here. Run `Scan the debug log for recurring patterns` periodically to surface systemic issues.
 **Related:** See ENGINE_DEBUG_HISTORY.md for backfilled history from git.
 
-**Entries:** 67 | **Last updated:** August 3, 2026
+**Entries:** 68 | **Last updated:** August 3, 2026
 
 ---
 
@@ -18,7 +18,7 @@
 | gate_misfire | 1 | D7/D8 cap-gate-misapplied-as-floor across 6 companies (Entry 066) |
 | confidence_miscalc | 0 | — |
 | prompt_drift | 4 | ICP and Job Clarity (D2); D6/D8 evidence-block leak (Entry 060); D7 audit arithmetic error (Entry 064); D5-D8 evidence block missing across 4 whole companies (Entry 065) |
-| evidence_snippet_selection | 2 | ICP (D2), Value Unit (D4), Overages (D6), Safety Rails (D7), Evidence Coverage (D8); same-page-different-read on D4 (Entry 062) |
+| evidence_snippet_selection | 2 | ICP (D2), Value Unit (D4), Overages (D6), Safety Rails (D7), Evidence Coverage (D8); same-page-different-read on D4 (Entry 062, confirmed a 3rd time on Semrush — see Entry 062 addendum). Root cause (D1-D4 had no mandatory audit-block procedure) FIXED in Entry 068 — not yet re-verified against a live rescan. |
 | pipeline_miss | 27 | Value Unit, Cost Driver Mapping, Safety/Trust, Overages & Risk, URL filter; forced-page resolution gap (Entry 059); session-load evidence degradation (Entry 061); product-surface mismatch (Entry 063); blog-content misclassified as pricing evidence (Entry 067) |
 | contamination | 13 | Pricing Transparency, Enterprise/Compliance (D7/D8) |
 | calibration | 3 | Value unit (D4), ICP and Job Clarity (D2), Safety Rails (D8) |
@@ -31,6 +31,36 @@
 <!-- Newest first. To add an entry, copy the template below and fill it in. -->
 
 <!-- Next entry goes here -->
+
+---
+
+### Entry 068 — August 3, 2026
+
+| Field | Value |
+|-------|-------|
+| Company | Systemic — engine change, not company-specific |
+| Version | 2026-08-03-pipeline-v40 |
+| Dimension | D1, D2, D3, D4 (previously unaudited; D5-D8 already had this) |
+| Subtest(s) | All — NS1-NS6 (D1), J1-J6 (D2), S1-S5 (D3), V1-V6 (D4) |
+| Status | fix_specified — deployed as part of this entry, verified via 49 rubric-audit unit tests (11 new) before commit |
+
+**Root Cause Detail:**
+
+Entry 062 (2026-08-01) identified the mechanism but the fix was never built: D1-D4 had real, well-defined subtest logic in the prompt (each with its own points→score mapping and gates — mechanically identical in shape to D5-D8's C1-C6/P1-P6/R1-R6/T1-T6) but no MANDATORY SCORING PROCEDURE forcing the LLM to show its work in a parseable `[D_ audit: ...]` + `[D_ evidence: ...]` bracket. Two independent scans could read materially the same evidence and reach opposite pass/fail conclusions on a subtest, with nothing to catch the discrepancy — confirmed on AthenaHQ and Ahrefs (Entry 062) and again on Semrush this cycle (Marketing Intelligence Entry 062 addendum, 2026-08-03), the latter moving a score DOWN rather than up, confirming this is a bidirectional interpretation-consistency defect, not a one-directional under-reading bias.
+
+**Resolution:** Extended the exact same MANDATORY SCORING PROCEDURE pattern D5-D8 already use to D1-D4:
+- Added procedure blocks to `RUBRIC_SCORING_PROMPT` (`index.ts`) for all four dimensions, each instructing the LLM to emit `[D_ audit: ...]` and `[D_ evidence: ...]` brackets in the same machine-readable format D5-D8 use.
+- `rubric-audit.ts`: extended `AUDITED_DIMENSION_NAMES` to cover all 8 dimensions (was D5-D8 only).
+- Fixed the mark-pattern regex (`AUDIT_BLOCK_PATTERN`, `MARK_PATTERN`) to accept 1-2 letter subtest prefixes — D1 uses the two-letter "NS" prefix (NS1-NS6), unlike D2/D3/D4/D5-D8's single-letter prefixes (J/S/V/C/P/R/T). The original regex (`[A-Z]\d`) would have silently failed to match D1's format entirely.
+- Made `mapPointsToScore` denominator-aware: D3 (Buyer & Budget Alignment) has only 5 subtests (S1-S5, scored per highest-priority segment per the existing D3 spec) with genuinely different thresholds (0-1→0, 2-3→1, 4-5→2) than every other dimension's /6 scale (0-2→0, 3-4→1, 5-6→2). **Important distinction preserved:** this is keyed off `dimensionNumber === 3`, not the raw effective denominator — D7's optional R5 mark can also legitimately be NA, dropping its own effective denominator to 5, but D7 must keep the standard /6-shaped thresholds even then. A naive "denominator === 5 → use D3's thresholds" check would have silently miscorrected D7's R5=NA case.
+- D3's audit block represents the highest-priority segment's S1-S5 marks specifically (matching the convention D6/D7/D8's gate text already implies with phrases like "fails for the highest-priority segment"), while the reported "score" is the full dimension aggregation across all segments — documented explicitly in the new prompt section since D3's aggregation can diverge from what the highest-priority segment's own points would map to alone.
+- D1's NS2 subtest is a confidence-only gate ("reduce confidence by 0.15... allow score 2 if other subtests justify it") — not a score-affecting gate the corrector needs to enforce. The prompt explicitly instructs the LLM not to cite NS2 in the audit block's gate field unless NS1 or NS3 (the two genuine score gates) are also binding.
+
+**Known limitation, not fixed by this entry:** D1's code-side floor safety net (the "north star" branch of the score-0 override logic in `index.ts`, distinct from the shared `applyDigestFloor` helper D2-D8 use) replaces the LLM's entire rationale text with a fixed string when it fires, discarding any audit bracket the LLM may have produced. This dimension will report `auditParseFailed: true` on that specific code path (no bracket to find), which is a safe failure mode (flags `evidenceQuality: unverified`, applies no incorrect correction) but not an ideal one. D2/D3/D4's floor logic already uses the shared `applyDigestFloor` helper, which appends rather than replaces, so their floor cases are correctly recognized via the existing `FLOOR_MARKER_PATTERN` — only D1's floor path has this gap.
+
+**Verification:** 49 rubric-audit unit tests pass (11 new, covering D1's two-letter NS prefix parsing, D3's 5-point scale including the D7-collision edge case, D1's NS1 hard-zero gate, D2's J2 hard-zero gate, and D4's multi-gate case). Full suite: 152 tests pass. Not yet verified against a live rescan — first real-world check should be a company already flagged for the D1-D4 interpretation-drift pattern (Semrush, AthenaHQ, or Ahrefs) to confirm the new audit blocks actually resolve the same-evidence-different-read cases those companies previously demonstrated.
+
+**Pattern Tag:** `d1-d4-audit-block-extension`, `mandatory-scoring-procedure-parity`, `two-letter-subtest-prefix`, `denominator-aware-mapping`, `segment-audit-highest-priority`
 
 ---
 

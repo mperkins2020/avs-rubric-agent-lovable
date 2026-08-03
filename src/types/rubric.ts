@@ -18,11 +18,11 @@ export interface DimensionScore {
   sourceEvidence?: SourceEvidence[];
   uncertaintyReasons: string[];
   missingInsiderPrompts?: MissingInsiderPrompt[];
-  /** Server-side audit-block validation result (D5-D8 only; D1-D4 default to 'verified'). See ENGINE_DEBUG_LOG.md Entries 065/066. */
+  /** Server-side audit-block validation result, all 8 dimensions as of Entry 068 (previously D5-D8 only). See ENGINE_DEBUG_LOG.md Entries 065/066/068. */
   evidenceQuality?: 'verified' | 'flagged' | 'unverified';
   /** True if the server-side corrector overrode the LLM's declared score. */
   scoreCorrected?: boolean;
-  /** True if a D5-D8 rationale had no parseable audit block at all. */
+  /** True if a dimension's rationale had no parseable audit block at all. */
   auditParseFailed?: boolean;
 }
 

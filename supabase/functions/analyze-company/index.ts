@@ -30,7 +30,7 @@ interface AnalyzeRequest {
 // Deno EdgeRuntime type for background processing
 declare const EdgeRuntime: { waitUntil: (p: Promise<unknown>) => void };
 
-const ANALYSIS_VERSION = '2026-08-03-pipeline-v39';
+const ANALYSIS_VERSION = '2026-08-03-pipeline-v40';
 
 const COMPANY_PROFILE_PROMPT = `You are an expert business analyst. Analyze the following website content and extract a company profile.
 
@@ -247,6 +247,18 @@ THE 8 DIMENSIONS:
    - If NS2 fails: reduce confidence by 0.15 but allow score 2 if other subtests justify it. Predictability is preferred but not required for AI-native products.
    - If NS3 fails: cap final score at 1. If it is not measurable, it is not an outcome.
 
+   #### MANDATORY SCORING PROCEDURE — D1 (do NOT score holistically)
+   Assign the D1 score by executing the rubric arithmetic, not by overall impression:
+   1. Mark each subtest NS1–NS6 as PASS or FAIL against the fields above.
+   2. points = number of PASS; apply the mapping (0–2 → 0, 3–4 → 1, 5–6 → 2).
+   3. Apply the gates above; a triggered gate OVERRIDES the mapping. NS2 failing does NOT gate the score — it only reduces confidence per the NS2 rule above; do not cite NS2 in the "gate" field below unless NS1 or NS3 is ALSO the binding constraint.
+   4. Set "score" to EXACTLY the value this procedure yields. Never round up because the outcome story "feels" strong — richer evidence changes which subtests pass, not the points→score mapping or the gates.
+   5. Begin the D1 "rationale" with a compact, machine-readable audit in EXACTLY this format, then the prose:
+      "[D1 audit: NS1=P|F NS2=P|F NS3=P|F NS4=P|F NS5=P|F NS6=P|F | pts=N/6 | gate=<none, or NS1/NS3 gate that applied> | score=X] "
+   6. Immediately after the audit, add a per-subtest evidence line in EXACTLY this format, then the prose:
+      "[D1 evidence: NS1←<field@page-path>; NS2←<field@page-path, or "none">; NS3←<field@page-path>; NS4←<field@page-path>; NS5←<field@page-path>; NS6←<field@page-path, or "none">] "
+      Rules for this line: for each PASS, name the specific field(s) that passed and the page path of the fact backing each one; for FAIL, write "none". A subtest marked P whose evidence entry is "none" or cites only assumption-type facts is INVALID — re-mark it F and recompute points, the mapping, and the gates before setting "score". "@user_input" may only be cited when the scan actually received insider inputs for that field; every other page path must be a page present in the scraped evidence set.
+
    ## Confidence (separate from score)
    Compute confidence per subtest:
    - subtest_confidence = max(facts[].reliability among facts used by that subtest)
@@ -380,6 +392,18 @@ THE 8 DIMENSIONS:
    - If J2 fails: final score = 0.
    Rationale: no explicit ICP or job clarity means the dimension cannot score 2.
 
+   #### MANDATORY SCORING PROCEDURE — D2 (do NOT score holistically)
+   Assign the D2 score by executing the rubric arithmetic, not by overall impression:
+   1. Mark each subtest J1–J6 as PASS or FAIL against the fields above.
+   2. points = number of PASS; apply the mapping (0–2 → 0, 3–4 → 1, 5–6 → 2).
+   3. Apply the gates above; a triggered gate OVERRIDES the mapping.
+   4. Set "score" to EXACTLY the value this procedure yields. Never round up because the ICP "feels" clear — richer evidence changes which subtests pass, not the points→score mapping or the gates.
+   5. Begin the D2 "rationale" with a compact, machine-readable audit in EXACTLY this format, then the prose:
+      "[D2 audit: J1=P|F J2=P|F J3=P|F J4=P|F J5=P|F J6=P|F | pts=N/6 | gate=<none, or which cap/zero applied> | score=X] "
+   6. Immediately after the audit, add a per-subtest evidence line in EXACTLY this format, then the prose:
+      "[D2 evidence: J1←<field@page-path>; J2←<field@page-path>; J3←<field@page-path>; J4←<field@page-path>; J5←<field@page-path>; J6←<field@page-path, or "none">] "
+      Rules for this line: for each PASS, name the specific field(s) that passed and the page path of the fact backing each one; for FAIL, write "none". A subtest marked P whose evidence entry is "none" or cites only assumption-type facts is INVALID — re-mark it F and recompute points, the mapping, and the gates before setting "score". "@user_input" may only be cited when the scan actually received insider inputs for that field; every other page path must be a page present in the scraped evidence set.
+
    ## Confidence (separate from score)
    Compute confidence per subtest:
    - subtest_confidence = max(facts[].reliability among facts used by that subtest)
@@ -483,6 +507,20 @@ THE 8 DIMENSIONS:
    **Gates (hard enforcement caps):**
    - If an enterprise segment is present and S3 enterprise fails: cap final dimension score at 1.
    - If policies.overage_behavior is missing: cap final dimension score at 1.
+
+   #### MANDATORY SCORING PROCEDURE — D3 (do NOT score holistically)
+   Assign the D3 score by executing the rubric arithmetic, not by overall impression:
+   1. Identify the highest-priority segment (max segments[].priority_weight, or enterprise if weights are missing/absent). Mark that segment's subtests S1–S5 as PASS or FAIL against the fields above.
+   2. segment_points = number of PASS for the highest-priority segment; apply the segment mapping (0–1 → 0, 2–3 → 1, 4–5 → 2) — this mapping is OUT OF 5, not 6, and its thresholds differ from every other dimension's mapping.
+   3. Compute the full dimension aggregation (weighted or equal-weight average across ALL segments) per the aggregation rule above — this is the "score" that gets reported, and may differ from the highest-priority segment's own mapped score if other segments pull the average up or down.
+   4. Apply the gates above to the highest-priority segment; a triggered gate OVERRIDES the aggregated score.
+   5. Set "score" to EXACTLY the value this procedure yields. Never round up because the pricing "feels" buyer-friendly — richer evidence changes which subtests pass, not the points→score mapping or the gates.
+   6. Begin the D3 "rationale" with a compact, machine-readable audit of the HIGHEST-PRIORITY SEGMENT ONLY in EXACTLY this format, then the prose:
+      "[D3 audit: S1=P|F S2=P|F S3=P|F S4=P|F S5=P|F | pts=N/5 | gate=<none, or which cap applied> | score=X] "
+      The "score" in this bracket is the FINAL aggregated dimension score from step 3/4, even though the P/F marks and pts are the highest-priority segment's alone — if aggregation across multiple segments changes the score from what the highest-priority segment's own points would map to on their own, note this explicitly in the gate field (e.g. "gate=none, aggregated across N segments").
+   7. Immediately after the audit, add a per-subtest evidence line in EXACTLY this format, then the prose:
+      "[D3 evidence: S1←<economic_buyer_role@page-path>; S2←<payment_methods@page-path>; S3←<field@page-path>; S4←<overage_behavior@page-path + renewal_cancellation@page-path>; S5←<tier progression@page-path>] "
+      Rules for this line: for each PASS, name the specific field(s) that passed and the page path of the fact backing each one; for FAIL, write "none". A subtest marked P whose evidence entry is "none" or cites only assumption-type facts is INVALID — re-mark it F and recompute points, the mapping, and the gates before setting "score". "@user_input" may only be cited when the scan actually received insider inputs for that field; every other page path must be a page present in the scraped evidence set.
 
    ## Confidence (separate from score)
    Compute confidence per subtest as:
@@ -599,6 +637,18 @@ THE 8 DIMENSIONS:
    - If V2 fails: cap score at 1.
    - If V6 fails (audit_surface == none, or dashboard_total with no notification/action mechanism): cap score at 1.
    Rationale: you cannot claim a production-grade value unit without any auditability surface. However, V6 Tier B recognizes that in-product balance visibility with alerts is a genuine trust surface for consumption AI products.
+
+   #### MANDATORY SCORING PROCEDURE — D4 (do NOT score holistically)
+   Assign the D4 score by executing the rubric arithmetic, not by overall impression:
+   1. Mark each subtest V1–V6 as PASS or FAIL against the fields above.
+   2. points = number of PASS; apply the mapping (0–2 → 0, 3–4 → 1, 5–6 → 2).
+   3. Apply the gates above; a triggered gate OVERRIDES the mapping. If more than one gate is binding (e.g. both V1 and V2 fail), name all of them in the gate field.
+   4. Set "score" to EXACTLY the value this procedure yields. Never round up because the unit "feels" well-defined — richer evidence changes which subtests pass, not the points→score mapping or the gates.
+   5. Begin the D4 "rationale" with a compact, machine-readable audit in EXACTLY this format, then the prose:
+      "[D4 audit: V1=P|F V2=P|F V3=P|F V4=P|F V5=P|F V6=P|F | pts=N/6 | gate=<none, or which cap(s) applied> | score=X] "
+   6. Immediately after the audit, add a per-subtest evidence line in EXACTLY this format, then the prose:
+      "[D4 evidence: V1←<definition@page-path>; V2←<metering_formula@page-path>; V3←<unit_price-or-overage_unit_price@page-path + included_units@page-path>; V4←<value_anchor@page-path>; V5←<estimation_surface@page-path, or "none">; V6←<audit_surface@page-path, or "none">] "
+      Rules for this line: for each PASS, name the specific field(s) that passed and the page path of the fact backing each one; for FAIL, write "none". A subtest marked P whose evidence entry is "none" or cites only assumption-type facts is INVALID — re-mark it F and recompute points, the mapping, and the gates before setting "score". "@user_input" may only be cited when the scan actually received insider inputs for that field; every other page path must be a page present in the scraped evidence set.
 
    ## Confidence (separate from score)
    Compute confidence per subtest:
@@ -1375,7 +1425,7 @@ THE 8 DIMENSIONS:
 
 
 CRITICAL OUTPUT RULES:
-- Keep rationale to 1-2 sentences max per dimension. Each rationale MUST reference a specific page URL or section (e.g., "Pricing page shows...") — never cite footers, nav items, or copyright notices. The bracketed [D5/D6/D7/D8 audit] and [D5/D6/D7/D8 evidence] blocks required by the MANDATORY SCORING PROCEDURE sections do NOT count toward this sentence limit and must never be omitted to satisfy it.
+- Keep rationale to 1-2 sentences max per dimension. Each rationale MUST reference a specific page URL or section (e.g., "Pricing page shows...") — never cite footers, nav items, or copyright notices. The bracketed [D1-D8 audit] and [D1-D8 evidence] blocks required by the MANDATORY SCORING PROCEDURE sections do NOT count toward this sentence limit and must never be omitted to satisfy it.
 - ANTI-HALLUCINATION: Your rationale MUST only describe pricing constructs that are EXPLICITLY present in the scraped content. Do NOT assert that a company uses credits, tokens, usage-based pricing, rollovers, top-ups, or any other model unless you can point to a specific quote from the evidence. If the company uses flat-rate seat-based pricing, say so. If cost drivers are not publicly documented, say "not publicly documented" — do NOT fabricate a model.
 - REFUND/TERMS COMPLETENESS: When analyzing terms, refund, or cancellation policies, cite ALL material conditions found on the page — not just the first one. If a refund policy has multiple conditions (e.g., processing fees, pro-rata charges, trial conversion rules), list each one.
 - Keep observed arrays to max 3 items per dimension. Each observed item MUST be a concrete, specific fact from page content — NOT from footers, navigation, cookie banners, or boilerplate. If you cannot find 3 quality observations, include fewer rather than padding with weak evidence.
@@ -2853,7 +2903,7 @@ ${truncatedContent}`;
       }
     }
 
-    // ── Rubric audit-block validation (D5-D8) ──────────────────────────
+    // ── Rubric audit-block validation (D1-D8) ──────────────────────────
     // The LLM's declared score frequently disagreed with its own audit
     // block's arithmetic — see ENGINE_DEBUG_LOG.md Entries 055, 064, 065,
     // 066. This recomputes the correct score deterministically from the
@@ -2861,6 +2911,11 @@ ${truncatedContent}`;
     // self-reported score. Runs last, after applyDigestFloor and the
     // pricing-contradiction fix, so it sees the final rationale text
     // (including any code-appended floor note) before totals are computed.
+    // Extended to D1-D4 in Entry 068 — previously only D5-D8 carried a
+    // mandatory audit-block procedure; D1-D4 had real subtest logic
+    // (NS1-NS6, J1-J6, S1-S5, V1-V6) but no forced machine-readable
+    // citation discipline, which is what let same-evidence-different-read
+    // drift go undetected (Entry 062: AthenaHQ, Ahrefs, Semrush).
     const rubricCorrections: Array<{
       dimension: string;
       correctionReason: string;
@@ -2881,9 +2936,12 @@ ${truncatedContent}`;
     }>) {
       const dimensionNumber = AUDITED_DIMENSION_NUMBER_BY_NAME[dim.dimension];
       if (!dimensionNumber) {
-        // D1-D4 have no mandatory audit-block procedure — pass through
-        // untouched, default to 'verified' so the field is populated
-        // uniformly across all 8 dimensions (see rubric.ts DimensionScore).
+        // Safety net only — as of Entry 068 all 8 dimensions have a
+        // mandatory audit-block procedure and a lookup entry. This branch
+        // should only fire on a genuinely unrecognized dimension name
+        // (e.g. a typo'd string from the LLM). Pass through untouched,
+        // default to 'verified' so the field is populated uniformly
+        // (see rubric.ts DimensionScore).
         dim.evidenceQuality = 'verified';
         continue;
       }

@@ -51,8 +51,14 @@ export interface CorrectionResult {
   gateText?: string;
 }
 
-// The four D5-D8 dimension names, in the order the scoring prompt uses them.
+// All 8 dimension names, in the order the scoring prompt uses them. D1-D4
+// gained the mandatory audit-block procedure in Entry 068 — previously only
+// D5-D8 were audited server-side.
 export const AUDITED_DIMENSION_NAMES: Record<number, string> = {
+  1: 'Product north star',
+  2: 'ICP and job clarity',
+  3: 'Buyer and budget alignment',
+  4: 'Value unit',
   5: 'Cost driver mapping',
   6: 'Pools and packaging',
   7: 'Overages and risk allocation',
@@ -68,12 +74,13 @@ export const AUDITED_DIMENSION_NUMBER_BY_NAME: Record<string, number> = Object.f
 
 // Matches: "[D5 audit: C1=P C2=F ... | pts=4/6 | gate=<free text> | score=1]"
 // Non-greedy gate capture stops at the literal "| score=" per the prompt's
-// own mandated tail format (identical across D5/D6/D7/D8, index.ts lines
-// ~762/943/1138/1328).
+// own mandated tail format (identical across D1-D8, index.ts — D5-D8 use
+// single-letter subtest prefixes (C/P/R/T), D1 uses the two-letter "NS"
+// prefix (NS1-NS6, Entry 068), so the mark pattern allows 1-2 letters.
 const AUDIT_BLOCK_PATTERN =
-  /\[D(\d)\s+audit:\s*((?:[A-Z]\d\s*=\s*(?:P|F|NA)\s*)+)\|\s*pts\s*=\s*(\d+)\s*\/\s*(\d+)\s*\|\s*gate\s*=\s*(.*?)\s*\|\s*score\s*=\s*(\d+)\s*\]/i;
+  /\[D(\d)\s+audit:\s*((?:[A-Z]{1,2}\d\s*=\s*(?:P|F|NA)\s*)+)\|\s*pts\s*=\s*(\d+)\s*\/\s*(\d+)\s*\|\s*gate\s*=\s*(.*?)\s*\|\s*score\s*=\s*(\d+)\s*\]/i;
 
-const MARK_PATTERN = /([A-Z]\d)\s*=\s*(P|F|NA)/g;
+const MARK_PATTERN = /([A-Z]{1,2}\d)\s*=\s*(P|F|NA)/g;
 
 // The code-generated Score Floor marker (applyDigestFloor in index.ts,
 // lines ~2599-2633) — deterministic code, not an LLM claim. When present,
@@ -180,7 +187,21 @@ export function classifyGate(gateText: string, dimensionMarks?: Record<string, S
   return { kind: 'unrecognized', text };
 }
 
-function mapPointsToScore(points: number): number {
+// D3 (Buyer & Budget Alignment) has only 5 subtests (S1-S5), scored per
+// highest-priority segment, with its own distinct thresholds (0-1→0, 2-3→1,
+// 4-5→2) — genuinely different from every other dimension's /6 scale.
+// IMPORTANT: this must be keyed off dimensionNumber, not the raw effective
+// denominator — D7's optional R5 mark can also legitimately be NA, dropping
+// ITS effective denominator to 5 too, but D7 must keep the standard
+// /6-shaped thresholds (0-2→0,3-4→1,5-6→2) even then. A denominator-value
+// check alone would wrongly apply D3's thresholds to that D7 case.
+// See index.ts D3's MANDATORY SCORING PROCEDURE.
+function mapPointsToScore(points: number, dimensionNumber: number): number {
+  if (dimensionNumber === 3) {
+    if (points >= 4) return 2;
+    if (points >= 2) return 1;
+    return 0;
+  }
   if (points >= 5) return 2;
   if (points >= 3) return 1;
   return 0;
@@ -222,7 +243,7 @@ export function correctDimensionScore(rationale: string, expectedDimensionNumber
     effectiveDenominator = expectedDenominator;
   }
 
-  const baseMappedScore = mapPointsToScore(effectivePts);
+  const baseMappedScore = mapPointsToScore(effectivePts, expectedDimensionNumber);
 
   // The Score Floor guardrail (applyDigestFloor in index.ts) is
   // deterministic code, not an LLM claim — when its marker is present,
