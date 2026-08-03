@@ -1,6 +1,6 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { correctDimensionScore, AUDITED_DIMENSION_NUMBER_BY_NAME } from "./rubric-audit.ts";
+import { correctDimensionScore, AUDITED_DIMENSION_NUMBER_BY_NAME, computeEvidenceQuality } from "./rubric-audit.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -30,7 +30,7 @@ interface AnalyzeRequest {
 // Deno EdgeRuntime type for background processing
 declare const EdgeRuntime: { waitUntil: (p: Promise<unknown>) => void };
 
-const ANALYSIS_VERSION = '2026-08-03-pipeline-v42';
+const ANALYSIS_VERSION = '2026-08-03-pipeline-v43';
 
 const COMPANY_PROFILE_PROMPT = `You are an expert business analyst. Analyze the following website content and extract a company profile.
 
@@ -2953,18 +2953,12 @@ ${truncatedContent}`;
         dim.scoreCorrected = false;
       }
 
-      // Evidence Quality Flag: unverified > flagged > verified.
-      if (result.auditParseFailed || result.evidenceBlockMissing) {
-        dim.evidenceQuality = 'unverified';
-      } else if (
-        result.scoreWasCorrected ||
-        result.correctionReason === 'unrecognized-gate-not-corrected' ||
-        (dim.confidence ?? 0) < 0.45
-      ) {
-        dim.evidenceQuality = 'flagged';
-      } else {
-        dim.evidenceQuality = 'verified';
-      }
+      // Evidence Quality Flag: unverified > flagged > verified. Logic lives
+      // in rubric-audit.ts (computeEvidenceQuality) as of Entry 071 — it
+      // used to be inlined here, untested by the vitest suite since this
+      // file is Deno-only. See that function's comment for the
+      // floating-point confidence-threshold rationale.
+      dim.evidenceQuality = computeEvidenceQuality(result, dim.confidence);
     }
 
     if (rubricCorrections.length > 0) {

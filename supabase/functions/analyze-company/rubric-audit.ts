@@ -167,7 +167,17 @@ export function parseAuditBlock(rationale: string): AuditBlock | null {
 export function classifyGate(gateText: string, dimensionMarks?: Record<string, SubtestMark>): GateClass {
   const text = gateText.trim();
 
-  if (/^none$/i.test(text) || text.length === 0) {
+  // Entry 071: was anchored to match ONLY the exact string "none" — but the
+  // D3 MANDATORY SCORING PROCEDURE (Entry 068) explicitly instructs the LLM
+  // to write "gate=none, aggregated across N segments" whenever cross-
+  // segment aggregation changes the reported score from what the highest-
+  // priority segment's own points would map to. That phrasing legitimately
+  // starts with "none" but never matched the exact-string check, so a
+  // correctly-behaving D3 response following its own prompt's instructions
+  // fell through to 'unrecognized' every time aggregation actually mattered
+  // — caught via hand-verification of a live v42 semrush.com rescan.
+  // \b after "none" still rejects unrelated words like "nonexistent".
+  if (/^none\b/i.test(text) || text.length === 0) {
     return { kind: 'none' };
   }
 
@@ -372,4 +382,40 @@ export function correctDimensionScore(rationale: string, expectedDimensionNumber
     gateClass,
     gateText: parsed.gateText,
   };
+}
+
+export type EvidenceQuality = 'verified' | 'flagged' | 'unverified';
+
+// Confidence is computed upstream (index.ts) as an average of several
+// subtest reliability values, which routinely lands one float ULP off its
+// intended 2-decimal value under IEEE-754 (e.g. 0.44999999999999996
+// instead of 0.45, 0.6500000000000001 instead of 0.65) — confirmed via a
+// live v42 rescan, Entry 071. A strict "< 0.45" comparison wrongly flags a
+// confidence the prompt's own labels intend as the floor of "Medium"
+// (0.45-0.74) as if it were "Low" (<0.45).
+const CONFIDENCE_FLOAT_EPSILON = 1e-9;
+const LOW_CONFIDENCE_THRESHOLD = 0.45;
+
+/**
+ * Decides the evidenceQuality flag for a dimension from its correction
+ * result and declared confidence. Extracted from index.ts (Entry 071) so
+ * this logic — previously untested Deno-only code — gets real unit test
+ * coverage; it was living directly in the edge function's post-processing
+ * loop with no vitest path exercising it at all.
+ */
+export function computeEvidenceQuality(
+  result: Pick<CorrectionResult, 'auditParseFailed' | 'evidenceBlockMissing' | 'scoreWasCorrected' | 'correctionReason'>,
+  confidence: number | undefined,
+): EvidenceQuality {
+  if (result.auditParseFailed || result.evidenceBlockMissing) {
+    return 'unverified';
+  }
+  if (
+    result.scoreWasCorrected ||
+    result.correctionReason === 'unrecognized-gate-not-corrected' ||
+    (confidence ?? 0) < LOW_CONFIDENCE_THRESHOLD - CONFIDENCE_FLOAT_EPSILON
+  ) {
+    return 'flagged';
+  }
+  return 'verified';
 }

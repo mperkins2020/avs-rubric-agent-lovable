@@ -6,6 +6,7 @@ import {
   parseAuditBlock,
   classifyGate,
   correctDimensionScore,
+  computeEvidenceQuality,
   AUDITED_DIMENSION_NAMES,
 } from './rubric-audit.ts';
 
@@ -87,6 +88,20 @@ describe('classifyGate', () => {
     // is exactly why this regression test exists now.
     const marks = { NS1: 'P' as const, NS2: 'P' as const, NS3: 'F' as const, NS4: 'P' as const, NS5: 'P' as const, NS6: 'F' as const };
     expect(classifyGate('NS3 gate', marks)).toEqual({ kind: 'cap', capValue: 1, defaulted: true });
+  });
+
+  it('classifies "none, aggregated across N segments" as none, not unrecognized (Entry 071 — D3\'s own prompt-mandated phrasing)', () => {
+    // D3's MANDATORY SCORING PROCEDURE (Entry 068) explicitly instructs the
+    // LLM to write "gate=none, aggregated across N segments" whenever
+    // cross-segment aggregation changes the reported score — a correctly
+    // behaving response following its own prompt fell through to
+    // 'unrecognized' every time, because the old check only matched the
+    // exact string "none". Caught via a live v42 semrush.com rescan.
+    expect(classifyGate('none, aggregated across 3 segments')).toEqual({ kind: 'none' });
+  });
+
+  it('does not let the broadened "none" pattern accidentally match unrelated words', () => {
+    expect(classifyGate('nonexistent policy').kind).toBe('unrecognized');
   });
 
   it('classifies the D6 primary_unit_name hard-zero gate', () => {
@@ -485,5 +500,56 @@ describe('correctDimensionScore — Entry 070 regression (real v41 semrush.com D
     expect(result.correctedScore).toBe(1);
     expect(result.scoreWasCorrected).toBe(false);
     expect(result.correctionReason).not.toBe('unrecognized-gate-not-corrected');
+  });
+});
+
+describe('computeEvidenceQuality (Entry 071 — extracted from previously-untested index.ts logic)', () => {
+  const baseResult = {
+    auditParseFailed: false,
+    evidenceBlockMissing: false,
+    scoreWasCorrected: false,
+    correctionReason: 'none' as const,
+  };
+
+  it('returns unverified when the audit block failed to parse', () => {
+    expect(computeEvidenceQuality({ ...baseResult, auditParseFailed: true }, 0.65)).toBe('unverified');
+  });
+
+  it('returns unverified when the evidence block is missing, even with high confidence', () => {
+    expect(computeEvidenceQuality({ ...baseResult, evidenceBlockMissing: true }, 0.9)).toBe('unverified');
+  });
+
+  it('returns flagged when the score was corrected', () => {
+    expect(computeEvidenceQuality({ ...baseResult, scoreWasCorrected: true }, 0.65)).toBe('flagged');
+  });
+
+  it('returns flagged when the gate was unrecognized', () => {
+    expect(
+      computeEvidenceQuality({ ...baseResult, correctionReason: 'unrecognized-gate-not-corrected' }, 0.65),
+    ).toBe('flagged');
+  });
+
+  it('returns flagged for genuinely low confidence (0.30)', () => {
+    expect(computeEvidenceQuality(baseResult, 0.30000000000000004)).toBe('flagged');
+  });
+
+  it('returns verified for clearly medium/high confidence (0.65)', () => {
+    expect(computeEvidenceQuality(baseResult, 0.6500000000000001)).toBe('verified');
+  });
+
+  it('REGRESSION (Entry 071): does not flag a confidence that floating-point-rounds to exactly 0.45 (real v42 semrush.com value)', () => {
+    // This exact float — 0.44999999999999996 — was produced by a live scan
+    // and wrongly triggered "flagged" under the old strict "< 0.45" check,
+    // even though the prompt's own confidence labels treat 0.45 as the
+    // floor of "Medium", not "Low".
+    expect(computeEvidenceQuality(baseResult, 0.44999999999999996)).toBe('verified');
+  });
+
+  it('still correctly flags a confidence that is genuinely, meaningfully below 0.45', () => {
+    expect(computeEvidenceQuality(baseResult, 0.44)).toBe('flagged');
+  });
+
+  it('treats a missing confidence value as 0 (flagged), not as passing', () => {
+    expect(computeEvidenceQuality(baseResult, undefined)).toBe('flagged');
   });
 });

@@ -4,7 +4,7 @@
 **Usage:** When a report produces a questionable result, log it here. Run `Scan the debug log for recurring patterns` periodically to surface systemic issues.
 **Related:** See ENGINE_DEBUG_HISTORY.md for backfilled history from git.
 
-**Entries:** 70 | **Last updated:** August 3, 2026
+**Entries:** 71 | **Last updated:** August 3, 2026
 
 ---
 
@@ -31,6 +31,38 @@
 <!-- Newest first. To add an entry, copy the template below and fill it in. -->
 
 <!-- Next entry goes here -->
+
+---
+
+### Entry 071 — August 3, 2026
+
+| Field | Value |
+|-------|-------|
+| Company | Semrush (semrush.com) — found during v42 verification, but both bugs are systemic |
+| Version | 2026-08-03-pipeline-v42 (bugs present); fixed in 2026-08-03-pipeline-v43 |
+| Dimension | D3 specifically (gate-text bug); all 8 dimensions (confidence-threshold bug) |
+| Subtest(s) | Gate classification for D3's own aggregation-note phrasing; the evidenceQuality confidence check |
+| Root Cause | Two independent bugs, both found by hand-verifying the same v42 rescan requested to confirm Entry 070's fix |
+| Caught By | Hand-verification of a live v42 rescan (Michelle + Claude Code, 2026-08-03) — the same discipline that caught Entry 070 an hour earlier, applied again to the very next verification pass |
+| Status | fix_specified — deployed as part of this entry, verified via 11 new unit tests before commit |
+
+**Bug 1 — D3's own prompt instruction produces gate text its own parser doesn't recognize.**
+
+Entry 068's D3 MANDATORY SCORING PROCEDURE instructs the LLM: "if aggregation across multiple segments changes the score from what the highest-priority segment's own points would map to on their own, note this explicitly in the gate field (e.g. `gate=none, aggregated across N segments`)." `classifyGate()`'s none-check was `/^none$/i` — anchored to match *only* the exact string "none". A correctly-behaving D3 response following its own prompt's instructions produced `gate=none, aggregated across 3 segments`, which fell through every classification rule to `unrecognized`, incorrectly flagging a dimension with no actual problem. Self-inflicted by Entry 068's own prompt design, not a pre-existing gap.
+
+Fix: broadened the none-check from `/^none$/i` to `/^none\b/i` — matches "none" as a complete leading word (word-boundary-terminated), so "none, aggregated across N segments" now correctly classifies as `{ kind: 'none' }`, while still correctly rejecting unrelated text like "nonexistent policy" (no boundary exists between "none" and "xistent").
+
+**Bug 2 — floating-point noise in confidence values wrongly triggers the low-confidence flag.**
+
+Confidence is computed upstream as an average of several subtest reliability values. Under IEEE-754, this routinely lands one float ULP off its intended 2-decimal value — the same live rescan produced `confidence: 0.44999999999999996` (intended: 0.45) on two separate dimensions, and `confidence: 0.6500000000000001` (intended: 0.65) elsewhere in the same response. The evidenceQuality logic's `< 0.45` check is a strict inequality, so a confidence arithmetically meant to be exactly 0.45 — which the prompt's own confidence labels place at the *floor* of "Medium" (0.45-0.74), not "Low" (<0.45) — was wrongly flagged. Confirmed systemic: this exact float value has appeared repeatedly across many companies/dimensions throughout this whole QA cycle, not just this one instance.
+
+Fix: subtract a small epsilon (`1e-9`) from the threshold before comparing, so values that round to 0.45 are treated as 0.45. Does not affect any actual dimension SCORE — only the `verified`/`flagged` quality label.
+
+**Process finding, not a bug:** the confidence-threshold logic was living directly in `index.ts`'s post-processing loop — Deno-only code with zero vitest coverage, unlike the rest of the corrector which lives in the dual-importable `rubric-audit.ts`. Extracted it into a new exported `computeEvidenceQuality()` function in `rubric-audit.ts` specifically so this class of logic gets real test coverage going forward, rather than patching it inline again.
+
+**Combined effect on the verification run that found these:** the v42 semrush.com rescan (Entry 070's fix already verified working — D8 correction fired cleanly, no `unrecognized-gate-not-corrected` recurrence) showed 7 of 8 dimensions as `flagged` instead of the mostly-`verified` v41 result, which is what triggered this investigation. After both fixes, re-verification is needed to confirm the flagged count drops back down appropriately — D3's flag should clear from the gate fix, and D1/D4/D5/D6's near-0.45 confidence flags should clear from the epsilon fix, while D7 (genuinely low confidence, 0.30) and D8 (a real, correct correction) should remain flagged.
+
+**Pattern Tag:** `self-inflicted-prompt-parser-mismatch`, `d3-aggregation-gate-text`, `floating-point-confidence-threshold`, `untested-deno-only-logic`, `caught-by-live-verification-not-unit-tests`
 
 ---
 
