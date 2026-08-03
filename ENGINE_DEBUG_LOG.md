@@ -4,7 +4,7 @@
 **Usage:** When a report produces a questionable result, log it here. Run `Scan the debug log for recurring patterns` periodically to surface systemic issues.
 **Related:** See ENGINE_DEBUG_HISTORY.md for backfilled history from git.
 
-**Entries:** 66 | **Last updated:** August 2, 2026
+**Entries:** 67 | **Last updated:** August 3, 2026
 
 ---
 
@@ -19,7 +19,7 @@
 | confidence_miscalc | 0 | — |
 | prompt_drift | 4 | ICP and Job Clarity (D2); D6/D8 evidence-block leak (Entry 060); D7 audit arithmetic error (Entry 064); D5-D8 evidence block missing across 4 whole companies (Entry 065) |
 | evidence_snippet_selection | 2 | ICP (D2), Value Unit (D4), Overages (D6), Safety Rails (D7), Evidence Coverage (D8); same-page-different-read on D4 (Entry 062) |
-| pipeline_miss | 26 | Value Unit, Cost Driver Mapping, Safety/Trust, Overages & Risk, URL filter; forced-page resolution gap (Entry 059); session-load evidence degradation (Entry 061); product-surface mismatch (Entry 063) |
+| pipeline_miss | 27 | Value Unit, Cost Driver Mapping, Safety/Trust, Overages & Risk, URL filter; forced-page resolution gap (Entry 059); session-load evidence degradation (Entry 061); product-surface mismatch (Entry 063); blog-content misclassified as pricing evidence (Entry 067) |
 | contamination | 13 | Pricing Transparency, Enterprise/Compliance (D7/D8) |
 | calibration | 3 | Value unit (D4), ICP and Job Clarity (D2), Safety Rails (D8) |
 | other | 4 | Architecture/merge-level (Entries 056–058): instrument drift, single-pass classification gating, pass-1 narrative bias |
@@ -31,6 +31,36 @@
 <!-- Newest first. To add an entry, copy the template below and fill it in. -->
 
 <!-- Next entry goes here -->
+
+---
+
+### Entry 067 — August 3, 2026
+
+| Field | Value |
+|-------|-------|
+| Company | Peec AI (peec.ai) |
+| Version | 2026-08-02-pipeline-v38 |
+| Dimension | All — evidence-set contamination; most visibly D1–D4 (unexplained score drop) and D7 (rubric-audit corrector fired correctly, but on a decoy page's audit block, not the real pricing page) |
+| Subtest(s) | URL discovery/filtering — `priorityPatterns` substring false-positive, compounded by a missing content-path exclusion |
+| V1 Score | v37 baseline: 10/16 — evidence set included real `/pricing` and `/pricing-agencies` |
+| V2 Score | v38 isolated rescan: 6/16 — evidence set contained no genuine `/pricing` page at all, only two blog/content-section decoys |
+| Root Cause | pipeline_miss — two compounding defects. (1) `/customer-io-test-site/` and `/mcp-use-cases/` are real, actively published content sections on peec.ai (blog articles, product use-case write-ups) with unusual path names that no existing exclusion pattern matched. `isShallowSameDomainPath()` grants blanket inclusion to any 1–3 segment same-domain path, so these consumed 7+ of 15 evidence slots on this scan alongside zero D4–D8 signal, the same dilution mechanism already logged for `/customers/*` pages (line ~1805 of this log). (2) Two of those articles' slugs — "pricing-update" and "pricing-fix" — coincidentally contain the substring "pricing", which matched `priorityPatterns`' `/\/pricing\b/i` (the `\b` word boundary fires on the following hyphen, not just on a path separator) and scored them at 1550, high enough to outrank ordinary pages and get pulled into the evidence set as if they were real pricing documentation. In this specific run, Firecrawl's `/map` also did not surface the genuine `/pricing` page at all (a discovery-layer miss consistent with Entry 059/061's established pattern), so with real pricing entirely absent from `allDiscovered`, the two decoys became the only pricing-adjacent evidence the LLM had to work with. |
+| Caught By | Manual QA (Michelle + Claude Code) — the user flagged the v37→v38 score drop (10→6) as suspicious rather than accepting it as a genuine correction. SQL export of `pagesUsed` showed `["https://peec.ai/customer-io-test-site/pricing-update", "https://peec.ai/mcp-use-cases/pricing-fix", "https://peec.ai/pricing-agencies", "https://peec.ai"]` — no `/pricing` in the set. `npm run filter` and `npm run preview-urls` confirmed the scoring mechanics directly rather than inferring them from the rationale text alone. |
+| Status | fix_specified — deployed as part of this entry; verified via `npm run filter` (decoys now excluded, `/pricing` and `/pricing-agencies` still included) and `npm run preview-urls` (evidence slots now filled by real `/product/*` pages instead of blog content) before commit |
+
+**Root Cause Detail:**
+
+The rubric-audit corrector (Entries 065/066, live since v38) worked exactly as designed on this scan — it caught a genuine cap-misapplied-as-floor case on D7 (declared 1 → corrected 0) and correctly left D8 alone (self-consistent). The corrector cannot be faulted for this result: it audits whatever evidence the scan handed it, and the scan hallucinated coherent-looking pricing evidence out of blog posts. This is a distinct, upstream failure mode from anything the corrector is designed to catch — garbage evidence in, mathematically-correct-but-meaningless audit out.
+
+Two separate mechanisms compounded:
+1. **Missing content-path exclusion.** No exclusion pattern matched `/customer-io-test-site/` or `/mcp-use-cases/`, both of which are literal path prefixes peec.ai uses for real content (guides, benchmark reports, product use-case pages). `/customer-io-test-site/` appears to be generated by Customer.io's content-hosting product — despite the misleading "test-site" name, it is not a QA artifact; it hosts genuinely published articles. `/mcp-use-cases/` is peec.ai's own product feature documentation (use cases for their Claude/Cursor/n8n MCP integration).
+2. **`priorityPatterns` substring false-positive.** `/\/pricing\b/i` matches any occurrence of "/pricing" followed by a non-word character — including a hyphen. This is the same bug class already documented and fixed once before for `/\/developers?\b/i` incorrectly matching `developers.company.com` subdomains (see the comment at scrape-website/index.ts ~line 277) — that fix was an exclusion added ahead of the priority check, not a rewrite of the priority pattern itself, because the general pattern is relied upon elsewhere for legitimately-hyphenated pricing pages (e.g. peec.ai's own `/pricing-agencies`, which must keep matching).
+
+**Resolution:** Fixed by adding two new `exclusionPatterns` entries — `/\/customer-io-test-site\//i` and `/\/mcp-use-cases\//i` — in `supabase/functions/scrape-website/index.ts`, mirrored in `tools/scraper-dev/filter-logic.ts`. Deliberately did **not** touch the general `/\/pricing\b/i` pattern, to avoid regressing legitimately-matching hyphenated pricing pages across other companies already scored under it. `ANALYSIS_VERSION` bumped to `2026-08-03-pipeline-v39`. `filter-logic-drift.test.ts` passes.
+
+**Open question, not addressed by this fix:** the `\b`-boundary substring-match risk is generic — any company with a blog post literally titled with "pricing" in its slug, under a path this exclusion list doesn't yet know about, would trigger the same false positive. This fix closes the two confirmed instances; it does not close the underlying pattern class. Worth monitoring for recurrence on other companies before considering a more systemic fix (e.g., requiring `/pricing` to be a full path segment rather than any substring match).
+
+**Pattern Tag:** `false-positive-pricing-match`, `content-path-evidence-dilution`, `priority-pattern-substring-bug`, `garbage-evidence-valid-audit`
 
 ---
 

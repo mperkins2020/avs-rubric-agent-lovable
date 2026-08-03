@@ -293,6 +293,18 @@ const exclusionPatterns = [
   /\/[^/]+-lectures?\b$/i,
   /\/[^/]+-playlist\//i,
   /\/[^/]+-playlist\b$/i,
+  // Customer.io-hosted blog/content pages — Customer.io's content hosting product
+  // publishes articles under this literal path prefix. Despite the "test-site" name,
+  // it hosts real published blog content (guides, benchmark reports), not a QA artifact.
+  // Discovered via peec.ai (Entry 067, 2026-08-03): 7 of 15 evidence slots were consumed
+  // by blog articles here, and one slug ("pricing-update") coincidentally matched
+  // priorityPatterns' /\/pricing\b/i, getting scored as real pricing evidence when it
+  // was actually a blog post about a pricing announcement.
+  /\/customer-io-test-site\//i,
+  // peec.ai's MCP integration use-case pages — product use-case descriptions, not pricing
+  // or trust documentation. One slug ("pricing-fix") coincidentally matched the pricing
+  // priority pattern the same way as above (Entry 067).
+  /\/mcp-use-cases\//i,
 ];
 
 const fullContentPatterns = [
