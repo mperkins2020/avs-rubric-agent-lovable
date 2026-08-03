@@ -4,7 +4,7 @@
 **Usage:** When a report produces a questionable result, log it here. Run `Scan the debug log for recurring patterns` periodically to surface systemic issues.
 **Related:** See ENGINE_DEBUG_HISTORY.md for backfilled history from git.
 
-**Entries:** 69 | **Last updated:** August 3, 2026
+**Entries:** 70 | **Last updated:** August 3, 2026
 
 ---
 
@@ -31,6 +31,34 @@
 <!-- Newest first. To add an entry, copy the template below and fill it in. -->
 
 <!-- Next entry goes here -->
+
+---
+
+### Entry 070 — August 3, 2026
+
+| Field | Value |
+|-------|-------|
+| Company | Semrush (semrush.com) — found during v41 verification, but the underlying bug is systemic (affects D1 on any company) |
+| Version | 2026-08-03-pipeline-v41 (bug present); fixed in 2026-08-03-pipeline-v42 |
+| Dimension | D1 (Product North Star) specifically — the only dimension using a two-letter subtest prefix |
+| Subtest(s) | Gate classification for abbreviated gate citations (e.g. "NS3 gate") |
+| Root Cause | prompt_drift / incomplete-fix — Entry 068 extended the audit-block *parser* regex to accept 1-2 letter subtest prefixes (for D1's "NS" prefix) but missed applying the identical fix to the separate *gate-classification* regex in `classifyGate()` |
+| Caught By | Hand-verification of a live v41 rescan (Michelle + Claude Code, 2026-08-03) — deliberately re-checking the deployed corrector's math against raw production data rather than trusting unit tests alone, immediately after Entries 068/069 deployed |
+| Status | fix_specified — deployed as part of this entry, verified via 2 new regression tests before commit |
+
+**Root Cause Detail:**
+
+Entry 068 correctly identified that `AUDIT_BLOCK_PATTERN` and `MARK_PATTERN` needed to accept 1-2 letter subtest prefixes to parse D1's `NS1`-`NS6` marks (versus D2/D3/D4/D5-D8's single-letter prefixes). That fix was applied and tested. `classifyGate()`'s separate abbreviated-label-matching regex (`\b([A-Z]\d)\b`, used to recognize gate text like "T4" or "T4 fails for the highest-priority segment" as shorthand for "cap at 1") needed the exact same extension and did not get it — a straightforward oversight, not a different design problem.
+
+A live v41 rescan of semrush.com produced D1 gate text `"NS3 gate"` (NS3 having failed). Tracing through `classifyGate()`: the text doesn't match `none`, doesn't match the explicit hard-zero or cap-with-number patterns, doesn't contain the bare word "cap", doesn't match the hard-zero fallback (no "missing" + overage_behavior/primary_unit_name), and the label-match regex `\b([A-Z]\d)\b` cannot match "NS3" at all — a word boundary is required immediately before the captured letter, but the transition from "N" to "S" inside "NS3" is word-to-word, not a boundary, so neither "N" nor "S3" can match. The gate fell through to `{ kind: 'unrecognized', text }`, which `correctDimensionScore` handles by passing the declared score through unchanged and setting `correctionReason: 'unrecognized-gate-not-corrected'`.
+
+**In this specific instance, no wrong score reached the report.** By coincidence, the raw audit math (4 actual P marks — the LLM's own declared `pts=3/6` was itself wrong, but the pre-existing denominator-recompute logic caught that separately and correctly — mapping to score 1) and the intended cap (also 1, since NS3 failing should cap at 1) landed on the same value. The system's own safety net also worked as designed: `evidenceQuality` was correctly set to `flagged` (not silently `verified`) because `unrecognized-gate-not-corrected` is one of the flag conditions — the uncertainty was surfaced, not hidden. But the bug is real and could produce a genuinely wrong, uncorrected score in a scenario where the raw points map above the intended cap (e.g. 5-6 points with NS3 failing — correct answer is capped at 1, but with the bug the corrector would pass through whatever the LLM declared, which could be a wrong 2).
+
+**Resolution:** Extended `classifyGate()`'s label-match regex from `\b([A-Z]\d)\b` to `\b([A-Z]{1,2}\d)\b`, identical to the fix already applied to the audit-block parser in Entry 068. Added a regression test reproducing the exact "NS3 gate" classification, plus an end-to-end test using the real production rationale text verbatim.
+
+**Process note:** this bug survived Entry 068's original test suite (49 tests, all passing) because none of those tests exercised D1's abbreviated-gate-citation path specifically — the D1 test coverage added in Entry 068 used explicit gate phrasing ("final score = 0", "cap score at 1") rather than the abbreviated "NS3 gate" shorthand real production output turned out to use. This is the second time this cycle a defect was caught only by hand-verifying live production data after deployment rather than by pre-deployment unit tests (the first being the D1-D4/evidence-block scope discovery itself, Entries 065/068/069) — reinforces that a green test suite confirms the tests you wrote are internally consistent, not that they cover what production actually does. Continue the practice of hand-verifying at least one live rescan's raw audit-block math after any corrector change, not just running the existing suite.
+
+**Pattern Tag:** `two-letter-prefix-gap`, `incomplete-fix`, `gate-classification-regex`, `caught-by-live-verification-not-unit-tests`, `d1-ns-prefix`
 
 ---
 

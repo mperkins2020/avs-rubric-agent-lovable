@@ -214,8 +214,15 @@ export function classifyGate(gateText: string, dimensionMarks?: Record<string, S
   // missing overage_behavior) caps at 1 — there is no other gate semantics
   // in the spec — so any abbreviated reference to a failing subtest is
   // unambiguous shorthand for "cap at 1", not a guess.
+  // Label pattern allows 1-2 letters (Entry 070) — D1 uses the two-letter
+  // "NS" prefix (NS1-NS6); a single-letter-only pattern here caused a real
+  // production miss ("NS3 gate" fell through to 'unrecognized' instead of
+  // being read as a cap-at-1), confirmed via hand-verification of a live
+  // v41 semrush.com rescan. The audit-block parser (AUDIT_BLOCK_PATTERN,
+  // MARK_PATTERN) already got this same fix in Entry 068; this regex was
+  // missed at the time.
   if (dimensionMarks) {
-    const labelMatch = text.match(/\b([A-Z]\d)\b/);
+    const labelMatch = text.match(/\b([A-Z]{1,2}\d)\b/);
     if (labelMatch && labelMatch[1] in dimensionMarks) {
       return { kind: 'cap', capValue: 1, defaulted: true };
     }

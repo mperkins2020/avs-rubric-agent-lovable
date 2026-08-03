@@ -78,6 +78,17 @@ describe('classifyGate', () => {
     });
   });
 
+  it('classifies a bare TWO-LETTER subtest label as an implicit cap at 1 (Entry 070 — real v41 semrush.com production case)', () => {
+    // The label-match regex originally only accepted single-letter+digit
+    // labels (T4, S3, C1...), missing D1's two-letter "NS" prefix. A live
+    // v41 rescan produced gate text "NS3 gate" which fell through to
+    // 'unrecognized' instead of being read as a cap-at-1 — caught via
+    // hand-verification of the raw audit block, not by a unit test, which
+    // is exactly why this regression test exists now.
+    const marks = { NS1: 'P' as const, NS2: 'P' as const, NS3: 'F' as const, NS4: 'P' as const, NS5: 'P' as const, NS6: 'F' as const };
+    expect(classifyGate('NS3 gate', marks)).toEqual({ kind: 'cap', capValue: 1, defaulted: true });
+  });
+
   it('classifies the D6 primary_unit_name hard-zero gate', () => {
     expect(classifyGate('packaging.primary_unit_name missing → Score 0')).toEqual({ kind: 'hard-zero' });
   });
@@ -452,5 +463,27 @@ describe('inline-citation format (Entry 069 — merged audit+evidence bracket)',
     expect(parsed).not.toBeNull();
     expect(parsed?.citations.NS1).toBe('customer_done_state@/pricing');
     expect(parsed?.hasEvidenceBlock).toBe(true);
+  });
+});
+
+describe('correctDimensionScore — Entry 070 regression (real v41 semrush.com D1 rationale)', () => {
+  it('correctly classifies the NS3 gate on the actual production text instead of falling through to unrecognized', () => {
+    // Pulled verbatim from a live v41 scan, 2026-08-03. Note the LLM also
+    // miscounted its own points (declared pts=3/6, but NS1/NS2/NS4/NS5 are
+    // all P — actually 4 passes) — the pre-existing denominator-recompute
+    // logic (unrelated to this entry) already handles that correctly and
+    // is exercised here too.
+    const rationale =
+      "[D1 audit: NS1=P(north_star.customer_done_state@https://www.semrush.com/plans) NS2=P(Tier C: jtbd[0].inputs[]@user_input + jtbd[0].outputs[]@user_input + icp_profile.top_constraints[]@user_input) NS3=F NS4=P(observable_signals[0].excerpt@https://www.semrush.com/plans) NS5=P(north_star.primary_outcome_metric_name@user_input) NS6=F | pts=3/6 | gate=NS3 gate | score=1] Semrush clearly states its primary outcome...";
+    const result = correctDimensionScore(rationale, 1);
+    expect(result.auditParseFailed).toBe(false);
+    expect(result.gateClass).toEqual({ kind: 'cap', capValue: 1, defaulted: true });
+    // 4 actual passes (denominator-corrected) maps to 1, capped at 1 by
+    // NS3 — non-binding cap, so declared score of 1 is correct and no
+    // correction fires, but the gate must be classified correctly to
+    // reach that conclusion rather than accidentally agreeing by luck.
+    expect(result.correctedScore).toBe(1);
+    expect(result.scoreWasCorrected).toBe(false);
+    expect(result.correctionReason).not.toBe('unrecognized-gate-not-corrected');
   });
 });
