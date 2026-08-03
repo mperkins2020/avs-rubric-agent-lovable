@@ -1,11 +1,26 @@
-// Rubric Audit Validator — server-side correction layer for D5-D8 scoring.
+// Rubric Audit Validator — server-side correction layer for D1-D8 scoring.
 //
 // The RUBRIC_SCORING_PROMPT (index.ts) instructs the LLM to embed a
-// machine-readable "[D_ audit: ...]" + "[D_ evidence: ...]" block in each
-// D5-D8 dimension's rationale. Nothing previously verified that the LLM's
-// declared score actually matches its own audit block's arithmetic — see
-// ENGINE_DEBUG_LOG.md Entries 055, 064, 065, 066. This module parses those
-// blocks and recomputes the correct score deterministically.
+// machine-readable "[D_ audit: ...]" block in each dimension's rationale,
+// with each PASS mark's supporting citation attached inline in parentheses
+// (e.g. "C1=P(tasks@/pricing)") rather than in a separate evidence bracket.
+// Nothing previously verified that the LLM's declared score actually
+// matches its own audit block's arithmetic — see ENGINE_DEBUG_LOG.md
+// Entries 055, 064, 065, 066. This module parses those blocks and
+// recomputes the correct score deterministically.
+//
+// Format history (Entry 069, 2026-08-03): originally the prompt asked for
+// TWO brackets per dimension — "[D_ audit: ...]" then a separate
+// "[D_ evidence: field←page + ...]" line. Real-world data showed the LLM
+// reliably produced the first bracket but essentially never produced the
+// second (~0% compliance across every sample checked this cycle, Entries
+// 065/068). Merged into ONE bracket with inline per-mark citations, betting
+// that extending an already-high-compliance format beats asking for a
+// second, apparently-easy-to-skip one. The parser below accepts BOTH the
+// new inline format and the old separate-bracket format as satisfying the
+// evidence requirement, so a stray old-format response (or historical
+// stored rationale, though nothing re-parses that after the fact) doesn't
+// get wrongly flagged.
 //
 // Pure, dependency-free TS (no Deno-only APIs) so it's directly importable
 // by both index.ts (Deno) and vitest (Node) without a mirror/drift setup.
@@ -15,6 +30,8 @@ export type SubtestMark = 'P' | 'F' | 'NA';
 export interface AuditBlock {
   dimensionNumber: number;
   marks: Record<string, SubtestMark>;
+  /** Inline per-mark citation text, e.g. marks.C1='P' + citations.C1='tasks@/pricing'. Only present for marks with a non-empty parenthetical. */
+  citations: Record<string, string>;
   declaredPts: number;
   declaredDenominator: number;
   gateText: string;
@@ -72,15 +89,17 @@ export const AUDITED_DIMENSION_NUMBER_BY_NAME: Record<string, number> = Object.f
   Object.entries(AUDITED_DIMENSION_NAMES).map(([num, name]) => [name, Number(num)]),
 );
 
-// Matches: "[D5 audit: C1=P C2=F ... | pts=4/6 | gate=<free text> | score=1]"
+// Matches: "[D5 audit: C1=P(tasks@/pricing) C2=F ... | pts=4/6 | gate=<free text> | score=1]"
 // Non-greedy gate capture stops at the literal "| score=" per the prompt's
 // own mandated tail format (identical across D1-D8, index.ts — D5-D8 use
 // single-letter subtest prefixes (C/P/R/T), D1 uses the two-letter "NS"
-// prefix (NS1-NS6, Entry 068), so the mark pattern allows 1-2 letters.
+// prefix (NS1-NS6, Entry 068), so the mark pattern allows 1-2 letters. Each
+// mark may carry an optional parenthesized inline citation (Entry 069) —
+// mandatory for PASS marks under the current prompt, absent for FAIL/NA.
 const AUDIT_BLOCK_PATTERN =
-  /\[D(\d)\s+audit:\s*((?:[A-Z]{1,2}\d\s*=\s*(?:P|F|NA)\s*)+)\|\s*pts\s*=\s*(\d+)\s*\/\s*(\d+)\s*\|\s*gate\s*=\s*(.*?)\s*\|\s*score\s*=\s*(\d+)\s*\]/i;
+  /\[D(\d)\s+audit:\s*((?:[A-Z]{1,2}\d\s*=\s*(?:P|F|NA)(?:\([^)]*\))?\s*)+)\|\s*pts\s*=\s*(\d+)\s*\/\s*(\d+)\s*\|\s*gate\s*=\s*(.*?)\s*\|\s*score\s*=\s*(\d+)\s*\]/i;
 
-const MARK_PATTERN = /([A-Z]{1,2}\d)\s*=\s*(P|F|NA)/g;
+const MARK_PATTERN = /([A-Z]{1,2}\d)\s*=\s*(P|F|NA)(?:\(([^)]*)\))?/g;
 
 // The code-generated Score Floor marker (applyDigestFloor in index.ts,
 // lines ~2599-2633) — deterministic code, not an LLM claim. When present,
@@ -99,17 +118,35 @@ export function parseAuditBlock(rationale: string): AuditBlock | null {
   const declaredScore = Number(match[6]);
 
   const marks: Record<string, SubtestMark> = {};
+  const citations: Record<string, string> = {};
   let markMatch: RegExpExecArray | null;
   const markRe = new RegExp(MARK_PATTERN.source, MARK_PATTERN.flags);
   while ((markMatch = markRe.exec(marksSpan)) !== null) {
     marks[markMatch[1]] = markMatch[2] as SubtestMark;
+    const citation = markMatch[3]?.trim();
+    if (citation) citations[markMatch[1]] = citation;
   }
 
-  const hasEvidenceBlock = new RegExp(`\\[D${dimensionNumber}\\s+evidence:`, 'i').test(rationale);
+  // Evidence requirement is satisfied by EITHER format:
+  // (a) new inline-citation format (Entry 069) — every PASS mark has a
+  //     non-empty parenthetical citation attached directly to it, or
+  // (b) old separate-bracket format — a standalone "[D_ evidence: ...]"
+  //     line exists elsewhere in the rationale (kept as a fallback in case
+  //     the LLM reverts to the old style, or for any transitional output).
+  // A PASS mark with no inline citation under format (a) is the exact
+  // "evidence entry is missing/none" INVALID case the prompt's own rule
+  // already describes — same standard as before, checked differently.
+  const passMarksWithoutCitation = Object.entries(marks).filter(
+    ([label, mark]) => mark === 'P' && !citations[label],
+  );
+  const hasInlineEvidence = passMarksWithoutCitation.length === 0;
+  const hasSeparateEvidenceBracket = new RegExp(`\\[D${dimensionNumber}\\s+evidence:`, 'i').test(rationale);
+  const hasEvidenceBlock = hasInlineEvidence || hasSeparateEvidenceBracket;
 
   return {
     dimensionNumber,
     marks,
+    citations,
     declaredPts,
     declaredDenominator,
     gateText,

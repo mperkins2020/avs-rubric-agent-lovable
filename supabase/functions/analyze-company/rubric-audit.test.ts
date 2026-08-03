@@ -390,3 +390,67 @@ describe('correctDimensionScore — D1-D4 (Entry 068 extension)', () => {
     expect(result.scoreWasCorrected).toBe(false);
   });
 });
+
+describe('inline-citation format (Entry 069 — merged audit+evidence bracket)', () => {
+  it('parses inline citations attached to PASS marks and populates the citations map', () => {
+    const rationale =
+      '[D5 audit: C1=P(tasks@/pricing + AI steps@/pricing) C2=F C3=P(Zap workflows@/pricing) C4=P($19.99/mo@/pricing) C5=P(pay-per-task@/pricing) C6=F | pts=4/6 | gate=none | score=1] CrewAI identifies cost drivers...';
+    const parsed = parseAuditBlock(rationale);
+    expect(parsed).not.toBeNull();
+    expect(parsed?.marks.C1).toBe('P');
+    expect(parsed?.citations.C1).toBe('tasks@/pricing + AI steps@/pricing');
+    expect(parsed?.citations.C3).toBe('Zap workflows@/pricing');
+    expect(parsed?.citations.C2).toBeUndefined(); // F marks carry no citation
+    expect(parsed?.hasEvidenceBlock).toBe(true);
+  });
+
+  it('flags hasEvidenceBlock=false when a PASS mark has no inline citation and no fallback bracket exists', () => {
+    const rationale =
+      '[D5 audit: C1=P C2=F C3=P(field@/pricing) C4=P C5=P C6=F | pts=4/6 | gate=none | score=1] Some prose with no evidence bracket at all.';
+    const parsed = parseAuditBlock(rationale);
+    expect(parsed).not.toBeNull();
+    // C1, C4 are P with no inline citation and no separate [D5 evidence:] bracket present
+    expect(parsed?.hasEvidenceBlock).toBe(false);
+  });
+
+  it('accepts the hyphenated seat-based override marker without breaking on nested parens', () => {
+    const rationale =
+      '[D5 audit: C1=P(auto-seat-based) C2=F C3=P(field@/pricing) C4=P(field@/pricing) C5=P(field@/pricing) C6=F | pts=4/6 | gate=none | score=1] Seat-based product.';
+    const parsed = parseAuditBlock(rationale);
+    expect(parsed).not.toBeNull();
+    expect(parsed?.citations.C1).toBe('auto-seat-based');
+    expect(parsed?.hasEvidenceBlock).toBe(true);
+  });
+
+  it('backward compat: a P mark with no inline citation is still satisfied by the OLD separate [D_ evidence:] bracket', () => {
+    const rationale =
+      '[D5 audit: C1=P C2=F C3=P C4=P C5=P C6=F | pts=4/6 | gate=none | score=1] [D5 evidence: C1←tasks@/pricing; C2←none; C3←field@/pricing; C4←field@/pricing; C5←field@/pricing; C6←none] Old-format response.';
+    const parsed = parseAuditBlock(rationale);
+    expect(parsed).not.toBeNull();
+    expect(parsed?.citations.C1).toBeUndefined(); // no inline citation
+    expect(parsed?.hasEvidenceBlock).toBe(true); // but satisfied by the old bracket
+  });
+
+  it('correctDimensionScore still validates score arithmetic correctly against inline-citation rationales (real CrewAI D5 case, no evidence bracket)', () => {
+    // Real production text (2026-08-03): audit block present, no separate
+    // evidence bracket at all — the exact Entry 065/069 failure mode this
+    // format change targets. Score arithmetic must still validate correctly
+    // regardless of whether the evidence requirement is satisfied.
+    const rationale =
+      "[D5 audit: C1=P C2=F C3=P C4=P C5=P C6=F | pts=4/6 | gate=none | score=1] CrewAI identifies 'workflow executions' and 'scale of deployments' as cost drivers, and the pricing page links these to tiers. However, detailed driver formulas and forecasting/visibility surfaces are not publicly documented.";
+    const result = correctDimensionScore(rationale, 5);
+    expect(result.auditParseFailed).toBe(false);
+    expect(result.correctedScore).toBe(1);
+    expect(result.scoreWasCorrected).toBe(false);
+    expect(result.evidenceBlockMissing).toBe(true); // no inline citations, no fallback bracket
+  });
+
+  it('D1 two-letter NS prefix works correctly with inline citations', () => {
+    const rationale =
+      '[D1 audit: NS1=P(customer_done_state@/pricing) NS2=F NS3=P(case study@/customers) NS4=P(workflow@/docs) NS5=P(no conflicts@/pricing) NS6=F | pts=4/6 | gate=none | score=1] North star rationale.';
+    const parsed = parseAuditBlock(rationale);
+    expect(parsed).not.toBeNull();
+    expect(parsed?.citations.NS1).toBe('customer_done_state@/pricing');
+    expect(parsed?.hasEvidenceBlock).toBe(true);
+  });
+});

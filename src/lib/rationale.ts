@@ -1,7 +1,11 @@
-// The scoring engine prefixes D5/D7 rationales with machine-readable audit
-// blocks — "[D5 audit: ...]" and "[D5 evidence: ...]" — used to force subtest
-// arithmetic and per-subtest evidence traceability (pipeline v30/v32).
-// These are QA artifacts, not customer-facing prose.
+// The scoring engine prefixes D1-D8 rationales with a machine-readable audit
+// block — "[D_ audit: ...]" — used to force subtest arithmetic and, as of
+// Entry 069 (pipeline v41), inline per-subtest evidence citations attached
+// directly to each PASS mark (e.g. "C1=P(tasks@/pricing)"). Historical
+// rationale text from before Entry 069 may still carry a separate
+// "[D_ evidence: ...]" bracket — the regex below matches both forms, so no
+// code change was needed for the format switch. These are QA artifacts, not
+// customer-facing prose.
 
 const AUDIT_BLOCK_RE = /\[D\d+\s+(?:audit|evidence):[^\]]*\]\s*/gi;
 

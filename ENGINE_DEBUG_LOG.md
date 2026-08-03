@@ -4,7 +4,7 @@
 **Usage:** When a report produces a questionable result, log it here. Run `Scan the debug log for recurring patterns` periodically to surface systemic issues.
 **Related:** See ENGINE_DEBUG_HISTORY.md for backfilled history from git.
 
-**Entries:** 68 | **Last updated:** August 3, 2026
+**Entries:** 69 | **Last updated:** August 3, 2026
 
 ---
 
@@ -17,7 +17,7 @@
 | evidence_gap | 0 | — |
 | gate_misfire | 1 | D7/D8 cap-gate-misapplied-as-floor across 6 companies (Entry 066) |
 | confidence_miscalc | 0 | — |
-| prompt_drift | 4 | ICP and Job Clarity (D2); D6/D8 evidence-block leak (Entry 060); D7 audit arithmetic error (Entry 064); D5-D8 evidence block missing across 4 whole companies (Entry 065) |
+| prompt_drift | 5 | ICP and Job Clarity (D2); D6/D8 evidence-block leak (Entry 060); D7 audit arithmetic error (Entry 064); D5-D8 evidence block missing, initially 4 companies (Entry 065), later found near-universal across every dimension/company checked this session — root cause (asking for 2 brackets per dimension instead of 1) FIXED in Entry 069, not yet re-verified against a live rescan |
 | evidence_snippet_selection | 2 | ICP (D2), Value Unit (D4), Overages (D6), Safety Rails (D7), Evidence Coverage (D8); same-page-different-read on D4 (Entry 062, confirmed a 3rd time on Semrush — see Entry 062 addendum). Root cause (D1-D4 had no mandatory audit-block procedure) FIXED in Entry 068 — not yet re-verified against a live rescan. |
 | pipeline_miss | 27 | Value Unit, Cost Driver Mapping, Safety/Trust, Overages & Risk, URL filter; forced-page resolution gap (Entry 059); session-load evidence degradation (Entry 061); product-surface mismatch (Entry 063); blog-content misclassified as pricing evidence (Entry 067) |
 | contamination | 13 | Pricing Transparency, Enterprise/Compliance (D7/D8) |
@@ -31,6 +31,49 @@
 <!-- Newest first. To add an entry, copy the template below and fill it in. -->
 
 <!-- Next entry goes here -->
+
+---
+
+### Entry 069 — August 3, 2026
+
+| Field | Value |
+|-------|-------|
+| Company | Systemic — engine/prompt change, not company-specific |
+| Version | 2026-08-03-pipeline-v41 |
+| Dimension | All 8 (D1-D8) |
+| Subtest(s) | The `[D_ evidence: ...]` citation requirement, step 6 of every MANDATORY SCORING PROCEDURE |
+| Root Cause | prompt_drift — near-zero LLM compliance with a two-bracket-per-dimension output requirement |
+| Status | fix_specified — deployed as part of this entry, verified via 6 new unit tests + full-suite regression before commit; NOT yet verified against a live rescan |
+
+**Root Cause Detail:**
+
+Entry 065 first documented "D5-D8 evidence block missing" as an occasional finding on 4 companies. This session's broader QA sweep (Marketing Intelligence full rescan, the Zapier individual-scan anomaly investigation, and a direct unambiguous raw-`rationale` pull for CrewAI's D5-D8) established the true scope: across every single sample checked this session — roughly 40+ dimension-scans spanning two categories — the LLM produced the mandated `[D_ audit: ...]` bracket (step 5 of the procedure) essentially every time, but the separate `[D_ evidence: field←page + ...]` bracket (step 6) essentially never. This is not an intermittent gap; it's a near-total compliance failure on one specific instruction embedded in an already-long, multi-step, per-dimension procedure repeated 8 times in a single prompt.
+
+The investigation initially suspected a corrector bug (a stray `rationale_evidence` field surfaced in one query result, appearing to show a well-formed evidence block that `evidenceBlockMissing: true` seemed to contradict). Traced to its source: that field did not exist anywhere in the codebase and was not a genuine stored value — a direct, unambiguous SQL pull of the raw `rationale` string (bypassing any derived/computed columns) confirmed the evidence bracket was genuinely absent from the field the corrector actually parses. The corrector was working correctly the whole time; the finding is real.
+
+**Resolution:** Merged the two mandated brackets into one. Instead of a compact audit line followed by a separate per-subtest evidence line, each PASS mark now carries its supporting citation inline, in parentheses, directly after the mark:
+
+```
+Old (2 brackets, ~0% compliance on the 2nd):
+[D5 audit: C1=P C2=F C3=P C4=P C5=P C6=F | pts=4/6 | gate=none | score=1]
+[D5 evidence: C1←tasks@/pricing; C2←none; C3←Zap workflows@/pricing; ...]
+
+New (1 bracket, evidence inline, Entry 069):
+[D5 audit: C1=P(tasks@/pricing) C2=F C3=P(Zap workflows@/pricing) C4=P($19.99/mo@/pricing) C5=P(pay-per-task@/pricing) C6=F | pts=4/6 | gate=none | score=1]
+```
+
+Rationale for this specific fix direction over alternatives (e.g. reordering the two-step instruction, simplifying the evidence format while keeping it separate): the audit bracket already has near-100% compliance despite carrying comparable structural complexity (6 marks + pts + gate + score, all in one bracket). Extending a format the model already reliably produces should generalize better than asking for a second, apparently-easy-to-skip completion — betting on primacy/single-completion-action rather than instruction count or ordering.
+
+**Implementation:**
+- All 8 dimensions' MANDATORY SCORING PROCEDURE prompt sections (`index.ts`) rewritten to the merged format, preserving each dimension's specific citation rules (D5's PRICING MODEL CATEGORY AWARENESS override marker, D6's per-subtest P2/P3/P6 multi-field citation requirements, D7's R4/R5 exact-field-name rules, D8's T1/T5/T6 multi-condition citation requirements) — none of the underlying subtest logic changed, only the output packaging.
+- The seat-based override marker changed from `auto(seat-based)` to `auto-seat-based` (hyphenated, no inner parentheses) across every dimension that references it — nested parentheses inside an inline citation would break the citation-extraction regex (`\(([^)]*)\)`, which stops at the first closing paren).
+- `rubric-audit.ts`: `parseAuditBlock` now extracts an inline citation per mark alongside its P/F/NA value. `hasEvidenceBlock` is satisfied by EITHER the new inline format (every PASS mark has a non-empty citation) OR the old separate-bracket format (kept as a fallback, so a stray old-style response — or any transitional output — isn't wrongly flagged). Same underlying standard as before ("a PASS mark with missing evidence is INVALID"), checked differently.
+- `src/lib/rationale.ts` (frontend "Subtest audit" panel renderer): no code change needed — its bracket-extraction regex (`[^\]]*`, anything except a closing bracket) already tolerates parentheses inside the bracket, so it continues to correctly isolate the single merged bracket. Confirmed no hardcoded two-block assumption in `DimensionCard.tsx` either.
+- 6 new unit tests covering inline-citation parsing, the missing-citation failure case, the hyphenated override marker, backward compatibility with the old bracket format, a real production rationale text (CrewAI D5, no evidence bracket at all) still validating correctly, and D1's two-letter NS-prefix marks working with inline citations. 55 rubric-audit tests pass, 158 total.
+
+**Verification status:** Not yet checked against a live rescan. The next scan on any company should be checked for whether `[D_ evidence: ...]` compliance (formerly ~0%) becomes `evidenceQuality: verified`/`flagged` at meaningfully higher rates than before, with `evidenceQuality: unverified` becoming the exception rather than the default it was throughout this entire session.
+
+**Pattern Tag:** `evidence-block-missing`, `mandatory-scoring-procedure-compliance`, `merged-audit-evidence-bracket`, `inline-citation-format`, `two-bracket-instruction-non-compliance`
 
 ---
 
