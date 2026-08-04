@@ -30,7 +30,7 @@ interface AnalyzeRequest {
 // Deno EdgeRuntime type for background processing
 declare const EdgeRuntime: { waitUntil: (p: Promise<unknown>) => void };
 
-const ANALYSIS_VERSION = '2026-08-03-pipeline-v43';
+const ANALYSIS_VERSION = '2026-08-04-pipeline-v44';
 
 const COMPANY_PROFILE_PROMPT = `You are an expert business analyst. Analyze the following website content and extract a company profile.
 
@@ -255,7 +255,7 @@ THE 8 DIMENSIONS:
    4. Set "score" to EXACTLY the value this procedure yields. Never round up because the outcome story "feels" strong — richer evidence changes which subtests pass, not the points→score mapping or the gates.
    5. Begin the D1 "rationale" with a compact, machine-readable audit in EXACTLY this format, then the prose — attach the specific field/page citation backing each PASS directly inline in parentheses immediately after the mark, do NOT use a separate evidence line:
       "[D1 audit: NS1=P(<field@page-path>)|F NS2=P(<field@page-path>)|F NS3=P(<field@page-path>)|F NS4=P(<field@page-path>)|F NS5=P(<field@page-path>)|F NS6=P(<field@page-path>)|F | pts=N/6 | gate=<none, or NS1/NS3 gate that applied> | score=X] "
-      Rules: every mark scored P MUST have a non-empty parenthetical citation naming the specific field(s) and page path(s) of the fact(s) backing it; marks scored F need NO parenthetical. A subtest marked P with an empty, missing, or "none" citation is INVALID — re-mark it F and recompute points, the mapping, and the gates before setting "score". "@user_input" may only be cited when the scan actually received insider inputs for that field; every other page path must be a page present in the scraped evidence set.
+      Rules: every mark scored P MUST have a non-empty parenthetical citation naming the specific field(s) and page path(s) of the fact(s) backing it; marks scored F need NO parenthetical. A subtest marked P with an empty, missing, or "none" citation is INVALID — re-mark it F and recompute points, the mapping, and the gates before setting "score". "@user_input" is FORBIDDEN unless an "INSIDER ANSWERS" block appears earlier in this prompt. If you do not see that block, you received no insider inputs, and citing "@user_input" is fabricating a source — mark the subtest F instead. Never invent a citation to justify a P. Every other page path must be a page present in the scraped evidence set; if a fact is not in the evidence set, the subtest is F.
 
    ## Confidence (separate from score)
    Compute confidence per subtest:
@@ -398,7 +398,7 @@ THE 8 DIMENSIONS:
    4. Set "score" to EXACTLY the value this procedure yields. Never round up because the ICP "feels" clear — richer evidence changes which subtests pass, not the points→score mapping or the gates.
    5. Begin the D2 "rationale" with a compact, machine-readable audit in EXACTLY this format, then the prose — attach the specific field/page citation backing each PASS directly inline in parentheses immediately after the mark, do NOT use a separate evidence line:
       "[D2 audit: J1=P(<field@page-path>)|F J2=P(<field@page-path>)|F J3=P(<field@page-path>)|F J4=P(<field@page-path>)|F J5=P(<field@page-path>)|F J6=P(<field@page-path>)|F | pts=N/6 | gate=<none, or which cap/zero applied> | score=X] "
-      Rules: every mark scored P MUST have a non-empty parenthetical citation naming the specific field(s) and page path(s) of the fact(s) backing it; marks scored F need NO parenthetical. A subtest marked P with an empty, missing, or "none" citation is INVALID — re-mark it F and recompute points, the mapping, and the gates before setting "score". "@user_input" may only be cited when the scan actually received insider inputs for that field; every other page path must be a page present in the scraped evidence set.
+      Rules: every mark scored P MUST have a non-empty parenthetical citation naming the specific field(s) and page path(s) of the fact(s) backing it; marks scored F need NO parenthetical. A subtest marked P with an empty, missing, or "none" citation is INVALID — re-mark it F and recompute points, the mapping, and the gates before setting "score". "@user_input" is FORBIDDEN unless an "INSIDER ANSWERS" block appears earlier in this prompt. If you do not see that block, you received no insider inputs, and citing "@user_input" is fabricating a source — mark the subtest F instead. Never invent a citation to justify a P. Every other page path must be a page present in the scraped evidence set; if a fact is not in the evidence set, the subtest is F.
 
    ## Confidence (separate from score)
    Compute confidence per subtest:
@@ -513,7 +513,7 @@ THE 8 DIMENSIONS:
    5. Set "score" to EXACTLY the value this procedure yields. Never round up because the pricing "feels" buyer-friendly — richer evidence changes which subtests pass, not the points→score mapping or the gates.
    6. Begin the D3 "rationale" with a compact, machine-readable audit of the HIGHEST-PRIORITY SEGMENT ONLY in EXACTLY this format, then the prose — attach the specific field/page citation backing each PASS directly inline in parentheses immediately after the mark, do NOT use a separate evidence line:
       "[D3 audit: S1=P(<economic_buyer_role@page-path>)|F S2=P(<payment_methods@page-path>)|F S3=P(<field@page-path>)|F S4=P(<overage_behavior@page-path + renewal_cancellation@page-path>)|F S5=P(<tier progression@page-path>)|F | pts=N/5 | gate=<none, or which cap applied> | score=X] "
-      The "score" in this bracket is the FINAL aggregated dimension score from step 3/4, even though the P/F marks and pts are the highest-priority segment's alone — if aggregation across multiple segments changes the score from what the highest-priority segment's own points would map to on their own, note this explicitly in the gate field (e.g. "gate=none, aggregated across N segments"). Rules: every mark scored P MUST have a non-empty parenthetical citation naming the specific field(s) and page path(s) of the fact(s) backing it; marks scored F need NO parenthetical. A subtest marked P with an empty, missing, or "none" citation is INVALID — re-mark it F and recompute points, the mapping, and the gates before setting "score". "@user_input" may only be cited when the scan actually received insider inputs for that field; every other page path must be a page present in the scraped evidence set.
+      The "score" in this bracket is the FINAL aggregated dimension score from step 3/4, even though the P/F marks and pts are the highest-priority segment's alone — if aggregation across multiple segments changes the score from what the highest-priority segment's own points would map to on their own, note this explicitly in the gate field (e.g. "gate=none, aggregated across N segments"). Rules: every mark scored P MUST have a non-empty parenthetical citation naming the specific field(s) and page path(s) of the fact(s) backing it; marks scored F need NO parenthetical. A subtest marked P with an empty, missing, or "none" citation is INVALID — re-mark it F and recompute points, the mapping, and the gates before setting "score". "@user_input" is FORBIDDEN unless an "INSIDER ANSWERS" block appears earlier in this prompt. If you do not see that block, you received no insider inputs, and citing "@user_input" is fabricating a source — mark the subtest F instead. Never invent a citation to justify a P. Every other page path must be a page present in the scraped evidence set; if a fact is not in the evidence set, the subtest is F.
 
    ## Confidence (separate from score)
    Compute confidence per subtest as:
@@ -639,7 +639,7 @@ THE 8 DIMENSIONS:
    4. Set "score" to EXACTLY the value this procedure yields. Never round up because the unit "feels" well-defined — richer evidence changes which subtests pass, not the points→score mapping or the gates.
    5. Begin the D4 "rationale" with a compact, machine-readable audit in EXACTLY this format, then the prose — attach the specific field/page citation backing each PASS directly inline in parentheses immediately after the mark, do NOT use a separate evidence line:
       "[D4 audit: V1=P(<definition@page-path>)|F V2=P(<metering_formula@page-path>)|F V3=P(<unit_price-or-overage_unit_price@page-path + included_units@page-path>)|F V4=P(<value_anchor@page-path>)|F V5=P(<estimation_surface@page-path>)|F V6=P(<audit_surface@page-path>)|F | pts=N/6 | gate=<none, or which cap(s) applied> | score=X] "
-      Rules: every mark scored P MUST have a non-empty parenthetical citation naming the specific field(s) and page path(s) of the fact(s) backing it; marks scored F need NO parenthetical. A subtest marked P with an empty, missing, or "none" citation is INVALID — re-mark it F and recompute points, the mapping, and the gates before setting "score". "@user_input" may only be cited when the scan actually received insider inputs for that field; every other page path must be a page present in the scraped evidence set.
+      Rules: every mark scored P MUST have a non-empty parenthetical citation naming the specific field(s) and page path(s) of the fact(s) backing it; marks scored F need NO parenthetical. A subtest marked P with an empty, missing, or "none" citation is INVALID — re-mark it F and recompute points, the mapping, and the gates before setting "score". "@user_input" is FORBIDDEN unless an "INSIDER ANSWERS" block appears earlier in this prompt. If you do not see that block, you received no insider inputs, and citing "@user_input" is fabricating a source — mark the subtest F instead. Never invent a citation to justify a P. Every other page path must be a page present in the scraped evidence set; if a fact is not in the evidence set, the subtest is F.
 
    ## Confidence (separate from score)
    Compute confidence per subtest:
@@ -803,7 +803,7 @@ THE 8 DIMENSIONS:
    5. Begin the D5 "rationale" with a compact, machine-readable audit in EXACTLY this format, then the prose — attach the specific field/page citation backing each PASS directly inline in parentheses immediately after the mark, do NOT use a separate evidence line:
       "[D5 audit: C1=P(<driver1@page-path + driver2@page-path + driver3@page-path>)|F C2=P(<formula fields@page-path>)|F C3=P(<field@page-path>)|F C4=P(<published rate@page-path>)|F C5=P(<field@page-path>)|F C6=P(<field@page-path>)|F | pts=N/6 | gate=<none, or which cap applied> | score=X] "
       Rules: every mark scored P MUST have a non-empty parenthetical citation naming the specific driver/field(s) that passed and the page path (e.g., "input_tokens@/pricing") of the fact backing each one; for a subtest that passes via a PRICING MODEL CATEGORY AWARENESS override, write "P(auto-seat-based)" — note the hyphenated form, no inner parentheses, since nested parentheses inside the citation will break parsing; marks scored F need NO parenthetical. A subtest marked P with an empty, missing, or "none" citation, one that counts the same citation twice toward a threshold, or cites only assumption-type facts is INVALID — re-mark it F and recompute points, the mapping, and the gates before setting "score".
-      EXACT FIELD NAMES REQUIRED: each citation must reference the fields from THAT subtest's Pass conditions (drivers for C1, driver_formula for C2, workflow linkage fields for C3, published rates for C4, boundary behavior for C5, forecasting_surfaces fields for C6) — a citation naming anything else does NOT count toward the pass. "@user_input" may only be cited when the scan actually received insider inputs for that field; every other page path must be a page present in the scraped evidence set.
+      EXACT FIELD NAMES REQUIRED: each citation must reference the fields from THAT subtest's Pass conditions (drivers for C1, driver_formula for C2, workflow linkage fields for C3, published rates for C4, boundary behavior for C5, forecasting_surfaces fields for C6) — a citation naming anything else does NOT count toward the pass. "@user_input" is FORBIDDEN unless an "INSIDER ANSWERS" block appears earlier in this prompt. If you do not see that block, you received no insider inputs, and citing "@user_input" is fabricating a source — mark the subtest F instead. Never invent a citation to justify a P. Every other page path must be a page present in the scraped evidence set; if a fact is not in the evidence set, the subtest is F.
 
    ## Confidence (separate from score)
    Compute confidence per subtest:
@@ -986,7 +986,7 @@ THE 8 DIMENSIONS:
       - P2 citations MUST name exploration_offering, production_offering, AND the distinct exploration construct (a pool with pool_type == exploration, or a low-friction tier), each with its own page path. A single "free trial" mention cannot back both exploration_offering and the distinct-construct requirement unless it is quoted twice from genuinely separate page language.
       - P3 citations are per-pool: each pool in segment_pools needs its own unit_name/included_units/reset_cadence citations (plus rollover_rules/topup_increment where applicable). The same quote cannot back two different pools, and a fact about one pool cannot be cited for another pool's fields.
       - P6 citations MUST name all three of: overage_unit_price, unit_name (matching packaging.primary_unit_name), and included_units or pool_name, each with its own page path. Generic "overage pricing available" language does NOT satisfy overage_unit_price without a quoted rate.
-      - "@user_input" may only be cited when the scan actually received insider inputs for that field; every other page path must be a page present in the scraped evidence set.
+      - "@user_input" is FORBIDDEN unless an "INSIDER ANSWERS" block appears earlier in this prompt. If you do not see that block, you received no insider inputs, and citing "@user_input" is fabricating a source — mark the subtest F instead. Never invent a citation to justify a P. Every other page path must be a page present in the scraped evidence set; if a fact is not in the evidence set, the subtest is F.
 
    ## Confidence (separate from score)
    Compute confidence per subtest:
@@ -1178,7 +1178,7 @@ THE 8 DIMENSIONS:
       EXACT FIELD NAMES REQUIRED: each citation must use the exact schema field names from THAT subtest's Pass conditions — a citation naming anything else does NOT count toward the pass and the subtest must be re-marked F if the remaining citations no longer satisfy the conditions. Specifically:
       - R4 citations may ONLY name grace_buffer, spike_protection, or dispute_refund_process. Usage limits, caps, alerts, or dashboards do NOT count toward R4 — those belong to R3/R6.
       - R5 citations MUST name all three of: payment_methods (with the quoted invoice/PO language), enterprise_true_up, and overage_behavior, each with its own page path. "Enterprise pricing", "custom plans", or the existence of an enterprise tier do NOT count.
-      - "@user_input" may only be cited when the scan actually received insider inputs for that field; every other page path must be a page present in the scraped evidence set.
+      - "@user_input" is FORBIDDEN unless an "INSIDER ANSWERS" block appears earlier in this prompt. If you do not see that block, you received no insider inputs, and citing "@user_input" is fabricating a source — mark the subtest F instead. Never invent a citation to justify a P. Every other page path must be a page present in the scraped evidence set; if a fact is not in the evidence set, the subtest is F.
 
    ## Confidence (separate from score)
    Compute confidence per subtest:
@@ -1367,7 +1367,7 @@ THE 8 DIMENSIONS:
       - T1 citations for team/enterprise segments MUST separately cite the base cap evidence (cap_policy or a budget_cap/usage_cap rail) AND the admin-configurability evidence (admin_cap, or a rail's configurable_by == admin/both). The same quote cannot satisfy both unless it explicitly names both the cap mechanism and who administers it.
       - T5: state which path was used (rbac_path or soc2_path) followed by a colon, then the citations, all inside the same parenthetical, no inner parentheses (e.g. "P(path-used-rbac_path: rbac@/security + audit_logs@/security)"). rbac_path citations MUST name both (rbac or admin) AND (audit_logs or audit_export), each with its own page path — a security or trust-center page mentioning access control in general does NOT establish rbac/admin without naming that specific control, and does NOT separately establish audit_logs without its own citation. soc2_path citations MUST name both the soc2 feature/tier AND the publicly linked trust center or compliance page (compliance_cert, or evidence_url from a trust center domain), each with its own citation — a bare "SOC 2 compliant" marketing claim without a linked trust center page does NOT satisfy soc2_path.
       - T6 citations MUST name both limit_behavior_docs AND the specific risk-limiter rail_type (rate_limit, concurrency_limit, retry_limit, circuit_breaker, kill_switch, or approval_gate), each with its own page path — generic "usage limits" or "fair use policy" language does NOT count as a rail_type without naming the specific mechanism and its trigger/action. If overage_enabled is true for any tier, T6 must also separately cite policies.overage_behavior — the citation used for limit_behavior_docs or the rail cannot double as this citation.
-      - "@user_input" may only be cited when the scan actually received insider inputs for that field; every other page path must be a page present in the scraped evidence set.
+      - "@user_input" is FORBIDDEN unless an "INSIDER ANSWERS" block appears earlier in this prompt. If you do not see that block, you received no insider inputs, and citing "@user_input" is fabricating a source — mark the subtest F instead. Never invent a citation to justify a P. Every other page path must be a page present in the scraped evidence set; if a fact is not in the evidence set, the subtest is F.
 
    ## Confidence (separate from score)
    Compute confidence per subtest:
@@ -2906,6 +2906,8 @@ ${truncatedContent}`;
       correctedScore: number;
       gateText?: string;
       evidenceBlockMissing: boolean;
+      fabricatedCitationMarksInvalidated?: number;
+      fabricatedCitationLabels?: string[];
     }> = [];
 
     for (const dim of dimensionScores as Array<{
@@ -2930,9 +2932,25 @@ ${truncatedContent}`;
       }
 
       const declaredScore = dim.score;
-      const result = correctDimensionScore(dim.rationale, dimensionNumber);
+      // Entry 074: "@user_input" citations are only legitimate when this scan
+      // actually received insider answers. Benchmark runs never do, so those
+      // citations are fabrications and the marks resting on them are dropped
+      // before scoring. Passing the real flag rather than relying on the
+      // corrector's fail-closed default keeps insider-answer scans working.
+      const result = correctDimensionScore(dim.rationale, dimensionNumber, {
+        insiderAnswersPresent: Boolean(insiderAnswers && Object.keys(insiderAnswers).length > 0),
+      });
 
       dim.auditParseFailed = result.auditParseFailed;
+
+      if (result.fabricatedCitationMarksInvalidated > 0) {
+        console.warn(
+          `[RubricAudit] "${dim.dimension}" at ${url} — FABRICATED CITATIONS: ` +
+          `${result.fabricatedCitationMarksInvalidated} PASS mark(s) ` +
+          `[${(result.fabricatedCitationLabels ?? []).join(', ')}] cited @user_input ` +
+          `on a scan with no insider inputs; demoted to F before scoring.`
+        );
+      }
 
       if (result.scoreWasCorrected) {
         console.warn(
@@ -2948,6 +2966,8 @@ ${truncatedContent}`;
           correctedScore: result.correctedScore,
           gateText: result.gateText,
           evidenceBlockMissing: result.evidenceBlockMissing,
+          fabricatedCitationMarksInvalidated: result.fabricatedCitationMarksInvalidated,
+          fabricatedCitationLabels: result.fabricatedCitationLabels,
         });
       } else {
         dim.scoreCorrected = false;

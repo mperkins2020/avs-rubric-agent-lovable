@@ -66,6 +66,28 @@ export interface CorrectionResult {
   gateClass?: GateClass;
   /** Raw gate text from the audit block, for telemetry. */
   gateText?: string;
+  /**
+   * Count of PASS marks demoted to F because every source they cited was
+   * "@user_input" on a scan that received no insider inputs — i.e. the model
+   * invented the citation. See ENGINE_DEBUG_LOG.md Entry 074.
+   */
+  fabricatedCitationMarksInvalidated: number;
+  /** Subtest labels demoted by the above, for telemetry (e.g. ["J1","J2"]). */
+  fabricatedCitationLabels?: string[];
+}
+
+export interface CorrectionOptions {
+  /**
+   * Whether this scan actually received insider answers. `run-benchmark`
+   * never sends them (Entry 074), so it is false for every benchmark scan.
+   * When false, an "@user_input" citation cannot be genuine and any PASS
+   * mark resting solely on one is invalidated before scoring.
+   *
+   * Defaults to FALSE — fail closed. A caller that forgets to pass this gets
+   * the strict, evidence-only behaviour rather than silently trusting
+   * fabricated citations.
+   */
+  insiderAnswersPresent?: boolean;
 }
 
 // All 8 dimension names, in the order the scoring prompt uses them. D1-D4
@@ -105,6 +127,34 @@ const MARK_PATTERN = /([A-Z]{1,2}\d)\s*=\s*(P|F|NA)(?:\(([^)]*)\))?/g;
 // lines ~2599-2633) — deterministic code, not an LLM claim. When present,
 // it must always be trusted and never overridden by this module.
 const FLOOR_MARKER_PATTERN = /\[Score floored to (\d+) based on \d+[^\]]*\]/i;
+
+// Extracts the source token from each "field@source" pair inside a citation.
+// Real citation shapes this must handle (all verbatim from production):
+//   "economic_buyer_role@user_input"
+//   "invoice@user_input + sso@user_input + dpa@user_input"
+//   "soc2@user_input + compliance_cert@https://conductor.com/platform/..."
+//   "Tier B: jtbd[0].inputs[]@user_input + jtbd[0].outputs[]@user_input"
+//   "auto-seat-based"                        <- no source at all
+// Stops at whitespace, "+", "," or ")" so a URL source is captured whole.
+const CITATION_SOURCE_PATTERN = /@([^\s+,)]+)/g;
+
+const INSIDER_SOURCE_TOKEN = 'user_input';
+
+/**
+ * True when a citation names at least one source and EVERY source it names is
+ * "user_input". Compound citations that mix an insider source with a real page
+ * (e.g. "soc2@user_input + compliance_cert@https://...") are NOT wholly
+ * insider-sourced — they retain genuine public backing, so the mark stands.
+ *
+ * A citation naming no source at all (e.g. "auto-seat-based") returns false:
+ * that is a separate, pre-existing weakness in citation quality and this
+ * function deliberately does not widen its own remit to cover it.
+ */
+export function isWhollyInsiderSourced(citation: string): boolean {
+  const sources = [...citation.matchAll(CITATION_SOURCE_PATTERN)].map((m) => m[1].toLowerCase());
+  if (sources.length === 0) return false;
+  return sources.every((s) => s === INSIDER_SOURCE_TOKEN);
+}
 
 export function parseAuditBlock(rationale: string): AuditBlock | null {
   const match = AUDIT_BLOCK_PATTERN.exec(rationale);
@@ -266,7 +316,11 @@ function mapPointsToScore(points: number, dimensionNumber: number): number {
  * independent of what the LLM declared. See ENGINE_DEBUG_LOG.md Entries
  * 064/065/066 for the confirmed real-world cases this directly fixes.
  */
-export function correctDimensionScore(rationale: string, expectedDimensionNumber: number): CorrectionResult {
+export function correctDimensionScore(
+  rationale: string,
+  expectedDimensionNumber: number,
+  options: CorrectionOptions = {},
+): CorrectionResult {
   const parsed = parseAuditBlock(rationale);
 
   if (!parsed || parsed.dimensionNumber !== expectedDimensionNumber) {
@@ -276,16 +330,45 @@ export function correctDimensionScore(rationale: string, expectedDimensionNumber
       correctionReason: 'none',
       auditParseFailed: true,
       evidenceBlockMissing: true,
+      fabricatedCitationMarksInvalidated: 0,
     };
   }
 
   const evidenceBlockMissing = !parsed.hasEvidenceBlock;
 
+  // ENGINE_DEBUG_LOG Entry 074 — fabricated-citation guard.
+  //
+  // `run-benchmark` never sends insiderAnswers, so the INSIDER ANSWERS prompt
+  // block never renders on a benchmark scan and the model has no insider
+  // inputs to cite. It cites "@user_input" anyway, in direct violation of the
+  // rule in its own prompt ("may only be cited when the scan actually
+  // received insider inputs for that field"). The evidence check upstream
+  // only tests that a citation is non-empty, never what it says, so a
+  // fabricated citation passed exactly like a verified URL and inflated the
+  // pass count. Distribution was inversely correlated with public disclosure:
+  // the companies publishing least had the most fabricated citations.
+  //
+  // Fail closed: unless the caller positively asserts insider answers were
+  // supplied, any PASS resting *solely* on "@user_input" is demoted to F here
+  // — before pass-counting, before mapping, before gate classification — so
+  // every downstream number is computed on verifiable evidence only.
+  const marks: Record<string, SubtestMark> = { ...parsed.marks };
+  const fabricatedCitationLabels: string[] = [];
+  if (!options.insiderAnswersPresent) {
+    for (const [label, mark] of Object.entries(marks)) {
+      const citation = parsed.citations[label];
+      if (mark === 'P' && citation && isWhollyInsiderSourced(citation)) {
+        marks[label] = 'F';
+        fabricatedCitationLabels.push(label);
+      }
+    }
+  }
+
   // R5 (D7 only) may legitimately be NA — expected denominator drops to 5.
-  const naCount = Object.values(parsed.marks).filter((m) => m === 'NA').length;
-  const markCount = Object.keys(parsed.marks).length;
+  const naCount = Object.values(marks).filter((m) => m === 'NA').length;
+  const markCount = Object.keys(marks).length;
   const expectedDenominator = markCount - naCount;
-  const actualPassCount = Object.values(parsed.marks).filter((m) => m === 'P').length;
+  const actualPassCount = Object.values(marks).filter((m) => m === 'P').length;
 
   let denominatorWasWrong = false;
   let effectivePts = parsed.declaredPts;
@@ -312,10 +395,15 @@ export function correctDimensionScore(rationale: string, expectedDimensionNumber
       correctedDenominator: denominatorWasWrong ? effectiveDenominator : undefined,
       auditParseFailed: false,
       evidenceBlockMissing,
+      fabricatedCitationMarksInvalidated: fabricatedCitationLabels.length,
+      fabricatedCitationLabels: fabricatedCitationLabels.length ? fabricatedCitationLabels : undefined,
     };
   }
 
-  const gateClass = classifyGate(parsed.gateText, parsed.marks);
+  // Gate classification reads the SANITIZED marks: if a gate cites a subtest
+  // whose PASS was just invalidated, the gate must be judged against what the
+  // evidence actually supports, not against the fabricated pass.
+  const gateClass = classifyGate(parsed.gateText, marks);
   let correctedScore: number;
   let correctionReason: CorrectionReason;
 
@@ -335,7 +423,7 @@ export function correctDimensionScore(rationale: string, expectedDimensionNumber
       if (
         parsed.dimensionNumber === 7 &&
         /\bR4\b/i.test(parsed.gateText) &&
-        parsed.marks.R5 === 'P' &&
+        marks.R5 === 'P' &&
         effectivePts >= 5
       ) {
         correctedScore = parsed.declaredScore;
@@ -381,6 +469,8 @@ export function correctDimensionScore(rationale: string, expectedDimensionNumber
     evidenceBlockMissing,
     gateClass,
     gateText: parsed.gateText,
+    fabricatedCitationMarksInvalidated: fabricatedCitationLabels.length,
+    fabricatedCitationLabels: fabricatedCitationLabels.length ? fabricatedCitationLabels : undefined,
   };
 }
 
@@ -404,7 +494,10 @@ const LOW_CONFIDENCE_THRESHOLD = 0.45;
  * loop with no vitest path exercising it at all.
  */
 export function computeEvidenceQuality(
-  result: Pick<CorrectionResult, 'auditParseFailed' | 'evidenceBlockMissing' | 'scoreWasCorrected' | 'correctionReason'>,
+  result: Pick<
+    CorrectionResult,
+    'auditParseFailed' | 'evidenceBlockMissing' | 'scoreWasCorrected' | 'correctionReason'
+  > & Partial<Pick<CorrectionResult, 'fabricatedCitationMarksInvalidated'>>,
   confidence: number | undefined,
 ): EvidenceQuality {
   if (result.auditParseFailed || result.evidenceBlockMissing) {
@@ -412,6 +505,10 @@ export function computeEvidenceQuality(
   }
   if (
     result.scoreWasCorrected ||
+    // A dimension where the model invented citations is not "verified" even
+    // if invalidating them happened to leave the score unchanged — the
+    // reasoning behind it was still partly fabricated (Entry 074).
+    (result.fabricatedCitationMarksInvalidated ?? 0) > 0 ||
     result.correctionReason === 'unrecognized-gate-not-corrected' ||
     (confidence ?? 0) < LOW_CONFIDENCE_THRESHOLD - CONFIDENCE_FLOAT_EPSILON
   ) {

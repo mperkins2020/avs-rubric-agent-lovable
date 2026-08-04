@@ -4,7 +4,7 @@
 **Usage:** When a report produces a questionable result, log it here. Run `Scan the debug log for recurring patterns` periodically to surface systemic issues.
 **Related:** See ENGINE_DEBUG_HISTORY.md for backfilled history from git.
 
-**Entries:** 71 | **Last updated:** August 3, 2026
+**Entries:** 74 | **Last updated:** August 4, 2026
 
 ---
 
@@ -31,6 +31,129 @@
 <!-- Newest first. To add an entry, copy the template below and fill it in. -->
 
 <!-- Next entry goes here -->
+
+---
+
+### Entry 074 — August 4, 2026
+
+| Field | Value |
+|-------|-------|
+| Company | Roster-wide — heaviest in Conductor, HubSpot, Botify, Scrunch AI; present in 9 of 9 companies with full rationale |
+| Version | 2026-08-03-pipeline-v43 and every prior version carrying the audit-block prompts |
+| Dimension | All eight; concentrated in D2, D3, D5, D6, D7 |
+| Subtest(s) | Any subtest whose PASS is justified by an `@user_input` citation |
+| Root Cause | **Fabricated evidence citations.** In benchmark runs the model cites `@user_input` for facts it was never given, and the corrector's evidence check accepts the citation because it only tests non-emptiness, never content. |
+| Caught By | Code trace during VLS research analysis (Michelle + Claude Code, 2026-08-04), following an anomaly noted while writing the research working document: D2 scored a perfect 2.00/2 across all 12 companies with zero variance |
+| Status | **fix_shipped (v44) — data remediation still pending** |
+
+**The chain, each link verified in source:**
+
+1. `run-benchmark/index.ts:145-152` posts to `analyze-company` with a body containing only `pages`, `url`, `unresolvedPageCount`, `totalQueuedCount`, `confirmedMissUrls`. **`insiderAnswers` is never sent.**
+2. `analyze-company/index.ts:19` declares `insiderAnswers?:` — optional. For every benchmark scan it is `undefined`.
+3. `index.ts:2318` gates the entire `INSIDER ANSWERS (user-provided, source_type=user_input, reliability=0.65)` prompt block behind `insiderAnswers && Object.keys(insiderAnswers).length > 0`. In a benchmark run **that block never renders** — the model receives no insider inputs and no definition of what `user_input` means.
+4. Every dimension prompt nonetheless carries the rule (`index.ts:258`, `:401`, `:516`, `:642`, `:806`, `:989`, `:1181`, `:1370`): *"`@user_input` may only be cited when the scan actually received insider inputs for that field; every other page path must be a page present in the scraped evidence set."*
+5. Benchmark rationale is nevertheless full of `@user_input` citations. **These are fabrications — the model inventing a source to justify a PASS**, in direct violation of the rule in its own prompt.
+6. `rubric-audit.ts:140-142` computes `hasInlineEvidence` as `passMarksWithoutCitation.length === 0`, testing only `!citations[label]` — **non-emptiness, never content.** A fabricated `@user_input` citation satisfies the evidence check identically to a verified URL.
+7. Net effect: fabricated citations inflate PASS counts → inflate `pts` → inflate the mapped dimension score. The audit corrector cannot catch this, because the arithmetic it verifies is internally consistent; only the *evidence* is fake.
+
+**Why the prompt's own safeguard doesn't fire:** the same rules say a PASS with an *"empty, missing, or 'none'"* citation is INVALID and must be re-marked F. `@user_input` is none of those three — it is a non-empty string that is not the literal word "none" — so it slips through a check that was written to catch exactly this failure mode.
+
+**Distribution is not random — it is inversely correlated with public disclosure.** Manual count of PASS marks citing `@user_input` (companies with full v43 rationale):
+
+| Company | ~PASS marks citing user_input | Public commercial disclosure |
+|---|---|---|
+| Scrunch AI | ~15 | enterprise-leaning, "Overage Policy: N/A" |
+| Botify | ~13 | enterprise-gated |
+| HubSpot | ~10 | capability bundled, no AEO-specific pricing surface |
+| Conductor | ~8 | enterprise-only, no public unit |
+| Similarweb | ~5 | all three D5 cost drivers cited @user_input |
+| AthenaHQ | ~4 | full self-serve tier economics published |
+| Profound | ~4 | D2 entirely public |
+| Goodie AI | ~3 | thin but public |
+| Otterly.AI | 0 in D4/D5 | fully public pricing + help-centre docs |
+
+The four heaviest users are precisely the four companies with the least public commercial evidence. **The model appears to fabricate an insider source when public evidence is absent — inflating scores exactly where they should be lowest.**
+
+**Confirmed score impact (examples):**
+- **Scrunch AI D4=2** rests on `V1=P(definition@user_input)` and `V2=P(metering_formula@user_input + granularity@user_input + attribution_level@user_input)` — the value-unit definition and metering formula, the two facts most central to the dimension, are both fabricated. On public evidence alone D4 would be at most 3/6 → score 1.
+- **Similarweb D5** — `C1=P(driver1@user_input + driver2@user_input + driver3@user_input)`; all cost drivers fabricated.
+- **Conductor / HubSpot / Botify D2=2** — `J1`–`J3` pass entirely or near-entirely on `@user_input`. D2's perfect 2.00/2 roster-wide average is materially an artifact of this defect.
+
+**Remediation options (decision required, not yet taken):**
+- **(a) Prompt fix only** — strengthen the rule to name `@user_input` as an explicitly invalid citation when no insider block is present. Cheap; does not repair existing data.
+- **(b) Corrector fix** — treat `@user_input` as a non-citation in `rubric-audit.ts` when the scan had no insider inputs, forcing those marks to F and recomputing. Deterministic, testable, and repairs scores at correction time rather than relying on model compliance. Requires plumbing an `insiderAnswersPresent` flag into the corrector.
+- **(c) Full rescan** under a fixed engine. Most correct, most expensive; the roster was just rescanned.
+- **(d) Publish with disclosure** — report the affected dimensions as provisional.
+
+Recommendation on record: **(b) + (c)** — a corrector-level fix is the only option that cannot be silently ignored by a future model, and the affected dimensions (D2 roster-wide, Scrunch D4, Similarweb D5) are too central to publish as-is. **(a) alone is insufficient:** this defect *is* a model failing to follow a prompt rule it was already given.
+
+---
+
+**FIX SHIPPED — `2026-08-04-pipeline-v44`.** Both (a) and (b) implemented; (c) still to run.
+
+**(b) Corrector guard — the load-bearing fix.** `rubric-audit.ts`:
+- New exported `isWhollyInsiderSourced(citation)`. Extracts every `@source` token from a citation and returns true only when at least one source exists and **all** of them are `user_input`. Compound citations retaining real public backing (e.g. Conductor's `soc2@user_input + compliance_cert@https://…`) are deliberately **not** invalidated — this fixes fabrication without over-correcting partly-genuine evidence.
+- `correctDimensionScore(rationale, dim, options)` gained a third `CorrectionOptions` parameter carrying `insiderAnswersPresent`. When false, every PASS whose citation is wholly insider-sourced is demoted to F **before** pass-counting, score mapping, and gate classification — so every downstream number is computed on verifiable evidence only.
+- **Fails closed:** `insiderAnswersPresent` defaults to `false`. A caller that forgets the flag gets strict evidence-only behaviour rather than silently trusting fabrications.
+- Gate classification and the D7 R4-enterprise exception now read the **sanitized** marks, so a gate can't be judged against a pass that was just invalidated.
+- New result fields `fabricatedCitationMarksInvalidated` / `fabricatedCitationLabels`, persisted into `rubricCorrections` so this is queryable in `scan_results`, not just visible in logs.
+- `computeEvidenceQuality` returns `flagged` whenever any citation was invalidated — **even if the score didn't change**, since the reasoning was still partly fabricated.
+
+**(a) Prompt hardening — defence in depth, all 8 dimensions.** The old rule (*"may only be cited when the scan actually received insider inputs"*) asked the model to reason about a condition it couldn't observe. Replaced with an observable one: *"`@user_input` is FORBIDDEN unless an 'INSIDER ANSWERS' block appears earlier in this prompt. If you do not see that block, you received no insider inputs, and citing '@user_input' is fabricating a source — mark the subtest F instead. Never invent a citation to justify a P."*
+
+**Tests: 62 → 85 in the corrector suite (188 repo-wide, all passing).** Fixtures are verbatim production strings — Scrunch D4, HubSpot D2, Conductor D8, semrush D1 — plus fail-closed, mixed-citation, gate-re-judgement, and no-score-change-but-still-flagged cases.
+
+**A pre-existing test failed on the first run, and it was the fix working.** The Entry 070 regression fixture (real v41 semrush.com D1) carries two fabricated citations of its own — `NS2` (three `@user_input` sources) and `NS5`. Stripping them leaves `NS1`/`NS4` = 2 real passes → maps to 0, NS3's cap non-binding → **0, not the declared 1.** That test now pins the gate-classification behaviour with `insiderAnswersPresent:true` and a second test asserts the collapse-to-0 under benchmark conditions. **Semrush's D1=1 in the current published dataset is inflated by fabricated evidence** — an independent confirmation of the defect found by a test rather than by inspection.
+
+**Still outstanding: (c) data remediation.** Every score in the v43 Marketing Intelligence dataset was produced by the pre-fix engine and is affected to the degree its rationale leaned on `@user_input`. Known-inflated so far: D2 roster-wide (Conductor/HubSpot/Botify/Scrunch pass J1–J3 on fabrications), Scrunch D4, Similarweb D5, Semrush D1. **The report must not publish until a v44 rescan replaces this data.**
+
+**Pattern Tag:** `fabricated-citation`, `user_input-without-insider-inputs`, `evidence-check-tests-emptiness-not-content`, `inversely-correlated-with-public-disclosure`, `d2-saturation-artifact`, `caught-by-code-trace-not-scan-output`
+
+---
+
+### Entry 073 — August 3, 2026
+
+| Field | Value |
+|-------|-------|
+| Company | tryprofound.com (Marketing Intelligence v43 rescan cycle) — checked against otterly.ai, hubspot.com, and historical relevanceai.com/hex.tech data for recurrence |
+| Version | 2026-08-03-pipeline-v43 |
+| Dimension | D7 (Overages & Risk Allocation) |
+| Subtest(s) | R4 (customer control / dispute surfaces), gate classification's text-only trust model |
+| Root Cause | Investigated as a possible design gap, concluded NOT a bug — a rare, correctly-resolved edge case |
+| Caught By | Hand-verification of tryprofound.com's D7 correction (Michelle + Claude Code, 2026-08-03), initially flagged as suspicious before a wider recurrence check |
+| Status | investigated_no_action — documented for future reference, no code change |
+
+**What looked suspicious:** tryprofound.com's D7 audit block showed `R4=F | gate=none | score=1`, corrected by the audit corrector to `score=2`. `classifyGate()` is entirely text-driven (confirmed by reading `rubric-audit.ts` lines 167-217) — it only recognizes a cap gate if the LLM's own gate text names the failing subtest. It never independently re-derives gate applicability from which marks failed. Per the documented D7 spec (Entry 055), a failed R4 should cap the score at 1 unless an enterprise segment independently reaches 5-6 points — but the LLM wrote `gate=none`, omitting any R4 citation. Since the LLM's own declared score (1) happened to equal what an R4 cap would produce, this looked like a real risk: the corrector silently overriding a substantively-correct (if mislabeled) LLM score.
+
+**Why it turned out fine:** a wider query for `R4=F` + `gate=none` across all D7 scores in the database (any company, any date) returned 7 rows. The 3 oldest (relevanceai.com ×3, hex.tech — all July 10-11, a pre-Entry-068 engine generation) are not comparable baselines. Of the 4 current-engine rows (tryprofound.com ×2, hubspot.com, otterly.ai), **the correction fired in exactly one** — and for an unrelated reason: the LLM's own declared `pts=4/6` didn't match its actual P-mark count (5 passes were marked, not 4), triggering the same `denominatorWasWrong` recount mechanism already verified legitimate in this cycle (see conductor.com's D1 finding, hand-verified the same day). In the other 3 rows, the real point count (3-4) already mapped to score 1 with or without any cap — so the R4-cap question was never actually load-bearing in those cases. The one case where it did matter also satisfied the documented enterprise-exception condition (R5=P, 5 effective points) closely enough to treat the resulting score-2 as legitimate rather than a false inflation.
+
+**Standing gap, not urgent:** the underlying observation is still real — `classifyGate()` cannot independently detect "the LLM should have declared an R4 cap gate but didn't." This didn't cause a wrong score this time because the arithmetic happened to work out, but a future case where an LLM (a) forgets to cite the R4 gate AND (b) has a genuinely uncapped 5-6 point count AND (c) does NOT satisfy the enterprise exception would silently score 1 point too high, uncaught. Not fixing now — same reasoning as the original R4-enterprise-exception design (Entry 055): the module deliberately abstains from independently judging segment-level semantics it can't see, and second-guessing this now risks reintroducing that exact error. Worth revisiting only if it recurs with a genuinely wrong (not just ambiguous) outcome.
+
+**Pattern Tag:** `text-only-gate-trust`, `r4-cap-not-independently-derived`, `investigated-not-a-bug`, `checked-for-recurrence-before-acting`
+
+---
+
+### Entry 072 — August 3, 2026
+
+| Field | Value |
+|-------|-------|
+| Company | semrush.com (originally flagged in Entry 070/071 as an unexplained "byte-identical v41→v42" result) and peec.ai (Marketing Intelligence v43 rescan cycle) |
+| Version | N/A — this is a caching/protocol finding, not a code defect. Confirmed present at least through v42→v43. |
+| Dimension | N/A |
+| Subtest(s) | N/A |
+| Root Cause | other (operational/protocol) — `ANALYSIS_VERSION` bumps alone do not guarantee a fresh scan within the 7-day `scan_results` cache TTL. The cache key/gate is `expires_at`, not the analysis version. A domain scanned under an older version, then rescanned under a newer version while its prior row's `expires_at` is still in the future, can still be served the stale cached result. |
+| Caught By | Michelle, via direct troubleshooting during the Marketing Intelligence v43 rescan cycle (2026-08-03) — independently discovered while investigating why peec.ai's first v43 rescan (Batch 1) produced the same 8/16 result as its pre-rescan baseline. |
+| Status | resolved — documented, protocol corrected going forward. No code change required (this may be intentional cache design); the fix is procedural. |
+
+**What happened:** peec.ai's Batch 1 rescan under v43 returned 8/16 — identical to its pre-rescan (older-version) baseline. This looked like the fix from Entry 071 (the `/^none\b/i` D3 gate-text broadening) hadn't actually taken effect in production, despite deploying cleanly and passing all 68 unit tests. Michelle expired (not deleted) the `expires_at` value on peec.ai's `scan_results` row and re-triggered the same rescan. The result changed to 10/16, with the D1/D3 corrections from Entry 071's fix now firing exactly as hand-derived: gate text `"none, aggregated across 3 segments"` correctly classified as `{kind: 'none'}` instead of `unrecognized`, producing a real `1→2` `unexplained-mismatch` correction. Applying the same treatment to ahrefs.com (combined with a `community_evidence` pin for its separate catastrophic single-page scrape issue) also produced a genuinely fresh result.
+
+**Retroactive significance:** this directly explains the semrush.com "byte-identical" anomaly noted in Entry 070 and investigated further in Entry 071, which was set aside at the time as unresolved ("I'd suspect a caching confound... but couldn't pin it down"). Same root cause. Loop now closed — no code bug was hiding there; it was a cache-invalidation gap between `ANALYSIS_VERSION` and `scan_results.expires_at`.
+
+**Correction to existing documentation:** `CLAUDE.md`'s ANALYSIS_VERSION section currently states "Without a bump, the 7-day cache serves stale results" — implying a bump alone is sufficient to guarantee freshness. That is incomplete. A version bump changes what a *newly-inserted* row will be scored under, but does not evict or bypass an *existing* unexpired row for a domain already scanned inside the 7-day window. Rescanning a domain that already has a live (non-expired) `scan_results` row — regardless of whether `ANALYSIS_VERSION` changed since that row was written — requires explicitly clearing that row's `expires_at` (set it into the past) to force a genuine fresh scan. Deleting the row is not necessary and was deliberately avoided both times (preserves history/audit trail); expiring it is sufficient and safer.
+
+**Action taken:** `process_benchmark_end_to_end.md` memory updated with this as the default rescan protocol — `expires_at` clearing is now a mandatory step before every remaining v43 rescan (Batches 2–4), not an as-needed fallback discovered after a suspicious result.
+
+**Pattern Tag:** `cache-invalidation-gap`, `expires_at-not-version-keyed`, `caught-by-user-troubleshooting`, `closes-entry-070-071-open-question`
 
 ---
 

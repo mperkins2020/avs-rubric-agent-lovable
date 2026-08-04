@@ -7,6 +7,7 @@ import {
   classifyGate,
   correctDimensionScore,
   computeEvidenceQuality,
+  isWhollyInsiderSourced,
   AUDITED_DIMENSION_NAMES,
 } from './rubric-audit.ts';
 
@@ -490,7 +491,13 @@ describe('correctDimensionScore — Entry 070 regression (real v41 semrush.com D
     // is exercised here too.
     const rationale =
       "[D1 audit: NS1=P(north_star.customer_done_state@https://www.semrush.com/plans) NS2=P(Tier C: jtbd[0].inputs[]@user_input + jtbd[0].outputs[]@user_input + icp_profile.top_constraints[]@user_input) NS3=F NS4=P(observable_signals[0].excerpt@https://www.semrush.com/plans) NS5=P(north_star.primary_outcome_metric_name@user_input) NS6=F | pts=3/6 | gate=NS3 gate | score=1] Semrush clearly states its primary outcome...";
-    const result = correctDimensionScore(rationale, 1);
+    // Entry 074 note: this fixture ALSO contains two fabricated citations —
+    // NS2 (all three sources @user_input) and NS5 (@user_input) — on a
+    // benchmark scan that received no insider inputs. Passing
+    // insiderAnswersPresent:true here isolates the gate-classification
+    // behaviour this test was written to protect; the fabricated-citation
+    // path is asserted separately below.
+    const result = correctDimensionScore(rationale, 1, { insiderAnswersPresent: true });
     expect(result.auditParseFailed).toBe(false);
     expect(result.gateClass).toEqual({ kind: 'cap', capValue: 1, defaulted: true });
     // 4 actual passes (denominator-corrected) maps to 1, capped at 1 by
@@ -500,6 +507,20 @@ describe('correctDimensionScore — Entry 070 regression (real v41 semrush.com D
     expect(result.correctedScore).toBe(1);
     expect(result.scoreWasCorrected).toBe(false);
     expect(result.correctionReason).not.toBe('unrecognized-gate-not-corrected');
+  });
+
+  it('Entry 074: the SAME production fixture collapses to 0 under benchmark conditions, because two of its passes were fabricated', () => {
+    // Real v41 semrush.com D1. On a benchmark scan (no insider inputs) NS2
+    // and NS5 cite only "@user_input" — invented sources. Stripping them
+    // leaves NS1 and NS4 as the only evidence-backed passes: 2/6 -> maps to
+    // 0, and the NS3 cap (ceiling 1) is non-binding at 0. The declared score
+    // of 1 was inflated purely by fabricated citations.
+    const rationale =
+      "[D1 audit: NS1=P(north_star.customer_done_state@https://www.semrush.com/plans) NS2=P(Tier C: jtbd[0].inputs[]@user_input + jtbd[0].outputs[]@user_input + icp_profile.top_constraints[]@user_input) NS3=F NS4=P(observable_signals[0].excerpt@https://www.semrush.com/plans) NS5=P(north_star.primary_outcome_metric_name@user_input) NS6=F | pts=3/6 | gate=NS3 gate | score=1] Semrush clearly states its primary outcome...";
+    const result = correctDimensionScore(rationale, 1, { insiderAnswersPresent: false });
+    expect(result.fabricatedCitationLabels).toEqual(['NS2', 'NS5']);
+    expect(result.correctedScore).toBe(0);
+    expect(result.scoreWasCorrected).toBe(true);
   });
 });
 
@@ -551,5 +572,142 @@ describe('computeEvidenceQuality (Entry 071 — extracted from previously-untest
 
   it('treats a missing confidence value as 0 (flagged), not as passing', () => {
     expect(computeEvidenceQuality(baseResult, undefined)).toBe('flagged');
+  });
+});
+
+describe('isWhollyInsiderSourced (Entry 074 — fabricated-citation detection)', () => {
+  it('detects a single bare user_input source', () => {
+    expect(isWhollyInsiderSourced('economic_buyer_role@user_input')).toBe(true);
+  });
+
+  it('detects a compound citation where every source is user_input (real conductor.com D3 S3)', () => {
+    expect(
+      isWhollyInsiderSourced('invoice@user_input + sso@user_input + dpa@user_input + audit_logs@user_input'),
+    ).toBe(true);
+  });
+
+  it('does NOT flag a mixed citation that retains real public backing (real conductor.com D8 T5)', () => {
+    // Half insider, half a genuine scraped page — the mark still has real
+    // evidence behind it, so invalidating it would over-correct.
+    expect(
+      isWhollyInsiderSourced(
+        'path-used-soc2_path: soc2@user_input + compliance_cert@https://www.conductor.com/platform/features/mcp-server',
+      ),
+    ).toBe(false);
+  });
+
+  it('handles the "Tier B:" prefix form (real hubspot.com D2 J3)', () => {
+    expect(
+      isWhollyInsiderSourced('Tier B: jtbd[0].inputs[]@user_input + jtbd[0].outputs[]@user_input'),
+    ).toBe(true);
+  });
+
+  it('does not flag a purely public citation', () => {
+    expect(isWhollyInsiderSourced('value_units[credit].definition@https://athenahq.ai/pricing')).toBe(false);
+  });
+
+  it('does not flag a citation naming no source at all (real hubspot.com D5 C5)', () => {
+    // "auto-seat-based" cites nothing. That is a separate citation-quality
+    // weakness; this guard deliberately does not widen its remit to cover it.
+    expect(isWhollyInsiderSourced('auto-seat-based')).toBe(false);
+  });
+});
+
+describe('correctDimensionScore — Entry 074 fabricated-citation guard', () => {
+  // Verbatim production rationale: scrunch.com D4, v43 benchmark scan. Its
+  // value-unit DEFINITION (V1) and METERING FORMULA (V2) — the two facts most
+  // central to D4 — were both fabricated. Declared 5/6 -> score 2.
+  const SCRUNCH_D4 =
+    '[D4 audit: V1=P(definition@user_input) V2=P(Tier B: metering_formula@user_input + granularity@user_input + attribution_level@user_input) V3=P(unit_price-or-overage_unit_price@https://scrunch.com/pricing + included_units@https://scrunch.com/pricing) V4=P(value_anchor@user_input) V5=F V6=P(Tier B: audit_surface@https://scrunch.com/plans) | pts=4/6 | gate=none | score=1] Scrunch primary value unit.';
+
+  it('demotes PASS marks whose only source was user_input when no insider answers were supplied', () => {
+    const result = correctDimensionScore(SCRUNCH_D4, 4, { insiderAnswersPresent: false });
+    // V1, V2, V4 fabricated -> only V3 and V6 survive -> 2/6 -> score 0.
+    expect(result.fabricatedCitationMarksInvalidated).toBe(3);
+    expect(result.fabricatedCitationLabels).toEqual(['V1', 'V2', 'V4']);
+    expect(result.correctedScore).toBe(0);
+  });
+
+  it('KEEPS those marks when the scan genuinely received insider answers', () => {
+    const result = correctDimensionScore(SCRUNCH_D4, 4, { insiderAnswersPresent: true });
+    expect(result.fabricatedCitationMarksInvalidated).toBe(0);
+    // 5 real passes -> maps to 2.
+    expect(result.correctedScore).toBe(2);
+  });
+
+  it('FAILS CLOSED — a caller omitting options gets the strict evidence-only behaviour', () => {
+    const result = correctDimensionScore(SCRUNCH_D4, 4);
+    expect(result.fabricatedCitationMarksInvalidated).toBe(3);
+    expect(result.correctedScore).toBe(0);
+  });
+
+  it('leaves a fully public dimension untouched (real athenahq.ai D2)', () => {
+    const athenaD2 =
+      '[D2 audit: J1=P(icp_profile.primary_buyer_role@https://athenahq.ai) J2=P(jtbd[0].job_statement@https://athenahq.ai) J3=P(Tier B: jtbd[0].inputs[]@https://athenahq.ai) J4=P(icp_profile.primary_workflows[]@https://athenahq.ai) J5=P(Tier C: icp_profile.primary_buyer_role@https://athenahq.ai) J6=P(positioning_surfaces[0].surface_type@https://athenahq.ai) | pts=6/6 | gate=none | score=2] AthenaHQ.';
+    const result = correctDimensionScore(athenaD2, 2, { insiderAnswersPresent: false });
+    expect(result.fabricatedCitationMarksInvalidated).toBe(0);
+    expect(result.correctedScore).toBe(2);
+    expect(result.scoreWasCorrected).toBe(false);
+  });
+
+  it('collapses a D2 built almost entirely on fabricated citations (real hubspot.com D2)', () => {
+    const hubspotD2 =
+      '[D2 audit: J1=P(primary_buyer_role@user_input + company_size_range@user_input + industries@user_input + top_constraints@user_input) J2=P(job_statement@user_input + inputs@user_input + outputs@user_input) J3=P(jtbd[0].must_have_requirements@user_input) J4=P(docs_quickstart@https://www.hubspot.com/pricing/content) J5=P(use_cases_page@https://www.hubspot.com/pricing) J6=P(case_study@https://www.hubspot.com/pricing) | pts=6/6 | gate=none | score=2] HubSpot.';
+    const result = correctDimensionScore(hubspotD2, 2, { insiderAnswersPresent: false });
+    expect(result.fabricatedCitationMarksInvalidated).toBe(3);
+    // Only J4/J5/J6 are real -> 3/6 -> score 1, not the declared 2.
+    expect(result.correctedScore).toBe(1);
+    expect(result.scoreWasCorrected).toBe(true);
+  });
+
+  it('preserves a mixed citation with genuine public backing (real conductor.com D8 T5)', () => {
+    const conductorD8 =
+      '[D8 audit: T1=F T2=P(forecasting_surfaces.alerts@https://conductor.com) T3=F T4=F T5=P(path-used-soc2_path: soc2@user_input + compliance_cert@https://www.conductor.com/platform/features/mcp-server) T6=F | pts=2/6 | gate=T4 | score=1] Conductor.';
+    const result = correctDimensionScore(conductorD8, 8, { insiderAnswersPresent: false });
+    // T5 keeps its public half; nothing is invalidated.
+    expect(result.fabricatedCitationMarksInvalidated).toBe(0);
+  });
+
+  it('re-judges the gate against sanitized marks, not the fabricated pass', () => {
+    // R5's PASS is fabricated. The D7 R4-enterprise exception requires a
+    // GENUINE R5=P; once R5 is invalidated the exception must not fire.
+    const d7 =
+      '[D7 audit: R1=P(overage_behavior@https://x.com/pricing) R2=P(unit@https://x.com/pricing) R3=P(alerts@https://x.com/pricing) R4=F R5=P(enterprise_true_up@user_input) R6=P(cost@https://x.com/pricing) | pts=5/6 | gate=R4 cap final score at 1 | score=2] X.';
+    const result = correctDimensionScore(d7, 7, { insiderAnswersPresent: false });
+    expect(result.fabricatedCitationLabels).toEqual(['R5']);
+    expect(result.correctionReason).not.toBe('d7-r4-enterprise-exception-abstained');
+    expect(result.correctedScore).toBe(1);
+  });
+
+  it('reports fabricated citations even when invalidation does not change the score', () => {
+    // Two fabricated passes, but enough real passes remain that the mapped
+    // score is unchanged — the dimension is still not trustworthy.
+    const d5 =
+      '[D5 audit: C1=P(a@user_input) C2=P(b@user_input) C3=P(c@https://x.com/p) C4=P(d@https://x.com/p) C5=P(e@https://x.com/p) C6=F | pts=5/6 | gate=none | score=2] X.';
+    const result = correctDimensionScore(d5, 5, { insiderAnswersPresent: false });
+    expect(result.fabricatedCitationMarksInvalidated).toBe(2);
+    expect(result.correctedScore).toBe(1);
+    expect(computeEvidenceQuality(result, 0.8)).toBe('flagged');
+  });
+});
+
+describe('computeEvidenceQuality — Entry 074 integration', () => {
+  const clean = {
+    auditParseFailed: false,
+    evidenceBlockMissing: false,
+    scoreWasCorrected: false,
+    correctionReason: 'none' as const,
+  };
+
+  it('flags a dimension with fabricated citations even at high confidence and no score change', () => {
+    expect(
+      computeEvidenceQuality({ ...clean, fabricatedCitationMarksInvalidated: 1 }, 0.9),
+    ).toBe('flagged');
+  });
+
+  it('still returns verified when there are none', () => {
+    expect(
+      computeEvidenceQuality({ ...clean, fabricatedCitationMarksInvalidated: 0 }, 0.9),
+    ).toBe('verified');
   });
 });
