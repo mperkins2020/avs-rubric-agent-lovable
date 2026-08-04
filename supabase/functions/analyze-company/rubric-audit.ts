@@ -54,7 +54,8 @@ export type CorrectionReason =
   | 'legitimate-cap-preserved'
   | 'hard-zero-applied'
   | 'unrecognized-gate-not-corrected'
-  | 'd7-r4-enterprise-exception-abstained';
+  | 'd7-r4-enterprise-exception-abstained'
+  | 'd3-aggregation-abstained';
 
 export interface CorrectionResult {
   correctedScore: number;
@@ -139,6 +140,33 @@ const FLOOR_MARKER_PATTERN = /\[Score floored to (\d+) based on \d+[^\]]*\]/i;
 const CITATION_SOURCE_PATTERN = /@([^\s+,)]+)/g;
 
 const INSIDER_SOURCE_TOKEN = 'user_input';
+
+// D3 alone reports a bracket whose marks and score measure DIFFERENT things:
+// the prompt (index.ts step 6) mandates "the P/F marks and pts are the
+// highest-priority segment's alone" while "score" is the FINAL cross-segment
+// aggregate, and instructs the model to flag the divergence in the gate field
+// as "gate=none, aggregated across N segments". See ENGINE_DEBUG_LOG Entry 075.
+const D3_AGGREGATION_NOTE = /\baggregated\s+across\s+(\d+|N)\s+segments?\b/i;
+
+/**
+ * True when a D3 gate's aggregation note covers MORE than one segment — i.e.
+ * the declared score is a cross-segment average that the highest-priority
+ * segment's own marks cannot reproduce, so recomputing from those marks would
+ * destroy it.
+ *
+ * "aggregated across 1 segments" is NOT multi-segment: with a single segment
+ * the aggregate is that segment, the mapping must hold, and normal correction
+ * should still catch genuine arithmetic errors.
+ *
+ * A literal, unsubstituted "N" (the model echoing the prompt's placeholder —
+ * observed on hubspot.com and similarweb.com) is treated as multi-segment:
+ * the count can't be verified, so fail safe toward not overwriting.
+ */
+export function d3AggregationSpansMultipleSegments(gateText: string): boolean {
+  const m = gateText.match(D3_AGGREGATION_NOTE);
+  if (!m) return false;
+  return /^\d+$/.test(m[1]) ? Number(m[1]) > 1 : true;
+}
 
 /**
  * True when a citation names at least one source and EVERY source it names is
@@ -445,6 +473,22 @@ export function correctDimensionScore(
       break;
     case 'none':
     default:
+      // D3 cross-segment aggregation (Entry 075). The marks in this bracket
+      // describe the highest-priority segment ONLY, while the declared score
+      // is the average across every segment — the prompt says so explicitly
+      // and tells the model to signal it here. Recomputing from the marks
+      // would silently replace a legitimate multi-segment average with one
+      // segment's mapping, inflating companies with a strong top tier and
+      // deflating those carried by weaker ones. The corrector cannot see
+      // per-segment data, so it must abstain rather than guess.
+      //
+      // Gates still win: step 4 of the D3 procedure says a triggered gate
+      // OVERRIDES the aggregated score, so only this gate-free path abstains.
+      if (expectedDimensionNumber === 3 && d3AggregationSpansMultipleSegments(parsed.gateText)) {
+        correctedScore = parsed.declaredScore;
+        correctionReason = 'd3-aggregation-abstained';
+        break;
+      }
       correctedScore = baseMappedScore;
       correctionReason = parsed.declaredScore !== correctedScore ? 'unexplained-mismatch' : 'none';
       break;
@@ -510,6 +554,13 @@ export function computeEvidenceQuality(
     // reasoning behind it was still partly fabricated (Entry 074).
     (result.fabricatedCitationMarksInvalidated ?? 0) > 0 ||
     result.correctionReason === 'unrecognized-gate-not-corrected' ||
+    // Abstentions are cases where the corrector deliberately declined to
+    // verify — D3 cross-segment aggregation (Entry 075) and the D7 R4
+    // enterprise exception (Entry 055) both hinge on per-segment data this
+    // module cannot see. "We chose not to check" must not surface as
+    // "verified"; the score is the model's unaudited claim.
+    result.correctionReason === 'd3-aggregation-abstained' ||
+    result.correctionReason === 'd7-r4-enterprise-exception-abstained' ||
     (confidence ?? 0) < LOW_CONFIDENCE_THRESHOLD - CONFIDENCE_FLOAT_EPSILON
   ) {
     return 'flagged';

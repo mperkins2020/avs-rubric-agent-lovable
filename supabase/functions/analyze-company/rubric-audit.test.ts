@@ -8,6 +8,7 @@ import {
   correctDimensionScore,
   computeEvidenceQuality,
   isWhollyInsiderSourced,
+  d3AggregationSpansMultipleSegments,
   AUDITED_DIMENSION_NAMES,
 } from './rubric-audit.ts';
 
@@ -709,5 +710,85 @@ describe('computeEvidenceQuality — Entry 074 integration', () => {
     expect(
       computeEvidenceQuality({ ...clean, fabricatedCitationMarksInvalidated: 0 }, 0.9),
     ).toBe('verified');
+  });
+});
+
+describe('correctDimensionScore — Entry 075: D3 cross-segment aggregation must not be overwritten', () => {
+  // Verbatim production rationale, tryprofound.com D3, v43 benchmark scan.
+  // Marks are the highest-priority segment ONLY (4/5 -> would map to 2), but
+  // the declared score of 1 is the aggregate across all 3 segments, and the
+  // model flagged that divergence in the gate exactly as the prompt tells it
+  // to. Entry 071 made this gate classify as 'none', which routed it into the
+  // baseMappedScore overwrite and silently raised 1 -> 2.
+  const PROFOUND_D3 =
+    '[D3 audit: S1=P(segments[enterprise].economic_buyer_role@https://tryprofound.com/pricing) S2=P(tiers[Enterprise].payment_methods@https://tryprofound.com/pricing) S3=P(tiers[Enterprise].features@https://tryprofound.com/pricing) S4=F S5=P(tiers[Starter].target_segment@https://tryprofound.com/pricing) | pts=4/5 | gate=none, aggregated across 3 segments | score=1] Profound offers clear tiers.';
+
+  it('preserves the declared cross-segment aggregate instead of remapping one segment (real tryprofound.com D3)', () => {
+    const result = correctDimensionScore(PROFOUND_D3, 3, { insiderAnswersPresent: true });
+    expect(result.correctedScore).toBe(1);
+    expect(result.scoreWasCorrected).toBe(false);
+    expect(result.correctionReason).toBe('d3-aggregation-abstained');
+  });
+
+  it('marks an abstained D3 as flagged, not verified — the corrector declined to check it', () => {
+    const result = correctDimensionScore(PROFOUND_D3, 3, { insiderAnswersPresent: true });
+    expect(computeEvidenceQuality(result, 0.9)).toBe('flagged');
+  });
+
+  it('still corrects a D3 with NO aggregation note (marks and score must agree there)', () => {
+    const single =
+      '[D3 audit: S1=P(a@https://x.com/p) S2=P(b@https://x.com/p) S3=P(c@https://x.com/p) S4=P(d@https://x.com/p) S5=F | pts=4/5 | gate=none | score=1] X.';
+    const result = correctDimensionScore(single, 3, { insiderAnswersPresent: true });
+    expect(result.correctedScore).toBe(2);
+    expect(result.correctionReason).toBe('unexplained-mismatch');
+  });
+
+  it('still corrects "aggregated across 1 segments" — one segment means the mapping must hold (real conductor.com shape)', () => {
+    const oneSegment =
+      '[D3 audit: S1=P(a@https://x.com/p) S2=P(b@https://x.com/p) S3=P(c@https://x.com/p) S4=P(d@https://x.com/p) S5=F | pts=4/5 | gate=none, aggregated across 1 segments | score=1] X.';
+    const result = correctDimensionScore(oneSegment, 3, { insiderAnswersPresent: true });
+    expect(result.correctedScore).toBe(2);
+    expect(result.correctionReason).toBe('unexplained-mismatch');
+  });
+
+  it('treats an unsubstituted literal "N" as multi-segment and fails safe (real hubspot.com/similarweb.com shape)', () => {
+    const literalN =
+      '[D3 audit: S1=P(a@https://x.com/p) S2=P(b@https://x.com/p) S3=F S4=F S5=P(c@https://x.com/p) | pts=3/5 | gate=none, aggregated across N segments | score=1] X.';
+    const result = correctDimensionScore(literalN, 3, { insiderAnswersPresent: true });
+    expect(result.correctionReason).toBe('d3-aggregation-abstained');
+    expect(result.correctedScore).toBe(1);
+  });
+
+  it('lets a real gate still override the aggregate (step 4: a triggered gate wins)', () => {
+    const capped =
+      '[D3 audit: S1=P(a@https://x.com/p) S2=P(b@https://x.com/p) S3=P(c@https://x.com/p) S4=P(d@https://x.com/p) S5=P(e@https://x.com/p) | pts=5/5 | gate=S4 cap final score at 1, aggregated across 3 segments | score=2] X.';
+    const result = correctDimensionScore(capped, 3, { insiderAnswersPresent: true });
+    expect(result.correctedScore).toBe(1);
+    expect(result.correctionReason).toBe('cap-misapplied-as-floor');
+  });
+
+  it('does not abstain on other dimensions that happen to mention segments', () => {
+    // D8 gates routinely say "fails for the highest-priority segment"; that is
+    // a cap, not an aggregation note, and must keep correcting normally.
+    const d8 =
+      '[D8 audit: T1=F T2=F T3=F T4=F T5=P(soc2@https://x.com/p) T6=F | pts=1/6 | gate=T4 fails for the highest-priority segment | score=1] X.';
+    const result = correctDimensionScore(d8, 8, { insiderAnswersPresent: true });
+    expect(result.correctedScore).toBe(0);
+    expect(result.correctionReason).toBe('cap-misapplied-as-floor');
+  });
+});
+
+describe('d3AggregationSpansMultipleSegments', () => {
+  it('true for a multi-segment count', () => {
+    expect(d3AggregationSpansMultipleSegments('none, aggregated across 3 segments')).toBe(true);
+  });
+  it('false for exactly one segment', () => {
+    expect(d3AggregationSpansMultipleSegments('none, aggregated across 1 segments')).toBe(false);
+  });
+  it('true for an unsubstituted literal N', () => {
+    expect(d3AggregationSpansMultipleSegments('none, aggregated across N segments')).toBe(true);
+  });
+  it('false when there is no aggregation note at all', () => {
+    expect(d3AggregationSpansMultipleSegments('none')).toBe(false);
   });
 });

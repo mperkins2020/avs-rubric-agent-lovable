@@ -4,7 +4,7 @@
 **Usage:** When a report produces a questionable result, log it here. Run `Scan the debug log for recurring patterns` periodically to surface systemic issues.
 **Related:** See ENGINE_DEBUG_HISTORY.md for backfilled history from git.
 
-**Entries:** 74 | **Last updated:** August 4, 2026
+**Entries:** 75 | **Last updated:** August 4, 2026
 
 ---
 
@@ -31,6 +31,46 @@
 <!-- Newest first. To add an entry, copy the template below and fill it in. -->
 
 <!-- Next entry goes here -->
+
+---
+
+### Entry 075 — August 4, 2026
+
+| Field | Value |
+|-------|-------|
+| Company | 7 of 12 — AthenaHQ, Otterly.AI, Scrunch AI, Profound, Peec.ai, Botify, Semrush |
+| Version | Introduced by Entry 071 (v43); fixed in 2026-08-04-pipeline-v44 |
+| Dimension | D3 (Buyer & Budget Alignment) only |
+| Subtest(s) | None — the bug is in how the declared score is interpreted, not in the marks |
+| Root Cause | **Regression I introduced in Entry 071.** D3's bracket reports marks for the highest-priority segment but a score that is the cross-segment aggregate. Entry 071 made the aggregation gate text classify as `none`, which routes into `correctedScore = baseMappedScore` — silently replacing a legitimate multi-segment average with one segment's mapping. |
+| Caught By | Lovable static analysis, 2026-08-04, reported to Michelle — **not** by me, and not by the seven hand-verifications I performed on the exact affected rows |
+| Status | fix_shipped (v44) — data remediation pending, same rescan as Entry 074 |
+
+**The prompt says these are different numbers.** `index.ts` step 6 of the D3 MANDATORY SCORING PROCEDURE:
+
+> *"The 'score' in this bracket is the FINAL aggregated dimension score from step 3/4, even though the P/F marks and pts are the highest-priority segment's alone — if aggregation across multiple segments changes the score from what the highest-priority segment's own points would map to on their own, note this explicitly in the gate field (e.g. `gate=none, aggregated across N segments`)."*
+
+Step 3 is explicit that the aggregate "may differ from the highest-priority segment's own mapped score if other segments pull the average up or down." So for D3 alone, the corrector's founding assumption — `score` should equal `mapPointsToScore(pts)` — is invalid whenever more than one segment exists. The model was following its instructions exactly, including emitting the divergence signal it was told to emit; the corrector then overwrote it.
+
+**How Entry 071 caused it.** Before Entry 071, `"none, aggregated across 3 segments"` failed the `/^none$/i` exact-match and fell through to `unrecognized` → `correctedScore = parsed.declaredScore` → **no correction**. Accidentally correct, for the wrong reason. Entry 071 fixed the classification to `none` — right about the classification, wrong about the consequence — routing D3 aggregates into the overwrite path for the first time.
+
+**Confirmed impact: 7 of 12 companies, every one inflated by +1 on D3.** All had `scoreCorrected=true` on D3 with an aggregation note in the gate: AthenaHQ, Otterly.AI, Scrunch AI, Profound, Peec.ai, Botify, Semrush. Unaffected: Conductor (`aggregated across 1 segments` — single segment, mapping legitimately holds), HubSpot and Similarweb (unsubstituted literal `"N"`, declared score happened to match), Goodie AI and Ahrefs (no correction fired).
+
+**The distortion is concentrated at the top of the leaderboard.** The affected set includes the entire top five (AthenaHQ 12, Otterly 12, Scrunch 11, Profound 11, Peec.ai 10). Published as-is, the ranking would have been wrong in the most visible place.
+
+**Fix.** New `d3AggregationSpansMultipleSegments(gateText)`; in the gate-free branch, D3 with a multi-segment aggregation note now abstains — `correctedScore = declaredScore`, reason `d3-aggregation-abstained` — because the corrector cannot see per-segment data and must not guess. Deliberately narrow:
+- **`aggregated across 1 segments` still corrects.** One segment means the aggregate *is* that segment, so genuine arithmetic errors are still caught.
+- **A literal unsubstituted `N` abstains** (fail safe — the count can't be verified).
+- **Real gates still win.** Step 4 says a triggered gate overrides the aggregate, so only the `none` path abstains; a cap or hard-zero applies as before.
+- **Other dimensions are untouched.** D6/D8 gates that mention "the highest-priority segment" are caps, not aggregation notes, and keep correcting normally (regression test added).
+
+Also changed: `computeEvidenceQuality` now returns `flagged` for **both** abstention reasons (`d3-aggregation-abstained` and the pre-existing `d7-r4-enterprise-exception-abstained`). An abstention means the corrector declined to verify; surfacing that as `verified` overstates what was actually checked.
+
+**Tests: 85 → 96 in the corrector suite (199 repo-wide, all passing)**, fixtures verbatim from tryprofound.com D3 plus the one-segment, literal-`N`, gate-override, and other-dimension cases.
+
+**Process finding — this is the second time hand-verification failed on the same class of error, and the more serious one.** Entry 070 and 071 were both caught by hand-verifying production data against the rubric. Here I hand-verified seven affected rows across the rescan cycle and pronounced each correction legitimate, repeatedly citing them as evidence that Entry 071's fix was working. I was checking the corrector's arithmetic against the marks — which was internally consistent every time — without re-reading the prompt spec that defines what the declared score is supposed to *mean*. **Verifying an implementation against itself will confirm anything.** The check that would have caught this is comparing behaviour against the specification, not against the output. Static analysis found it in one pass because it read both.
+
+**Pattern Tag:** `d3-cross-segment-aggregation`, `regression-from-entry-071`, `corrector-overwrote-legitimate-aggregate`, `hand-verification-false-negative`, `verified-against-implementation-not-spec`, `caught-by-static-analysis`
 
 ---
 
