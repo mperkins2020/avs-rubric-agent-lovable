@@ -105,9 +105,11 @@ regexes, scoring weights, or version pin diverge. **After any change to `scrape-
 
 Bump `ANALYSIS_VERSION` in `supabase/functions/analyze-company/index.ts` every time either edge function is meaningfully changed. Format: `'YYYY-MM-DD-pipeline-vN'`.
 
+**Bump once per DEPLOY, not once per work session.** If a version has already been deployed, any further behaviour change needs its own bump — otherwise the deployed build and the build on `main` share a version string and `scan_results` rows become ambiguous about which code produced them. This happened on 2026-08-04: v44 shipped the Entry 074 fix and was deployed, then Entry 075 changed corrector behaviour and initially reused v44. Caught before any scan ran; see Entry 075's version note. Rule of thumb: **if you have deployed since the last bump, bump again before the next deploy.**
+
 **Important — a version bump alone does NOT guarantee a fresh scan.** The 7-day cache on `scan_results` is gated by that row's `expires_at`, not by `ANALYSIS_VERSION`. A domain with a live (non-expired) row from an older version can still be served that stale result even after the version is bumped — the bump only affects newly-inserted rows. To force a genuinely fresh rescan of a domain that already has an unexpired row, explicitly set that row's `expires_at` into the past (don't delete the row — expiring it preserves history). See ENGINE_DEBUG_LOG.md Entry 072.
 
-Current version as of last session: `2026-08-03-pipeline-v43`
+Current version as of last session: `2026-08-04-pipeline-v45`
 
 ---
 

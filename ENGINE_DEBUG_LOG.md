@@ -39,12 +39,14 @@
 | Field | Value |
 |-------|-------|
 | Company | 7 of 12 — AthenaHQ, Otterly.AI, Scrunch AI, Profound, Peec.ai, Botify, Semrush |
-| Version | Introduced by Entry 071 (v43); fixed in 2026-08-04-pipeline-v44 |
+| Version | Introduced by Entry 071 (v43); fixed in 2026-08-04-pipeline-**v45** |
 | Dimension | D3 (Buyer & Budget Alignment) only |
 | Subtest(s) | None — the bug is in how the declared score is interpreted, not in the marks |
 | Root Cause | **Regression I introduced in Entry 071.** D3's bracket reports marks for the highest-priority segment but a score that is the cross-segment aggregate. Entry 071 made the aggregation gate text classify as `none`, which routes into `correctedScore = baseMappedScore` — silently replacing a legitimate multi-segment average with one segment's mapping. |
 | Caught By | Lovable static analysis, 2026-08-04, reported to Michelle — **not** by me, and not by the seven hand-verifications I performed on the exact affected rows |
-| Status | fix_shipped (v44) — data remediation pending, same rescan as Entry 074 |
+| Status | fix_shipped (v45) — data remediation pending, same rescan as Entry 074 |
+
+**Version note:** the Entry 074 fix shipped as `v44` and was deployed. This entry's fix landed afterwards and initially reused `v44`, which would have left two materially different corrector builds sharing one version string — the deployed build (074 only) and `main` (074 + 075). Caught by Michelle before any scan ran on either. Bumped to `v45`; **no `scan_results` row should ever carry `2026-08-04-pipeline-v44`.** If one does, it was produced by the 074-only build between the two deploys and must be rescanned.
 
 **The prompt says these are different numbers.** `index.ts` step 6 of the D3 MANDATORY SCORING PROCEDURE:
 

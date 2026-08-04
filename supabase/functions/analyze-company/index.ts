@@ -30,7 +30,7 @@ interface AnalyzeRequest {
 // Deno EdgeRuntime type for background processing
 declare const EdgeRuntime: { waitUntil: (p: Promise<unknown>) => void };
 
-const ANALYSIS_VERSION = '2026-08-04-pipeline-v44';
+const ANALYSIS_VERSION = '2026-08-04-pipeline-v45';
 
 const COMPANY_PROFILE_PROMPT = `You are an expert business analyst. Analyze the following website content and extract a company profile.
 
