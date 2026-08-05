@@ -8,6 +8,7 @@ The following files are maintained exclusively by Claude Code. Lovable must NEVE
 - `supabase/functions/analyze-company/json-repair.ts` — truncated-JSON repair (Entry 083)
 - `supabase/functions/analyze-company/json-repair.test.ts` — repair-layer test fixtures
 - `supabase/functions/scrape-website/index.ts` — scraper
+- `supabase/functions/run-benchmark/index.ts` — benchmark orchestrator (Entry 086)
 - `src/lib/api/scraper.ts` — client API layer
 - `tasks/` — calibration docs and todos
 
@@ -42,6 +43,9 @@ Use these exact prompts when deploying edge functions. Do not ask Lovable to mak
 
 **Deploy analyze-company only:**
 > Deploy `analyze-company` edge function only. No code changes — deployment only. Pull the latest from the main branch before deploying.
+
+**Deploy run-benchmark only:**
+> Deploy `run-benchmark` edge function only. No code changes — deployment only. Pull the latest from the main branch before deploying.
 
 Note: Lovable may report "pre-existing build errors in protected files" — this is expected. Linter warnings in protected files are pre-existing and do not prevent deployment. Proceed with the scan after deployment.
 

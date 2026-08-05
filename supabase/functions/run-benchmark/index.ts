@@ -111,20 +111,50 @@ async function processCompany(
 
   try {
     // ── Step 1: Scrape ────────────────────────────────────────────────────
-    const scrapeRes = await fetch(`${supabaseUrl}/functions/v1/scrape-website`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${serviceRoleKey}`,
-        'Content-Type': 'application/json',
-        // Signal to scrape-website that this is an internal benchmark call
-        'x-benchmark-runner': 'true',
-      },
-      body: JSON.stringify({
-        url: `https://${company.domain}`,
-        includeSubpages: true,
-        maxPages: 20,
-      }),
-    });
+    // Entry 086: this fetch had NO timeout of its own — every other step in
+    // this pipeline is bounded (scrapePage()'s per-page AbortControllers,
+    // mapDomain()'s retry backoff, this file's own POLL_TIMEOUT_MS for the
+    // analyze step below), but a hang inside scrape-website itself had
+    // nothing forcing it to resolve. Confirmed in production 2026-08-06:
+    // hubspot.com's run_log row sat at "pending" for 1551s (25.8 min) — over
+    // 5x POLL_TIMEOUT_MS — meaning the hang was happening HERE, before ever
+    // reaching the analyze step's own timeout logic, and scrape-website's
+    // Entry 084 retry additions are a plausible contributor for a company
+    // already documented as having unusually low concurrency/timing
+    // tolerance. Bounding this to the same POLL_TIMEOUT_MS this pipeline
+    // already treats as "too long to wait" turns a silent, permanent hang
+    // into a clean, fast, diagnosable failure — it does not by itself fix
+    // whatever makes the underlying scrape slow.
+    const scrapeController = new AbortController();
+    const scrapeTimeout = setTimeout(() => scrapeController.abort(), POLL_TIMEOUT_MS);
+    let scrapeRes: Response;
+    try {
+      scrapeRes = await fetch(`${supabaseUrl}/functions/v1/scrape-website`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${serviceRoleKey}`,
+          'Content-Type': 'application/json',
+          // Signal to scrape-website that this is an internal benchmark call
+          'x-benchmark-runner': 'true',
+        },
+        body: JSON.stringify({
+          url: `https://${company.domain}`,
+          includeSubpages: true,
+          maxPages: 20,
+        }),
+        signal: scrapeController.signal,
+      });
+    } catch (fetchErr) {
+      if (fetchErr instanceof Error && fetchErr.name === 'AbortError') {
+        throw new Error(
+          `Scrape call to scrape-website did not respond within ${POLL_TIMEOUT_MS / 1000}s — ` +
+          `aborted here rather than left hanging (Entry 086)`
+        );
+      }
+      throw fetchErr;
+    } finally {
+      clearTimeout(scrapeTimeout);
+    }
 
     const scrapeData = await scrapeRes.json() as Record<string, unknown>;
     if (!scrapeData.success || !Array.isArray(scrapeData.pages)) {

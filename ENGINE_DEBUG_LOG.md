@@ -4,7 +4,7 @@
 **Usage:** When a report produces a questionable result, log it here. Run `Scan the debug log for recurring patterns` periodically to surface systemic issues.
 **Related:** See ENGINE_DEBUG_HISTORY.md for backfilled history from git.
 
-**Entries:** 85 | **Last updated:** August 6, 2026
+**Entries:** 86 | **Last updated:** August 6, 2026
 
 ---
 
@@ -31,6 +31,31 @@
 <!-- Newest first. To add an entry, copy the template below and fill it in. -->
 
 <!-- Next entry goes here -->
+
+---
+
+### Entry 086 — August 6, 2026
+
+| Field | Value |
+|-------|-------|
+| Company | hubspot.com — two consecutive rescan attempts during the v51 batch cycle, 2026-08-05/06 |
+| Version | Every version — the gap predates this cycle; only surfaced now, on the first company whose scrape is both large (20 pages) and already documented as concurrency/timing-sensitive |
+| Dimension | N/A — orchestration layer, upstream of scraping and scoring both |
+| Subtest(s) | N/A |
+| Root Cause | **`run-benchmark`'s call to `scrape-website` had no timeout of its own.** Every other step in this pipeline is bounded — `scrapePage()`'s per-page `AbortController`s (Entry 084), `mapDomain()`'s retry backoff, `run-benchmark`'s own `POLL_TIMEOUT_MS` for the analyze step — but this one fetch had nothing forcing it to resolve. If `scrape-website`'s execution ran long enough to hit a platform-level cutoff without cleanly returning a response, `run-benchmark` would just hang indefinitely on this `await`, never reaching either its success path or its `catch` block. |
+| Caught By | HubSpot's rescan attempt #2 (2026-08-05 23:11 UTC): `benchmark_run_log` row sat at `status: 'pending'` for 1551 seconds (25.8 minutes) — over 5x `POLL_TIMEOUT_MS` — with `completed_at: null` and no `scan_results` row ever appearing. Attempt #1, ~30 minutes earlier, had failed cleanly with a 504 in 151s — a different symptom, but the same underlying company and the same suspect: Entry 084's retry additions (up to ~36s extra worst-case latency) landing on a company already documented (prior cycle) as having unusually low concurrency/timing tolerance. |
+| Status | **fix_shipped (local, not yet deployed)** |
+
+**Why two different symptoms (504-in-151s vs. permanent-hang) both point the same direction.** Both attempts are consistent with HubSpot's scrape running close to, or past, some execution ceiling — the platform-level 504 in attempt #1 suggests the ceiling was hit and *something* returned an error response; the silent hang in attempt #2 suggests the ceiling was hit in a way that killed the function without ever producing a response at all. Neither is provable without log access (still unavailable — see Entry 085), but a bounded timeout on the calling side turns either outcome into the same clean, fast, diagnosable failure instead of two different unpredictable ones.
+
+**Resolution:**
+- Wrapped the `scrape-website` fetch in `run-benchmark`'s `processCompany()` with an `AbortController`, timing out at `POLL_TIMEOUT_MS` (300s) — the same ceiling this pipeline already treats as "too long to wait" for the analyze step, reused rather than inventing a new constant.
+- An abort now throws a specific, clear error (`"...did not respond within 300s — aborted here rather than left hanging"`), which flows into `benchmark_run_log.error_message` the same way as every other failure this cycle.
+- **This does not fix whatever makes HubSpot's scrape slow** — it only guarantees the pipeline fails cleanly instead of hanging forever. If HubSpot keeps failing (cleanly, now) after this ships, the next step is investigating whether its large page count (20) combined with Entry 084's retry additions needs a leaner retry policy for large evidence sets specifically, not just a longer leash.
+- `run-benchmark/index.ts` added to the protected-files list (CLAUDE.md) — it wasn't previously, despite being core orchestration logic Claude Code has now made a substantive fix to.
+- No test harness exists for this file either (same as `scrape-website` — fetch-based Deno code); verification is via a live rescan, same discipline as Entries 084/085.
+
+**Pattern Tag:** `unbounded-fetch`, `silent-hang`, `hubspot-low-tolerance-recurrence`, `entry-084-side-effect-candidate`, `clean-failure-not-a-fix`, `fix-shipped-not-deployed`
 
 ---
 
