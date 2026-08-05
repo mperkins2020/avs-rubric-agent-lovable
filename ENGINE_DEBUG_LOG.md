@@ -4,7 +4,7 @@
 **Usage:** When a report produces a questionable result, log it here. Run `Scan the debug log for recurring patterns` periodically to surface systemic issues.
 **Related:** See ENGINE_DEBUG_HISTORY.md for backfilled history from git.
 
-**Entries:** 80 | **Last updated:** August 5, 2026
+**Entries:** 81 | **Last updated:** August 5, 2026
 
 ---
 
@@ -31,6 +31,39 @@
 <!-- Newest first. To add an entry, copy the template below and fill it in. -->
 
 <!-- Next entry goes here -->
+
+---
+
+### Entry 081 — August 5, 2026
+
+| Field | Value |
+|-------|-------|
+| Company | peec.ai — confirmed on this company; likely affects any company with a large, high-cardinality content section (directories, case-study libraries, blogs) |
+| Version | Not version-specific — a scraper page-selection behaviour, observed across v46 and v47 which differ only in the D3 abstention |
+| Dimension | D1, D4, D8 observed moving; any dimension that draws on non-pricing evidence pages is exposed |
+| Subtest(s) | N/A — this is upstream of the corrector entirely |
+| Root Cause | Scraper page-selection is not stable run-to-run for the "long tail" beyond a company's core pricing pages |
+| Caught By | Investigating why peec.ai scored 11 (v46) then 7 (v47) on engines differing only by 1 point of expected change (Michelle + Claude Code, 2026-08-05) |
+| Status | documented, not remediated — flagged as follow-up work, not blocking the current rescan cycle |
+
+**The finding.** peec.ai's page sets on the two runs:
+
+| v46 (5 pages) | v47 (6 pages) |
+|---|---|
+| pricing, pricing-agencies, homepage, changelog | pricing, pricing-agencies, homepage, changelog |
+| agency-directory/create-group | agency-directory/fight-or-flight, agency-directory/graphite-growth |
+
+The four pages carrying actual pricing/product content are identical across both runs. What varies is which individual pages get pulled from what appears to be a large, high-cardinality "agency directory" section — different pages, and a different count (5 vs 6). D1 (Product North Star), D4 (Value Unit), and D8 (Safety Rails) each moved a point between these two runs even though nothing in the corrector or prompts changed between them — the only code difference was Entry 077's D3 abstention, worth exactly 1 point, which is not where these particular moves occurred.
+
+**Why this is a distinct problem from Entries 074-080.** Every fix this cycle addressed the corrector's handling of an audit block that was already sitting in front of the model. This is upstream of that: it's about *which evidence the model gets shown in the first place*. A corrector can't be more reliable than the evidence set it's grading.
+
+**Distinguished from the two-hypothesis question this investigation was designed to resolve:** the concern going in was whether this is scrape variance (tractable — pin evidence, stabilize discovery, or rescan solo) or model interpretation drift on identical evidence (Entry 062's problem, much harder — repeated runs and medians, or bands instead of point scores). **Confirmed: this is scrape variance.** The evidence sets genuinely differ. That's the better of the two outcomes, but it still means part of the score movement observed throughout this entire rescan cycle — on peec.ai and plausibly other companies — is not attributable to the engine fixes at all.
+
+**Not remediated in this session.** This needs its own investigation (why does page selection vary — sitemap/link discovery order, a page budget with ties broken differently, concurrent-request races — and whether the long-tail pages it's pulling in should be part of the scoring evidence set at all, versus reserved for qualitative-only findings). Flagged as follow-up work rather than blocking the current v50 rescan cycle, since the core pricing evidence — the pages most dimensions actually key on — has been stable in every case checked.
+
+**Report implication.** The internal report's comparability section (§8 in the v43 draft) needs a line stating that some fraction of observed score movement across this entire cycle, independent of any engine defect, is attributable to page-selection variance rather than genuine evidence or engine differences. A ~4-point observed band on peec.ai across v43/v45/v46/v47 (10/8-void/11/7) is partly this, not entirely the seven corrector bugs fixed above it.
+
+**Pattern Tag:** `scrape-page-selection-variance`, `upstream-of-corrector`, `distinguishes-from-interpretation-drift`, `documented-not-remediated`, `report-comparability-caveat`
 
 ---
 
