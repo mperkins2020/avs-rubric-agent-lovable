@@ -915,6 +915,7 @@ Deno.serve(async (req) => {
     // 3 attempts total; a non-rate-limited failure (real 404, bad URL) still
     // fails on the first attempt, same as before.
     const MAIN_PAGE_MAX_ATTEMPTS = 3;
+    let mainPageAttempts = 1;
     let { response: mainPageResponse, bodyText: mainPageBodyText } = await attemptMainPageScrape();
     for (
       let attemptNum = 1;
@@ -929,7 +930,21 @@ Deno.serve(async (req) => {
       );
       await new Promise(resolve => setTimeout(resolve, FIRECRAWL_RATE_LIMIT_RETRY_DELAY_MS));
       ({ response: mainPageResponse, bodyText: mainPageBodyText } = await attemptMainPageScrape());
+      mainPageAttempts++;
     }
+
+    // Entry 085: neither failure branch below used to surface WHY Firecrawl
+    // failed — only a generic message — which meant a repeat ahrefs.com
+    // failure (2026-08-06) was undiagnosable after the fact: no logging
+    // infra retains scrape-website's console output (confirmed via Lovable
+    // — every log source came back empty), so the upstream Firecrawl
+    // status/body was lost the moment the response was returned. This
+    // string flows into run-benchmark's `Scrape failed (${status}): ${error}`
+    // and lands in the durable `benchmark_run_log.error_message`, so
+    // appending it here is the only way this diagnostic survives.
+    const mainPageDiagnostic =
+      `Firecrawl status ${mainPageResponse.status}, ${mainPageAttempts}/${MAIN_PAGE_MAX_ATTEMPTS} attempt(s)` +
+      (mainPageBodyText ? `: ${mainPageBodyText.slice(0, 300)}` : '');
 
     let mainPageData: FirecrawlScrapeResponse;
     try {
@@ -937,7 +952,10 @@ Deno.serve(async (req) => {
     } catch {
       console.error('Firecrawl returned non-JSON response, status:', mainPageResponse.status);
       return new Response(
-        JSON.stringify({ success: false, error: 'The website could not be reached. Please check the URL and try again.' }),
+        JSON.stringify({
+          success: false,
+          error: `The website could not be reached. Please check the URL and try again. (${mainPageDiagnostic})`,
+        }),
         { status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -945,7 +963,10 @@ Deno.serve(async (req) => {
     if (!mainPageResponse.ok || !mainPageData.success) {
       console.error('Failed to scrape main page:', mainPageData);
       return new Response(
-        JSON.stringify({ success: false, error: 'Failed to scrape the main page. Please check the URL and try again.' }),
+        JSON.stringify({
+          success: false,
+          error: `Failed to scrape the main page. Please check the URL and try again. (${mainPageDiagnostic})`,
+        }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }

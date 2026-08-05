@@ -4,7 +4,7 @@
 **Usage:** When a report produces a questionable result, log it here. Run `Scan the debug log for recurring patterns` periodically to surface systemic issues.
 **Related:** See ENGINE_DEBUG_HISTORY.md for backfilled history from git.
 
-**Entries:** 84 | **Last updated:** August 6, 2026
+**Entries:** 85 | **Last updated:** August 6, 2026
 
 ---
 
@@ -31,6 +31,29 @@
 <!-- Newest first. To add an entry, copy the template below and fill it in. -->
 
 <!-- Next entry goes here -->
+
+---
+
+### Entry 085 — August 6, 2026
+
+| Field | Value |
+|-------|-------|
+| Company | ahrefs.com (recurrence during first v51 rescan attempt) — but the gap this entry fixes is roster-wide, on the on-demand path too |
+| Version | Every version — the gap predates this cycle, only surfaced now because Entry 084's fix needed to be verified against a real failure and couldn't be |
+| Dimension | N/A — logging/observability only |
+| Subtest(s) | N/A |
+| Root Cause | **No durable record of WHY a scrape failed.** `scrape-website`'s error responses (`"Failed to scrape the main page..."`) never included Firecrawl's actual status/body — that detail only ever reached `console.error`/`console.warn`, and this project's edge-function log retention isn't returning anything (confirmed via Lovable, 2026-08-06: `edge_function_logs`, `function_logs`, and `function_edge_logs` all came back empty for the exact failure window). The moment a scrape failed, the only diagnostic evidence was destroyed. |
+| Caught By | Trying to verify whether Entry 084's rate-limit retry fix actually engaged on a live ahrefs.com re-failure during the first v51 rescan batch (2026-08-05 20:12–20:13 UTC) — discovered there was no way to tell, from any available source, whether the retry fired or not |
+| Status | **fix_shipped (local, not yet deployed)** |
+
+**Why this matters beyond the immediate mystery.** Entry 084 shipped a fix for exactly this failure signature, and the very first real-world test of it (ahrefs.com, same day) produced an ambiguous result: failed again, in 47 seconds — plausibly consistent with the retry running to exhaustion, equally consistent with the retry never engaging at all (if this failure's shape didn't match `isFirecrawlRateLimited()`). There was no way to distinguish "the fix isn't strong enough" from "the fix doesn't apply to this failure" without the underlying Firecrawl response, and that response was unrecoverable after the fact.
+
+**Resolution:**
+- Both main-page-scrape failure branches (`scrape-website/index.ts`) now append a diagnostic suffix to the returned `error` string: Firecrawl's HTTP status, how many attempts were made (out of `MAIN_PAGE_MAX_ATTEMPTS`), and up to 300 chars of the raw response body.
+- This string flows through `run-benchmark`'s existing `` `Scrape failed (${status}): ${error}` `` wrapping straight into `benchmark_run_log.error_message` — a durable Postgres column, not a log line — so it survives regardless of log-retention state and is readable the same way every other rescan result has been checked this cycle (anonymous-session query against `scan_results`/`benchmark_run_log`, no elevated credential needed).
+- No behavior change — purely additive to the error string. Confirmed no frontend code pattern-matches on the exact previous message text.
+
+**Pattern Tag:** `no-durable-failure-diagnostic`, `log-retention-gap`, `entry-084-verification-blocker`, `error-message-enriched-not-new-infra`, `fix-shipped-not-deployed`
 
 ---
 
