@@ -4,7 +4,7 @@
 **Usage:** When a report produces a questionable result, log it here. Run `Scan the debug log for recurring patterns` periodically to surface systemic issues.
 **Related:** See ENGINE_DEBUG_HISTORY.md for backfilled history from git.
 
-**Entries:** 81 | **Last updated:** August 5, 2026
+**Entries:** 82 | **Last updated:** August 5, 2026
 
 ---
 
@@ -17,7 +17,7 @@
 | evidence_gap | 0 | — |
 | gate_misfire | 1 | D7/D8 cap-gate-misapplied-as-floor across 6 companies (Entry 066) |
 | confidence_miscalc | 0 | — |
-| prompt_drift | 5 | ICP and Job Clarity (D2); D6/D8 evidence-block leak (Entry 060); D7 audit arithmetic error (Entry 064); D5-D8 evidence block missing, initially 4 companies (Entry 065), later found near-universal across every dimension/company checked this session — root cause (asking for 2 brackets per dimension instead of 1) FIXED in Entry 069, not yet re-verified against a live rescan |
+| prompt_drift | 6 | ICP and Job Clarity (D2); D6/D8 evidence-block leak (Entry 060); D7 audit arithmetic error (Entry 064); D5-D8 evidence block missing, initially 4 companies (Entry 065), later found near-universal across every dimension/company checked this session — root cause (asking for 2 brackets per dimension instead of 1) FIXED in Entry 069, not yet re-verified against a live rescan; model fabricating `@user_input` citations, wholly (Entry 074, fixed v44) and in mixed form (Entry 082, fixed v51) — concentrated in D2 |
 | evidence_snippet_selection | 2 | ICP (D2), Value Unit (D4), Overages (D6), Safety Rails (D7), Evidence Coverage (D8); same-page-different-read on D4 (Entry 062, confirmed a 3rd time on Semrush — see Entry 062 addendum). Root cause (D1-D4 had no mandatory audit-block procedure) FIXED in Entry 068 — not yet re-verified against a live rescan. |
 | pipeline_miss | 27 | Value Unit, Cost Driver Mapping, Safety/Trust, Overages & Risk, URL filter; forced-page resolution gap (Entry 059); session-load evidence degradation (Entry 061); product-surface mismatch (Entry 063); blog-content misclassified as pricing evidence (Entry 067) |
 | contamination | 13 | Pricing Transparency, Enterprise/Compliance (D7/D8) |
@@ -31,6 +31,48 @@
 <!-- Newest first. To add an entry, copy the template below and fill it in. -->
 
 <!-- Next entry goes here -->
+
+---
+
+### Entry 082 — August 5, 2026
+
+| Field | Value |
+|-------|-------|
+| Company | Confirmed live on scrunch.com (D2); the same pattern is structurally possible on any company/dimension where a subtest's citation names multiple fields, since Entry 074's guard only inspected whether ALL of them were insider-sourced |
+| Version | 2026-08-05-pipeline-v50 and every prior version carrying the Entry 074 guard (v44–v50) |
+| Dimension | Confirmed on D2 (scrunch.com J1); mechanically applicable to any dimension with compound citations (D3, D6, D7, D8 all have real production examples in the test suite) |
+| Subtest(s) | Any subtest whose PASS citation mixes a real public source with at least one `@user_input` source |
+| Root Cause | **Entry 074's fabrication guard was under-scoped.** It demoted a PASS mark only when `isWhollyInsiderSourced()` — every cited source is `user_input` — was true. A citation naming one fabricated field alongside one or more real fields (e.g. `primary_buyer_role@user_input + company_size_range@https://scrunch.com + ...`) was left untouched, on the stated reasoning that it "retains genuine public backing." The prompt's own rule has no such exception (`"@user_input" is FORBIDDEN unless an INSIDER ANSWERS block appears`) — the guard was narrower than the rule it was enforcing. |
+| Caught By | VLS research analysis re-verification against live v50 data, re-checking the `@user_input` open question the research doc itself had flagged (Michelle + Claude Code, 2026-08-05) |
+| Status | **fix_shipped (v51) — full-roster data remediation not yet run; requires a rescan, see below** |
+
+**The chain, each link verified in source (`rubric-audit.ts`):**
+
+1. `isWhollyInsiderSourced()` requires `sources.every((s) => s === INSIDER_SOURCE_TOKEN)` — a citation with even one real public source alongside a fabricated one returns `false`.
+2. The Entry 074 demotion loop (`correctDimensionScore`) only invalidated a mark when this function returned `true`.
+3. Net effect: the model can satisfy a multi-field subtest by fabricating just the field(s) it couldn't find publicly and citing real pages for the rest, and the mark still passes in full — the fabricated field contributes nothing true to the pass, but the pass counts anyway.
+
+**Live confirmation, scrunch.com D2 J1 (v50, pulled 2026-08-05):**
+
+```
+J1=P(icp_profile.primary_buyer_role@user_input + icp_profile.company_size_range@https://scrunch.com + icp_profile.industries[]@https://scrunch.com + icp_profile.top_constraints[]@https://scrunch.com)
+```
+
+Not present in Scrunch's `fabricatedCitations` for that scan (the guard did not fire on it). Scrunch's D2 scored a perfect 2/2 (6/6) this cycle, contributing to D2's roster-wide 2.00/2 saturation — the same saturation the VLS research doc's §0.3 had flagged as possibly an artifact of non-public evidence, without yet having a source-grounded mechanism for why.
+
+**Distinguished from Entry 074:** same root defect class (fabricated `@user_input` citations on scans with no insider input), but Entry 074's fix left a scoped gap rather than being wrong — it correctly handles the wholly-fabricated case and was never designed to handle mixed citations. This is a narrowing-of-scope bug in the fix, not a new defect family.
+
+**Resolution:**
+
+- Added `citesUserInput()` (`rubric-audit.ts`) — true when a citation names *at least one* `user_input` source, superset of `isWhollyInsiderSourced()`. This is now the actual demotion gate.
+- `isWhollyInsiderSourced()` is retained, now used only to populate a new `partiallyFabricatedCitationLabels` telemetry field — distinguishing "the model invented the whole citation" from "the model invented one field of an otherwise-real citation" in stored data, rather than collapsing both into one outcome.
+- `fabricatedCitations` (index.ts) gained a `partiallyFabricatedLabels` field; the console warning now calls out mixed-citation demotions separately.
+- Three existing tests that encoded the old "mixed citations survive" behavior as correct (`rubric-audit.test.ts`, real conductor.com D8 T5 and tryprofound.com D6/D7 production blocks) were updated to their new, correct expectations. Added a dedicated `citesUserInput` test suite and a regression test using the exact verbatim scrunch.com D2 J1 string that exposed this. Full suite: 213 → 221 tests, all passing.
+- `ANALYSIS_VERSION` bumped to `2026-08-05-pipeline-v51`. `tools/scraper-dev/filter-logic.ts`'s `SYNCED_WITH_ANALYSIS_VERSION` bumped in step (no scrape-website rule changed — this corrector-only fix doesn't touch scraping — but the drift guardrail pins to the shared version string on every bump regardless of which function changed, so it needed conscious re-verification, not a rule mirror edit).
+
+**Not yet done — deploy and full-roster rescan.** This fix has not been deployed, and no company has been rescanned under it. Scrunch is the one confirmed-affected company; the guard is now broad enough to also catch this pattern anywhere else in the roster it might exist but wasn't spot-checked (only D2/D5/D8 mixed citations were sampled during this investigation — not an exhaustive sweep). A full-roster rescan under v51 is required both to remediate Scrunch and to discover whether other companies are similarly affected. **Rescan protocol for this cycle, per operator instruction (2026-08-05): (a) snapshot every company's pre-rescan `v50` `result_json` first — `npm run snapshot-scan -- --roster marketing-intelligence` — so the before/after diff has a fixed baseline; (b) submit at most 2 domains per rescan call, not 3 — `BATCH_SIZE` in `run-benchmark/index.ts` already caps concurrency at 2, but this cycle's v50 rescan still saw failures (Ahrefs 5x, HubSpot needing a solo-only rerun) when 3 domains were submitted in one call, so cap total submission size too, not just internal concurrency.**
+
+**Pattern Tag:** `fabricated-citation-guard-underscoped`, `mixed-citation-loophole`, `entry-074-followup`, `d2-saturation-mechanism`, `fix-shipped-rescan-pending`
 
 ---
 

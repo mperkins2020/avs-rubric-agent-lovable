@@ -8,6 +8,7 @@ import {
   correctDimensionScore,
   computeEvidenceQuality,
   isWhollyInsiderSourced,
+  citesUserInput,
   d3AggregationSpansMultipleSegments,
   AUDITED_DIMENSION_NAMES,
 } from './rubric-audit.ts';
@@ -594,8 +595,12 @@ describe('isWhollyInsiderSourced (Entry 074 — fabricated-citation detection)',
   });
 
   it('does NOT flag a mixed citation that retains real public backing (real conductor.com D8 T5)', () => {
-    // Half insider, half a genuine scraped page — the mark still has real
-    // evidence behind it, so invalidating it would over-correct.
+    // Half insider, half a genuine scraped page. isWhollyInsiderSourced()
+    // still returns false here — that's correct, it's a "wholly" check, not
+    // a "demote or not" check. As of Entry 082, the actual demotion gate is
+    // citesUserInput() (see below), which DOES flag this citation: the mark
+    // is still demoted, just recorded as "partially" rather than "wholly"
+    // fabricated. See the citesUserInput describe block just below.
     expect(
       isWhollyInsiderSourced(
         'path-used-soc2_path: soc2@user_input + compliance_cert@https://www.conductor.com/platform/features/mcp-server',
@@ -617,6 +622,39 @@ describe('isWhollyInsiderSourced (Entry 074 — fabricated-citation detection)',
     // "auto-seat-based" cites nothing. That is a separate citation-quality
     // weakness; this guard deliberately does not widen its remit to cover it.
     expect(isWhollyInsiderSourced('auto-seat-based')).toBe(false);
+  });
+});
+
+describe('citesUserInput (Entry 082 — mixed-citation fabrication detection, the actual demotion gate)', () => {
+  it('detects a wholly insider-sourced citation (superset of isWhollyInsiderSourced)', () => {
+    expect(citesUserInput('economic_buyer_role@user_input')).toBe(true);
+  });
+
+  it('detects a MIXED citation — one fabricated source alongside a real one (real conductor.com D8 T5)', () => {
+    // isWhollyInsiderSourced() returns false for this exact citation. This
+    // function returns true anyway: the prompt's rule forbids "@user_input"
+    // outright, with no carve-out for a citation that also names a real page.
+    expect(
+      citesUserInput(
+        'path-used-soc2_path: soc2@user_input + compliance_cert@https://www.conductor.com/platform/features/mcp-server',
+      ),
+    ).toBe(true);
+  });
+
+  it('detects the exact scrunch.com D2 J1 citation that motivated this fix (live v50 production data)', () => {
+    expect(
+      citesUserInput(
+        'icp_profile.primary_buyer_role@user_input + icp_profile.company_size_range@https://scrunch.com + icp_profile.industries[]@https://scrunch.com + icp_profile.top_constraints[]@https://scrunch.com',
+      ),
+    ).toBe(true);
+  });
+
+  it('does not flag a purely public citation', () => {
+    expect(citesUserInput('value_units[credit].definition@https://athenahq.ai/pricing')).toBe(false);
+  });
+
+  it('does not flag a citation naming no source at all', () => {
+    expect(citesUserInput('auto-seat-based')).toBe(false);
   });
 });
 
@@ -667,12 +705,21 @@ describe('correctDimensionScore — Entry 074 fabricated-citation guard', () => 
     expect(result.scoreWasCorrected).toBe(true);
   });
 
-  it('preserves a mixed citation with genuine public backing (real conductor.com D8 T5)', () => {
+  it('[Entry 082] now ALSO demotes a mixed citation, despite its genuine public half (real conductor.com D8 T5)', () => {
+    // Pre-Entry-082 behaviour: T5 kept its public half, nothing invalidated.
+    // Entry 082 changed this — the prompt's "@user_input is FORBIDDEN" rule
+    // has no exception for mixed citations, so any appearance demotes.
     const conductorD8 =
       '[D8 audit: T1=F T2=P(forecasting_surfaces.alerts@https://conductor.com) T3=F T4=F T5=P(path-used-soc2_path: soc2@user_input + compliance_cert@https://www.conductor.com/platform/features/mcp-server) T6=F | pts=2/6 | gate=T4 | score=1] Conductor.';
     const result = correctDimensionScore(conductorD8, 8, { insiderAnswersPresent: false });
-    // T5 keeps its public half; nothing is invalidated.
-    expect(result.fabricatedCitationMarksInvalidated).toBe(0);
+    expect(result.fabricatedCitationMarksInvalidated).toBe(1);
+    expect(result.fabricatedCitationLabels).toEqual(['T5']);
+    expect(result.partiallyFabricatedCitationLabels).toEqual(['T5']);
+    // Only T2 now genuinely passes -> 1/6 -> maps to 0; "T4" gate names an
+    // existing subtest label -> cap at 1 -> min(0, 1) = 0, below the
+    // declared 1.
+    expect(result.correctedScore).toBe(0);
+    expect(result.scoreWasCorrected).toBe(true);
   });
 
   it('re-judges the gate against sanitized marks, not the fabricated pass', () => {
@@ -862,20 +909,63 @@ describe('Entry 074 guard — verbatim tryprofound.com v47 production blocks', (
     expect(computeEvidenceQuality(result, 0.8)).toBe('flagged');
   });
 
-  it('D6: demotes two wholly-insider marks, PRESERVES the compound one, cap holds at 1', () => {
+  it('D6: [Entry 082] now demotes all three insider-touched marks, including the compound one; cap still holds at 1', () => {
+    // Pre-Entry-082: only P4/P5 (wholly insider) were demoted; P6 (mixed)
+    // survived. Entry 082 demotes P6 too.
     const d6 =
       '[D6 audit: P1=P(tiers[Starter].name@https://tryprofound.com/pricing) P2=P(packaging.exploration_offering@https://tryprofound.com/pricing + packaging.production_offering@https://tryprofound.com/pricing + tiers[Starter].name@https://tryprofound.com/pricing) P3=P(pools[Starter Agents].unit_name@https://tryprofound.com/pricing) P4=P(pools[Starter Agents].scope@user_input) P5=P(tiers[Growth].upgrade_path_next@user_input) P6=P(tiers[Starter].overage_unit_price@user_input + tiers[Starter].unit_name@https://tryprofound.com/pricing + tiers[Starter].included_units@https://tryprofound.com/pricing) | pts=6/6 | gate=P3 gate | score=1] Profound offers clear tiered packaging.';
     const result = correctDimensionScore(d6, 6, { insiderAnswersPresent: false });
-    expect(result.fabricatedCitationLabels).toEqual(['P4', 'P5']);
+    expect(result.fabricatedCitationLabels).toEqual(['P4', 'P5', 'P6']);
+    expect(result.partiallyFabricatedCitationLabels).toEqual(['P6']);
+    // P1-P3 remain real -> 3/6 -> maps to 1; "P3 gate" caps at 1 -> same
+    // result as before the fix, coincidentally (the cap was already binding).
     expect(result.correctedScore).toBe(1);
   });
 
-  it('D7: leaves a compound R5 alone — real pages still back it', () => {
+  it('D7: [Entry 082] now demotes the compound R5 too, despite its real pages', () => {
+    // Pre-Entry-082: R5 (mixed) survived untouched, 0 fabrications reported.
     const d7 =
       '[D7 audit: R1=P(policies.overage_behavior@https://tryprofound.com/pricing) R2=F R3=P(tiers[Starter].alert_policy@https://tryprofound.com/pricing) R4=F R5=P(tiers[Enterprise].payment_methods@https://tryprofound.com/pricing + policies.enterprise_true_up@user_input + policies.overage_behavior@https://tryprofound.com/pricing) R6=P(forecasting_surfaces.estimation_surface@https://tryprofound.com/pricing) | pts=4/6 | gate=R4 gate | score=1] Profound explicitly states overage behavior.';
     const result = correctDimensionScore(d7, 7, { insiderAnswersPresent: false });
-    expect(result.fabricatedCitationMarksInvalidated).toBe(0);
+    expect(result.fabricatedCitationMarksInvalidated).toBe(1);
+    expect(result.fabricatedCitationLabels).toEqual(['R5']);
+    expect(result.partiallyFabricatedCitationLabels).toEqual(['R5']);
+    // R1/R3/R6 remain real -> 3/6 -> maps to 1; "R4 gate" caps at 1 ->
+    // same final score as before, but now correctly flagged as unverified
+    // (denominator mismatch + fabrication) rather than reading clean.
     expect(result.correctedScore).toBe(1);
+    expect(result.correctionReason).toBe('wrong-denominator');
+    expect(computeEvidenceQuality(result, 0.8)).toBe('flagged');
+  });
+});
+
+describe('Entry 082 — verbatim scrunch.com v50 production block (the case that motivated the fix)', () => {
+  // Pulled from the live v50 scan, 2026-08-05, during VLS research analysis
+  // re-verification. J1's buyer-role field rests on "@user_input" mixed with
+  // three genuine public fields. Under the pre-Entry-082 guard (wholly-
+  // insider only) this mark survived untouched and Scrunch scored a perfect
+  // D2=2/2 — one of the live cases that exposed the mixed-citation loophole.
+  const SCRUNCH_D2_V50 =
+    '[D2 audit: J1=P(icp_profile.primary_buyer_role@user_input + icp_profile.company_size_range@https://scrunch.com + icp_profile.industries[]@https://scrunch.com + icp_profile.top_constraints[]@https://scrunch.com) J2=P(jtbd[0].job_statement@https://scrunch.com + jtbd[0].inputs[]@https://scrunch.com + jtbd[0].outputs[]@https://scrunch.com) J3=P(Tier B: jtbd[0].inputs[]@https://scrunch.com + jtbd[0].outputs[]@https://scrunch.com + icp_profile.top_constraints[]@https://scrunch.com) J4=P(icp_profile.primary_workflows[]@https://scrunch.com) J5=P(Tier C: jtbd[]@https://scrunch.com/platform/shopping + jtbd[]@https://scrunch.com/platform/agent-experience) J6=P(positioning_surfaces[0].surface_type@https://scrunch.com) | pts=6/6 | gate=none | score=2] Scrunch clearly defines its target audience and the job it helps them accomplish, focusing on AI search visibility and optimization for brands and agencies. The product surfaces and case studies provide concrete examples of the job and its success states.';
+
+  it('demotes J1 despite its three genuine public fields', () => {
+    const result = correctDimensionScore(SCRUNCH_D2_V50, 2, { insiderAnswersPresent: false });
+    expect(result.fabricatedCitationLabels).toEqual(['J1']);
+    expect(result.partiallyFabricatedCitationLabels).toEqual(['J1']);
+  });
+
+  it('does not change Scrunch\'s D2 score here — J2-J6 alone still saturate at 5/6 -> 2', () => {
+    // The point of this case is NOT that the score changes (it doesn't;
+    // 5/6 still maps to 2, same as the declared 6/6). It's that the
+    // dimension is no longer reported as clean/verified — see the next test.
+    const result = correctDimensionScore(SCRUNCH_D2_V50, 2, { insiderAnswersPresent: false });
+    expect(result.correctedScore).toBe(2);
+    expect(result.scoreWasCorrected).toBe(false);
+  });
+
+  it('flags the dimension as unverified even though the score is unchanged', () => {
+    const result = correctDimensionScore(SCRUNCH_D2_V50, 2, { insiderAnswersPresent: false });
+    expect(computeEvidenceQuality(result, 0.8)).toBe('flagged');
   });
 });
 

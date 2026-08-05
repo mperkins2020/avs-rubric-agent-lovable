@@ -68,13 +68,23 @@ export interface CorrectionResult {
   /** Raw gate text from the audit block, for telemetry. */
   gateText?: string;
   /**
-   * Count of PASS marks demoted to F because every source they cited was
-   * "@user_input" on a scan that received no insider inputs — i.e. the model
-   * invented the citation. See ENGINE_DEBUG_LOG.md Entry 074.
+   * Count of PASS marks demoted to F because they cited "@user_input" on a
+   * scan that received no insider inputs — i.e. the model invented (all or
+   * part of) the citation. See ENGINE_DEBUG_LOG.md Entry 074 (wholly-insider
+   * citations) and Entry 082 (extended to mixed citations).
    */
   fabricatedCitationMarksInvalidated: number;
   /** Subtest labels demoted by the above, for telemetry (e.g. ["J1","J2"]). */
   fabricatedCitationLabels?: string[];
+  /**
+   * Subset of fabricatedCitationLabels whose citation was MIXED — at least
+   * one genuine public source alongside the fabricated "@user_input"
+   * source(s) — as opposed to wholly insider-sourced. Entry 082. Kept
+   * separate from the main count so stored telemetry can distinguish "the
+   * model invented the whole citation" from "the model invented one field
+   * of an otherwise-real citation," which are different severities.
+   */
+  partiallyFabricatedCitationLabels?: string[];
 }
 
 export interface CorrectionOptions {
@@ -197,9 +207,9 @@ export function d3AggregationSpansMultipleSegments(gateText: string): boolean {
 
 /**
  * True when a citation names at least one source and EVERY source it names is
- * "user_input". Compound citations that mix an insider source with a real page
- * (e.g. "soc2@user_input + compliance_cert@https://...") are NOT wholly
- * insider-sourced — they retain genuine public backing, so the mark stands.
+ * "user_input". Retained for the wholly-vs-mixed distinction recorded in
+ * `partiallyFabricatedCitationLabels` — it is no longer, on its own, the
+ * demotion gate (see `citesUserInput` and Entry 082 below).
  *
  * A citation naming no source at all (e.g. "auto-seat-based") returns false:
  * that is a separate, pre-existing weakness in citation quality and this
@@ -209,6 +219,31 @@ export function isWhollyInsiderSourced(citation: string): boolean {
   const sources = [...citation.matchAll(CITATION_SOURCE_PATTERN)].map((m) => m[1].toLowerCase());
   if (sources.length === 0) return false;
   return sources.every((s) => s === INSIDER_SOURCE_TOKEN);
+}
+
+/**
+ * True when a citation names AT LEAST ONE "user_input" source — a strict
+ * superset of `isWhollyInsiderSourced`. This is the Entry 082 fix.
+ *
+ * Entry 074's original guard only demoted a mark when EVERY source it cited
+ * was insider, on the reasoning that a mixed citation "retains genuine
+ * public backing." In production that left a live loophole: a multi-field
+ * subtest can be satisfied by fabricating just the field(s) the model
+ * couldn't find publicly and citing real pages for the rest — the mark still
+ * passes in full, and the fabricated field contributes nothing true to the
+ * score. Confirmed in the live v50 benchmark data: scrunch.com's D2 J1
+ * passes on `primary_buyer_role@user_input + company_size_range@https://
+ * scrunch.com + ...` — one invented field, three real ones — untouched by
+ * the wholly-insider guard, contributing to Scrunch's saturated D2=2/2.
+ *
+ * The prompt's own rule has no "unless mixed with real evidence" exception
+ * ("`@user_input` is FORBIDDEN unless an `INSIDER ANSWERS` block appears
+ * earlier in this prompt") — so this function, used as the actual demotion
+ * gate, treats any appearance of the token as disqualifying that mark.
+ */
+export function citesUserInput(citation: string): boolean {
+  const sources = [...citation.matchAll(CITATION_SOURCE_PATTERN)].map((m) => m[1].toLowerCase());
+  return sources.some((s) => s === INSIDER_SOURCE_TOKEN);
 }
 
 export function parseAuditBlock(rationale: string): AuditBlock | null {
@@ -392,6 +427,7 @@ export function correctDimensionScore(
   const evidenceBlockMissing = !parsed.hasEvidenceBlock;
 
   // ENGINE_DEBUG_LOG Entry 074 — fabricated-citation guard.
+  // Extended by Entry 082 to mixed citations (see citesUserInput() above).
   //
   // `run-benchmark` never sends insiderAnswers, so the INSIDER ANSWERS prompt
   // block never renders on a benchmark scan and the model has no insider
@@ -404,17 +440,26 @@ export function correctDimensionScore(
   // the companies publishing least had the most fabricated citations.
   //
   // Fail closed: unless the caller positively asserts insider answers were
-  // supplied, any PASS resting *solely* on "@user_input" is demoted to F here
-  // — before pass-counting, before mapping, before gate classification — so
-  // every downstream number is computed on verifiable evidence only.
+  // supplied, any PASS whose citation names "@user_input" AT ALL — wholly or
+  // mixed with a real source — is demoted to F here, before pass-counting,
+  // before mapping, before gate classification, so every downstream number
+  // is computed on verifiable evidence only. (Entry 074 originally demoted
+  // only wholly-insider marks; Entry 082 found that too narrow — see
+  // citesUserInput()'s doc comment for the live production case that exposed
+  // it.) The wholly-vs-mixed distinction is preserved as telemetry, not as a
+  // difference in outcome: both are fabrication under the prompt's own rule.
   const marks: Record<string, SubtestMark> = { ...parsed.marks };
   const fabricatedCitationLabels: string[] = [];
+  const partiallyFabricatedCitationLabels: string[] = [];
   if (!options.insiderAnswersPresent) {
     for (const [label, mark] of Object.entries(marks)) {
       const citation = parsed.citations[label];
-      if (mark === 'P' && citation && isWhollyInsiderSourced(citation)) {
+      if (mark === 'P' && citation && citesUserInput(citation)) {
         marks[label] = 'F';
         fabricatedCitationLabels.push(label);
+        if (!isWhollyInsiderSourced(citation)) {
+          partiallyFabricatedCitationLabels.push(label);
+        }
       }
     }
   }
@@ -452,6 +497,9 @@ export function correctDimensionScore(
       evidenceBlockMissing,
       fabricatedCitationMarksInvalidated: fabricatedCitationLabels.length,
       fabricatedCitationLabels: fabricatedCitationLabels.length ? fabricatedCitationLabels : undefined,
+      partiallyFabricatedCitationLabels: partiallyFabricatedCitationLabels.length
+        ? partiallyFabricatedCitationLabels
+        : undefined,
     };
   }
 
@@ -577,6 +625,9 @@ export function correctDimensionScore(
     gateText: parsed.gateText,
     fabricatedCitationMarksInvalidated: fabricatedCitationLabels.length,
     fabricatedCitationLabels: fabricatedCitationLabels.length ? fabricatedCitationLabels : undefined,
+    partiallyFabricatedCitationLabels: partiallyFabricatedCitationLabels.length
+      ? partiallyFabricatedCitationLabels
+      : undefined,
   };
 }
 

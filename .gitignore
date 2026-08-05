@@ -29,3 +29,7 @@ dist-ssr
 tools/backup/dumps/
 tools/backup/.env.backup
 !tools/backup/.env.backup.example
+
+# Pre-rescan snapshots (snapshot-scan.ts) — local working data, recoverable
+# from scan_results directly, not meant to be version-controlled.
+tools/scraper-dev/snapshots/

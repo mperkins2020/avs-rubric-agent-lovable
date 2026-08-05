@@ -30,7 +30,7 @@ interface AnalyzeRequest {
 // Deno EdgeRuntime type for background processing
 declare const EdgeRuntime: { waitUntil: (p: Promise<unknown>) => void };
 
-const ANALYSIS_VERSION = '2026-08-05-pipeline-v50';
+const ANALYSIS_VERSION = '2026-08-05-pipeline-v51';
 
 const COMPANY_PROFILE_PROMPT = `You are an expert business analyst. Analyze the following website content and extract a company profile.
 
@@ -2921,6 +2921,10 @@ ${truncatedContent}`;
       marksInvalidated: number;
       labels: string[];
       scoreChanged: boolean;
+      // Entry 082: subset of `labels` whose citation was mixed (real +
+      // fabricated) rather than wholly fabricated. See rubric-audit.ts
+      // citesUserInput() for why mixed citations are now demoted too.
+      partiallyFabricatedLabels?: string[];
     }> = [];
 
     // Entry 080: dimensions whose audit block could not be parsed, surfaced at
@@ -2975,11 +2979,16 @@ ${truncatedContent}`;
       }
 
       if (result.fabricatedCitationMarksInvalidated > 0) {
+        const partialCount = result.partiallyFabricatedCitationLabels?.length ?? 0;
         console.warn(
           `[RubricAudit] "${dim.dimension}" at ${url} — FABRICATED CITATIONS: ` +
           `${result.fabricatedCitationMarksInvalidated} PASS mark(s) ` +
           `[${(result.fabricatedCitationLabels ?? []).join(', ')}] cited @user_input ` +
-          `on a scan with no insider inputs; demoted to F before scoring.`
+          `on a scan with no insider inputs; demoted to F before scoring.` +
+          (partialCount > 0
+            ? ` ${partialCount} of these [${(result.partiallyFabricatedCitationLabels ?? []).join(', ')}] were ` +
+              `MIXED citations (a real source alongside the fabricated one) — Entry 082.`
+            : '')
         );
         // Persisted unconditionally — see the declaration comment. A demotion
         // under an already-binding cap gate leaves the score unchanged and
@@ -2989,6 +2998,7 @@ ${truncatedContent}`;
           marksInvalidated: result.fabricatedCitationMarksInvalidated,
           labels: result.fabricatedCitationLabels ?? [],
           scoreChanged: result.scoreWasCorrected,
+          partiallyFabricatedLabels: result.partiallyFabricatedCitationLabels,
         });
       }
 
