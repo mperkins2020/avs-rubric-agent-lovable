@@ -497,7 +497,24 @@ export function correctDimensionScore(
       //
       // Gates still win: step 4 of the D3 procedure says a triggered gate
       // OVERRIDES the aggregated score, so only this gate-free path abstains.
-      if (expectedDimensionNumber === 3 && d3AggregationSpansMultipleSegments(parsed.gateText)) {
+      // Entry 077 — this abstention is now UNCONDITIONAL for D3, no longer
+      // keyed on the model emitting "aggregated across N segments".
+      //
+      // Entry 075 trusted that note as the signal that a score was an
+      // aggregate. Production showed the model emits it unreliably: peec.ai's
+      // D3 carried "none, aggregated across 3 segments" under v43 and a bare
+      // "none" under v46, while both runs declared a score its own segment
+      // marks did not map to. Keying on the note therefore protects a company
+      // only when the model happens to remember it.
+      //
+      // And aggregation is an AVERAGE across segments, so it can move the
+      // score in either direction — up when other segments are stronger, down
+      // when weaker. Any divergence between the declared score and the
+      // marks-mapped score is therefore explicable as aggregation, and this
+      // module has no per-segment data to rule that out. D3's marks do not
+      // determine D3's score by design, so recomputing from them is never
+      // sound. Abstain always; the declared score stands, flagged.
+      if (expectedDimensionNumber === 3) {
         correctedScore = parsed.declaredScore;
         correctionReason = 'd3-aggregation-abstained';
         break;

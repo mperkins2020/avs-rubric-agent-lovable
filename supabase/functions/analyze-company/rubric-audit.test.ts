@@ -377,12 +377,18 @@ describe('correctDimensionScore — D1-D4 (Entry 068 extension)', () => {
     expect(result.scoreWasCorrected).toBe(false);
   });
 
-  it('D3: catches a declared score that does not match the 5-point mapping (3/5 pts declared as 2, should be 1)', () => {
+  it('D3: NO LONGER corrects a declared/mapping mismatch (Entry 077 — superseded)', () => {
+    // Written for Entry 068, when D3 was assumed to work like every other
+    // dimension. It does not: its marks describe the highest-priority segment
+    // while its score is the cross-segment aggregate, so a mismatch is
+    // explicable as aggregation and cannot be distinguished from an error
+    // without per-segment data. The corrector now abstains. This is a
+    // deliberate loss of error-detection on D3 — see Entry 077.
     const rationale = '[D3 audit: S1=P S2=P S3=P S4=F S5=F | pts=3/5 | gate=none | score=2] [D3 evidence: S1←field@/pricing; S2←field@/pricing; S3←field@/pricing; S4←none; S5←none]';
     const result = correctDimensionScore(rationale, 3);
-    expect(result.correctedScore).toBe(1);
-    expect(result.scoreWasCorrected).toBe(true);
-    expect(result.correctionReason).toBe('unexplained-mismatch');
+    expect(result.correctedScore).toBe(2);
+    expect(result.scoreWasCorrected).toBe(false);
+    expect(result.correctionReason).toBe('d3-aggregation-abstained');
   });
 
   it('D1: parses the two-letter NS prefix and validates its own 6-point scale (5/6 pts should score 2)', () => {
@@ -735,20 +741,25 @@ describe('correctDimensionScore — Entry 075: D3 cross-segment aggregation must
     expect(computeEvidenceQuality(result, 0.9)).toBe('flagged');
   });
 
-  it('still corrects a D3 with NO aggregation note (marks and score must agree there)', () => {
-    const single =
+  it('Entry 077: abstains even with NO aggregation note — the note is emitted unreliably', () => {
+    // Verbatim shape of peec.ai's v46 D3: pts=4/5 (maps to 2) declared as 1
+    // with a BARE "gate=none". The same company emitted "aggregated across 3
+    // segments" on the identical dimension under v43. Keying the abstention
+    // on the note protected peec.ai in one run and silently inflated it in
+    // the next, so the note can no longer be trusted as the signal.
+    const noNote =
       '[D3 audit: S1=P(a@https://x.com/p) S2=P(b@https://x.com/p) S3=P(c@https://x.com/p) S4=P(d@https://x.com/p) S5=F | pts=4/5 | gate=none | score=1] X.';
-    const result = correctDimensionScore(single, 3, { insiderAnswersPresent: true });
-    expect(result.correctedScore).toBe(2);
-    expect(result.correctionReason).toBe('unexplained-mismatch');
+    const result = correctDimensionScore(noNote, 3, { insiderAnswersPresent: true });
+    expect(result.correctedScore).toBe(1);
+    expect(result.correctionReason).toBe('d3-aggregation-abstained');
   });
 
-  it('still corrects "aggregated across 1 segments" — one segment means the mapping must hold (real conductor.com shape)', () => {
+  it('Entry 077: abstains on "aggregated across 1 segments" too — the segment COUNT is no more reliable than the note', () => {
     const oneSegment =
       '[D3 audit: S1=P(a@https://x.com/p) S2=P(b@https://x.com/p) S3=P(c@https://x.com/p) S4=P(d@https://x.com/p) S5=F | pts=4/5 | gate=none, aggregated across 1 segments | score=1] X.';
     const result = correctDimensionScore(oneSegment, 3, { insiderAnswersPresent: true });
-    expect(result.correctedScore).toBe(2);
-    expect(result.correctionReason).toBe('unexplained-mismatch');
+    expect(result.correctedScore).toBe(1);
+    expect(result.correctionReason).toBe('d3-aggregation-abstained');
   });
 
   it('treats an unsubstituted literal "N" as multi-segment and fails safe (real hubspot.com/similarweb.com shape)', () => {

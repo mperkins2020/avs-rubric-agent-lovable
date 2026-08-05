@@ -109,7 +109,7 @@ Bump `ANALYSIS_VERSION` in `supabase/functions/analyze-company/index.ts` every t
 
 **Important — a version bump alone does NOT guarantee a fresh scan.** The 7-day cache on `scan_results` is gated by that row's `expires_at`, not by `ANALYSIS_VERSION`. A domain with a live (non-expired) row from an older version can still be served that stale result even after the version is bumped — the bump only affects newly-inserted rows. To force a genuinely fresh rescan of a domain that already has an unexpired row, explicitly set that row's `expires_at` into the past (don't delete the row — expiring it preserves history). See ENGINE_DEBUG_LOG.md Entry 072.
 
-Current version as of last session: `2026-08-05-pipeline-v46`
+Current version as of last session: `2026-08-05-pipeline-v47`
 
 ---
 

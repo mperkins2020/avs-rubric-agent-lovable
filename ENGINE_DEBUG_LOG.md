@@ -4,7 +4,7 @@
 **Usage:** When a report produces a questionable result, log it here. Run `Scan the debug log for recurring patterns` periodically to surface systemic issues.
 **Related:** See ENGINE_DEBUG_HISTORY.md for backfilled history from git.
 
-**Entries:** 76 | **Last updated:** August 5, 2026
+**Entries:** 77 | **Last updated:** August 5, 2026
 
 ---
 
@@ -31,6 +31,41 @@
 <!-- Newest first. To add an entry, copy the template below and fill it in. -->
 
 <!-- Next entry goes here -->
+
+---
+
+### Entry 077 — August 5, 2026
+
+| Field | Value |
+|-------|-------|
+| Company | peec.ai (v46 Batch A) — but the defect is structural and affects every multi-segment company |
+| Version | Entry 075's partial fix present in v45/v46; completed in 2026-08-05-pipeline-v47 |
+| Dimension | D3 (Buyer & Budget Alignment) only |
+| Subtest(s) | None — the defect is in what the declared score means |
+| Root Cause | **Entry 075 was an incomplete fix.** It keyed the D3 abstention on the model emitting `aggregated across N segments`. Production shows that note is emitted unreliably, so the protection applied only when the model happened to remember it. |
+| Caught By | Verifying peec.ai's v46 result against the Entry 075 prediction table (Michelle + Claude Code, 2026-08-05) — its D3 came back corrected 1→2 when the prediction said it should abstain |
+| Status | fix_shipped (v47) — all v46 data superseded, full rescan required |
+
+**The note is not a reliable signal.** peec.ai's D3, same company and same dimension:
+
+| Run | Gate text | Declared | Marks map to | Corrector |
+|---|---|---|---|---|
+| v43 | `none, aggregated across 3 segments` | 1 | 2 | overwrote to 2 (Entry 075 bug) |
+| v46 | `none` (bare) | 1 | 2 | overwrote to 2 (Entry 075 fix didn't apply) |
+
+Both runs declared a score its own segment marks did not map to — the aggregation signature — but only one labelled it. Entry 075 therefore protected peec.ai in neither case for the right reason and would protect it inconsistently going forward.
+
+**The deeper point: D3 divergence is *always* explicable as aggregation.** The score is a weighted average across segments; other segments can pull it **up or down** relative to the highest-priority segment's own mapping. So for any D3 mismatch, in either direction, "the model aggregated correctly" is a live explanation, and this module has no per-segment data to rule it out. **D3's marks do not determine D3's score by design** — recomputing from them is unsound regardless of what the gate says.
+
+Fix: the D3 abstention is now **unconditional** for the gate-free path. `d3AggregationSpansMultipleSegments()` is retained and still tested (useful for telemetry and documentation) but is no longer load-bearing. Triggered gates still override, per step 4 of the D3 procedure.
+
+**What this costs, stated plainly:** the corrector can no longer catch a genuine D3 arithmetic error. That is a real loss of coverage, accepted deliberately. The evidence supports it — every D3 correction observed across this entire cycle (7 in v43, plus peec.ai in v46) was wrong, and not one has been demonstrably right. D3 scores are now the model's declared value, flagged, unverified by design.
+
+**Three tests were changed to match, which deserves scrutiny.** The Entry 068 test `D3: catches a declared score that does not match the 5-point mapping` and two Entry 075 tests asserted the old behaviour. They were rewritten to assert abstention. This is a specification change, not tests bent to fit an implementation: the D3 prompt has always said the marks and the score measure different things, and those tests encoded an assumption that was wrong when written. Each now carries a comment saying so.
+
+**Process note — the fix that "verified clean" was verified against the wrong thing.** Entry 075 shipped with a passing canary (scrunch.com D3 abstained correctly) and a prediction table built from v43 data. Both confirmed the note-keyed logic worked *when the note was present*. Neither could reveal that the note's presence is itself variable, because both looked only at runs where it appeared. **A prediction derived from one engine version cannot validate behaviour that depends on model output varying between versions.** The tell was available and I missed it: peec.ai's v46 gate text differed from its v43 gate text on the same dimension, which should have prompted the question "how stable is this signal?" before I trusted a fix built on it.
+
+**Pattern Tag:** `d3-cross-segment-aggregation`, `incomplete-fix-of-entry-075`, `model-signal-unreliable`, `abstention-now-unconditional`, `deliberate-loss-of-coverage`, `canary-validated-wrong-property`
 
 ---
 
