@@ -127,15 +127,29 @@ export const AUDITED_DIMENSION_NUMBER_BY_NAME: Record<string, number> = Object.f
 // parse, which meant auditParseFailed -> no correction at all -> the model's
 // declared score stood entirely unaudited. Fail-open on a parse quirk the
 // prompt itself induced. See ENGINE_DEBUG_LOG.md Entry 076.
-const AUDIT_BLOCK_PATTERN =
-  /\[D(\d)\s+audit:\s*((?:[A-Z]{1,2}\d\s*=\s*(?:P|F|NA)(?:\([^)]*\))?(?:\|(?:P|F|NA))?\s*)+)\|\s*pts\s*=\s*(\d+)\s*\/\s*(\d+)\s*\|\s*gate\s*=\s*(.*?)\s*\|\s*score\s*=\s*(\d+)\s*\]/i;
+// A citation body may itself contain a parenthesised phrase — product names
+// routinely do, e.g. "NS1=P(AXP (Agent Experience Platform)@https://…)" from a
+// real scrunch.com v49 scan. A naive "[^)]*" stops at the INNER closing paren,
+// leaving "@https://…)" stranded, which breaks the contiguous marks-span match
+// and fails the entire block to parse — the same fail-open outcome as Entry
+// 076. This alternation allows one level of nesting, which covers every real
+// case observed. See ENGINE_DEBUG_LOG.md Entry 080.
+const CITATION_BODY = String.raw`(?:[^()]|\([^()]*\))*`;
+
+const AUDIT_BLOCK_PATTERN = new RegExp(
+  String.raw`\[D(\d)\s+audit:\s*((?:[A-Z]{1,2}\d\s*=\s*(?:P|F|NA)(?:\(${CITATION_BODY}\))?(?:\|(?:P|F|NA))?\s*)+)\|\s*pts\s*=\s*(\d+)\s*\/\s*(\d+)\s*\|\s*gate\s*=\s*(.*?)\s*\|\s*score\s*=\s*(\d+)\s*\]`,
+  'i',
+);
 
 // Captures the FIRST token of an alternation as the operative mark: "F|NA"
 // reads as F. F is the stricter reading (it counts in the denominator and
 // does not pass, where NA would shrink the denominator), and the existing
 // denominator-recompute logic reconciles any resulting mismatch with the
 // model's declared pts anyway.
-const MARK_PATTERN = /([A-Z]{1,2}\d)\s*=\s*(P|F|NA)(?:\(([^)]*)\))?(?:\|(?:P|F|NA))?/g;
+const MARK_PATTERN = new RegExp(
+  String.raw`([A-Z]{1,2}\d)\s*=\s*(P|F|NA)(?:\((${CITATION_BODY})\))?(?:\|(?:P|F|NA))?`,
+  'g',
+);
 
 // The code-generated Score Floor marker (applyDigestFloor in index.ts,
 // lines ~2599-2633) — deterministic code, not an LLM claim. When present,

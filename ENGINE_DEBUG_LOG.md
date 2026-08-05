@@ -4,7 +4,7 @@
 **Usage:** When a report produces a questionable result, log it here. Run `Scan the debug log for recurring patterns` periodically to surface systemic issues.
 **Related:** See ENGINE_DEBUG_HISTORY.md for backfilled history from git.
 
-**Entries:** 79 | **Last updated:** August 5, 2026
+**Entries:** 80 | **Last updated:** August 5, 2026
 
 ---
 
@@ -31,6 +31,32 @@
 <!-- Newest first. To add an entry, copy the template below and fill it in. -->
 
 <!-- Next entry goes here -->
+
+---
+
+### Entry 080 — August 5, 2026
+
+| Field | Value |
+|-------|-------|
+| Company | scrunch.com (v49) — but the pattern is generic to any product name containing parentheses |
+| Version | Latent since the inline-citation format (Entry 069); fixed in 2026-08-05-pipeline-v50 |
+| Dimension | D1 in the observed case; any dimension is susceptible |
+| Subtest(s) | NS1 / NS4 |
+| Root Cause | The inline-citation capture `\([^)]*\)` cannot handle a citation whose own text contains parentheses |
+| Caught By | `parse_failures: 1` on scrunch.com's v49 verification, despite `audit_blocks: 8` — a bracket present but unparseable |
+| Status | fix_shipped (v50) |
+
+**The case.** scrunch.com's D1 cited `NS1=P(AXP (Agent Experience Platform)@https://scrunch.com/pricing)`. "AXP (Agent Experience Platform)" is an ordinary product name. The capture stopped at the **inner** closing paren, stranding `@https://scrunch.com/pricing)`, which broke the contiguous marks-span match and failed the whole block — so D1 ran with no checks at all and the model's declared score stood unaudited.
+
+Fix: the citation body now allows one level of nesting (`(?:[^()]|\([^()]*\))*`), applied to both `AUDIT_BLOCK_PATTERN` and `MARK_PATTERN`, which covers every real case observed. Regression tests use the verbatim scrunch.com string and confirm the fabricated-citation guard still fires on a *nested* citation ending in `@user_input`.
+
+**This is the third fail-open parse defect in one cycle**, after the omitted audit block and the `F|NA` alternation (both Entry 076). Each shares a shape: the parser meets free text it did not anticipate, gives up, and the corrector silently trusts the model. The individual regex fixes are correct but the pattern says the parser will keep meeting unanticipated citation text, because citations are prose written by a model.
+
+**Structural change, not just another patch.** `auditParseFailures` (a list of dimension names) is now recorded at scan level in `result_json`, alongside Entry 078's `fabricatedCitations`. Previously an unparsed dimension was discoverable only via a per-dimension `auditParseFailed` field that one had to know to query — all three defects this cycle reached stored data before anyone noticed, and each was caught by a verification query written from memory rather than by the pipeline surfacing it. **Anything appearing in `auditParseFailures` is a publication blocker.**
+
+Not changed, deliberately: a parse failure still leaves the declared score in place rather than nulling or zeroing it. Assigning a score that could not be audited is its own hazard, and the right response is to block publication and investigate, not to fabricate a substitute number.
+
+**Pattern Tag:** `fail-open-on-parse-failure`, `nested-parentheses-in-citation`, `third-parse-defect-this-cycle`, `latent-since-entry-069`, `scan-level-visibility-added`
 
 ---
 

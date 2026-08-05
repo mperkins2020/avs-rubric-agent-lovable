@@ -908,3 +908,42 @@ describe('correctDimensionScore — Entry 079: a D3 cap is a ceiling, never a fl
     expect(result.correctionReason).toBe('cap-misapplied-as-floor');
   });
 });
+
+describe('parseAuditBlock — Entry 080: citations containing nested parentheses', () => {
+  // Verbatim scrunch.com D1 from the v49 scan. "AXP (Agent Experience
+  // Platform)" is an ordinary product name; the naive [^)]* capture stopped at
+  // the inner ")", stranded "@https://scrunch.com/pricing)", and failed the
+  // whole block — leaving the dimension unaudited (auditParseFailed, no
+  // correction, declared score trusted).
+  const SCRUNCH_D1 =
+    '[D1 audit: NS1=P(AXP (Agent Experience Platform)@https://scrunch.com/pricing) NS2=P(200x token efficiency@https://scrunch.com) NS3=P(364% increase in brand presence for non-branded prompts@https://scrunch.com/pricing) NS4=P(AXP (Agent Experience Platform)@https://scrunch.com/pricing) NS5=F NS6=F | pts=4/6 | gate=NS3 fails: cap final score at 1 | score=1] Scrunch clearly states its value outcome.';
+
+  it('parses the block instead of failing open', () => {
+    const parsed = parseAuditBlock(SCRUNCH_D1);
+    expect(parsed).not.toBeNull();
+    expect(parsed?.dimensionNumber).toBe(1);
+    expect(parsed?.marks).toEqual({ NS1: 'P', NS2: 'P', NS3: 'P', NS4: 'P', NS5: 'F', NS6: 'F' });
+    expect(parsed?.declaredPts).toBe(4);
+    expect(parsed?.declaredScore).toBe(1);
+  });
+
+  it('keeps the FULL citation including the nested parenthetical', () => {
+    const parsed = parseAuditBlock(SCRUNCH_D1);
+    expect(parsed?.citations.NS1).toBe('AXP (Agent Experience Platform)@https://scrunch.com/pricing');
+  });
+
+  it('now audits the dimension rather than trusting the declared score', () => {
+    const result = correctDimensionScore(SCRUNCH_D1, 1, { insiderAnswersPresent: false });
+    expect(result.auditParseFailed).toBe(false);
+    // 4 passes -> maps to 1; NS3 cap at 1 is non-binding. Declared 1 stands,
+    // but now on a verified basis rather than an unparsed one.
+    expect(result.correctedScore).toBe(1);
+  });
+
+  it('still detects a fabricated citation that itself contains parentheses', () => {
+    const nested =
+      '[D5 audit: C1=P(AXP (Agent Experience Platform)@user_input) C2=F C3=F C4=F C5=F C6=F | pts=1/6 | gate=none | score=1] X.';
+    const result = correctDimensionScore(nested, 5, { insiderAnswersPresent: false });
+    expect(result.fabricatedCitationLabels).toEqual(['C1']);
+  });
+});

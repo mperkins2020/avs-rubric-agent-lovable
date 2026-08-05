@@ -30,7 +30,7 @@ interface AnalyzeRequest {
 // Deno EdgeRuntime type for background processing
 declare const EdgeRuntime: { waitUntil: (p: Promise<unknown>) => void };
 
-const ANALYSIS_VERSION = '2026-08-05-pipeline-v49';
+const ANALYSIS_VERSION = '2026-08-05-pipeline-v50';
 
 const COMPANY_PROFILE_PROMPT = `You are an expert business analyst. Analyze the following website content and extract a company profile.
 
@@ -2923,6 +2923,16 @@ ${truncatedContent}`;
       scoreChanged: boolean;
     }> = [];
 
+    // Entry 080: dimensions whose audit block could not be parsed, surfaced at
+    // scan level. A parse failure means the corrector ran no checks at all and
+    // the model's declared score stands unaudited — the least trustworthy kind
+    // of score, and until now discoverable only by querying a per-dimension
+    // field one had to know to look for. Three separate parse defects this
+    // cycle (missing block, "F|NA" alternation, nested parentheses) each
+    // reached stored data before anyone noticed. Anything listed here is a
+    // publication blocker.
+    const auditParseFailures: string[] = [];
+
     for (const dim of dimensionScores as Array<{
       dimension: string;
       score: number;
@@ -2955,6 +2965,14 @@ ${truncatedContent}`;
       });
 
       dim.auditParseFailed = result.auditParseFailed;
+
+      if (result.auditParseFailed) {
+        auditParseFailures.push(dim.dimension);
+        console.warn(
+          `[RubricAudit] "${dim.dimension}" at ${url} — AUDIT BLOCK UNPARSEABLE: ` +
+          `no checks were run and the model's declared score of ${declaredScore} stands unaudited.`
+        );
+      }
 
       if (result.fabricatedCitationMarksInvalidated > 0) {
         console.warn(
@@ -3063,6 +3081,7 @@ ${truncatedContent}`;
       },
       rubricCorrections,
       fabricatedCitations,
+      auditParseFailures,
       observability: {
         level: observabilityLevel,
         confidenceScore: Math.round(avgConfidence * 100),
