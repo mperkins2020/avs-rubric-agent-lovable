@@ -30,7 +30,7 @@ interface AnalyzeRequest {
 // Deno EdgeRuntime type for background processing
 declare const EdgeRuntime: { waitUntil: (p: Promise<unknown>) => void };
 
-const ANALYSIS_VERSION = '2026-08-05-pipeline-v47';
+const ANALYSIS_VERSION = '2026-08-05-pipeline-v48';
 
 const COMPANY_PROFILE_PROMPT = `You are an expert business analyst. Analyze the following website content and extract a company profile.
 
@@ -2910,6 +2910,19 @@ ${truncatedContent}`;
       fabricatedCitationLabels?: string[];
     }> = [];
 
+    // Entry 074/078: recorded INDEPENDENTLY of rubricCorrections, which is
+    // only appended when a score actually changes. A fabricated citation that
+    // gets demoted under an already-binding cap gate leaves the score
+    // untouched, so it would otherwise vanish from stored data and survive
+    // only in an edge-function console log — exactly the blind spot that made
+    // tryprofound.com's v47 result impossible to verify from the database.
+    const fabricatedCitations: Array<{
+      dimension: string;
+      marksInvalidated: number;
+      labels: string[];
+      scoreChanged: boolean;
+    }> = [];
+
     for (const dim of dimensionScores as Array<{
       dimension: string;
       score: number;
@@ -2950,6 +2963,15 @@ ${truncatedContent}`;
           `[${(result.fabricatedCitationLabels ?? []).join(', ')}] cited @user_input ` +
           `on a scan with no insider inputs; demoted to F before scoring.`
         );
+        // Persisted unconditionally — see the declaration comment. A demotion
+        // under an already-binding cap gate leaves the score unchanged and
+        // would otherwise leave no trace in stored data.
+        fabricatedCitations.push({
+          dimension: dim.dimension,
+          marksInvalidated: result.fabricatedCitationMarksInvalidated,
+          labels: result.fabricatedCitationLabels ?? [],
+          scoreChanged: result.scoreWasCorrected,
+        });
       }
 
       if (result.scoreWasCorrected) {
@@ -2983,6 +3005,15 @@ ${truncatedContent}`;
 
     if (rubricCorrections.length > 0) {
       console.warn(`[RubricAudit] ${rubricCorrections.length} correction(s) applied for ${url}:`, rubricCorrections);
+    }
+
+    if (fabricatedCitations.length > 0) {
+      const totalMarks = fabricatedCitations.reduce((n, f) => n + f.marksInvalidated, 0);
+      console.warn(
+        `[RubricAudit] ${totalMarks} fabricated citation(s) invalidated across ` +
+        `${fabricatedCitations.length} dimension(s) for ${url}:`,
+        fabricatedCitations,
+      );
     }
 
     const totalScore = dimensionScores.reduce((sum, d) => sum + d.score, 0);
@@ -3031,6 +3062,7 @@ ${truncatedContent}`;
         recommendedFocus: rubricData.recommendedFocus || null,
       },
       rubricCorrections,
+      fabricatedCitations,
       observability: {
         level: observabilityLevel,
         confidenceScore: Math.round(avgConfidence * 100),

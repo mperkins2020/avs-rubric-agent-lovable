@@ -844,3 +844,37 @@ describe('parseAuditBlock — Entry 076: mark alternation from the prompt templa
     expect(parsed?.declaredDenominator).toBe(5);
   });
 });
+
+describe('Entry 074 guard — verbatim tryprofound.com v47 production blocks', () => {
+  // Pulled from the live v47 scan, 2026-08-05. These document the case that
+  // initially looked like the guard had failed: five dimensions contained
+  // "@user_input" yet rubricCorrections came back empty. The guard DID fire —
+  // the demotions simply didn't move the score, because a cap gate was
+  // already binding at 1 in each case.
+  it('D5: demotes the single wholly-insider mark; cap keeps the score at 1', () => {
+    const d5 =
+      '[D5 audit: C1=P(cost_drivers[prompts tracked].name@https://tryprofound.com/pricing + cost_drivers[Agents credits].name@https://tryprofound.com/pricing + cost_drivers[Answer Engines tracked].name@https://tryprofound.com/pricing) C2=F C3=P(workflows[AEO Marketing].primary_value_unit_name@user_input) C4=P(tiers[Starter].included_units@https://tryprofound.com/pricing) C5=P(tiers[Starter].overage_enabled@https://tryprofound.com/pricing) C6=F | pts=4/6 | gate=C6 gate | score=1] Profound identifies key cost drivers.';
+    const result = correctDimensionScore(d5, 5, { insiderAnswersPresent: false });
+    expect(result.fabricatedCitationLabels).toEqual(['C3']);
+    expect(result.correctedScore).toBe(1);
+    expect(result.scoreWasCorrected).toBe(false);
+    // Score unchanged, but the dimension must NOT read as verified.
+    expect(computeEvidenceQuality(result, 0.8)).toBe('flagged');
+  });
+
+  it('D6: demotes two wholly-insider marks, PRESERVES the compound one, cap holds at 1', () => {
+    const d6 =
+      '[D6 audit: P1=P(tiers[Starter].name@https://tryprofound.com/pricing) P2=P(packaging.exploration_offering@https://tryprofound.com/pricing + packaging.production_offering@https://tryprofound.com/pricing + tiers[Starter].name@https://tryprofound.com/pricing) P3=P(pools[Starter Agents].unit_name@https://tryprofound.com/pricing) P4=P(pools[Starter Agents].scope@user_input) P5=P(tiers[Growth].upgrade_path_next@user_input) P6=P(tiers[Starter].overage_unit_price@user_input + tiers[Starter].unit_name@https://tryprofound.com/pricing + tiers[Starter].included_units@https://tryprofound.com/pricing) | pts=6/6 | gate=P3 gate | score=1] Profound offers clear tiered packaging.';
+    const result = correctDimensionScore(d6, 6, { insiderAnswersPresent: false });
+    expect(result.fabricatedCitationLabels).toEqual(['P4', 'P5']);
+    expect(result.correctedScore).toBe(1);
+  });
+
+  it('D7: leaves a compound R5 alone — real pages still back it', () => {
+    const d7 =
+      '[D7 audit: R1=P(policies.overage_behavior@https://tryprofound.com/pricing) R2=F R3=P(tiers[Starter].alert_policy@https://tryprofound.com/pricing) R4=F R5=P(tiers[Enterprise].payment_methods@https://tryprofound.com/pricing + policies.enterprise_true_up@user_input + policies.overage_behavior@https://tryprofound.com/pricing) R6=P(forecasting_surfaces.estimation_surface@https://tryprofound.com/pricing) | pts=4/6 | gate=R4 gate | score=1] Profound explicitly states overage behavior.';
+    const result = correctDimensionScore(d7, 7, { insiderAnswersPresent: false });
+    expect(result.fabricatedCitationMarksInvalidated).toBe(0);
+    expect(result.correctedScore).toBe(1);
+  });
+});

@@ -4,7 +4,7 @@
 **Usage:** When a report produces a questionable result, log it here. Run `Scan the debug log for recurring patterns` periodically to surface systemic issues.
 **Related:** See ENGINE_DEBUG_HISTORY.md for backfilled history from git.
 
-**Entries:** 77 | **Last updated:** August 5, 2026
+**Entries:** 78 | **Last updated:** August 5, 2026
 
 ---
 
@@ -31,6 +31,34 @@
 <!-- Newest first. To add an entry, copy the template below and fill it in. -->
 
 <!-- Next entry goes here -->
+
+---
+
+### Entry 078 — August 5, 2026
+
+| Field | Value |
+|-------|-------|
+| Company | tryprofound.com, otterly.ai (v47 Batch B) — instrumentation gap is roster-wide |
+| Version | Gap present since Entry 074 (v44); fixed in 2026-08-05-pipeline-v48 |
+| Dimension | All — this is telemetry, not scoring |
+| Subtest(s) | N/A |
+| Root Cause | `fabricatedCitationMarksInvalidated` was only persisted inside the `if (result.scoreWasCorrected)` branch, so a demotion that did not move the score left no trace in stored data |
+| Caught By | Attempting to verify whether the Entry 074 guard had fired on tryprofound.com's v47 result (Michelle + Claude Code, 2026-08-05) — the question turned out to be unanswerable from the database |
+| Status | fix_shipped (v48) — no score impact; earlier v47 rows remain valid |
+
+**What happened.** tryprofound.com and otterly.ai each came back with `@user_input` in five of eight dimensions on v47, and an **empty** `rubricCorrections` array. That looked like the guard had failed — the first production case where it should have fired.
+
+It hadn't failed. The guard demoted marks on D3, D5 and D6; in each case a **cap gate was already binding at 1**, so the recomputed score equalled the declared score, `scoreWasCorrected` stayed false, and nothing was appended to `rubricCorrections`. The evidence of the guard working existed only in an edge-function console log.
+
+Confirmed by running the verbatim production audit blocks through `correctDimensionScore` and asserting the outcome — now kept as permanent regression tests (`Entry 074 guard — verbatim tryprofound.com v47 production blocks`, 3 cases covering a single demotion, a double demotion with a preserved compound citation, and an untouched compound mark).
+
+**Fix.** A separate `fabricatedCitations` array is recorded independently of `rubricCorrections` and persisted into `result_json`, capturing dimension, marks invalidated, subtest labels, and whether the score actually changed. Also a summary `console.warn` at the end of the loop. No scoring behaviour changes.
+
+**Why this mattered more than it looks.** The whole point of Entry 074 was that fabricated evidence had gone undetected for an entire benchmark cycle. The guard's own observability was then made conditional on a *different* event, which meant the one question worth asking of stored data — "did the model fabricate, and was it caught?" — could not be answered without re-deriving it by hand from raw rationale text. **An integrity control that leaves no durable evidence of having run is only half a control.**
+
+**Design note retained deliberately.** Compound citations mixing an insider source with a real page (`R5=P(a@https://… + b@user_input + c@https://…)`) are still preserved rather than demoted, on the basis that genuine public backing remains. tryprofound's D7 `R5` and D8 `T6` both took this path. This is defensible per-mark but rests on an assumption worth testing later: that the real half carries the claim rather than the insider half. Flagged as an open question, not changed.
+
+**Pattern Tag:** `telemetry-gap`, `control-without-evidence`, `conditional-instrumentation`, `guard-verified-in-production`, `compound-citation-assumption`
 
 ---
 
