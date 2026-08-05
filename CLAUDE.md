@@ -5,6 +5,8 @@ The following files are maintained exclusively by Claude Code. Lovable must NEVE
 - `supabase/functions/analyze-company/index.ts` — scoring engine
 - `supabase/functions/analyze-company/rubric-audit.ts` — audit-block validation layer (D5–D8 score correction)
 - `supabase/functions/analyze-company/rubric-audit.test.ts` — validation layer test fixtures
+- `supabase/functions/analyze-company/json-repair.ts` — truncated-JSON repair (Entry 083)
+- `supabase/functions/analyze-company/json-repair.test.ts` — repair-layer test fixtures
 - `supabase/functions/scrape-website/index.ts` — scraper
 - `src/lib/api/scraper.ts` — client API layer
 - `tasks/` — calibration docs and todos

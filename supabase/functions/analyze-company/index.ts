@@ -1,6 +1,7 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { correctDimensionScore, AUDITED_DIMENSION_NUMBER_BY_NAME, computeEvidenceQuality } from "./rubric-audit.ts";
+import { repairTruncatedJson } from "./json-repair.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -1552,27 +1553,22 @@ async function callLovableAI(systemPrompt: string, userContent: string, maxRetri
       console.error('Failed to parse AI response:', content.substring(0, 500));
       console.error('Response tail:', content.substring(content.length - 200));
 
-      // Attempt to repair truncated JSON by closing open structures
+      // Attempt to repair truncated JSON — see repairTruncatedJson()'s doc
+      // comment for why the previous brace/bracket-counting heuristic was
+      // replaced (Lovable evidence g6/g7/g8, 2026-08-06).
       try {
-        let repaired = content;
-        // Count open/close braces and brackets
-        const openBraces = (repaired.match(/{/g) || []).length;
-        const closeBraces = (repaired.match(/}/g) || []).length;
-        const openBrackets = (repaired.match(/\[/g) || []).length;
-        const closeBrackets = (repaired.match(/\]/g) || []).length;
-
-        // Trim trailing incomplete key-value pairs
-        repaired = repaired.replace(/,\s*"[^"]*"?\s*:?\s*[^}\]]*$/, '');
-
-        // Close missing brackets and braces
-        for (let i = 0; i < openBrackets - closeBrackets; i++) repaired += ']';
-        for (let i = 0; i < openBraces - closeBraces; i++) repaired += '}';
-
+        const repaired = repairTruncatedJson(content);
         const result = JSON.parse(repaired);
-        console.log('Successfully repaired truncated JSON response');
+        console.log(
+          `Successfully repaired truncated JSON response (finish_reason: ${finishReason}, ` +
+          `original length: ${content.length}, repaired length: ${repaired.length})`
+        );
         return result;
       } catch (repairError) {
-        console.error(`JSON repair also failed (attempt ${attempt}/${maxRetries})`);
+        console.error(
+          `JSON repair also failed (attempt ${attempt}/${maxRetries}, finish_reason: ${finishReason}):`,
+          repairError instanceof Error ? repairError.message : repairError
+        );
         if (attempt < maxRetries) { continue; }
         throw new Error('Failed to parse AI response as JSON');
       }

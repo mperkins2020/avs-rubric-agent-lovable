@@ -150,6 +150,27 @@ async function mapDomain(apiKey: string, url: string, limit = 200, includeSubdom
   return union;
 }
 
+// ─── Firecrawl rate-limit detection (shared by /scrape call sites) ────────────
+// Firecrawl returns 429 with a body shaped like:
+//   {"success":false,"error":"Rate limit exceeded. Consumed (req/min): 21/57, Remaining: 0"}
+// (confirmed production example — Lovable monitoring evidence g2/g3/g9/g10,
+// 2026-08-06: these were surfacing as generic "Scrape failed (400): Failed to
+// scrape the main page" in run-benchmark, aborting the whole company with no
+// retry at all). mapDomain() above already retries /map on a suspected rate
+// limit; neither /scrape call site did. Distinguishing a rate limit from
+// every other failure mode matters because it's transient and worth a short
+// wait — a genuine 404, malformed URL, or timeout is not, and retrying those
+// would just delay an inevitable failure.
+function isFirecrawlRateLimited(status: number, bodyText: string): boolean {
+  return status === 429 || /rate limit exceeded/i.test(bodyText);
+}
+
+// Same backoff window as mapDomain's existing rate-limit retry (line ~107) —
+// Firecrawl's error body doesn't include a Retry-After header, and the caps
+// observed are per-minute ("Consumed (req/min): 21/57"), so a ~12s wait is
+// the right order of magnitude and keeps the two retry strategies consistent.
+const FIRECRAWL_RATE_LIMIT_RETRY_DELAY_MS = 12000;
+
 // ─── URL scoring & helpers ─────────────────────────────────────────────────
 
 const priorityPatterns = [
@@ -504,30 +525,50 @@ async function scrapePage(apiKey: string, pageUrl: string): Promise<ScrapedPage 
 
     // Perf: 40s budget — pricing/accordion pages get 30s (waitFor:3000 + LLM JSON extraction
     // easily exceeds 7–15s under real Firecrawl load); regular pages keep 7s to prevent stalls.
-    const pageController = new AbortController();
     const pageTimeoutMs = hasAccordions ? 30000 : 7000;
-    const pageTimeout = setTimeout(() => pageController.abort(), pageTimeoutMs);
-    let response: Response;
-    try {
-      response = await fetch('https://api.firecrawl.dev/v1/scrape', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${apiKey}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(requestBody),
-        signal: pageController.signal,
-      });
-    } catch (fetchErr) {
+
+    async function attemptScrape(): Promise<{ response: Response; bodyText: string } | null> {
+      const pageController = new AbortController();
+      const pageTimeout = setTimeout(() => pageController.abort(), pageTimeoutMs);
+      let response: Response;
+      try {
+        response = await fetch('https://api.firecrawl.dev/v1/scrape', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${apiKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(requestBody),
+          signal: pageController.signal,
+        });
+      } catch (fetchErr) {
+        clearTimeout(pageTimeout);
+        console.log('Fetch timed out or failed for:', pageUrl, fetchErr instanceof Error ? fetchErr.message : fetchErr);
+        return null;
+      }
       clearTimeout(pageTimeout);
-      console.log('Fetch timed out or failed for:', pageUrl, fetchErr instanceof Error ? fetchErr.message : fetchErr);
-      return null;
+      const bodyText = await response.text();
+      return { response, bodyText };
     }
-    clearTimeout(pageTimeout);
+
+    let attempt = await attemptScrape();
+    // Rate-limit retry (Lovable evidence g2/g3, 2026-08-06): one extra try
+    // before treating the page as missing. A real 404/timeout/malformed URL
+    // still fails fast here (attempt is null, or non-ok and NOT rate-limited)
+    // — only a confirmed rate limit gets the wait, so this doesn't slow down
+    // the common "page doesn't exist" case at all.
+    if (attempt && !attempt.response.ok && isFirecrawlRateLimited(attempt.response.status, attempt.bodyText)) {
+      console.warn(`Scrape rate-limited for ${pageUrl} — retrying in ${FIRECRAWL_RATE_LIMIT_RETRY_DELAY_MS}ms`);
+      await new Promise(resolve => setTimeout(resolve, FIRECRAWL_RATE_LIMIT_RETRY_DELAY_MS));
+      attempt = await attemptScrape();
+    }
+
+    if (!attempt) return null;
+    const { response, bodyText } = attempt;
 
     let pageData: FirecrawlScrapeResponse & { data?: { json?: Record<string, unknown>; llm_extraction?: Record<string, unknown> } };
     try {
-      pageData = JSON.parse(await response.text());
+      pageData = JSON.parse(bodyText);
     } catch {
       console.log('Non-JSON response for:', pageUrl);
       return null;
@@ -848,22 +889,51 @@ Deno.serve(async (req) => {
     const mainNeedsFullContent = fullContentPatterns.some(p => p.test(formattedUrl));
     console.log('Scraping main page...', mainNeedsFullContent ? '(full content)' : '(main only)');
 
-    const mainPageResponse = await fetch('https://api.firecrawl.dev/v1/scrape', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        url: formattedUrl,
-        formats: ['markdown', 'links'],
-        onlyMainContent: !mainNeedsFullContent,
-      }),
-    });
+    async function attemptMainPageScrape(): Promise<{ response: Response; bodyText: string }> {
+      const response = await fetch('https://api.firecrawl.dev/v1/scrape', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${apiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          url: formattedUrl,
+          formats: ['markdown', 'links'],
+          onlyMainContent: !mainNeedsFullContent,
+        }),
+      });
+      const bodyText = await response.text();
+      return { response, bodyText };
+    }
+
+    // The main page is mandatory — losing it aborts the ENTIRE company scrape
+    // (unlike scrapePage()'s subpages, which just get skipped). A transient
+    // per-minute rate limit must not be allowed to end the scrape here when a
+    // short wait would clear it (Lovable evidence g2/g3/g9/g10, 2026-08-06 —
+    // this exact call site was the source of run-benchmark's "Scrape failed
+    // (400): Failed to scrape the main page" aborts, e.g. ahrefs.com). Up to
+    // 3 attempts total; a non-rate-limited failure (real 404, bad URL) still
+    // fails on the first attempt, same as before.
+    const MAIN_PAGE_MAX_ATTEMPTS = 3;
+    let { response: mainPageResponse, bodyText: mainPageBodyText } = await attemptMainPageScrape();
+    for (
+      let attemptNum = 1;
+      attemptNum < MAIN_PAGE_MAX_ATTEMPTS &&
+        !mainPageResponse.ok &&
+        isFirecrawlRateLimited(mainPageResponse.status, mainPageBodyText);
+      attemptNum++
+    ) {
+      console.warn(
+        `Main page scrape rate-limited for ${formattedUrl} (attempt ${attemptNum}/${MAIN_PAGE_MAX_ATTEMPTS}) — ` +
+        `retrying in ${FIRECRAWL_RATE_LIMIT_RETRY_DELAY_MS}ms`
+      );
+      await new Promise(resolve => setTimeout(resolve, FIRECRAWL_RATE_LIMIT_RETRY_DELAY_MS));
+      ({ response: mainPageResponse, bodyText: mainPageBodyText } = await attemptMainPageScrape());
+    }
 
     let mainPageData: FirecrawlScrapeResponse;
     try {
-      mainPageData = JSON.parse(await mainPageResponse.text());
+      mainPageData = JSON.parse(mainPageBodyText);
     } catch {
       console.error('Firecrawl returned non-JSON response, status:', mainPageResponse.status);
       return new Response(

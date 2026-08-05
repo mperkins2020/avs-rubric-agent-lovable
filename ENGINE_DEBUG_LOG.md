@@ -4,7 +4,7 @@
 **Usage:** When a report produces a questionable result, log it here. Run `Scan the debug log for recurring patterns` periodically to surface systemic issues.
 **Related:** See ENGINE_DEBUG_HISTORY.md for backfilled history from git.
 
-**Entries:** 82 | **Last updated:** August 5, 2026
+**Entries:** 84 | **Last updated:** August 6, 2026
 
 ---
 
@@ -31,6 +31,54 @@
 <!-- Newest first. To add an entry, copy the template below and fill it in. -->
 
 <!-- Next entry goes here -->
+
+---
+
+### Entry 084 — August 6, 2026
+
+| Field | Value |
+|-------|-------|
+| Company | Roster/traffic-wide — Firecrawl rate limiting affects both the benchmark runner and the on-demand public analysis path, since both go through the same `scrape-website` function |
+| Version | `2026-08-05-pipeline-v51` and every prior version — the gap predates this cycle, just surfaced now by Lovable's production monitoring |
+| Dimension | N/A — upstream of scoring entirely, in the scrape layer |
+| Subtest(s) | N/A |
+| Root Cause | **No retry/backoff on Firecrawl `/scrape` calls.** `mapDomain()` already retries `/map` on a suspected rate limit (a prior fix — see the comment at that function). Neither `/scrape` call site (the mandatory main-page scrape, nor the per-subpage `scrapePage()`) had any such handling: any non-2xx response, including 429, was treated identically to "the URL is broken" and failed immediately with no retry. |
+| Caught By | Lovable production monitoring, 2026-08-06 — evidence g2/g3 (raw Firecrawl 429s: "Rate limit exceeded. Consumed (req/min): 21/57, Remaining: 0") flowing into g9/g10 in `run-benchmark/index.ts` as "Scrape failed (400): Failed to scrape the main page", aborting the affected company (e.g. ahrefs.com) |
+| Status | **fix_shipped (local, not yet deployed)** |
+
+**Why this matches, and extends, Entry 081.** Entry 081 documented scrape-selection *instability* (which pages get pulled varies run to run) as a distinct problem from the corrector defects. This is a related but separate failure mode: not "which pages get selected" but "a selected page's scrape request gets rejected outright by Firecrawl's rate limiter, with no attempt to wait it out." Both degrade evidence quality; this one can lose the *mandatory* main page and abort the whole company, which page-selection variance alone cannot do.
+
+**Resolution:**
+- Added `isFirecrawlRateLimited(status, bodyText)` (`scrape-website/index.ts`) — detects a 429 or a `"Rate limit exceeded"` body, distinguishing a transient, worth-retrying failure from every other failure mode (404, malformed URL, timeout), which should still fail fast.
+- Main-page scrape: up to 3 attempts total, same 12s backoff `mapDomain()` already uses, so a per-minute cap has a real chance to clear before the company is aborted.
+- `scrapePage()` (subpages): one retry, gated the same way — a genuine 404 still returns `null` immediately with no added latency; only a confirmed rate limit waits.
+- No change to `run-benchmark`'s `BATCH_SIZE` (already `2`, reduced from 4 for the same underlying reason) or to its `Promise.all` fan-out — the fix is at the call site that was actually missing resilience, not the concurrency model. **Operator protocol going forward (see Entry 082's rescan plan): submit ≤2 domains per rescan call regardless — this fix reduces failures, it does not eliminate the value of also limiting submission size, since a burst of many companies' subpage scrapes can still cumulative-exceed a per-minute cap even with retry.**
+- Not unit-tested — `scrape-website/index.ts` has no vitest harness (fetch-based Deno code, unlike the pure-TS corrector modules); verification has to be hand-checked against a live rescan, consistent with how this file has always been verified.
+
+**Pattern Tag:** `firecrawl-rate-limit`, `no-retry-on-scrape`, `entry-081-related-not-duplicate`, `main-page-abort-risk`, `fix-shipped-not-deployed`
+
+---
+
+### Entry 083 — August 6, 2026
+
+| Field | Value |
+|-------|-------|
+| Company | Roster/traffic-wide — affects any scan whose AI response happens to be truncated, on both the benchmark and on-demand analysis paths |
+| Version | Every version using the JSON-repair fallback in `callLovableAI()` — predates this cycle |
+| Dimension | N/A — upstream of scoring, in response parsing |
+| Subtest(s) | N/A |
+| Root Cause | **The JSON-repair heuristic had two independent bugs.** (1) It never closed an unterminated STRING — only balanced brace/bracket counts — so a truncation landing mid-string (the common case, since `rationale` is by far the largest field in this schema) left the repaired text still invalid; JSON.parse throws on the unterminated string before ever reaching the appended closers. (2) It appended every missing `]` before every missing `}`, ignoring actual nesting order — wrong whenever arrays and objects interleave, which `dimensionScores: [{...}, {...}]` always does. |
+| Caught By | Lovable production monitoring, 2026-08-06 — evidence g6/g7/g8: "Failed to parse AI response as JSON" at `analyze-company/index.ts:1551`, 6+ repair failures, 2 confirmed background-job failures with no result delivered |
+| Status | **fix_shipped (local, not yet deployed)** |
+
+**Resolution:**
+- Replaced the heuristic with `repairTruncatedJson()`, extracted to a new pure module `supabase/functions/analyze-company/json-repair.ts` (same rationale as `rubric-audit.ts`'s own split — Deno-only `index.ts` can't be imported into vitest, so testable logic has to live outside it).
+- The new version tracks the actual stack of open `{`/`[` and whether the cursor is inside a string (respecting escaped quotes), so it can (a) find exactly where the last COMPLETE member ended and discard the dangling partial member wholesale rather than trying to salvage it, and (b) close what's actually open, in reverse-open order.
+- 9 new tests in `json-repair.test.ts`, including a case modeled directly on this schema's real shape (`rubricScore.dimensionScores[]` truncated mid-`rationale`, several complete dimensions in) confirming the repair now correctly preserves every complete dimension and drops only the genuinely-incomplete one. Full suite: 221 → 231 tests, all passing.
+- Repair success/failure logging now includes `finish_reason` and content length, so a future truncation is diagnosable from logs alone rather than requiring a repro.
+- **Not addressed, flagged for a separate decision (owner-level, not a code fix I made unilaterally):** whether to raise `max_tokens` beyond the current 32768, and whether to emit a partial result to the user instead of failing the whole analysis when even the repaired JSON is unusable. Both were in Lovable's original recommendation; both are product/cost decisions, not just correctness bugs, so left for explicit sign-off rather than guessed at.
+
+**Pattern Tag:** `json-repair-heuristic-bug`, `unterminated-string`, `bracket-close-order`, `extracted-to-pure-module`, `fix-shipped-not-deployed`
 
 ---
 
