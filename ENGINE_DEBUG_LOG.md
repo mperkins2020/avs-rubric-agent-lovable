@@ -4,7 +4,7 @@
 **Usage:** When a report produces a questionable result, log it here. Run `Scan the debug log for recurring patterns` periodically to surface systemic issues.
 **Related:** See ENGINE_DEBUG_HISTORY.md for backfilled history from git.
 
-**Entries:** 75 | **Last updated:** August 4, 2026
+**Entries:** 76 | **Last updated:** August 5, 2026
 
 ---
 
@@ -31,6 +31,50 @@
 <!-- Newest first. To add an entry, copy the template below and fill it in. -->
 
 <!-- Next entry goes here -->
+
+---
+
+### Entry 076 — August 5, 2026
+
+| Field | Value |
+|-------|-------|
+| Company | conductor.com, peec.ai (v45 Batch 1); scrunch.com unaffected |
+| Version | Both defects present in 2026-08-04-pipeline-v45; fixed in 2026-08-05-pipeline-v46 |
+| Dimension | Bug A: D1, D2, D3, D4 (evidence-poor dimensions). Bug B: D7 specifically (the only dimension with a legitimately-NA subtest) |
+| Subtest(s) | Bug B: R5 |
+| Root Cause | **Bug A is a regression I caused in Entry 074's prompt hardening.** Bug B is a latent parser defect the prompt template itself induces, surfaced by Bug A's investigation. |
+| Caught By | Verification of the first v45 batch (Michelle + Claude Code, 2026-08-05) — comparing `auditParseFailed` against the v43 baseline rather than only reading scores |
+| Status | fix_shipped (v46) — v45 Batch 1 data must be discarded and rescanned |
+
+**Bug A — closing the fabrication escape hatch opened a worse one: the model started omitting the audit block entirely.**
+
+Entry 074 hardened the citation rule to forbid `@user_input` and restated that a PASS without a citation is invalid. On companies with thin public evidence the model could no longer fabricate a source *and* could not honestly pass — and instead of emitting an all-F bracket, it **dropped the audit bracket completely and wrote prose**. Measured on the first v45 batch, against the v43 baseline where every dimension had a bracket:
+
+| Company | Dimensions with NO audit block (v45) | v43 |
+|---|---|---|
+| peec.ai | D1, D2, D3, D4 — 4 of 8 | 0 of 8 |
+| conductor.com | D1, D2 — 2 of 8 | 0 of 8 |
+| scrunch.com | none | 0 of 8 |
+
+**This is strictly worse than the defect it replaced.** `auditParseFailed` makes `correctDimensionScore` return early with no correction, so the model's declared score stands **completely unaudited** — fail-open. Entry 074 traded inflated-but-audited scores for unaudited ones. peec.ai's v45 total of 8 rests on 5 of 8 dimensions the corrector never checked.
+
+The pattern is consistent with the fabrication finding rather than contradicting it: both are avoidance behaviours that appear exactly where public evidence is thin. Scrunch — which found genuine public citations for everything — was unaffected in both cases.
+
+Fix: every dimension prompt now states the bracket is **mandatory in every response, first thing in the rationale, even when every subtest is F**, that an all-F bracket is a valid and expected answer for an evidence-poor company, and that a rationale without a bracket is invalid output. Targets the specific rationalisation observed ("mostly failures, so why emit it").
+
+**Bug B — the prompt template teaches an alternation syntax the parser rejects.**
+
+The format template spells options out as `S1=P(<field@page-path>)|F`. The model periodically copies that alternation into its answer — `R5=F|NA` appeared verbatim in both conductor.com's and peec.ai's D7. The marks-span had to be contiguous before `| pts=`, so an alternation broke the match and **the entire block failed to parse**, again fail-open. Latent since the inline-citation format shipped (Entry 069); D7 is the usual victim because R5 is the one subtest legitimately allowed to be NA.
+
+Fix: `AUDIT_BLOCK_PATTERN` and `MARK_PATTERN` tolerate an optional `|<P|F|NA>` suffix, taking the **first** token as operative (`F|NA` → F). F is the stricter reading — it counts in the denominator and doesn't pass, where NA would shrink the denominator — and the denominator-recompute logic reconciles any mismatch with the declared pts. On both real production cases the corrected score is 0 under either reading, so the ambiguity is not score-bearing here.
+
+**Tests: 96 → 100 in the corrector suite (203 repo-wide, all passing)**, with the verbatim conductor/peec D7 string as a fixture.
+
+**Standing design weakness, not fixed here.** Both bugs were fail-open in the same way: when the corrector cannot parse an audit block it silently trusts the model's declared score. That is backwards — an unauditable score is the *least* trustworthy kind. `evidenceQuality` does go `unverified`, which is how this was caught, but nothing blocks such a row from flowing into a published dataset. **Recommend treating any `auditParseFailed: true` as a hard QA gate before publication**, and consider a retry-on-missing-bracket in the edge function. Not changing scoring behaviour on parse failure unilaterally — assigning a score you couldn't audit is its own hazard.
+
+**Process note.** Entry 074 shipped with 96 passing tests and a clean single-company canary (scrunch.com), and still regressed two of the next three companies. The canary was chosen because it was the *heaviest* fabricator — but it was also evidence-rich, so it could comply with the new rule without strain. **The company that best exercises a fix is not the one with the most instances of the bug; it is the one with the least room to comply.** A conductor.com or peec.ai canary would have caught this before the batch.
+
+**Pattern Tag:** `prompt-fix-regression`, `model-avoidance-behaviour`, `audit-block-omitted`, `fail-open-on-parse-failure`, `template-induced-alternation`, `canary-selection-error`
 
 ---
 

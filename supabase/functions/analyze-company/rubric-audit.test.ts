@@ -792,3 +792,44 @@ describe('d3AggregationSpansMultipleSegments', () => {
     expect(d3AggregationSpansMultipleSegments('none')).toBe(false);
   });
 });
+
+describe('parseAuditBlock — Entry 076: mark alternation from the prompt template', () => {
+  // The format template in index.ts spells options out as "S1=P(<field@page>)|F",
+  // so the model periodically copies the alternation into its answer. Before
+  // this fix the alternation broke the contiguous marks-span match and the
+  // ENTIRE block failed to parse — auditParseFailed, no correction, the
+  // declared score standing completely unaudited.
+  it('parses "R5=F|NA" (verbatim conductor.com + peec.ai v45 D7 output)', () => {
+    const rationale =
+      '[D7 audit: R1=P(overage_behavior@https://www.conductor.com/pricing) R2=P(overage_unit_price@https://www.conductor.com/pricing) R3=F R4=F R5=F|NA R6=F | pts=2/5 | gate=cap score at 1 | score=1] Conductor.';
+    const parsed = parseAuditBlock(rationale);
+    expect(parsed).not.toBeNull();
+    expect(parsed?.marks.R5).toBe('F');
+    expect(parsed?.declaredScore).toBe(1);
+  });
+
+  it('parses a PASS written with an alternation suffix, keeping its citation', () => {
+    const rationale =
+      '[D3 audit: S1=P(economic_buyer_role@https://x.com/pricing)|F S2=F S3=F S4=F S5=F | pts=1/5 | gate=none | score=0] X.';
+    const parsed = parseAuditBlock(rationale);
+    expect(parsed?.marks.S1).toBe('P');
+    expect(parsed?.citations.S1).toBe('economic_buyer_role@https://x.com/pricing');
+  });
+
+  it('still corrects normally through an alternation mark rather than failing open', () => {
+    const rationale =
+      '[D7 audit: R1=P(a@https://x.com/p) R2=P(b@https://x.com/p) R3=F R4=F R5=F|NA R6=F | pts=2/5 | gate=cap score at 1 | score=1] X.';
+    const result = correctDimensionScore(rationale, 7, { insiderAnswersPresent: true });
+    expect(result.auditParseFailed).toBe(false);
+    expect(result.correctedScore).toBe(0);
+    expect(result.correctionReason).toBe('cap-misapplied-as-floor');
+  });
+
+  it('leaves ordinary NA marks working exactly as before', () => {
+    const rationale =
+      '[D7 audit: R1=F R2=F R3=F R4=F R5=NA R6=F | pts=0/5 | gate=none | score=0] X.';
+    const parsed = parseAuditBlock(rationale);
+    expect(parsed?.marks.R5).toBe('NA');
+    expect(parsed?.declaredDenominator).toBe(5);
+  });
+});

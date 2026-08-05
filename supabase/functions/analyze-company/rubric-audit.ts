@@ -119,10 +119,23 @@ export const AUDITED_DIMENSION_NUMBER_BY_NAME: Record<string, number> = Object.f
 // prefix (NS1-NS6, Entry 068), so the mark pattern allows 1-2 letters. Each
 // mark may carry an optional parenthesized inline citation (Entry 069) —
 // mandatory for PASS marks under the current prompt, absent for FAIL/NA.
+// The trailing "(?:\|(?:P|F|NA))?" tolerates a mark written as an ALTERNATION
+// — e.g. "R5=F|NA" or "S1=P(cite@url)|F". The prompt's own format template
+// spells the options out that way ("S1=P(<field@page-path>)|F"), so the model
+// periodically copies the alternation into its answer. Before this, such a
+// mark broke the contiguous marks-span match and the WHOLE block failed to
+// parse, which meant auditParseFailed -> no correction at all -> the model's
+// declared score stood entirely unaudited. Fail-open on a parse quirk the
+// prompt itself induced. See ENGINE_DEBUG_LOG.md Entry 076.
 const AUDIT_BLOCK_PATTERN =
-  /\[D(\d)\s+audit:\s*((?:[A-Z]{1,2}\d\s*=\s*(?:P|F|NA)(?:\([^)]*\))?\s*)+)\|\s*pts\s*=\s*(\d+)\s*\/\s*(\d+)\s*\|\s*gate\s*=\s*(.*?)\s*\|\s*score\s*=\s*(\d+)\s*\]/i;
+  /\[D(\d)\s+audit:\s*((?:[A-Z]{1,2}\d\s*=\s*(?:P|F|NA)(?:\([^)]*\))?(?:\|(?:P|F|NA))?\s*)+)\|\s*pts\s*=\s*(\d+)\s*\/\s*(\d+)\s*\|\s*gate\s*=\s*(.*?)\s*\|\s*score\s*=\s*(\d+)\s*\]/i;
 
-const MARK_PATTERN = /([A-Z]{1,2}\d)\s*=\s*(P|F|NA)(?:\(([^)]*)\))?/g;
+// Captures the FIRST token of an alternation as the operative mark: "F|NA"
+// reads as F. F is the stricter reading (it counts in the denominator and
+// does not pass, where NA would shrink the denominator), and the existing
+// denominator-recompute logic reconciles any resulting mismatch with the
+// model's declared pts anyway.
+const MARK_PATTERN = /([A-Z]{1,2}\d)\s*=\s*(P|F|NA)(?:\(([^)]*)\))?(?:\|(?:P|F|NA))?/g;
 
 // The code-generated Score Floor marker (applyDigestFloor in index.ts,
 // lines ~2599-2633) — deterministic code, not an LLM claim. When present,
