@@ -878,3 +878,33 @@ describe('Entry 074 guard — verbatim tryprofound.com v47 production blocks', (
     expect(result.correctedScore).toBe(1);
   });
 });
+
+describe('correctDimensionScore — Entry 079: a D3 cap is a ceiling, never a floor', () => {
+  it('does NOT raise a low aggregate up to the cap (the hole Entry 077 left open)', () => {
+    // Marks map to 2, cap is 1, but the declared cross-segment aggregate is 0
+    // because weaker segments pull it down. MIN(baseMapped=2, cap=1) would
+    // have published 1 — a ceiling silently acting as a floor.
+    const d3 =
+      '[D3 audit: S1=P(a@https://x.com/p) S2=P(b@https://x.com/p) S3=P(c@https://x.com/p) S4=P(d@https://x.com/p) S5=P(e@https://x.com/p) | pts=5/5 | gate=S4 cap final score at 1 | score=0] X.';
+    const result = correctDimensionScore(d3, 3, { insiderAnswersPresent: true });
+    expect(result.correctedScore).toBe(0);
+    expect(result.scoreWasCorrected).toBe(false);
+  });
+
+  it('still enforces the cap downward when the declared score exceeds it', () => {
+    const d3 =
+      '[D3 audit: S1=P(a@https://x.com/p) S2=P(b@https://x.com/p) S3=P(c@https://x.com/p) S4=P(d@https://x.com/p) S5=P(e@https://x.com/p) | pts=5/5 | gate=S4 cap final score at 1 | score=2] X.';
+    const result = correctDimensionScore(d3, 3, { insiderAnswersPresent: true });
+    expect(result.correctedScore).toBe(1);
+    expect(result.correctionReason).toBe('cap-misapplied-as-floor');
+  });
+
+  it('leaves the cap logic on other dimensions unchanged', () => {
+    // D6: baseMapped IS authoritative there, so MIN(baseMapped, cap) stands.
+    const d6 =
+      '[D6 audit: P1=F P2=F P3=F P4=F P5=F P6=F | pts=0/6 | gate=P3 cap final score at 1 | score=1] X.';
+    const result = correctDimensionScore(d6, 6, { insiderAnswersPresent: true });
+    expect(result.correctedScore).toBe(0);
+    expect(result.correctionReason).toBe('cap-misapplied-as-floor');
+  });
+});

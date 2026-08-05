@@ -454,6 +454,24 @@ export function correctDimensionScore(
       correctionReason = parsed.declaredScore !== 0 ? 'hard-zero-applied' : 'none';
       break;
     case 'cap':
+      // D3 (Entry 079): a cap is a CEILING, and for D3 the authoritative
+      // score is the declared cross-segment aggregate, not anything derivable
+      // from this bracket's single-segment marks (Entry 077). Applying
+      // MIN(baseMappedScore, cap) here would ignore the aggregate entirely
+      // and could RAISE a legitimately-low aggregate up to the cap — a
+      // ceiling silently acting as a floor. Cap the declared score instead:
+      // the gate still overrides downward, per step 4 of the D3 procedure,
+      // but can never push a score up.
+      if (expectedDimensionNumber === 3) {
+        correctedScore = Math.min(parsed.declaredScore, gateClass.capValue);
+        correctionReason = correctedScore !== parsed.declaredScore
+          // The model declared a score above its own cap and we lowered it —
+          // same failure the non-D3 branch calls cap-misapplied-as-floor.
+          ? 'cap-misapplied-as-floor'
+          // Unchanged: binding and already correct, or simply non-binding.
+          : (parsed.declaredScore === gateClass.capValue ? 'legitimate-cap-preserved' : 'none');
+        break;
+      }
       // D7 R4-enterprise exception (ENGINE_DEBUG_LOG Entry 055): the spec
       // says "if R4 fails ... the score CANNOT exceed 1 UNLESS an
       // enterprise segment independently reaches 5-6 points." When the

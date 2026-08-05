@@ -4,7 +4,7 @@
 **Usage:** When a report produces a questionable result, log it here. Run `Scan the debug log for recurring patterns` periodically to surface systemic issues.
 **Related:** See ENGINE_DEBUG_HISTORY.md for backfilled history from git.
 
-**Entries:** 78 | **Last updated:** August 5, 2026
+**Entries:** 79 | **Last updated:** August 5, 2026
 
 ---
 
@@ -31,6 +31,30 @@
 <!-- Newest first. To add an entry, copy the template below and fill it in. -->
 
 <!-- Next entry goes here -->
+
+---
+
+### Entry 079 — August 5, 2026
+
+| Field | Value |
+|-------|-------|
+| Company | None observed — found by code inspection while confirming Entry 077 for Michelle |
+| Version | Present since the corrector shipped; fixed in 2026-08-05-pipeline-v49 |
+| Dimension | D3 (Buyer & Budget Alignment) only |
+| Subtest(s) | N/A — gate handling |
+| Root Cause | Entry 077 made D3 abstain on the gate-free path but left the **cap** path computing `MIN(baseMappedScore, capValue)`, still deriving a score from single-segment marks Entry 077 had just established are not authoritative for D3 |
+| Caught By | Verifying, rather than asserting, that a recurring Lovable report was resolved (Michelle + Claude Code, 2026-08-05) |
+| Status | fix_shipped (v49) — no known data impact; every D3 gate observed to date reads `none` |
+
+**The gap.** A cap is a ceiling. For every dimension except D3, `baseMappedScore` is the authoritative value, so `MIN(baseMappedScore, cap)` is correct. For D3 the authoritative value is the declared cross-segment aggregate (Entry 077), and `baseMappedScore` is a single segment's mapping. Taking `MIN` of the wrong quantity against the cap ignores the aggregate entirely — and when the aggregate sits *below* the cap, the result is an increase. A company whose segments average to 0 with a cap of 1 would have been published at 1: **a ceiling acting as a floor**, the mirror image of the `cap-misapplied-as-floor` defect the corrector exists to catch.
+
+Fix: for D3, `correctedScore = MIN(declaredScore, capValue)`. The gate still overrides downward, per step 4 of the D3 procedure, but can never push a score up. Other dimensions are untouched (regression test included).
+
+**No known data impact.** Every D3 gate observed across v39–v48 reads `none` or `none, aggregated across N segments`; no D3 cap gate has appeared in production. This is a latent hole closed before it was hit, not a correction to existing scores.
+
+**Process note — the value of not answering from memory.** Lovable had re-reported the Entry 075/077 D3 issue several times after it was fixed, and the prior two reports were genuinely stale (the *code* was fixed; the *published page* was still serving pre-fix data, so the symptom description remained accurate). The temptation on a third identical report was to answer "already fixed" from memory. Re-reading the switch statement instead surfaced a real second path. **A duplicate-looking report is not proof of a duplicate bug**, and confirming a fix should mean re-reading the code, not recalling that one was written.
+
+**Pattern Tag:** `d3-cross-segment-aggregation`, `cap-as-floor-inverted`, `incomplete-fix-of-entry-077`, `latent-not-yet-triggered`, `caught-by-re-reading-not-recalling`
 
 ---
 
