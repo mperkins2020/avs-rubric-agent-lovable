@@ -1,0 +1,1 @@
+DELETE FROM benchmark_run_log WHERE run_month = '2026-08' AND category = 'Marketing Intelligence' AND domain = 'hubspot.com/pricing';
