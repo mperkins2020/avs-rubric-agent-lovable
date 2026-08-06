@@ -4,7 +4,7 @@
 **Usage:** When a report produces a questionable result, log it here. Run `Scan the debug log for recurring patterns` periodically to surface systemic issues.
 **Related:** See ENGINE_DEBUG_HISTORY.md for backfilled history from git.
 
-**Entries:** 86 | **Last updated:** August 6, 2026
+**Entries:** 87 | **Last updated:** August 6, 2026
 
 ---
 
@@ -31,6 +31,26 @@
 <!-- Newest first. To add an entry, copy the template below and fill it in. -->
 
 <!-- Next entry goes here -->
+
+---
+
+### Entry 087 — August 6, 2026
+
+| Field | Value |
+|-------|-------|
+| Company | hubspot.com — rescan attempt #3, confirmed still hanging (832s+) *after* Entry 086 was deployed and its deployment confirmed |
+| Version | Every version — same unbounded-fetch bug class as Entry 086, one step later in the same function |
+| Dimension | N/A — orchestration layer |
+| Subtest(s) | N/A |
+| Root Cause | **The Step 2 (`analyze-company`) fetch in `processCompany()` had no timeout either.** Same shape as Entry 086: this call is designed to return fast (200 cache-hit or 202 fresh-scan-started) and let `pollForScanResult()` do the actual bounded waiting — and that function *was* correctly bounded (its own `deadline`/`while` loop capped at `POLL_TIMEOUT_MS`, confirmed by reading it directly, never the problem). But nothing stopped the initial synchronous fetch itself from hanging if `analyze-company` never returned at all. |
+| Caught By | Attempt #3 was still `status: 'pending'` at 832 seconds elapsed — after confirming with Lovable that the Entry 086 deploy had actually landed (ruling out a stale-deploy explanation, per the same "verify the deploy, don't trust the report" discipline this process doc already calls for). Since Step 1 is now bounded to 300s and would have resolved (success or clean failure) well before 832s, the hang had to be somewhere past it — Step 2 was the next unbounded call in the chain. |
+| Status | **fix_shipped (local, not yet deployed)** |
+
+**Same fix, same reasoning as Entry 086 — deliberately not generalizing into a shared helper yet.** Wrapped in the identical `AbortController`/`POLL_TIMEOUT_MS` pattern, with its own distinct error message (`"Analyze call to analyze-company did not respond within 300s"`) so a future failure is immediately attributable to the right step from `benchmark_run_log.error_message` alone, without needing to guess which of the two calls hung. A shared "fetch-with-timeout" helper would be reasonable once a third case shows up, but two nearly-identical inline blocks is not yet worth the abstraction, and inline is easier to read against exactly what changed for the initial verification.
+
+**Not yet fully resolved.** This is the third fix aimed at the same underlying HubSpot failure across three attempts. Both prior gaps are now closed (scrape step, analyze step), but the *original* question — why does HubSpot's pipeline run long enough to hit these ceilings in the first place, and is Entry 084's retry overhead a genuine contributing cause — is still open. If HubSpot fails a fourth time, even cleanly, that question needs answering directly rather than continuing to patch individual unbounded calls one at a time.
+
+**Pattern Tag:** `unbounded-fetch`, `entry-086-recurrence-one-step-later`, `hubspot-persistent-failure`, `deploy-verified-before-diagnosing`, `fix-shipped-not-deployed`
 
 ---
 

@@ -165,21 +165,47 @@ async function processCompany(
     console.log(`[run-benchmark] Scraped ${(scrapeData.pages as unknown[]).length} pages for ${company.domain}`);
 
     // ── Step 2: Analyze ───────────────────────────────────────────────────
-    const analyzeRes = await fetch(`${supabaseUrl}/functions/v1/analyze-company`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${serviceRoleKey}`,
-        'Content-Type': 'application/json',
-        'x-benchmark-runner': 'true',
-      },
-      body: JSON.stringify({
-        pages: scrapeData.pages,
-        url: `https://${company.domain}`,
-        unresolvedPageCount: scrapeData.unresolvedPageCount ?? 0,
-        totalQueuedCount: scrapeData.totalQueuedCount ?? 0,
-        confirmedMissUrls: scrapeData.confirmedMissUrls ?? [],
-      }),
-    });
+    // Entry 087: same gap as Entry 086, one step later. This call is meant
+    // to return fast (200 cache-hit or 202 fresh-scan-started) with the real
+    // work happening in the background and pollForScanResult() below doing
+    // the actual bounded waiting (it already has its own deadline/while loop
+    // capped at POLL_TIMEOUT_MS — that part was never the problem). But if
+    // THIS synchronous call itself never returns — confirmed live,
+    // 2026-08-06: hubspot.com's run_log row was still "pending" at 832s+
+    // after Entry 086 shipped and was deployed (confirmed deployed by
+    // Lovable), meaning Step 1 (now bounded) had already resolved and this
+    // was the next unbounded call in the chain — nothing stops it either.
+    const analyzeController = new AbortController();
+    const analyzeTimeout = setTimeout(() => analyzeController.abort(), POLL_TIMEOUT_MS);
+    let analyzeRes: Response;
+    try {
+      analyzeRes = await fetch(`${supabaseUrl}/functions/v1/analyze-company`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${serviceRoleKey}`,
+          'Content-Type': 'application/json',
+          'x-benchmark-runner': 'true',
+        },
+        body: JSON.stringify({
+          pages: scrapeData.pages,
+          url: `https://${company.domain}`,
+          unresolvedPageCount: scrapeData.unresolvedPageCount ?? 0,
+          totalQueuedCount: scrapeData.totalQueuedCount ?? 0,
+          confirmedMissUrls: scrapeData.confirmedMissUrls ?? [],
+        }),
+        signal: analyzeController.signal,
+      });
+    } catch (fetchErr) {
+      if (fetchErr instanceof Error && fetchErr.name === 'AbortError') {
+        throw new Error(
+          `Analyze call to analyze-company did not respond within ${POLL_TIMEOUT_MS / 1000}s — ` +
+          `aborted here rather than left hanging (Entry 087)`
+        );
+      }
+      throw fetchErr;
+    } finally {
+      clearTimeout(analyzeTimeout);
+    }
 
     let scanResultId: string | null = null;
 
