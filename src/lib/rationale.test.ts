@@ -44,4 +44,19 @@ describe("splitRationale()", () => {
     const { prose } = splitRationale("Before. [D7 audit: R1=P | pts=1/6 | gate=none | score=0] After.");
     expect(prose).toBe("Before. After.");
   });
+
+  it("strips audit blocks containing nested brackets in evidence paths", () => {
+    const raw =
+      "[D2 audit: J1=P(icp_profile.roles[]@https://ahrefs.com/use-cases + top_constraints[]@https://ahrefs.com) " +
+      "J2=P(jtbd[0].job_statement@https://ahrefs.com/use-cases) | pts=6/6 | gate=none | score=2] " +
+      "Ahrefs clearly defines its ICPs by role.";
+    const { auditBlocks, prose } = splitRationale(raw);
+    expect(auditBlocks).toHaveLength(1);
+    expect(prose).toBe("Ahrefs clearly defines its ICPs by role.");
+  });
+
+  it("drops an unterminated audit block rather than leaking it", () => {
+    const { prose } = splitRationale("[D1 audit: NS1=P(excerpt[0]@https://x.com Prose tail.");
+    expect(prose).toBe("");
+  });
 });
