@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Footer } from "@/components/Footer";
 import { ResourcesDropdown } from "@/components/ResourcesDropdown";
 import { SEOHead } from "@/components/SEOHead";
+import { BrevoSignupFormAugust2026 } from "@/components/BrevoSignupFormAugust2026";
 
 const findings = [
   {
