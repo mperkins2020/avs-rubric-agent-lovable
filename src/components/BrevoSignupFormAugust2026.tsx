@@ -157,6 +157,9 @@ export function BrevoSignupFormAugust2026({ id, downloadUrl }: Props) {
         const fd = new FormData(form);
         await fetch(FORM_ACTION, { method: "POST", mode: "no-cors", body: fd });
         showPanel(successPanel);
+        if (downloadUrl && downloadLinkContainer) {
+          downloadLinkContainer.innerHTML = `<a href="${downloadUrl}" download style="display:inline-flex;align-items:center;gap:6px;font-weight:700;color:#085229;text-decoration:underline;" target="_blank" rel="noopener noreferrer">Download the August 2026 Executive Brief PDF</a>`;
+        }
         (root.querySelector<HTMLElement>("#sib-container-aug") ?? form).style.display = "none";
         successPanel.scrollIntoView({ behavior: "smooth", block: "center" });
       } catch (err) {
