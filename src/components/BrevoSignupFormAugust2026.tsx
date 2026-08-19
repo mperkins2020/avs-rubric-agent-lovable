@@ -92,9 +92,10 @@ function injectStyles() {
 
 interface Props {
   id?: string;
+  downloadUrl?: string;
 }
 
-export function BrevoSignupFormAugust2026({ id }: Props) {
+export function BrevoSignupFormAugust2026({ id, downloadUrl }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
