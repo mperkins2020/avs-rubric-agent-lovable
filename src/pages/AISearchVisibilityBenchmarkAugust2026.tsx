@@ -496,11 +496,8 @@ export default function AISearchVisibilityBenchmarkAugust2026() {
                 Get the August 2026 AI Search Visibility &amp; AEO Benchmark Executive Brief with the key findings,
                 company examples, and GTM questions behind the benchmark.
               </p>
-              <div
-                id="brevo-form-slot"
-                className="mt-6 rounded-xl border border-dashed border-[hsl(var(--vt-violet)/0.4)] bg-[hsl(var(--vt-bg-section))] p-6 text-center text-sm text-muted-foreground"
-              >
-                The Brevo download form will be embedded here.
+              <div className="mt-6">
+                <BrevoSignupFormAugust2026 />
               </div>
             </div>
           </div>
