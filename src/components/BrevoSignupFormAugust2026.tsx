@@ -29,6 +29,7 @@ const FORM_HTML = `
     <div id="success-message-aug" class="sib-form-message-panel-aug" style="font-family:Helvetica, sans-serif; font-size:16px; text-align:left; color:#085229; background-color:#e7faf0; border-color:#13ce66; border-radius:3px; max-width:540px;">
       <div class="sib-form-message-panel__text sib-form-message-panel__text--center">
         <span class="sib-form-message-panel__inner-text">Thanks! We've sent the August 2026 AI Search Visibility &amp; AEO Benchmark Executive Brief to your inbox — check spam/promotions if you don't see it within a few minutes.</span>
+        <div id="download-link-aug" style="margin-top:12px;"></div>
       </div>
     </div>
     <div id="sib-container-aug" class="sib-container--large sib-container--vertical" style="max-width:540px; text-align:center; background-color:transparent; direction:ltr;">
@@ -91,9 +92,10 @@ function injectStyles() {
 
 interface Props {
   id?: string;
+  downloadUrl?: string;
 }
 
-export function BrevoSignupFormAugust2026({ id }: Props) {
+export function BrevoSignupFormAugust2026({ id, downloadUrl }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -107,6 +109,7 @@ export function BrevoSignupFormAugust2026({ id }: Props) {
     const errorPanel = root.querySelector<HTMLDivElement>("#error-message-aug");
     const submitBtn = root.querySelector<HTMLButtonElement>("#sib-submit-btn-aug");
     const submitLabel = root.querySelector<HTMLElement>(".sib-submit-label-aug");
+    const downloadLinkContainer = root.querySelector<HTMLDivElement>("#download-link-aug");
     if (!form || !successPanel || !errorPanel || !submitBtn || !submitLabel) return;
 
     const showPanel = (el: HTMLElement) => el.classList.add("sib-form-message-panel-aug--visible");
@@ -154,6 +157,9 @@ export function BrevoSignupFormAugust2026({ id }: Props) {
         const fd = new FormData(form);
         await fetch(FORM_ACTION, { method: "POST", mode: "no-cors", body: fd });
         showPanel(successPanel);
+        if (downloadUrl && downloadLinkContainer) {
+          downloadLinkContainer.innerHTML = `<a href="${downloadUrl}" download style="display:inline-flex;align-items:center;gap:6px;font-weight:700;color:#085229;text-decoration:underline;" target="_blank" rel="noopener noreferrer">Download the August 2026 Executive Brief PDF</a>`;
+        }
         (root.querySelector<HTMLElement>("#sib-container-aug") ?? form).style.display = "none";
         successPanel.scrollIntoView({ behavior: "smooth", block: "center" });
       } catch (err) {

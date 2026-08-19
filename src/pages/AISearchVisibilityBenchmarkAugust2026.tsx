@@ -11,6 +11,7 @@ import { BrevoSignupFormAugust2026 } from "@/components/BrevoSignupFormAugust202
 import previewCover from "@/assets/aug-2026-preview-1-cover.png.asset.json";
 import previewSnapshot from "@/assets/aug-2026-preview-2-executive-snapshot.png.asset.json";
 import previewCategory from "@/assets/aug-2026-preview-3-one-category.png.asset.json";
+import benchmarkPdf from "@/assets/ai-search-visibility-aeo-benchmark-august-2026.pdf.asset.json";
 
 const findings = [
   {
@@ -297,7 +298,7 @@ export default function AISearchVisibilityBenchmarkAugust2026() {
               </p>
             </div>
             <div className="rounded-2xl bg-white p-5 shadow-vt-lg md:p-6">
-              <BrevoSignupFormAugust2026 />
+              <BrevoSignupFormAugust2026 downloadUrl={`https://app.valuetempo.com${benchmarkPdf.url}`} />
             </div>
           </div>
         </div>
