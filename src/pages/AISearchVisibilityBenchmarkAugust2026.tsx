@@ -298,7 +298,7 @@ export default function AISearchVisibilityBenchmarkAugust2026() {
               </p>
             </div>
             <div className="rounded-2xl bg-white p-5 shadow-vt-lg md:p-6">
-              <BrevoSignupFormAugust2026 />
+              <BrevoSignupFormAugust2026 downloadUrl={`https://app.valuetempo.com${benchmarkPdf.url}`} />
             </div>
           </div>
         </div>
