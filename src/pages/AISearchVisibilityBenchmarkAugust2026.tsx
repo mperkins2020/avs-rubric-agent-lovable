@@ -175,7 +175,7 @@ function FlipBook() {
 
 
 export default function AISearchVisibilityBenchmarkAugust2026() {
-  const [previewOpen, setPreviewOpen] = useState(false);
+
 
   return (
     <div className="min-h-screen bg-[hsl(var(--vt-bg-section))]">
@@ -248,14 +248,8 @@ export default function AISearchVisibilityBenchmarkAugust2026() {
                     Download the Benchmark Executive Brief <ArrowRight className="ml-1 h-4 w-4" />
                   </a>
                 </Button>
-                <button
-                  type="button"
-                  onClick={() => setPreviewOpen(true)}
-                  className="inline-flex flex-shrink-0 items-center gap-1 text-sm font-medium text-vt-midnight transition-colors hover:text-[hsl(var(--vt-violet))]"
-                >
-                  Preview the first 3 pages <ArrowRight className="h-3.5 w-3.5" />
-                </button>
               </div>
+
 
               <p className="mt-5 text-sm font-medium text-vt-midnight/70">
                 12 companies · 8 dimensions · 3 emerging product layers
@@ -268,32 +262,8 @@ export default function AISearchVisibilityBenchmarkAugust2026() {
               transition={{ duration: 0.5, delay: 0.1 }}
               className="lg:col-span-5"
             >
-              <div className="relative mx-auto max-w-[380px]">
-                <div
-                  className="absolute -inset-6 rounded-[28px] opacity-60 blur-2xl"
-                  style={{
-                    background: "linear-gradient(135deg, hsl(var(--vt-violet) / 0.5), hsl(var(--vt-blue) / 0.4))",
-                  }}
-                />
-                <button
-                  type="button"
-                  onClick={() => setPreviewOpen(true)}
-                  aria-label="Preview the first 3 pages of the Benchmark Executive Brief"
-                  className="relative block w-full rounded-xl shadow-vt-lg ring-1 ring-black/5 transition-transform hover:-translate-y-0.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--vt-violet))]"
-                >
-                  {previewPages[0].src ? (
-                    <img
-                      src={previewPages[0].src as string}
-                      alt="August 2026 AI Search Visibility & AEO Benchmark Executive Brief cover"
-                      className="block w-full rounded-xl"
-                      draggable={false}
-                    />
-                  ) : (
-                    <PreviewPlaceholder label="Cover" index={0} />
-                  )}
-                </button>
-                <p className="mt-3 text-center text-xs text-muted-foreground">Click the cover to peek inside</p>
-              </div>
+              <FlipBook />
+
             </motion.div>
           </div>
         </div>
