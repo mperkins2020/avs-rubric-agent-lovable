@@ -16,7 +16,7 @@ const BREVO_STYLES = `
  * Replace with the `action` URL from the approved Brevo embed
  * (https://<id>.sibforms.com/serve/...) — submissions are disabled until then.
  */
-const FORM_ACTION = "";
+const FORM_ACTION = "https://a7f4b675.sibforms.com/serve/MUIFAHCl-ujZgwpKYQErTwdQWNxT2zJqAFRETfVIY0IT_2y1yycXXDKO-8oJ1cmCIynr9NRzDTpwhVDjIA2sur5pTJINPdPOyAxczlCdttNa6JOFAW3pYGe_MAuXB1Iwrb34rBmgDjRBfN61jz4WZhtvBp9ItLnZ6d8wIr8cEKj3-lwS45shXOLsFx8JuHb13QFD0T11yp2t3map9g==";
 
 const FORM_HTML = `
 <div class="sib-form" style="text-align: center; background-color: transparent;">
