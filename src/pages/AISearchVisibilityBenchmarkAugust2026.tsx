@@ -483,30 +483,8 @@ export default function AISearchVisibilityBenchmarkAugust2026() {
         </Link>
       </section>
 
-      {/* 7. Main download block */}
-      <section id="download" className="container mx-auto px-5 pb-14 md:px-10 md:pb-20">
-        <div className="overflow-hidden rounded-3xl border border-[hsl(var(--vt-violet)/0.2)] bg-gradient-to-br from-[#EEEAFB] via-[#F4F1FC] to-[#E8F0FF] p-7 md:p-12">
-          <div className="grid gap-10 lg:grid-cols-2 lg:gap-14">
-            <div>
-              <h2 className="text-3xl font-bold leading-tight text-vt-midnight md:text-4xl">See what the scores hide.</h2>
-              <p className="mt-4 max-w-xl text-base leading-relaxed text-vt-midnight/80">
-                The Benchmark Executive Brief shows where product ambition is moving faster than commercial evidence,
-                which patterns are beginning to emerge, and what the category still has not made legible.
-              </p>
-            </div>
-            <div className="rounded-2xl bg-white p-6 shadow-vt-lg md:p-8">
-              <h3 className="text-xl font-bold text-vt-midnight">Download the Benchmark Executive Brief</h3>
-              <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-                Get the August 2026 AI Search Visibility &amp; AEO Benchmark Executive Brief with the key findings,
-                company examples, and GTM questions behind the benchmark.
-              </p>
-              <div className="mt-6">
-                <BrevoSignupFormAugust2026 />
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
+
+
 
       {/* 8. Previous benchmarks */}
       <section className="border-t border-border bg-white">
