@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ArrowRight, ChevronLeft, ChevronRight, X } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import ValueTempoLogo from "@/assets/ValueTempo_Logo_main.png";
 import { Button } from "@/components/ui/button";
 import { Footer } from "@/components/Footer";
