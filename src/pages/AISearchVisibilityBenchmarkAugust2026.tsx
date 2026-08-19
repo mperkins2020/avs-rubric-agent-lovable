@@ -108,131 +108,71 @@ function PreviewPlaceholder({ label, index }: { label: string; index: number }) 
   );
 }
 
-function PreviewModal({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const [page, setPage] = useState(0);
-  const last = previewPages.length - 1;
-
-  const prev = useCallback(() => setPage((p) => Math.max(0, p - 1)), []);
-  const next = useCallback(() => setPage((p) => Math.min(last, p + 1)), [last]);
-
-  useEffect(() => {
-    if (!open) setPage(0);
-  }, [open]);
-
-  useEffect(() => {
-    if (!open) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-      if (e.key === "ArrowLeft") prev();
-      if (e.key === "ArrowRight") next();
-    };
-    window.addEventListener("keydown", onKey);
-    document.body.style.overflow = "hidden";
-    return () => {
-      window.removeEventListener("keydown", onKey);
-      document.body.style.overflow = "";
-    };
-  }, [open, onClose, prev, next]);
-
+function FlipBook() {
+  const [open, setOpen] = useState(false);
   return (
-    <AnimatePresence>
-      {open && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          className="fixed inset-0 z-50 flex items-center justify-center bg-vt-midnight/70 p-4 backdrop-blur-sm"
-          role="dialog"
-          aria-modal="true"
-          aria-label="Benchmark Executive Brief preview"
-          onClick={onClose}
+    <div className="relative mx-auto max-w-[380px]">
+      <div
+        className="absolute -inset-6 rounded-[28px] opacity-60 blur-2xl"
+        style={{
+          background: "linear-gradient(135deg, hsl(var(--vt-violet) / 0.5), hsl(var(--vt-blue) / 0.4))",
+        }}
+      />
+      <div className="relative" style={{ perspective: "2000px" }}>
+        {/* Inside page (behind, revealed when cover opens) */}
+        <button
+          type="button"
+          onClick={() => setOpen(false)}
+          aria-label="Close cover"
+          aria-hidden={!open}
+          tabIndex={open ? 0 : -1}
+          className="block w-full cursor-pointer rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--vt-violet))] md:rounded-xl"
         >
-          <motion.div
-            initial={{ opacity: 0, scale: 0.97, y: 8 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.97, y: 8 }}
-            transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
-            className="relative w-full max-w-[420px] rounded-2xl bg-white p-4 shadow-vt-lg md:max-w-[520px] md:p-6"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center justify-between gap-3">
-              <p className="text-sm font-semibold text-vt-midnight">
-                {previewPages[page].label}
-              </p>
-              <button
-                type="button"
-                onClick={onClose}
-                aria-label="Close preview"
-                className="rounded-full p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-              >
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-
-            <div className="mt-4">
-              <AnimatePresence mode="wait">
-                <motion.div
-                  key={page}
-                  initial={{ opacity: 0, x: 16 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -16 }}
-                  transition={{ duration: 0.25 }}
-                >
-                  {previewPages[page].src ? (
-                    <img
-                      src={previewPages[page].src as string}
-                      alt={`${previewPages[page].label} — August 2026 Benchmark Executive Brief preview`}
-                      className="block w-full rounded-xl ring-1 ring-black/5"
-                      draggable={false}
-                    />
-                  ) : (
-                    <PreviewPlaceholder label={previewPages[page].label} index={page} />
-                  )}
-                </motion.div>
-              </AnimatePresence>
-            </div>
-
-            <div className="mt-4 flex items-center justify-between">
-              <button
-                type="button"
-                onClick={prev}
-                disabled={page === 0}
-                className="inline-flex items-center gap-1 rounded-full border border-border px-3 py-1.5 text-sm text-vt-midnight transition-colors hover:bg-muted disabled:opacity-40"
-              >
-                <ChevronLeft className="h-4 w-4" /> Previous
-              </button>
-              <span className="text-xs font-medium text-muted-foreground">
-                {page + 1}/{previewPages.length}
-              </span>
-              <button
-                type="button"
-                onClick={next}
-                disabled={page === last}
-                className="inline-flex items-center gap-1 rounded-full border border-border px-3 py-1.5 text-sm text-vt-midnight transition-colors hover:bg-muted disabled:opacity-40"
-              >
-                Next <ChevronRight className="h-4 w-4" />
-              </button>
-            </div>
-
-            {page === last && (
-              <div className="mt-5 rounded-xl bg-[hsl(var(--vt-bg-section))] p-4 text-center">
-                <p className="text-sm text-vt-midnight/80">That's the preview.</p>
-                <Button
-                  asChild
-                  className="mt-3 h-11 rounded-[22px] bg-vt-midnight px-5 text-white hover:bg-vt-midnight/90"
-                >
-                  <a href="#download" onClick={onClose}>
-                    Download the full Benchmark Executive Brief
-                  </a>
-                </Button>
-              </div>
-            )}
-          </motion.div>
-        </motion.div>
-      )}
-    </AnimatePresence>
+          {previewPages[1].src ? (
+            <img
+              src={previewPages[1].src as string}
+              alt="August 2026 AI Search Visibility & AEO Benchmark Executive Brief — executive snapshot preview"
+              className="block h-auto w-full rounded-lg shadow-vt-lg ring-1 ring-black/5 md:rounded-xl"
+              draggable={false}
+            />
+          ) : (
+            <PreviewPlaceholder label={previewPages[1].label} index={1} />
+          )}
+        </button>
+        {/* Cover page (on top, flips open from the left edge) */}
+        <motion.button
+          type="button"
+          onClick={() => setOpen((v) => !v)}
+          aria-label={open ? "Close cover" : "Open cover to peek inside"}
+          className="absolute inset-0 origin-left rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--vt-violet))] md:rounded-xl"
+          style={{
+            transformStyle: "preserve-3d",
+            cursor: open ? "default" : "pointer",
+            pointerEvents: open ? "none" : "auto",
+          }}
+          animate={{ rotateY: open ? -160 : 0 }}
+          transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
+        >
+          {previewPages[0].src ? (
+            <img
+              src={previewPages[0].src as string}
+              alt="August 2026 AI Search Visibility & AEO Benchmark Executive Brief cover"
+              className="block h-auto w-full rounded-lg shadow-vt-lg ring-1 ring-black/5 md:rounded-xl"
+              style={{ backfaceVisibility: "hidden" }}
+              draggable={false}
+            />
+          ) : (
+            <PreviewPlaceholder label="Cover" index={0} />
+          )}
+        </motion.button>
+      </div>
+      <p className="mt-3 text-center text-xs text-muted-foreground">
+        {open ? "Click the inside page to close" : "Click the cover to peek inside"}
+      </p>
+    </div>
   );
 }
+
 
 export default function AISearchVisibilityBenchmarkAugust2026() {
   const [previewOpen, setPreviewOpen] = useState(false);
