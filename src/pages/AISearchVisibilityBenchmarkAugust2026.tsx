@@ -426,15 +426,12 @@ export default function AISearchVisibilityBenchmarkAugust2026() {
           The Benchmark Executive Brief examines the emerging patterns, the companies providing evidence for them, and
           the questions the category still cannot answer.
         </p>
-        <Button
-          asChild
-          size="lg"
-          className="mt-6 h-12 rounded-[24px] bg-vt-midnight px-6 text-white hover:bg-vt-midnight/90"
+        <a
+          href="#download"
+          className="mt-5 inline-flex items-center gap-1 text-sm font-medium text-vt-midnight transition-colors hover:text-[hsl(var(--vt-violet))]"
         >
-          <a href="#download">
-            Download the August Benchmark Executive Brief <ArrowRight className="ml-1 h-4 w-4" />
-          </a>
-        </Button>
+          Download the Benchmark Executive Brief <ArrowRight className="h-3.5 w-3.5" />
+        </a>
       </section>
 
       {/* 5. Companies analyzed */}
