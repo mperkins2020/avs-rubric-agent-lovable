@@ -371,13 +371,28 @@ export default function AISearchVisibilityBenchmarkAugust2026() {
             </div>
           ))}
         </div>
-        <a
-          href="#download"
-          className="mt-7 inline-flex items-center gap-1 text-sm font-medium text-vt-midnight transition-colors hover:text-[hsl(var(--vt-violet))]"
-        >
-          See the evidence behind the findings → Download the Benchmark Executive Brief
-        </a>
       </section>
+
+      {/* 3. Download form — placed high on the page */}
+      <section id="download" className="container mx-auto px-5 pb-14 md:px-10 md:pb-16">
+        <div className="overflow-hidden rounded-3xl border border-[hsl(var(--vt-violet)/0.2)] bg-gradient-to-br from-[#EEEAFB] via-[#F4F1FC] to-[#E8F0FF] p-6 md:p-9">
+          <div className="grid items-center gap-8 lg:grid-cols-2 lg:gap-12">
+            <div>
+              <h2 className="text-2xl font-bold leading-tight text-vt-midnight md:text-3xl">
+                See what the scores hide.
+              </h2>
+              <p className="mt-3 max-w-xl text-base leading-relaxed text-vt-midnight/80">
+                The Benchmark Executive Brief shows where product ambition is moving faster than commercial evidence,
+                which patterns are emerging, and what the category still has not made legible.
+              </p>
+            </div>
+            <div className="rounded-2xl bg-white p-5 shadow-vt-lg md:p-6">
+              <BrevoSignupFormAugust2026 />
+            </div>
+          </div>
+        </div>
+      </section>
+
 
       {/* 3. Emerging category model */}
       <section className="border-y border-border bg-white">
