@@ -109,6 +109,7 @@ export function BrevoSignupFormAugust2026({ id, downloadUrl }: Props) {
     const errorPanel = root.querySelector<HTMLDivElement>("#error-message-aug");
     const submitBtn = root.querySelector<HTMLButtonElement>("#sib-submit-btn-aug");
     const submitLabel = root.querySelector<HTMLElement>(".sib-submit-label-aug");
+    const downloadLinkContainer = root.querySelector<HTMLDivElement>("#download-link-aug");
     if (!form || !successPanel || !errorPanel || !submitBtn || !submitLabel) return;
 
     const showPanel = (el: HTMLElement) => el.classList.add("sib-form-message-panel-aug--visible");
