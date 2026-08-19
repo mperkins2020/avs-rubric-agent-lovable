@@ -29,6 +29,7 @@ const FORM_HTML = `
     <div id="success-message-aug" class="sib-form-message-panel-aug" style="font-family:Helvetica, sans-serif; font-size:16px; text-align:left; color:#085229; background-color:#e7faf0; border-color:#13ce66; border-radius:3px; max-width:540px;">
       <div class="sib-form-message-panel__text sib-form-message-panel__text--center">
         <span class="sib-form-message-panel__inner-text">Thanks! We've sent the August 2026 AI Search Visibility &amp; AEO Benchmark Executive Brief to your inbox — check spam/promotions if you don't see it within a few minutes.</span>
+        <div id="download-link-aug" style="margin-top:12px;"></div>
       </div>
     </div>
     <div id="sib-container-aug" class="sib-container--large sib-container--vertical" style="max-width:540px; text-align:center; background-color:transparent; direction:ltr;">
