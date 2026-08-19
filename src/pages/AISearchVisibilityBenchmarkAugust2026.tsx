@@ -80,9 +80,9 @@ const dimensions = [
  * the full Brief PDF is deliberately never used here.
  */
 const previewPages: { label: string; src: string | null }[] = [
-  { label: "Cover", src: null },
-  { label: "Executive Snapshot", src: null },
-  { label: "One Category, Three Emerging Buyer Jobs", src: null },
+  { label: "Cover", src: previewCover.url },
+  { label: "Executive Snapshot", src: previewSnapshot.url },
+  { label: "One Category, Three Emerging Buyer Jobs", src: previewCategory.url },
 ];
 
 function PreviewPlaceholder({ label, index }: { label: string; index: number }) {
