@@ -325,7 +325,7 @@ const Index = () => {
 
       {/* Announcement Bar */}
       <Link
-        to="/ai-speech-platform-benchmark-june-2026"
+        to="/ai-search-visibility-aeo-benchmark-august-2026"
         className="block w-full bg-gradient-to-r from-vt-cyan via-vt-blue to-vt-violet text-white"
       >
         <div className="container mx-auto px-4 md:px-10 py-2.5 flex items-center justify-center gap-2 text-sm md:text-base flex-wrap">
@@ -333,10 +333,10 @@ const Index = () => {
             New
           </span>
           <span className="font-medium text-center">
-            AI Speech Platform Buyability Benchmark, June 2026 is live: 12 companies scored.
+            AI Search Visibility &amp; AEO Benchmark, August 2026 is live: 12 companies analyzed across 3 emerging layers.
           </span>
           <span className="font-semibold underline-offset-2 hover:underline whitespace-nowrap shrink-0">
-            Get the report →
+            Get the Executive Brief →
           </span>
         </div>
       </Link>
