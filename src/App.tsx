@@ -67,6 +67,7 @@ const AppRoutes = () => (
     <Route path="/ai-saas-buyability-benchmark-may-2026/companies-evaluated" element={<CompaniesEvaluatedMay2026 />} />
     <Route path="/ai-saas-buyability-benchmark-may-2026/thank-you" element={<BenchmarkThankYouMay2026 />} />
     <Route path="/ai-speech-platform-benchmark-june-2026" element={<AISpeechBenchmarkJune2026 />} />
+    <Route path="/ai-search-visibility-aeo-benchmark-august-2026" element={<AISearchVisibilityBenchmarkAugust2026 />} />
     
     
     <Route path="*" element={<NotFound />} />
