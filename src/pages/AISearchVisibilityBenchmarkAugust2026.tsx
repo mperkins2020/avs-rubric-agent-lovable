@@ -450,7 +450,6 @@ export default function AISearchVisibilityBenchmarkAugust2026() {
       </section>
 
       <Footer />
-      <PreviewModal open={previewOpen} onClose={() => setPreviewOpen(false)} />
     </div>
   );
 }
