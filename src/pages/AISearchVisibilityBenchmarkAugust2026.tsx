@@ -8,6 +8,9 @@ import { Footer } from "@/components/Footer";
 import { ResourcesDropdown } from "@/components/ResourcesDropdown";
 import { SEOHead } from "@/components/SEOHead";
 import { BrevoSignupFormAugust2026 } from "@/components/BrevoSignupFormAugust2026";
+import previewCover from "@/assets/aug-2026-preview-1-cover.png.asset.json";
+import previewSnapshot from "@/assets/aug-2026-preview-2-executive-snapshot.png.asset.json";
+import previewCategory from "@/assets/aug-2026-preview-3-one-category.png.asset.json";
 
 const findings = [
   {
@@ -80,9 +83,9 @@ const dimensions = [
  * the full Brief PDF is deliberately never used here.
  */
 const previewPages: { label: string; src: string | null }[] = [
-  { label: "Cover", src: null },
-  { label: "Executive Snapshot", src: null },
-  { label: "One Category, Three Emerging Buyer Jobs", src: null },
+  { label: "Cover", src: previewCover.url },
+  { label: "Executive Snapshot", src: previewSnapshot.url },
+  { label: "One Category, Three Emerging Buyer Jobs", src: previewCategory.url },
 ];
 
 function PreviewPlaceholder({ label, index }: { label: string; index: number }) {
