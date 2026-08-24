@@ -4,7 +4,7 @@
 **Usage:** When a report produces a questionable result, log it here. Run `Scan the debug log for recurring patterns` periodically to surface systemic issues.
 **Related:** See ENGINE_DEBUG_HISTORY.md for backfilled history from git.
 
-**Entries:** 88 | **Last updated:** August 24, 2026
+**Entries:** 89 | **Last updated:** August 24, 2026
 
 ---
 
@@ -31,6 +31,31 @@
 <!-- Newest first. To add an entry, copy the template below and fill it in. -->
 
 <!-- Next entry goes here -->
+
+---
+
+### Entry 089 — August 24, 2026
+
+| Field | Value |
+|-------|-------|
+| Company | aws.amazon.com/comprehend — Gate 0 Action 2C confirmation-scan attempt (not a benchmark company; a disposable domain chosen specifically to avoid touching any published dataset) |
+| Version | `2026-08-24-pipeline-v52` (just-deployed) — but the defect itself is version-independent; nothing about it is new to v52, it was simply never exercised by a slow-enough scan before |
+| Dimension | N/A — platform/execution layer, upstream of scraping and scoring both |
+| Subtest(s) | N/A |
+| Root Cause | **`scrape-website` runs its entire crawl synchronously within one HTTP request/response cycle, with no background-and-poll pattern of its own — unlike `analyze-company`, which already has one (`202 pending` + `EdgeRuntime.waitUntil` + client polling).** When Firecrawl rate-limits repeatedly (confirmed in the live function logs: ~10 sequential `retrying in 12000ms` sleeps = ~120s of pure backoff on this one invocation), plus a Fix 2 URL-variant retry pass and a coverage-backfill pass layered on top, total execution can exceed Supabase's own hard platform ceiling on a single edge-function HTTP request (~150s). The platform kills the connection at that ceiling regardless of what timeout the *caller* is configured with — this is a different failure mode from Entries 086/087 (which bounded the caller's *wait*, but cannot prevent the platform itself from closing the connection out from under a still-running invocation). The underlying work actually completes server-side (confirmed in the logs: "Scraping complete. Total pages: 14" logged *after* the platform had already severed the connection) — but the result is discarded into the void, since `scrape-website` writes nothing to any table itself (confirmed: zero `scan_results` references in `scrape-website/index.ts`) and the client-side caller (`src/lib/api/scraper.ts`'s `scrapeWebsite()`) never receives a response to hand forward to `analyze-company`. Net effect: a scan that should have succeeded (14 pages, real evidence) produces a blank client-side error and zero stored data. |
+| Caught By | Michelle, running the Gate 0 Action 2C confirmation scan through the live app — got an error, pulled Lovable's function-invocation logs for the exact timing/retry sequence, and supplied a full diagnosis (including the precise 150s platform-connection-close mechanism) that I could not have obtained myself (no log access from this session — same standing limitation as Entry 085). |
+| Status | **diagnosed, not yet fixed — deliberately deferred, not a gap in this session's execution** |
+
+**Distinct from every prior timeout-class entry, not a duplicate.** Entries 086/087 fixed the *caller's* side (bounding `run-benchmark`'s wait on `scrape-website`/`analyze-company` so a hang doesn't block forever). This is the *callee's* side: `scrape-website` itself has no mechanism to survive running long past a platform-imposed ceiling it doesn't control and can't extend, no matter how the caller is configured. A `run-benchmark`-orchestrated scan is exposed to this exact same risk (its own `POLL_TIMEOUT_MS`=300s caller-side abort is longer than the platform's ~150s ceiling, so the platform would sever the connection first) — meaning this defect is not confined to ad-hoc individual scans, and any sufficiently rate-limited company in a real benchmark batch could hit it too. Not yet checked whether this explains any prior unexplained scrape failure in the August cycle's history — worth a look next time one comes up.
+
+**Fix direction supplied by Lovable's diagnosis, not yet implemented:**
+1. Give `scrape-website` the same `202 pending` / `EdgeRuntime.waitUntil` / poll pattern `analyze-company` already has — the only fix that's robust regardless of how long Firecrawl retries run.
+2. Track elapsed time from function start; skip the Fix 2 variant-retry pass and the coverage-backfill pass once past a safety margin (e.g. ~100s) — both passes' output was discarded anyway on this invocation, since the connection was already dead by the time they ran.
+3. Cap total rate-limit backoff time, or drop a URL after one rate-limit hit instead of sleeping through repeated 12s retries — ten sequential retries is 120s of pure waiting on its own, most of the ceiling's budget.
+
+**Deliberately not implemented this session.** This is a genuinely separate scope from Gate 0 Action 2C (deploying and verifying the evidence-completeness/commercial-surface controls) — fixing it means another substantive change to the same protected files, its own version bump, its own test cycle, and its own deploy, which this session's established discipline (one action at a time, stop for review) argues against doing impulsively mid-verification. Logged here so it isn't lost, with a short-term workaround (`maxPages: 8` for high-latency/heavily-rate-limited domains, per Lovable's suggestion) available to unblock immediate verification needs without committing to the full fix.
+
+**Pattern Tag:** `platform-connection-limit`, `callee-side-timeout` (distinct from Entries 086/087's `caller-side-timeout`), `background-poll-pattern-missing-from-scrape-website`, `work-completed-result-discarded`, `diagnosed-not-fixed`, `deferred-pending-scope-decision`
 
 ---
 
