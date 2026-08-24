@@ -8,6 +8,8 @@ The following files are maintained exclusively by Claude Code. Lovable must NEVE
 - `supabase/functions/analyze-company/json-repair.ts` — truncated-JSON repair (Entry 083)
 - `supabase/functions/analyze-company/json-repair.test.ts` — repair-layer test fixtures
 - `supabase/functions/scrape-website/index.ts` — scraper
+- `supabase/functions/scrape-website/coverage-signals.ts` — evidence-volume + commercial-surface-relevance signals (Entry 088)
+- `supabase/functions/scrape-website/coverage-signals.test.ts` — signal-layer test fixtures
 - `supabase/functions/run-benchmark/index.ts` — benchmark orchestrator (Entry 086)
 - `src/lib/api/scraper.ts` — client API layer
 - `tasks/` — calibration docs and todos
@@ -115,7 +117,9 @@ Bump `ANALYSIS_VERSION` in `supabase/functions/analyze-company/index.ts` every t
 
 **Important — a version bump alone does NOT guarantee a fresh scan.** The 7-day cache on `scan_results` is gated by that row's `expires_at`, not by `ANALYSIS_VERSION`. A domain with a live (non-expired) row from an older version can still be served that stale result even after the version is bumped — the bump only affects newly-inserted rows. To force a genuinely fresh rescan of a domain that already has an unexpired row, explicitly set that row's `expires_at` into the past (don't delete the row — expiring it preserves history). See ENGINE_DEBUG_LOG.md Entry 072.
 
-Current version as of last session: `2026-08-05-pipeline-v51` (local source only — NOT YET DEPLOYED as of this writing; see ENGINE_DEBUG_LOG.md Entry 082)
+`2026-08-05-pipeline-v51` was **confirmed LIVE in production 2026-08-24** via a read-only production `scan_results` pull (conductor.com, `analysisVersion: 2026-08-05-pipeline-v51`, matching repo HEAD; see ENGINE_DEBUG_LOG.md Entry 082 and the September Benchmark Control Framework Implementation Map, Gate 0 Action 1).
+
+**Current local source version: `2026-08-24-pipeline-v52`** (Entry 088 — evidence-completeness + commercial-surface-relevance signals; see Gate0_Action2_Evidence_Completeness_Diagnosis.md). **Not yet deployed as of this writing.** Verify live `analysisVersion` matches `v52` on the first post-deploy scan before trusting any commercial-surface-relevance results — same discipline as the v51 verification above.
 
 ---
 

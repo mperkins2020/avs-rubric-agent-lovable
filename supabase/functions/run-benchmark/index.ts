@@ -164,6 +164,45 @@ async function processCompany(
     }
     console.log(`[run-benchmark] Scraped ${(scrapeData.pages as unknown[]).length} pages for ${company.domain}`);
 
+    // Gate 0 Action 2B (2026-08-24): scrape-website computes two distinct
+    // completeness/relevance signals in its `coverage` response field
+    // (see coverage-signals.ts) — previously computed on every scan but
+    // read by nothing downstream (confirmed by full-codebase grep). A scan
+    // carrying either signal must no longer be indistinguishable from a
+    // clean completed scan once this run finishes — see the review-flag
+    // write in Step 4 below. `status` stays 'complete' (the scan DID
+    // complete; no schema/CHECK-constraint change to benchmark_run_log's
+    // status enum) — the existing `error_message` column carries the
+    // distinction instead, reusing the exact field the standard QA query
+    // (`SELECT domain, status, error_message ... FROM benchmark_run_log`)
+    // already selects.
+    const coverage = (scrapeData.coverage ?? {}) as {
+      coverageWarning?: boolean;
+      commercialSurfaceWarning?: boolean;
+      discoveredUrlCount?: number;
+      selectedCount?: number;
+      resolvedCount?: number;
+      productSearch?: string | null;
+      productScopedPageCount?: number;
+    };
+    const reviewReasons: string[] = [];
+    if (coverage.coverageWarning) {
+      reviewReasons.push(
+        `EVIDENCE_VOLUME: thin evidence (discovered=${coverage.discoveredUrlCount ?? '?'}, ` +
+        `selected=${coverage.selectedCount ?? '?'}, resolved=${coverage.resolvedCount ?? '?'})`
+      );
+    }
+    if (coverage.commercialSurfaceWarning) {
+      reviewReasons.push(
+        `COMMERCIAL_SURFACE: seeded product path "${coverage.productSearch ?? '?'}" yielded ` +
+        `zero product-scoped pages (productScopedPageCount=${coverage.productScopedPageCount ?? 0}) — ` +
+        `evidence may be generic root-domain content, not the configured product surface`
+      );
+    }
+    if (reviewReasons.length > 0) {
+      console.log(`[run-benchmark] Review flag(s) for ${company.domain}: ${reviewReasons.join(' | ')}`);
+    }
+
     // ── Step 2: Analyze ───────────────────────────────────────────────────
     // Entry 087: same gap as Entry 086, one step later. This call is meant
     // to return fast (200 cache-hit or 202 fresh-scan-started) with the real
@@ -243,6 +282,12 @@ async function processCompany(
     }
 
     // ── Step 4: Mark complete in benchmark_run_log ────────────────────────
+    // Gate 0 Action 2B: status stays 'complete' (accurate — the scan did
+    // complete). error_message carries the review flag when either
+    // completeness signal fired above, so a row that technically completed
+    // but should not be trusted without review is no longer indistinguishable
+    // from a clean row via the standard QA query. null on the clean path,
+    // same as before this change.
     await supabaseAdmin.from('benchmark_run_log').upsert({
       run_month: month,
       category: company.category,
@@ -251,9 +296,10 @@ async function processCompany(
       status: 'complete',
       scan_result_id: scanResultId,
       completed_at: new Date().toISOString(),
+      error_message: reviewReasons.length > 0 ? `REVIEW REQUIRED: ${reviewReasons.join(' | ')}` : null,
     }, { onConflict: 'run_month,domain' });
 
-    console.log(`[run-benchmark] Done: ${company.domain}`);
+    console.log(`[run-benchmark] Done: ${company.domain}${reviewReasons.length > 0 ? ' (flagged for review)' : ''}`);
   } catch (err) {
     console.error(`[run-benchmark] Error processing ${company.domain}:`, err);
     await supabaseAdmin.from('benchmark_run_log').upsert({

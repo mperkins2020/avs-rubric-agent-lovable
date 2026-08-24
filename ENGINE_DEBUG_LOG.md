@@ -4,7 +4,7 @@
 **Usage:** When a report produces a questionable result, log it here. Run `Scan the debug log for recurring patterns` periodically to surface systemic issues.
 **Related:** See ENGINE_DEBUG_HISTORY.md for backfilled history from git.
 
-**Entries:** 87 | **Last updated:** August 6, 2026
+**Entries:** 88 | **Last updated:** August 24, 2026
 
 ---
 
@@ -19,7 +19,7 @@
 | confidence_miscalc | 0 | — |
 | prompt_drift | 6 | ICP and Job Clarity (D2); D6/D8 evidence-block leak (Entry 060); D7 audit arithmetic error (Entry 064); D5-D8 evidence block missing, initially 4 companies (Entry 065), later found near-universal across every dimension/company checked this session — root cause (asking for 2 brackets per dimension instead of 1) FIXED in Entry 069, not yet re-verified against a live rescan; model fabricating `@user_input` citations, wholly (Entry 074, fixed v44) and in mixed form (Entry 082, fixed v51) — concentrated in D2 |
 | evidence_snippet_selection | 2 | ICP (D2), Value Unit (D4), Overages (D6), Safety Rails (D7), Evidence Coverage (D8); same-page-different-read on D4 (Entry 062, confirmed a 3rd time on Semrush — see Entry 062 addendum). Root cause (D1-D4 had no mandatory audit-block procedure) FIXED in Entry 068 — not yet re-verified against a live rescan. |
-| pipeline_miss | 27 | Value Unit, Cost Driver Mapping, Safety/Trust, Overages & Risk, URL filter; forced-page resolution gap (Entry 059); session-load evidence degradation (Entry 061); product-surface mismatch (Entry 063); blog-content misclassified as pricing evidence (Entry 067) |
+| pipeline_miss | 28 | Value Unit, Cost Driver Mapping, Safety/Trust, Overages & Risk, URL filter; forced-page resolution gap (Entry 059); session-load evidence degradation (Entry 061); product-surface mismatch (Entry 063); blog-content misclassified as pricing evidence (Entry 067); computed-but-unconsumed evidence-completeness signal + root-domain-only canonical-probe fallback silently substituting wrong-product evidence for a seeded product path (Entry 088) |
 | contamination | 13 | Pricing Transparency, Enterprise/Compliance (D7/D8) |
 | calibration | 3 | Value unit (D4), ICP and Job Clarity (D2), Safety Rails (D8) |
 | other | 4 | Architecture/merge-level (Entries 056–058): instrument drift, single-pass classification gating, pass-1 narrative bias |
@@ -31,6 +31,37 @@
 <!-- Newest first. To add an entry, copy the template below and fill it in. -->
 
 <!-- Next entry goes here -->
+
+---
+
+### Entry 088 — August 24, 2026
+
+| Field | Value |
+|-------|-------|
+| Company | Roster-wide (Marketing Intelligence: HubSpot, Similarweb) — diagnostic, not a single-scan finding |
+| Version | `2026-08-05-pipeline-v51` and every prior version — the gap predates this cycle; found during Gate 0 Action 2 of the September benchmark control framework, not during active scoring |
+| Dimension | N/A — evidence-pipeline layer, upstream of scoring |
+| Subtest(s) | N/A |
+| Root Cause | **Two compounding pipeline-layer gaps, kept distinct per the Action 2 diagnosis, not collapsed into one:** (1) `scrape-website` computes an evidence-volume completeness signal (`coverage.coverageWarning`) on every scan, but confirmed by full-codebase grep to be read by nothing downstream — `run-benchmark` discards `scrapeData.coverage` entirely, and no code path ever surfaced a low-coverage scan differently from a clean one. (2) The canonical pricing-page fallback (`/pricing`, `/plans`, `/billing`) always targeted the bare root domain (`baseHost`), even for a company deliberately seeded at a product-specific path (`productSearch` set) — confirmed live on `similarweb.com/packages/ai-search/`: the main-domain map returned 0 URLs, so the mistargeted root-domain probes became the *only* pricing-adjacent evidence available, silently reintroducing the exact wrong-product-surface risk the path-seeding convention exists to prevent. Retroactive testing against a real stored production record (hubspot.com) proved these are genuinely separate failure classes: a page-count/pricing-presence/confidence heuristic passes HubSpot's actual scan cleanly (7 pages, 6 pricing-adjacent, 51% confidence) despite it missing the entire `/products/aeo` commercial surface entirely — confirmed live via `preview-urls` that the page (HTTP 200, public) never appears in any of 326 URLs Firecrawl's `/map` discovers for the domain. |
+| Caught By | Deliberate diagnostic pass (Gate 0 Action 2), not an in-cycle scan failure — full write-up in `Gate0_Action2_Evidence_Completeness_Diagnosis.md`. Read-only source inspection plus live `preview-urls`/`snapshot-scan.ts` checks against real domains and a real stored production record. |
+| Status | **fix_shipped (local, not yet deployed)** |
+
+**Two separate fixes, kept in one entry because they were diagnosed and fixed together, but implemented as genuinely independent code paths:**
+
+1. **Wired the existing `coverageWarning` signal downstream**, plus a new, distinct commercial-surface-relevance signal (`commercialSurfaceWarning`) computed for product-path-seeded companies only — both extracted into a new pure, unit-testable module, `supabase/functions/scrape-website/coverage-signals.ts` (`computeCoverageWarning`, `computeCommercialSurfaceSignal`), following the same pattern established for `rubric-audit.ts`/`json-repair.ts` (Deno-only `index.ts` cannot be imported into vitest). `run-benchmark/index.ts` now reads both signals from `scrape-website`'s response and, when either fires, writes a clearly-prefixed review flag into `benchmark_run_log.error_message` (`"REVIEW REQUIRED: EVIDENCE_VOLUME: ..."` / `"...COMMERCIAL_SURFACE: ..."`) — `status` stays `'complete'` (accurate; no `benchmark_run_log.status` CHECK-constraint/schema change), reusing the exact column the standard QA query already selects.
+2. **Fixed the canonical-probe fallback** (`buildCanonicalProbes()`, same new module) to also probe the seeded product path when `productSearch` is set, ordered ahead of the existing root-domain probes — additive, not a replacement, so root-domain-configured companies (`productSearch` undefined) see byte-identical behavior to before this change.
+
+**Explicitly does not attempt semantic judgment.** `commercialSurfaceWarning` only checks whether ANY page in the final scraped set is scoped to the seeded product path — not whether that evidence is good, sufficient, or actually about pricing. This mirrors the same restraint already established for `coverageWarning`: surface the risk reliably, leave the judgment to human QA. Neither signal is fully automatic protection — see the diagnosis's §6 status ("SMALL CONTROL BUILD REQUIRED," not "sufficient as-is" and not "structural gap").
+
+**Test coverage:** 13 new tests in `coverage-signals.test.ts`, covering both signals plus the probe-construction fix, against deterministic fixtures modeled directly on the real August/September signatures (Goodie AI/Conductor catastrophic-thin-evidence, AthenaHQ healthy-baseline, HubSpot commercial-surface-miss, Similarweb map-under-discovery, Amazon Q/GitHub-Copilot-path-seeded positive controls). All pass; full suite (244 tests across 11 files, plus the separately-run `filter-logic-drift` guardrail, 11 tests) shows zero regressions.
+
+**`ANALYSIS_VERSION` bumped to `2026-08-24-pipeline-v52`** — this change materially alters the evidence-retrieval behavior that feeds scoring (a materially different candidate/probe set can now be selected for product-path-seeded companies), so per the standing convention ("bump every time either edge function is meaningfully changed," "bump again before the next deploy" since v51 was confirmed live 2026-08-24, see Gate 0 Action 1) a fresh bump is required — leaving this under the old `v51` identifier would make `result_json.analysisVersion` misleading about which evidence-retrieval logic actually produced a given row, exactly the ambiguity the convention exists to prevent. `filter-logic.ts`'s `SYNCED_WITH_ANALYSIS_VERSION` pin updated to match; the mirror's regexes/weights themselves are unchanged (this fix touched probe construction and response-shape logic, not `scoreUrl`/`highIntentPaths`/`exclusionPatterns`), confirmed by the drift-guardrail test still passing.
+
+**Not yet deployed.** Per CLAUDE.md's Lovable deployment-prompt convention — deployment is a separate, explicit step outside this session's tool access. **Verify live `analysisVersion` matches `v52` on the first post-deploy scan before trusting any subsequent commercial-surface-relevance results** — the same discipline Gate 0 Action 1 exists to enforce.
+
+**Known limitation, stated explicitly, not deferred silently:** `commercialSurfaceWarning` only fires for companies seeded with a product-specific path. A company whose seed path is itself wrong in a way a human wouldn't catch either (an even narrower sub-product existing that nobody thought to seed) will not be flagged — this reduces but does not eliminate commercial-surface risk. Human QA at Gate 1 roster-freeze (seed-path confirmation, per the Action 2 diagnosis's recommended Control B) remains load-bearing.
+
+**Pattern Tag:** `product-surface-mismatch`, `dead-qa-hook`, `computed-but-unconsumed-signal`, `root-domain-fallback-substitution`, `two-distinct-controls-not-one-heuristic`, `fix-shipped-not-deployed`, `analysis-version-bumped-v52`
 
 ---
 

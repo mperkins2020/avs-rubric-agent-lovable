@@ -1,5 +1,10 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import {
+  computeCoverageWarning,
+  computeCommercialSurfaceSignal,
+  buildCanonicalProbes,
+} from "./coverage-signals.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -877,6 +882,13 @@ Deno.serve(async (req) => {
     let coverageSelectedCount = 0;
     let coverageResolvedCount = 0;
     let coverageBackfilledCount = 0;
+    // Gate 0 Action 2B (2026-08-24): hoisted from its previous declaration
+    // inside the "STEP 2: MAP-FIRST DISCOVERY" block below so it remains in
+    // scope for the canonical-probe construction and the final
+    // commercial-surface-relevance signal, both of which run after that
+    // block closes. Stays undefined for root-domain-configured companies or
+    // when subpage discovery is skipped — unchanged from prior behavior.
+    let productSearch: string | undefined;
 
     const urlObj = new URL(formattedUrl);
     const baseHost = urlObj.hostname.replace(/^www\./, '');
@@ -999,7 +1011,7 @@ Deno.serve(async (req) => {
       // product-scoped URLs instead of the entire domain.
       const inputPath = urlObj.pathname.replace(/\/+$/, '');
       const pathSegments = inputPath.split('/').filter(Boolean);
-      const productSearch = pathSegments.length >= 1 ? pathSegments[0] : undefined;
+      productSearch = pathSegments.length >= 1 ? pathSegments[0] : undefined;
       if (productSearch) {
         console.log(`Product-scoped map: using search="${productSearch}" from input path`);
       }
@@ -1346,13 +1358,27 @@ Deno.serve(async (req) => {
       // Canonical probe: if critical pricing pages weren't discovered by map,
       // force-add them — they are too important to miss due to map variance.
       // Use www-prefix when discovered URLs use www (most enterprise SaaS).
+      //
+      // Gate 0 Action 2B (2026-08-24): previously this ALWAYS probed only the
+      // bare root domain, even for a company deliberately seeded at a
+      // product-specific path (productSearch). Confirmed live to silently
+      // reintroduce wrong-product evidence when the product-path map
+      // under-discovers (similarweb.com/packages/ai-search/ case — see
+      // Gate0_Action2_Evidence_Completeness_Diagnosis.md §2/§5).
+      // buildCanonicalProbes() now also probes the seeded product path
+      // (ordered first) when productSearch is set, ADDITIVE to the existing
+      // root-domain probes — root-domain-only companies (productSearch
+      // undefined) see byte-identical behavior to before.
       const canonicalProbes = ['/pricing', '/plans', '/billing'];
       const usesWww = allDiscovered.some(u => { try { return new URL(u).hostname.startsWith('www.'); } catch { return false; } });
       const probeBase = usesWww ? `https://www.${baseHost}` : `https://${baseHost}`;
       const selectedSet = new Set(rawPriorityLinks.map(l => normaliseForDedup(l)));
-      const missingProbes = canonicalProbes
-        .map(probe => `${probeBase}${probe}`)
-        .filter(probeUrl => !selectedSet.has(normaliseForDedup(probeUrl)));
+      const missingProbes = buildCanonicalProbes(
+        probeBase,
+        canonicalProbes,
+        productSearch,
+        (probeUrl) => selectedSet.has(normaliseForDedup(probeUrl)),
+      );
 
       // Community evidence URLs get guaranteed slots — they were manually verified
       // as high-value pages that automated discovery misses. Force-add any that
@@ -1641,6 +1667,22 @@ Deno.serve(async (req) => {
 
     console.log(`Scraping complete. Total pages: ${pages.length}`);
 
+    // Gate 0 Action 2B (2026-08-24): TWO DISTINCT completeness/relevance
+    // signals, computed from the pure, unit-tested module coverage-signals.ts
+    // (see that file's header for the full rationale). Previously
+    // coverageWarning was computed here but consumed by nothing downstream
+    // (confirmed by full-codebase grep) — run-benchmark now reads both
+    // fields below and writes a review flag to benchmark_run_log.error_message
+    // when either fires. Do NOT collapse these into one heuristic — a scan
+    // can pass evidence-volume cleanly and still fail commercial-surface
+    // relevance (confirmed against the HubSpot AEO production record).
+    const coverageWarning = computeCoverageWarning(
+      coverageDiscoveredCount,
+      coverageSelectedCount,
+      coverageResolvedCount,
+    );
+    const commercialSurfaceSignal = computeCommercialSurfaceSignal(pages, productSearch, isPricingPage);
+
     return new Response(
       JSON.stringify({
         success: true,
@@ -1651,18 +1693,24 @@ Deno.serve(async (req) => {
         totalQueuedCount: fix2TotalQueuedCount,
         confirmedMissUrls: fix2ConfirmedMissUrls,
         // Coverage observability: how complete discovery + scraping were this
-        // run. coverageWarning=true means the evidence set is thinner than
-        // normal and scores should not be trusted as final (QA Gate 1 hook:
-        // benchmark runs should rescan instead of accepting a thin scan).
+        // run, AND whether the evidence captured actually belongs to the
+        // configured product/category surface. Two distinct booleans —
+        // see coverage-signals.ts.
         coverage: {
           discoveredUrlCount: coverageDiscoveredCount,
           selectedCount: coverageSelectedCount,
           resolvedCount: coverageResolvedCount,
           backfilledCount: coverageBackfilledCount,
           confirmedMissCount: fix2ConfirmedMissUrls.length,
-          coverageWarning:
-            (coverageSelectedCount > 0 && coverageResolvedCount < Math.ceil(0.6 * coverageSelectedCount)) ||
-            coverageDiscoveredCount < 12,
+          // Control A — evidence-volume completeness.
+          coverageWarning,
+          // Control B — commercial-surface relevance (product-path-seeded
+          // companies only; always false/0 for root-domain-configured
+          // companies — see computeCommercialSurfaceSignal doc comment).
+          productSearch: productSearch ?? null,
+          productScopedPageCount: commercialSurfaceSignal.productScopedPageCount,
+          productScopedPricingPageCount: commercialSurfaceSignal.productScopedPricingPageCount,
+          commercialSurfaceWarning: commercialSurfaceSignal.commercialSurfaceWarning,
         },
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
