@@ -40,23 +40,30 @@ export interface ChatResponse {
 
 export const scraperApi = {
   /**
-   * Scrape a website and its key subpages
+   * Scrape a website and its key subpages.
+   *
+   * Entry 090 (2026-08-24): scrape-website now runs the crawl in the
+   * background (EdgeRuntime.waitUntil + scrape_jobs), mirroring
+   * analyzeCompany's existing pending/poll pattern below. Previously this
+   * call waited synchronously for the full crawl, bounded by this
+   * function's own 2-minute AbortController — under sustained Firecrawl
+   * rate-limiting, total server-side execution could exceed that (and
+   * exceed Supabase's own platform connection ceiling) well before the
+   * crawl actually finished, silently discarding completed work when the
+   * connection was severed (Entry 089). The initial call now returns fast
+   * (a 202 'pending' status) regardless of how long the underlying crawl
+   * takes, and _pollScrape() below waits for the result the same way
+   * _pollAnalysis() already does for analyzeCompany.
    */
   async scrapeWebsite(url: string, options?: { maxPages?: number }): Promise<ScrapeResult> {
     try {
-      // Create an AbortController for timeout handling
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 120000); // 2 minute timeout
-
       const { data, error } = await supabase.functions.invoke('scrape-website', {
-        body: { 
-          url, 
+        body: {
+          url,
           includeSubpages: true,
           maxPages: options?.maxPages || 15,
         },
       });
-
-      clearTimeout(timeoutId);
 
       if (error) {
         console.error('Scrape error:', error);
@@ -80,21 +87,79 @@ export const scraperApi = {
         return { success: false, error: error.message };
       }
 
+      // Background processing: edge function returned 202 — poll until complete
+      if (data && data.status === 'pending') {
+        return await this._pollScrape(url);
+      }
+
       return data as ScrapeResult;
     } catch (err) {
       console.error('Scrape exception:', err);
       // Handle abort/timeout errors
       if (err instanceof Error && err.name === 'AbortError') {
-        return { 
-          success: false, 
-          error: 'Request timed out. The website may be too large or slow to respond. Please try again.' 
+        return {
+          success: false,
+          error: 'Request timed out. The website may be too large or slow to respond. Please try again.'
         };
       }
-      return { 
-        success: false, 
-        error: err instanceof Error ? err.message : 'Failed to scrape website' 
+      return {
+        success: false,
+        error: err instanceof Error ? err.message : 'Failed to scrape website'
       };
     }
+  },
+
+  /**
+   * Poll for a background scrape result. Called after receiving a 202 from
+   * scrapeWebsite(). Mirrors _pollAnalysis()'s exact interval/timeout shape.
+   * Polls every 4 seconds up to 4 minutes total (matches scrape-website's
+   * own SCRAPE_RETRY_BUDGET_MS ceiling, so the client doesn't give up
+   * before the server-side job could plausibly still be finishing).
+   */
+  async _pollScrape(url: string): Promise<ScrapeResult> {
+    const POLL_INTERVAL_MS = 4000;
+    const POLL_TIMEOUT_MS = 240000; // 4 minutes
+    const startTime = Date.now();
+
+    console.log(`Background scrape started for ${url} — polling for result`);
+
+    while (Date.now() - startTime < POLL_TIMEOUT_MS) {
+      await new Promise(resolve => setTimeout(resolve, POLL_INTERVAL_MS));
+
+      try {
+        const { data, error } = await supabase.functions.invoke('scrape-website', {
+          body: { url, pollOnly: true },
+        });
+
+        if (error) {
+          console.warn('Poll error (will retry):', error);
+          continue;
+        }
+
+        if (data?.status === 'pending') {
+          console.log(`Scrape still in progress for ${url}...`);
+          continue;
+        }
+
+        if (data?.status === 'error') {
+          return { success: false, error: data.error || 'Scrape failed in background — please try again' };
+        }
+
+        if (data?.status === 'not_found') {
+          // Job row expired before result was written — scrape failed silently
+          return { success: false, error: 'Scrape did not complete — please try again' };
+        }
+
+        if (data?.success === true) {
+          console.log(`Scrape complete for ${url} after ${Math.round((Date.now() - startTime) / 1000)}s`);
+          return data as ScrapeResult;
+        }
+      } catch (pollErr) {
+        console.warn('Poll exception (will retry):', pollErr);
+      }
+    }
+
+    return { success: false, error: 'Scrape timed out after 4 minutes — please try again' };
   },
 
   /**

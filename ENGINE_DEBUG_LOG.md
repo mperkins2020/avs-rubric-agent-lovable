@@ -4,7 +4,7 @@
 **Usage:** When a report produces a questionable result, log it here. Run `Scan the debug log for recurring patterns` periodically to surface systemic issues.
 **Related:** See ENGINE_DEBUG_HISTORY.md for backfilled history from git.
 
-**Entries:** 89 | **Last updated:** August 24, 2026
+**Entries:** 90 | **Last updated:** August 24, 2026
 
 ---
 
@@ -34,6 +34,51 @@
 
 ---
 
+### Entry 090 — August 24, 2026
+
+| Field | Value |
+|-------|-------|
+| Company | N/A — architectural remediation, follows directly from Entry 089's diagnosis |
+| Version | `2026-08-24-pipeline-v53` |
+| Dimension | N/A — evidence-pipeline layer, upstream of scraping and scoring both |
+| Subtest(s) | N/A |
+| Root Cause | See Entry 089 in full. Summary: `scrape-website` ran its entire crawl synchronously inside one HTTP request/response cycle, with no elapsed-time awareness anywhere in its retry/backoff logic (main-page retry loop, domain-map retry, per-page rate-limit retry, Fix 2's per-URL-per-variant retry chain) and no persistence until the final response — a fundamentally different gap from Entries 086/087, which bounded the *caller's* wait but could not prevent the platform itself from severing the connection out from under a still-running invocation. |
+| Caught By | Direct trace of `scrape-website/index.ts`'s execution lifecycle (Michelle's explicit remediation-task requirement to confirm the failure architecture before editing) — located all four rate-limit-wait call sites (`mapDomain`, `scrapePage`, the main-page retry loop, Fix 2's per-variant loop), confirmed via `Promise.all` usage that page-level scraping is concurrent but Fix 2's per-URL variant chain is internally sequential (the actual compounding accumulator), and confirmed via grep that `scrape-website` writes to no table at all (zero `scan_results` references), meaning completed work genuinely had nowhere to land when the connection was severed. |
+| Status | **fix_shipped (local, not yet deployed)** |
+
+**Remediation selected: background-job + polling (required), plus a retry-time-budget backstop (complementary, not sufficient alone).** Evaluated three candidates from Lovable's original diagnosis, per Michelle's explicit instruction to treat them as candidates, not predetermined requirements:
+
+1. **Background job + polling/persistence — REQUIRED.** This is the only remediation that removes the risk structurally rather than probabilistically: even with zero rate-limiting and a tight retry budget, a sufficiently large/slow site could still legitimately need more real Firecrawl time than any synchronous HTTP response window allows. Implemented by mirroring `analyze-company`'s already-proven `202 pending` + `EdgeRuntime.waitUntil` + poll pattern exactly, rather than inventing a new shape — lowest risk of introducing a *new* defect, since the pattern is reused, not designed from scratch.
+2. **Bounded retry-time budget — complementary, kept.** With background execution removing the hard-deadline pressure, this is no longer about fitting inside 150s — it's a defensive backstop (`SCRAPE_RETRY_BUDGET_MS` = 4 minutes) against a persistently-degraded Firecrawl retrying indefinitely. Deliberately generous, and deliberately does NOT skip attempting a page — it only stops *waiting* on further rate-limit retries once the budget is exhausted, preserving the invariant that evidence depth must not be silently reduced merely to fit a request window (the request window no longer exists as a constraint).
+3. **Capped backoff / drop-after-first-rate-limit — folded into the retry-budget mechanism rather than built separately.** Rather than a fixed per-URL variant cap (which risks giving up too early on a URL that would have succeeded on its second variant even without rate-limiting), the shared elapsed-time budget check was added directly to Fix 2's per-variant loop — the same mechanism, applied at the point that most directly caused Entry 089's compounding (a single URL's sequential 4-variant retry chain).
+
+**Files changed:**
+- `supabase/migrations/20260824043645_scrape_jobs_table.sql` — new table, RLS matching `scan_results`' exact read policy, short TTL (transient handoff, not durable evidence).
+- `supabase/functions/scrape-website/retry-budget.ts` (new, pure/testable) — `hasRetryBudgetRemaining()`, `SCRAPE_RETRY_BUDGET_MS`.
+- `supabase/functions/scrape-website/retry-budget.test.ts` (new) — 7 tests.
+- `supabase/functions/scrape-website/index.ts` — added `pollOnly` request mode; pending-job dedup check (prevents a client retry from starting a second concurrent crawl for the same URL); wrapped the entire crawl body (`performScrape`) to return a plain result object instead of a `Response`, invoked via `EdgeRuntime.waitUntil()`; two early-exit failure paths converted from `return new Response(...)` to `throw new Error(...)` so they correctly route through the background chain's `.catch()` (recording `status:'error'`, not a false `'complete'`); `hasRetryBudgetRemaining()` threaded through all four rate-limit-wait sites.
+- `src/lib/api/scraper.ts` — `scrapeWebsite()` now handles a `202 pending` response by polling (`_pollScrape()`, mirroring `_pollAnalysis()`'s exact interval/timeout shape); removed the old 2-minute client-side `AbortController` (no longer appropriate — the initial call should always return fast now).
+- `supabase/functions/run-benchmark/index.ts` — Step 1 now branches on `scrapeData.status === 'pending'` and polls via a new `pollForScrapeResult()` helper, mirroring the existing `pollForScanResult()` helper exactly (queries `scrape_jobs` directly via service-role, same as `pollForScanResult` queries `scan_results` directly, rather than re-invoking the edge function).
+
+**Invariants explicitly preserved, per Michelle's remediation spec:**
+- Does not silently reduce evidence depth to fit a request window — background execution removed that pressure entirely; the retry budget only stops additional *waiting*, not additional *attempting*.
+- Does not convert a timeout into a false complete — the two early-exit failure paths inside the crawl now `throw`, correctly landing in `status:'error'`, not `status:'complete'` with a buried `success:false`.
+- Does not duplicate scans/results from polling — polling is a read-only `pollOnly` query against the existing job row; a pending-job dedup check prevents two concurrent crawls for the same URL; confirmed by test (`does not start a duplicate scrape by polling`).
+- Does not weaken the small-batch/evidence-quality controls (Gate 0 Action 2B, Entry 088) — `coverage-signals.ts` is untouched; `performScrape()`'s final result object is byte-identical in shape to the prior synchronous response.
+- Does not alter scoring semantics — nothing in `analyze-company` or `rubric-audit.ts` was touched.
+
+**Test coverage:** 7 new tests (`retry-budget.test.ts`) covering the pure time-budget logic against deterministic clocks, including a direct reproduction of Entry 089's ~10×12s signature (confirmed within budget) and a pathological 20×12s case (confirmed correctly denied further retry). 4 new tests (`scraper.test.ts`) covering the client poll loop with fake timers: long-running scrape surviving the request-lifetime boundary, explicit error-vs-success distinguishability, not-found handling, and no-duplicate-job confirmation via asserting every poll call carries `pollOnly: true`. Full suite: 257 tests, zero regressions; `filter-logic-drift` guardrail unaffected (this fix touched probe/job-orchestration logic, not `scoreUrl`/`highIntentPaths`/`exclusionPatterns`).
+
+**Not directly tested (acknowledged limitation, consistent with this codebase's standing constraint):** the actual DB-orchestration wiring in `scrape-website/index.ts` and `run-benchmark/index.ts` — job insert/dedup/update, `EdgeRuntime.waitUntil` scheduling — has no vitest harness, same limitation noted for every prior fix to these two files (Entries 084–087). Verification for this piece is the planned live production test (Gate 0 Action 2C, resumed once this deploys).
+
+**`ANALYSIS_VERSION` bumped `v52` → `2026-08-24-pipeline-v53`** — this change materially alters scan execution behavior (evidence-retrieval work now happens in the background, with a bounded retry budget), so per the standing convention a fresh bump is required. `filter-logic.ts`'s `SYNCED_WITH_ANALYSIS_VERSION` pin updated to match; drift guardrail confirmed passing (this fix didn't touch the mirrored filter/scoring rules).
+
+**Not yet deployed.** Requires deploying all three edge functions AND applying the new `scrape_jobs` migration — Claude Code has no deploy or migration-apply access in this environment (confirmed: Supabase CLI present but unauthenticated, no service-role/admin session). Per the standing discipline, verify live `analysisVersion` reads `v53` and confirm the `scrape_jobs` table exists before trusting any subsequent result.
+
+**Pattern Tag:** `platform-connection-limit-remediation`, `background-job-pattern-added-to-scrape-website`, `retry-time-budget`, `mirrors-analyze-company-poll-pattern`, `fix-shipped-not-deployed`, `analysis-version-bumped-v53`, `new-table-scrape_jobs`
+
+---
+
 ### Entry 089 — August 24, 2026
 
 | Field | Value |
@@ -44,7 +89,7 @@
 | Subtest(s) | N/A |
 | Root Cause | **`scrape-website` runs its entire crawl synchronously within one HTTP request/response cycle, with no background-and-poll pattern of its own — unlike `analyze-company`, which already has one (`202 pending` + `EdgeRuntime.waitUntil` + client polling).** When Firecrawl rate-limits repeatedly (confirmed in the live function logs: ~10 sequential `retrying in 12000ms` sleeps = ~120s of pure backoff on this one invocation), plus a Fix 2 URL-variant retry pass and a coverage-backfill pass layered on top, total execution can exceed Supabase's own hard platform ceiling on a single edge-function HTTP request (~150s). The platform kills the connection at that ceiling regardless of what timeout the *caller* is configured with — this is a different failure mode from Entries 086/087 (which bounded the caller's *wait*, but cannot prevent the platform itself from closing the connection out from under a still-running invocation). The underlying work actually completes server-side (confirmed in the logs: "Scraping complete. Total pages: 14" logged *after* the platform had already severed the connection) — but the result is discarded into the void, since `scrape-website` writes nothing to any table itself (confirmed: zero `scan_results` references in `scrape-website/index.ts`) and the client-side caller (`src/lib/api/scraper.ts`'s `scrapeWebsite()`) never receives a response to hand forward to `analyze-company`. Net effect: a scan that should have succeeded (14 pages, real evidence) produces a blank client-side error and zero stored data. |
 | Caught By | Michelle, running the Gate 0 Action 2C confirmation scan through the live app — got an error, pulled Lovable's function-invocation logs for the exact timing/retry sequence, and supplied a full diagnosis (including the precise 150s platform-connection-close mechanism) that I could not have obtained myself (no log access from this session — same standing limitation as Entry 085). |
-| Status | **diagnosed, not yet fixed — deliberately deferred, not a gap in this session's execution** |
+| Status | **diagnosed — remediated in Entry 090 (fix_shipped, not yet deployed).** Was deliberately deferred at diagnosis time (separate scope from the in-progress v52 verification); Michelle subsequently authorized the fix as its own scoped task. |
 
 **Distinct from every prior timeout-class entry, not a duplicate.** Entries 086/087 fixed the *caller's* side (bounding `run-benchmark`'s wait on `scrape-website`/`analyze-company` so a hang doesn't block forever). This is the *callee's* side: `scrape-website` itself has no mechanism to survive running long past a platform-imposed ceiling it doesn't control and can't extend, no matter how the caller is configured. A `run-benchmark`-orchestrated scan is exposed to this exact same risk (its own `POLL_TIMEOUT_MS`=300s caller-side abort is longer than the platform's ~150s ceiling, so the platform would sever the connection first) — meaning this defect is not confined to ad-hoc individual scans, and any sufficiently rate-limited company in a real benchmark batch could hit it too. Not yet checked whether this explains any prior unexplained scrape failure in the August cycle's history — worth a look next time one comes up.
 

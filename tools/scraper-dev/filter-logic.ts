@@ -20,7 +20,7 @@
 // v51 (Entry 082) touched only the analyze-company corrector's citation-
 // fabrication guard — no scrape-website filter/scoring rule changed, so no
 // mirror edit was needed here, only this re-verification bump.
-export const SYNCED_WITH_ANALYSIS_VERSION = '2026-08-24-pipeline-v52';
+export const SYNCED_WITH_ANALYSIS_VERSION = '2026-08-24-pipeline-v53';
 
 // ─── URL scoring & helpers ────────────────────────────────────────────────────
 

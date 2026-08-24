@@ -5,6 +5,11 @@ import {
   computeCommercialSurfaceSignal,
   buildCanonicalProbes,
 } from "./coverage-signals.ts";
+import { hasRetryBudgetRemaining, SCRAPE_RETRY_BUDGET_MS } from "./retry-budget.ts";
+
+// Deno EdgeRuntime type for background processing — same declaration as
+// analyze-company/index.ts and run-benchmark/index.ts (Entry 090).
+declare const EdgeRuntime: { waitUntil: (p: Promise<unknown>) => void };
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -15,6 +20,10 @@ interface ScrapeRequest {
   url: string;
   includeSubpages?: boolean;
   maxPages?: number;
+  // Entry 090 (2026-08-24): status-check mode, mirroring analyze-company's
+  // pollOnly. When true, no new crawl is started — the caller is polling for
+  // an existing scrape_jobs row for this exact URL.
+  pollOnly?: boolean;
 }
 
 interface ScrapedPage {
@@ -100,7 +109,11 @@ function isUnsafeUrl(urlString: string): string | null {
 }
 
 // ─── Helper: call Firecrawl /map (with retry on empty/rate-limited response) ──
-async function mapDomain(apiKey: string, url: string, limit = 200, includeSubdomains = false, search?: string): Promise<string[]> {
+// Entry 090: `invocationStartedAt` is threaded through so the retry wait can
+// be skipped once the invocation's overall retry budget is exhausted —
+// mapDomain is a standalone function (not a closure inside performScrape),
+// so it needs this passed explicitly rather than captured.
+async function mapDomain(apiKey: string, url: string, limit = 200, includeSubdomains = false, search?: string, invocationStartedAt: number = Date.now()): Promise<string[]> {
   // Below this, suspect a rate-limited PARTIAL map, not just total failure.
   // Observed: /map returned 300 URLs then 0 URLs for the same domain seconds
   // apart; partial subsets between those extremes shift page selection and
@@ -137,6 +150,14 @@ async function mapDomain(apiKey: string, url: string, limit = 200, includeSubdom
 
   const firstAttempt = await attemptMap();
   if (firstAttempt.length >= MIN_EXPECTED_URLS) return firstAttempt;
+
+  // Entry 090: skip the wait-and-retry once the invocation's overall retry
+  // budget is exhausted — accept what the first attempt found rather than
+  // compounding another 12s wait on top of whatever already ran.
+  if (!hasRetryBudgetRemaining(invocationStartedAt, SCRAPE_RETRY_BUDGET_MS)) {
+    console.warn(`Map returned only ${firstAttempt.length} URLs for ${url} — retry budget exhausted, accepting partial map`);
+    return firstAttempt;
+  }
 
   // Too few URLs — likely a rate-limit or partial failure. Wait and retry once.
   console.warn(`Map returned only ${firstAttempt.length} URLs for ${url} — possible rate-limited partial map; retrying after ${RETRY_DELAY_MS}ms`);
@@ -503,7 +524,11 @@ const sanitizeEvidenceList = (values: unknown): string[] =>
     : [];
 
 // ─── Scrape a single page via Firecrawl ────────────────────────────────────
-async function scrapePage(apiKey: string, pageUrl: string): Promise<ScrapedPage | null> {
+// Entry 090: `invocationStartedAt` threaded through so the rate-limit retry
+// wait can be skipped once the invocation's overall retry budget is
+// exhausted — scrapePage is a standalone function (not a closure inside
+// performScrape), so it needs this passed explicitly rather than captured.
+async function scrapePage(apiKey: string, pageUrl: string, invocationStartedAt: number = Date.now()): Promise<ScrapedPage | null> {
   try {
     const needsFullContent = fullContentPatterns.some(p => p.test(pageUrl));
     const hasAccordions = /\/(pricing|faq|plans?|credits)\b/i.test(pageUrl);
@@ -562,7 +587,10 @@ async function scrapePage(apiKey: string, pageUrl: string): Promise<ScrapedPage 
     // still fails fast here (attempt is null, or non-ok and NOT rate-limited)
     // — only a confirmed rate limit gets the wait, so this doesn't slow down
     // the common "page doesn't exist" case at all.
-    if (attempt && !attempt.response.ok && isFirecrawlRateLimited(attempt.response.status, attempt.bodyText)) {
+    if (
+      attempt && !attempt.response.ok && isFirecrawlRateLimited(attempt.response.status, attempt.bodyText) &&
+      hasRetryBudgetRemaining(invocationStartedAt, SCRAPE_RETRY_BUDGET_MS)
+    ) {
       console.warn(`Scrape rate-limited for ${pageUrl} — retrying in ${FIRECRAWL_RATE_LIMIT_RETRY_DELAY_MS}ms`);
       await new Promise(resolve => setTimeout(resolve, FIRECRAWL_RATE_LIMIT_RETRY_DELAY_MS));
       attempt = await attemptScrape();
@@ -825,7 +853,7 @@ Deno.serve(async (req) => {
       }
     }
 
-    const { url, includeSubpages = true, maxPages = 15 }: ScrapeRequest = await req.json();
+    const { url, includeSubpages = true, maxPages = 15, pollOnly = false }: ScrapeRequest = await req.json();
 
     if (!url || typeof url !== 'string') {
       return new Response(
@@ -867,8 +895,97 @@ Deno.serve(async (req) => {
       );
     }
 
-    console.log('Starting scrape for URL:', formattedUrl);
+    // ═══════════════════════════════════════════════════════════════════════
+    // Entry 090 (2026-08-24): background-job + polling, mirroring
+    // analyze-company's isFreshScan/pollOnly pattern. Previously this whole
+    // crawl ran synchronously inside the request/response cycle, writing
+    // nothing to any table until the final response — under sustained
+    // Firecrawl rate-limiting, total execution could exceed Supabase's own
+    // platform connection ceiling, silently discarding completed work when
+    // the connection was severed before the response returned (Entry 089).
+    // Now every trigger returns 202 immediately and the crawl runs in
+    // EdgeRuntime.waitUntil(), persisted to scrape_jobs, regardless of how
+    // long the underlying work takes.
+    // ═══════════════════════════════════════════════════════════════════════
+    const invocationStartedAt = Date.now();
 
+    if (pollOnly) {
+      const { data: job } = await supabaseAdmin
+        .from('scrape_jobs')
+        .select('status, result_json, error_message')
+        .eq('requested_url', formattedUrl)
+        .gt('expires_at', new Date().toISOString())
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single();
+
+      if (!job) {
+        return new Response(
+          JSON.stringify({ status: 'not_found' }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      if (job.status === 'pending') {
+        return new Response(
+          JSON.stringify({ status: 'pending' }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      if (job.status === 'error') {
+        return new Response(
+          JSON.stringify({ status: 'error', success: false, error: job.error_message ?? 'Scrape failed' }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      // status === 'complete' — result_json is the exact same payload shape
+      // performScrape() below returns on success.
+      return new Response(
+        JSON.stringify(job.result_json),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Dedup: if a job for this exact URL is already pending (not expired),
+    // don't start a second concurrent crawl — point the caller at the
+    // existing one instead. Prevents duplicate results from, e.g., a client
+    // retry racing its own original request.
+    const { data: existingPending } = await supabaseAdmin
+      .from('scrape_jobs')
+      .select('id')
+      .eq('requested_url', formattedUrl)
+      .eq('status', 'pending')
+      .gt('expires_at', new Date().toISOString())
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .single();
+
+    if (existingPending) {
+      console.log(`Scrape job already pending for ${formattedUrl} — not starting a duplicate`);
+      return new Response(
+        JSON.stringify({ status: 'pending' }),
+        { status: 202, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    let jobUrlDomain = formattedUrl;
+    try { jobUrlDomain = new URL(formattedUrl).hostname.replace(/^www\./, ''); } catch { /* keep raw formattedUrl as fallback */ }
+
+    const { data: newJob, error: newJobError } = await supabaseAdmin
+      .from('scrape_jobs')
+      .insert({ url_domain: jobUrlDomain, requested_url: formattedUrl, status: 'pending' })
+      .select('id')
+      .single();
+    if (newJobError || !newJob) {
+      console.error('Failed to create scrape_jobs row:', newJobError);
+      return new Response(
+        JSON.stringify({ success: false, error: 'Failed to start scrape job. Please try again.' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    console.log('Starting scrape for URL:', formattedUrl, '— job', newJob.id);
+
+    const performScrape = async (): Promise<Record<string, unknown>> => {
     const pages: ScrapedPage[] = [];
     // Fix 2: Pre-Scoring Validation Layer — metadata declared here so they are
     // in scope for the final response regardless of whether includeSubpages is set.
@@ -933,7 +1050,8 @@ Deno.serve(async (req) => {
       let attemptNum = 1;
       attemptNum < MAIN_PAGE_MAX_ATTEMPTS &&
         !mainPageResponse.ok &&
-        isFirecrawlRateLimited(mainPageResponse.status, mainPageBodyText);
+        isFirecrawlRateLimited(mainPageResponse.status, mainPageBodyText) &&
+        hasRetryBudgetRemaining(invocationStartedAt, SCRAPE_RETRY_BUDGET_MS);
       attemptNum++
     ) {
       console.warn(
@@ -963,24 +1081,16 @@ Deno.serve(async (req) => {
       mainPageData = JSON.parse(mainPageBodyText);
     } catch {
       console.error('Firecrawl returned non-JSON response, status:', mainPageResponse.status);
-      return new Response(
-        JSON.stringify({
-          success: false,
-          error: `The website could not be reached. Please check the URL and try again. (${mainPageDiagnostic})`,
-        }),
-        { status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      // Entry 090: performScrape() runs inside EdgeRuntime.waitUntil() now —
+      // throwing (not returning a Response) is what routes this into the
+      // waitUntil chain's .catch(), correctly recording the job as
+      // status:'error' rather than a false 'complete'.
+      throw new Error(`The website could not be reached. Please check the URL and try again. (${mainPageDiagnostic})`);
     }
 
     if (!mainPageResponse.ok || !mainPageData.success) {
       console.error('Failed to scrape main page:', mainPageData);
-      return new Response(
-        JSON.stringify({
-          success: false,
-          error: `Failed to scrape the main page. Please check the URL and try again. (${mainPageDiagnostic})`,
-        }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      throw new Error(`Failed to scrape the main page. Please check the URL and try again. (${mainPageDiagnostic})`);
     }
 
     // Bundle 2: homepage always pushed to pages — even if data is unexpectedly null.
@@ -1021,7 +1131,7 @@ Deno.serve(async (req) => {
       // calling Firecrawl /map so it discovers the full site, not just the path subtree.
       console.log('Phase 1a: Mapping main domain...');
       const mapBaseUrl = `${urlObj.protocol}//${urlObj.hostname}`;
-      const mainMapLinks = await mapDomain(apiKey, mapBaseUrl, 300, true, productSearch);
+      const mainMapLinks = await mapDomain(apiKey, mapBaseUrl, 300, true, productSearch, invocationStartedAt);
       console.log(`Main domain map: ${mainMapLinks.length} URLs discovered`);
 
       // Phase 1b: Check if main map already covers docs/help subdomains
@@ -1061,7 +1171,7 @@ Deno.serve(async (req) => {
 
         console.log(`Phase 1b: Mapping ${priorityProbes.length} undiscovered subdomains:`, priorityProbes);
         const subMapResults = await Promise.all(
-          priorityProbes.map(sub => mapDomain(apiKey, `https://${sub}`, 100, false))
+          priorityProbes.map(sub => mapDomain(apiKey, `https://${sub}`, 100, false, undefined, invocationStartedAt))
         );
         subdomainMapLinks = subMapResults.flat();
         console.log(`Subdomain maps: ${subdomainMapLinks.length} URLs discovered`);
@@ -1425,7 +1535,7 @@ Deno.serve(async (req) => {
       coverageDiscoveredCount = allDiscovered.length;
       coverageSelectedCount = allUrlsToScrape.length;
 
-      const scrapePromises = allUrlsToScrape.map(pageUrl => scrapePage(apiKey, pageUrl));
+      const scrapePromises = allUrlsToScrape.map(pageUrl => scrapePage(apiKey, pageUrl, invocationStartedAt));
       const scrapedPages = await Promise.all(scrapePromises);
 
       // ═════════════════════════════════════════════════════════════════════
@@ -1517,7 +1627,7 @@ Deno.serve(async (req) => {
           const secondaryUrls = [...new Set(discovered)].slice(0, 5);
           if (secondaryUrls.length > 0) {
             console.log(`Fix 1 (post-batch): Found ${secondaryUrls.length} secondary pricing URLs:`, secondaryUrls);
-            const secondaryResults = await Promise.all(secondaryUrls.map(u => scrapePage(apiKey, u)));
+            const secondaryResults = await Promise.all(secondaryUrls.map(u => scrapePage(apiKey, u, invocationStartedAt)));
             secondaryResults.forEach(p => {
               if (!p) return;
               const is404Secondary = /\b(404|not found|page not found|page doesn['']t exist|this page (doesn['']t|does not) exist)\b/i.test(p.title || '') ||
@@ -1571,9 +1681,19 @@ Deno.serve(async (req) => {
             variants.push(failedUrl.replace(/^http:\/\//, 'https://'));
           }
 
-          // Try each variant in order, stopping on first success
+          // Try each variant in order, stopping on first success. Entry 090:
+          // this is the accumulator that most directly caused the compounding
+          // in Entry 089 — each variant can itself trigger scrapePage's own
+          // rate-limit wait, so a single stubborn URL's chain (up to 4
+          // variants) could burn multiple separate 12s waits. Check the
+          // shared retry budget before trying each further variant, not just
+          // within scrapePage's own internal retry.
           for (const variant of variants) {
-            const result = await scrapePage(apiKey, variant);
+            if (!hasRetryBudgetRemaining(invocationStartedAt, SCRAPE_RETRY_BUDGET_MS)) {
+              console.warn(`Fix 2: retry budget exhausted, stopping variant chain for ${failedUrl} after trying ${variants.indexOf(variant)} of ${variants.length} variants`);
+              break;
+            }
+            const result = await scrapePage(apiKey, variant, invocationStartedAt);
             if (result) {
               console.log(`Fix 2: Retry succeeded for ${failedUrl} via variant ${variant}`);
               return result;
@@ -1652,7 +1772,7 @@ Deno.serve(async (req) => {
 
         if (backupCandidates.length > 0) {
           console.log(`Coverage backfill: ${coverageShortfall} selected page(s) failed to resolve — scraping ${backupCandidates.length} next-ranked backup(s):`, backupCandidates);
-          const backfillResults = await Promise.all(backupCandidates.map(u => scrapePage(apiKey, sanitiseForScrape(u))));
+          const backfillResults = await Promise.all(backupCandidates.map(u => scrapePage(apiKey, sanitiseForScrape(u), invocationStartedAt)));
           for (const page of backfillResults) {
             if (page && !looksLike404(page)) {
               pages.push(page);
@@ -1683,8 +1803,7 @@ Deno.serve(async (req) => {
     );
     const commercialSurfaceSignal = computeCommercialSurfaceSignal(pages, productSearch, isPricingPage);
 
-    return new Response(
-      JSON.stringify({
+      return {
         success: true,
         url: formattedUrl,
         pages,
@@ -1712,8 +1831,41 @@ Deno.serve(async (req) => {
           productScopedPricingPageCount: commercialSurfaceSignal.productScopedPricingPageCount,
           commercialSurfaceWarning: commercialSurfaceSignal.commercialSurfaceWarning,
         },
-      }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      };
+    }; // end performScrape
+
+    // Entry 090: the crawl runs in the background — its full duration is no
+    // longer bounded by this HTTP request's own lifetime. On completion,
+    // persist the result (or the error) to the job row the caller is
+    // polling. A crawl that throws is caught HERE, not by the outer catch
+    // below (which only covers the synchronous auth/rate-limit/job-creation
+    // prefix) — this is what lets the client get an explicit 'error' status
+    // via poll instead of the request simply never resolving.
+    EdgeRuntime.waitUntil(
+      performScrape()
+        .then(async (result) => {
+          await supabaseAdmin
+            .from('scrape_jobs')
+            .update({ status: 'complete', result_json: result, completed_at: new Date().toISOString() })
+            .eq('id', newJob.id);
+          console.log(`Scrape job ${newJob.id} complete for ${formattedUrl} (${Date.now() - invocationStartedAt}ms)`);
+        })
+        .catch(async (err) => {
+          console.error(`Scrape job ${newJob.id} failed for ${formattedUrl}:`, err);
+          await supabaseAdmin
+            .from('scrape_jobs')
+            .update({
+              status: 'error',
+              error_message: err instanceof Error ? err.message : String(err),
+              completed_at: new Date().toISOString(),
+            })
+            .eq('id', newJob.id);
+        })
+    );
+
+    return new Response(
+      JSON.stringify({ status: 'pending', url: formattedUrl }),
+      { status: 202, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
   } catch (error) {

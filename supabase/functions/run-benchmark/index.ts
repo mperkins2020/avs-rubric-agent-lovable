@@ -95,6 +95,43 @@ async function pollForScanResult(
   return null;
 }
 
+/**
+ * Entry 090 (2026-08-24): scrape-website now runs its crawl in the
+ * background (EdgeRuntime.waitUntil + scrape_jobs), mirroring the
+ * pollForScanResult pattern above for analyze-company. Queries scrape_jobs
+ * directly (service-role, same as pollForScanResult queries scan_results
+ * directly) rather than re-invoking the scrape-website edge function.
+ * Returns the job's terminal state — 'complete' with its result_json, or
+ * 'error' with its message — never leaves the caller unable to distinguish
+ * the two.
+ */
+async function pollForScrapeResult(
+  supabaseAdmin: ReturnType<typeof createClient>,
+  requestedUrl: string,
+  afterTs: string,
+): Promise<{ status: 'complete'; result: Record<string, unknown> } | { status: 'error'; error: string } | null> {
+  const deadline = Date.now() + POLL_TIMEOUT_MS;
+  while (Date.now() < deadline) {
+    await new Promise(resolve => setTimeout(resolve, POLL_INTERVAL_MS));
+    const { data } = await supabaseAdmin
+      .from('scrape_jobs')
+      .select('status, result_json, error_message')
+      .eq('requested_url', requestedUrl)
+      .gte('created_at', afterTs)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .single();
+    if (data?.status === 'complete') {
+      return { status: 'complete', result: data.result_json as Record<string, unknown> };
+    }
+    if (data?.status === 'error') {
+      return { status: 'error', error: data.error_message ?? 'Scrape failed' };
+    }
+    // status === 'pending' or no row yet — keep polling
+  }
+  return null;
+}
+
 // ── Process a single company ──────────────────────────────────────────────────
 async function processCompany(
   supabaseAdmin: ReturnType<typeof createClient>,
@@ -156,7 +193,30 @@ async function processCompany(
       clearTimeout(scrapeTimeout);
     }
 
-    const scrapeData = await scrapeRes.json() as Record<string, unknown>;
+    let scrapeData = await scrapeRes.json() as Record<string, unknown>;
+
+    // Entry 090 (2026-08-24): scrape-website now runs its crawl in the
+    // background regardless of how long it takes — the initial call
+    // returns 202 'pending' immediately, and the actual result must be
+    // polled for, the same way Step 2 below already polls analyze-company.
+    // Previously this call waited synchronously for the full crawl body,
+    // bounded only by this file's own POLL_TIMEOUT_MS AbortController —
+    // which could not prevent Supabase's platform connection ceiling from
+    // severing the connection mid-crawl and discarding completed work
+    // (Entry 089).
+    if (scrapeData.status === 'pending') {
+      const scrapeStartedAt = new Date().toISOString();
+      console.log(`[run-benchmark] Scrape running in background for ${company.domain}, polling…`);
+      const polled = await pollForScrapeResult(supabaseAdmin, `https://${company.domain}`, scrapeStartedAt);
+      if (!polled) {
+        throw new Error(`Scrape did not complete within ${POLL_TIMEOUT_MS / 1000}s (Entry 090 background job)`);
+      }
+      if (polled.status === 'error') {
+        throw new Error(`Scrape failed: ${polled.error}`);
+      }
+      scrapeData = polled.result;
+    }
+
     if (!scrapeData.success || !Array.isArray(scrapeData.pages)) {
       throw new Error(
         `Scrape failed (${scrapeRes.status}): ${String(scrapeData.error ?? 'no pages returned')}`,

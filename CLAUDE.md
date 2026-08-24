@@ -10,6 +10,8 @@ The following files are maintained exclusively by Claude Code. Lovable must NEVE
 - `supabase/functions/scrape-website/index.ts` — scraper
 - `supabase/functions/scrape-website/coverage-signals.ts` — evidence-volume + commercial-surface-relevance signals (Entry 088)
 - `supabase/functions/scrape-website/coverage-signals.test.ts` — signal-layer test fixtures
+- `supabase/functions/scrape-website/retry-budget.ts` — retry-time-budget backstop for the background-job crawl (Entry 090)
+- `supabase/functions/scrape-website/retry-budget.test.ts` — retry-budget test fixtures
 - `supabase/functions/run-benchmark/index.ts` — benchmark orchestrator (Entry 086)
 - `src/lib/api/scraper.ts` — client API layer
 - `tasks/` — calibration docs and todos
@@ -76,6 +78,20 @@ VALUES ('company.com', 'https://help.company.com/en/articles/...');
 
 ---
 
+## scrape_jobs Table (Entry 090)
+
+**Purpose:** background-job handoff for `scrape-website`, mirroring how `scan_results` already serves this role for `analyze-company`. Every scrape now runs inside `EdgeRuntime.waitUntil()` rather than the synchronous request/response cycle — the initial call always returns `202 {status:'pending'}` immediately, and the actual crawl result lands in a `scrape_jobs` row once complete (or `status:'error'` with `error_message` on failure). Callers poll via `{url, pollOnly: true}`.
+
+**Why it exists:** `scrape-website` previously did its entire crawl synchronously, writing nothing to any table until the final response — under sustained Firecrawl rate-limiting, total execution could exceed Supabase's own platform connection ceiling, silently discarding completed work when the connection was severed (Entry 089). `scan_results` was not reused for this — its rows represent *scored* analysis output; a scrape-only pending/raw-pages job is a different concept, kept in its own table on purpose.
+
+**Lifespan:** short TTL (`expires_at` defaults to 1 hour) — this is a transient handoff mechanism, not a durable evidence record. `scan_results` remains the durable store.
+
+**RLS:** matches `scan_results` exactly (`auth.uid() IS NOT NULL AND expires_at > now()` for reads; service-role-only writes).
+
+**Retry-time budget:** `supabase/functions/scrape-website/retry-budget.ts`'s `SCRAPE_RETRY_BUDGET_MS` (4 minutes) bounds total time spent on rate-limit waits across the whole crawl — a defensive backstop against a persistently-degraded Firecrawl, not a fit-inside-a-response-window constraint (background execution already removed that pressure). Deliberately generous; does not skip attempting pages, only stops *waiting* on further rate-limit retries once exhausted.
+
+---
+
 ## Scraper Dev Tools
 
 Four local tools in `tools/scraper-dev/` (plus a drift guardrail test) — run from the repo root.
@@ -119,7 +135,9 @@ Bump `ANALYSIS_VERSION` in `supabase/functions/analyze-company/index.ts` every t
 
 `2026-08-05-pipeline-v51` was **confirmed LIVE in production 2026-08-24** via a read-only production `scan_results` pull (conductor.com, `analysisVersion: 2026-08-05-pipeline-v51`, matching repo HEAD; see ENGINE_DEBUG_LOG.md Entry 082 and the September Benchmark Control Framework Implementation Map, Gate 0 Action 1).
 
-**Current local source version: `2026-08-24-pipeline-v52`** (Entry 088 — evidence-completeness + commercial-surface-relevance signals; see Gate0_Action2_Evidence_Completeness_Diagnosis.md). **Not yet deployed as of this writing.** Verify live `analysisVersion` matches `v52` on the first post-deploy scan before trusting any commercial-surface-relevance results — same discipline as the v51 verification above.
+`2026-08-24-pipeline-v52` (Entry 088 — evidence-completeness + commercial-surface-relevance signals) was deployed 2026-08-24, but the confirmation scan that would have verified it hit a separate, pre-existing defect (Entry 089/090 — scrape-website's platform-connection-limit gap) before Control A/B could be observed in production.
+
+**Current local source version: `2026-08-24-pipeline-v53`** (Entry 090 — scrape-website background-job/polling + retry-time-budget remediation; see ENGINE_DEBUG_LOG.md Entry 090 and the September Benchmark Control Framework Implementation Map, Gate 0 Action 2C). **Not yet deployed as of this writing** (requires deploying all three edge functions plus applying the new `scrape_jobs` migration). Verify live `analysisVersion` matches `v53` on the first post-deploy scan, and confirm the `scrape_jobs` table exists, before trusting any result — same discipline as the v51/v52 verifications above.
 
 ---
 

@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { scraperApi } from './scraper';
 
 // Mock the entire Supabase client module
@@ -64,6 +64,96 @@ describe('scraperApi.scrapeWebsite()', () => {
     const result = await scraperApi.scrapeWebsite('https://example.com');
     expect(result.success).toBe(false);
     expect(result.error).toBe('Network down');
+  });
+
+  // Entry 090 (2026-08-24): scrape-website now runs in the background
+  // (EdgeRuntime.waitUntil + scrape_jobs) — a long-running crawl survives
+  // this call's own request lifetime instead of being lost when the
+  // synchronous response window closes (Entry 089). These tests cover the
+  // resulting 202-pending + poll contract.
+  describe('background/poll behavior (Entry 090)', () => {
+    beforeEach(() => {
+      vi.useFakeTimers();
+    });
+
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    it('polls and returns the result once the background job completes (long-running scrape survives the request-lifetime boundary)', async () => {
+      const invokeMock = await getInvokeMock();
+      // Initial trigger: 202 pending
+      invokeMock.mockResolvedValueOnce({ data: { status: 'pending', url: 'https://example.com' }, error: null });
+      // First poll: still pending
+      invokeMock.mockResolvedValueOnce({ data: { status: 'pending' }, error: null });
+      // Second poll: complete
+      invokeMock.mockResolvedValueOnce({
+        data: { success: true, pages: [{ url: 'https://example.com', title: 'Home', markdown: '# Hello' }], totalPages: 1 },
+        error: null,
+      });
+
+      const resultPromise = scraperApi.scrapeWebsite('https://example.com');
+      // Let the initial invoke() promise resolve before advancing poll timers.
+      await Promise.resolve();
+      await vi.advanceTimersByTimeAsync(4000); // first poll (still pending)
+      await vi.advanceTimersByTimeAsync(4000); // second poll (complete)
+      const result = await resultPromise;
+
+      expect(result.success).toBe(true);
+      expect(result.pages).toHaveLength(1);
+      // Exactly 3 invoke calls: 1 trigger + 2 polls — no duplicate job was
+      // started by polling itself.
+      expect(invokeMock).toHaveBeenCalledTimes(3);
+    });
+
+    it('returns an explicit error when the background job reports status: error (failure stays distinguishable from success)', async () => {
+      const invokeMock = await getInvokeMock();
+      invokeMock.mockResolvedValueOnce({ data: { status: 'pending' }, error: null });
+      invokeMock.mockResolvedValueOnce({ data: { status: 'error', error: 'Failed to scrape the main page.' }, error: null });
+
+      const resultPromise = scraperApi.scrapeWebsite('https://example.com');
+      await Promise.resolve();
+      await vi.advanceTimersByTimeAsync(4000);
+      const result = await resultPromise;
+
+      expect(result.success).toBe(false);
+      expect(result.error).toBe('Failed to scrape the main page.');
+    });
+
+    it('returns an explicit error when the job row is not found (expired before completion)', async () => {
+      const invokeMock = await getInvokeMock();
+      invokeMock.mockResolvedValueOnce({ data: { status: 'pending' }, error: null });
+      invokeMock.mockResolvedValueOnce({ data: { status: 'not_found' }, error: null });
+
+      const resultPromise = scraperApi.scrapeWebsite('https://example.com');
+      await Promise.resolve();
+      await vi.advanceTimersByTimeAsync(4000);
+      const result = await resultPromise;
+
+      expect(result.success).toBe(false);
+      expect(result.error).toMatch(/did not complete/i);
+    });
+
+    it('does not start a duplicate scrape by polling — a poll that stays pending keeps polling the SAME job rather than re-triggering', async () => {
+      const invokeMock = await getInvokeMock();
+      invokeMock.mockResolvedValueOnce({ data: { status: 'pending' }, error: null });
+      invokeMock.mockResolvedValueOnce({ data: { status: 'pending' }, error: null });
+      invokeMock.mockResolvedValueOnce({ data: { status: 'pending' }, error: null });
+      invokeMock.mockResolvedValueOnce({ data: { success: true, pages: [], totalPages: 0 }, error: null });
+
+      const resultPromise = scraperApi.scrapeWebsite('https://example.com');
+      await Promise.resolve();
+      await vi.advanceTimersByTimeAsync(4000);
+      await vi.advanceTimersByTimeAsync(4000);
+      await vi.advanceTimersByTimeAsync(4000);
+      const result = await resultPromise;
+
+      expect(result.success).toBe(true);
+      // Every poll call after the initial trigger passed pollOnly: true —
+      // confirms polling never re-invokes a fresh crawl.
+      const pollCalls = invokeMock.mock.calls.slice(1);
+      expect(pollCalls.every(([, opts]) => opts?.body?.pollOnly === true)).toBe(true);
+    });
   });
 });
 
