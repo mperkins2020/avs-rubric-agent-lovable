@@ -289,6 +289,42 @@ export type Database = {
         }
         Relationships: []
       }
+      scrape_jobs: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          error_message: string | null
+          expires_at: string
+          id: string
+          requested_url: string
+          result_json: Json | null
+          status: string
+          url_domain: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          error_message?: string | null
+          expires_at?: string
+          id?: string
+          requested_url: string
+          result_json?: Json | null
+          status?: string
+          url_domain: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          error_message?: string | null
+          expires_at?: string
+          id?: string
+          requested_url?: string
+          result_json?: Json | null
+          status?: string
+          url_domain?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
