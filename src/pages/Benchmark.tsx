@@ -93,6 +93,14 @@ const CATEGORIES: { slug: string; name: string; month: string; placeholder?: boo
   { slug: "ai-revenue-intelligence", name: "AI Revenue Intelligence", month: "2026-05" },
   { slug: "ai-speech-platform", name: "AI Speech Platform", month: "2026-06" },
   { slug: "marketing-intelligence", name: "Marketing Intelligence", month: "2026-08" },
+  // September 2026 re-run of AI Coding Assistant — a separate, independently-addressable
+  // entry rather than overwriting the May row above. Each CATEGORIES entry is its own
+  // tab/edition (slug = routing key, month = both the get_benchmark_data filter and the
+  // display badge) — updating the May entry in place would silently orphan the live May
+  // data from this page while its underlying scan_results rows stayed intact but
+  // unreachable here. Naming convention for any future same-category re-run:
+  // "<category-slug>-<yyyy-mm>".
+  { slug: "ai-coding-assistant-2026-09", name: "AI Coding Assistant", month: "2026-09" },
 ];
 
 const DEFAULT_MONTH = "2026-05";

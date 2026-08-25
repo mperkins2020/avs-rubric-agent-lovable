@@ -18,6 +18,7 @@ export type Database = {
         Row: {
           active: boolean
           added_at: string
+          benchmark_month: string
           category: string
           company_name: string
           domain: string
@@ -28,6 +29,7 @@ export type Database = {
         Insert: {
           active?: boolean
           added_at?: string
+          benchmark_month: string
           category: string
           company_name: string
           domain: string
@@ -38,6 +40,7 @@ export type Database = {
         Update: {
           active?: boolean
           added_at?: string
+          benchmark_month?: string
           category?: string
           company_name?: string
           domain?: string

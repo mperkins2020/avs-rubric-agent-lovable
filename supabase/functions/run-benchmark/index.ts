@@ -413,11 +413,19 @@ Deno.serve(async (req) => {
     );
   }
 
-  // ── Load active companies for this category ────────────────────────────
+  // ── Load active companies for this category + edition ───────────────────
+  // benchmark_companies.benchmark_month scopes roster membership per
+  // edition (2026-08-25 migration) — the same domain can now have a
+  // separate row in more than one edition of the same category (e.g.
+  // lovable.dev in both 2026-05 and 2026-09 AI Coding Assistant), so this
+  // query must resolve rows by category + month together, not category
+  // alone, or a run for one edition would pull in another edition's roster
+  // too.
   const { data: companies, error: companiesErr } = await supabaseAdmin
     .from('benchmark_companies')
     .select('domain, company_name, category, sort_order')
     .eq('category', category)
+    .eq('benchmark_month', month)
     .eq('active', true)
     .order('sort_order');
 

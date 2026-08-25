@@ -17,6 +17,7 @@
     "check-version": "npx tsx tools/scraper-dev/check-live-version.ts",
     "diff-pages": "npx tsx tools/scraper-dev/diff-scan-pages.ts",
     "snapshot-scan": "npx tsx tools/scraper-dev/snapshot-scan.ts",
+    "diff-gate-agreement": "npx tsx tools/scraper-dev/diff-gate-agreement.ts",
     "backup": "bash tools/backup/pg_backup.sh"
   },
   "dependencies": {
