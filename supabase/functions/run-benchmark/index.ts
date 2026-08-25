@@ -1,6 +1,7 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { pollScrapeJob, type ScrapeJobRow } from "./scrape-job-correlation.ts";
+import { findUnresolvedDomains, isRerunWithoutDomainsInvalid, selectRunTargets } from "./run-target-selection.ts";
 
 // Deno EdgeRuntime type for background processing
 declare const EdgeRuntime: { waitUntil: (p: Promise<unknown>) => void };
@@ -406,7 +407,7 @@ Deno.serve(async (req) => {
   }
 
   // ── Parse body ─────────────────────────────────────────────────────────
-  let body: { category?: string; month?: string };
+  let body: { category?: string; month?: string; domains?: string[]; rerun_completed?: boolean };
   try {
     body = await req.json();
   } catch {
@@ -416,10 +417,24 @@ Deno.serve(async (req) => {
     );
   }
 
-  const { category, month = currentMonth() } = body;
+  const { category, month = currentMonth(), domains, rerun_completed = false } = body;
   if (!category) {
     return new Response(
       JSON.stringify({ success: false, error: '`category` is required' }),
+      { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+    );
+  }
+
+  const hasDomains = Array.isArray(domains) && domains.length > 0;
+
+  // rerun_completed only ever makes sense against an explicit, bounded
+  // subset — applying it with no domains would mean "silently re-run
+  // everything already complete for this edition", which is not what any
+  // caller of this flag wants and is never the controlled-execution
+  // intent it exists for (EXP-1 measurement-stability reruns).
+  if (isRerunWithoutDomainsInvalid(hasDomains, rerun_completed)) {
+    return new Response(
+      JSON.stringify({ success: false, error: '`rerun_completed` requires a non-empty `domains` array' }),
       { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
     );
   }
@@ -432,13 +447,24 @@ Deno.serve(async (req) => {
   // query must resolve rows by category + month together, not category
   // alone, or a run for one edition would pull in another edition's roster
   // too.
-  const { data: companies, error: companiesErr } = await supabaseAdmin
+  //
+  // `domains`, when supplied, narrows this SAME query with an additional
+  // `.in('domain', ...)` — every other clause (category, benchmark_month,
+  // active) still applies first, so a domain that only exists in a
+  // different edition (e.g. May's `github.com` vs. September's
+  // `github.com/features/copilot`) cannot resolve here at all; it's
+  // caught by the unresolved-domain check below, not silently matched
+  // against the wrong edition's row.
+  let companyQuery = supabaseAdmin
     .from('benchmark_companies')
     .select('domain, company_name, category, sort_order')
     .eq('category', category)
     .eq('benchmark_month', month)
-    .eq('active', true)
-    .order('sort_order');
+    .eq('active', true);
+  if (hasDomains) {
+    companyQuery = companyQuery.in('domain', domains as string[]);
+  }
+  const { data: companies, error: companiesErr } = await companyQuery.order('sort_order');
 
   if (companiesErr || !companies) {
     return new Response(
@@ -454,18 +480,36 @@ Deno.serve(async (req) => {
     );
   }
 
-  // ── Idempotency: skip companies already complete or errored for this month ───────
+  // Every requested domain must resolve to an active company in THIS
+  // edition, or reject the whole request rather than silently running a
+  // partial match — a typo'd or wrong-edition domain should never result
+  // in "some of what you asked for ran, quietly missing the rest".
+  if (hasDomains) {
+    const unresolvedDomains = findUnresolvedDomains(domains as string[], companies);
+    if (unresolvedDomains.length > 0) {
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: `The following domains do not resolve to an active company in ${category} ${month}: ${unresolvedDomains.join(', ')}`,
+          unresolved_domains: unresolvedDomains,
+        }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+      );
+    }
+  }
+
+  // ── Idempotency ───────────────────────────────────────────────────────
   const { data: existingLogs } = await supabaseAdmin
     .from('benchmark_run_log')
     .select('domain, status')
     .eq('run_month', month)
     .in('domain', companies.map(c => c.domain));
 
-  const skipStatuses = new Set(['complete', 'error']);
-  const skippedDomains = new Set(
-    (existingLogs ?? []).filter(l => skipStatuses.has(l.status)).map(l => l.domain),
+  const { toProcess, skippedComplete, skippedError, skippedInProgress } = selectRunTargets(
+    companies,
+    existingLogs ?? [],
+    { domains, rerunCompleted: rerun_completed },
   );
-  const toProcess = companies.filter(c => !skippedDomains.has(c.domain));
 
   // Seed benchmark_run_log with 'pending' for each company to be processed
   for (const company of toProcess) {
@@ -479,9 +523,11 @@ Deno.serve(async (req) => {
     }, { onConflict: 'run_month,domain' });
   }
 
+  const totalSkipped = skippedComplete.length + skippedError.length + skippedInProgress.length;
   console.log(
     `[run-benchmark] Starting ${category} ${month}: ${toProcess.length} to process, ` +
-    `${skippedDomains.size} skipped`,
+    `${totalSkipped} skipped (complete=${skippedComplete.length}, error=${skippedError.length}, in_progress=${skippedInProgress.length})` +
+    (hasDomains ? ` [domains=${(domains as string[]).join(',')}${rerun_completed ? ', rerun_completed=true' : ''}]` : ''),
   );
 
   // ── Background batch processing ────────────────────────────────────────
@@ -516,7 +562,11 @@ Deno.serve(async (req) => {
       month,
       total: companies.length,
       queued: toProcess.length,
-      skipped: skippedDomains.size,
+      queued_domains: toProcess.map(c => c.domain),
+      skipped: totalSkipped,
+      skipped_complete: skippedComplete,
+      skipped_error: skippedError,
+      skipped_in_progress: skippedInProgress,
     }),
     { status: 202, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
   );
