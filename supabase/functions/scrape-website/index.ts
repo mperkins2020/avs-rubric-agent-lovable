@@ -960,9 +960,13 @@ Deno.serve(async (req) => {
       .single();
 
     if (existingPending) {
-      console.log(`Scrape job already pending for ${formattedUrl} — not starting a duplicate`);
+      console.log(`Scrape job already pending for ${formattedUrl} — not starting a duplicate (job ${existingPending.id})`);
       return new Response(
-        JSON.stringify({ status: 'pending' }),
+        // job_id lets callers (e.g. run-benchmark) poll this exact row by
+        // primary key instead of inferring identity from a timestamp — the
+        // existing job can predate the current request by an arbitrary
+        // amount, which broke any "created after X" heuristic.
+        JSON.stringify({ status: 'pending', job_id: existingPending.id }),
         { status: 202, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -1864,7 +1868,9 @@ Deno.serve(async (req) => {
     );
 
     return new Response(
-      JSON.stringify({ status: 'pending', url: formattedUrl }),
+      // job_id — see the dedup-path response above for why this replaced
+      // timestamp/URL-based job correlation for background-job callers.
+      JSON.stringify({ status: 'pending', url: formattedUrl, job_id: newJob.id }),
       { status: 202, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 

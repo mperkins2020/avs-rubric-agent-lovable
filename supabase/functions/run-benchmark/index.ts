@@ -1,5 +1,6 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { pollScrapeJob, type ScrapeJobRow } from "./scrape-job-correlation.ts";
 
 // Deno EdgeRuntime type for background processing
 declare const EdgeRuntime: { waitUntil: (p: Promise<unknown>) => void };
@@ -101,35 +102,36 @@ async function pollForScanResult(
  * pollForScanResult pattern above for analyze-company. Queries scrape_jobs
  * directly (service-role, same as pollForScanResult queries scan_results
  * directly) rather than re-invoking the scrape-website edge function.
- * Returns the job's terminal state — 'complete' with its result_json, or
- * 'error' with its message — never leaves the caller unable to distinguish
- * the two.
+ *
+ * Correlation-bug fix (2026-08-25): originally looked up the job by
+ * `requested_url` + `created_at >= afterTs`, where `afterTs` was captured
+ * AFTER the 202 response. scrape-website inserts (or finds, on the dedup
+ * path) the scrape_jobs row BEFORE returning 202, so that row's
+ * `created_at` is always earlier than any timestamp captured after the
+ * response — the `gte` filter excluded the real job on every poll
+ * iteration until timeout. Now polls the exact job by primary key
+ * (`scrape-website` returns `job_id` in its 202 body for both the new-job
+ * and deduplicated-existing-job paths) — see scrape-job-correlation.ts for
+ * the row-interpretation logic and why identity, not timing, is the only
+ * correct fix here.
  */
 async function pollForScrapeResult(
   supabaseAdmin: ReturnType<typeof createClient>,
-  requestedUrl: string,
-  afterTs: string,
+  jobId: string,
 ): Promise<{ status: 'complete'; result: Record<string, unknown> } | { status: 'error'; error: string } | null> {
-  const deadline = Date.now() + POLL_TIMEOUT_MS;
-  while (Date.now() < deadline) {
-    await new Promise(resolve => setTimeout(resolve, POLL_INTERVAL_MS));
-    const { data } = await supabaseAdmin
-      .from('scrape_jobs')
-      .select('status, result_json, error_message')
-      .eq('requested_url', requestedUrl)
-      .gte('created_at', afterTs)
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .single();
-    if (data?.status === 'complete') {
-      return { status: 'complete', result: data.result_json as Record<string, unknown> };
-    }
-    if (data?.status === 'error') {
-      return { status: 'error', error: data.error_message ?? 'Scrape failed' };
-    }
-    // status === 'pending' or no row yet — keep polling
-  }
-  return null;
+  const outcome = await pollScrapeJob(
+    jobId,
+    async (id) => {
+      const { data } = await supabaseAdmin
+        .from('scrape_jobs')
+        .select('status, result_json, error_message')
+        .eq('id', id)
+        .maybeSingle();
+      return data as ScrapeJobRow | null;
+    },
+    { pollIntervalMs: POLL_INTERVAL_MS, timeoutMs: POLL_TIMEOUT_MS },
+  );
+  return outcome.status === 'timeout' ? null : outcome;
 }
 
 // ── Process a single company ──────────────────────────────────────────────────
@@ -205,9 +207,18 @@ async function processCompany(
     // severing the connection mid-crawl and discarding completed work
     // (Entry 089).
     if (scrapeData.status === 'pending') {
-      const scrapeStartedAt = new Date().toISOString();
-      console.log(`[run-benchmark] Scrape running in background for ${company.domain}, polling…`);
-      const polled = await pollForScrapeResult(supabaseAdmin, `https://${company.domain}`, scrapeStartedAt);
+      const jobId = scrapeData.job_id;
+      if (typeof jobId !== 'string' || !jobId) {
+        // scrape-website returned 202 without a job_id — either a stale,
+        // un-fixed deployment, or a genuine response-contract break. Fail
+        // loudly and diagnosably rather than falling back to any timestamp
+        // or URL-based guess (the bug this replaced).
+        throw new Error(
+          `scrape-website returned 202 'pending' without a job_id for ${company.domain} — cannot correlate the background job`,
+        );
+      }
+      console.log(`[run-benchmark] Scrape running in background for ${company.domain} (job ${jobId}), polling…`);
+      const polled = await pollForScrapeResult(supabaseAdmin, jobId);
       if (!polled) {
         throw new Error(`Scrape did not complete within ${POLL_TIMEOUT_MS / 1000}s (Entry 090 background job)`);
       }
