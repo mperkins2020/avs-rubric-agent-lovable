@@ -61,6 +61,7 @@ export default function Results() {
   useEffect(() => {
     if (!companyProfile || !rubricScore || !observability) return;
     trackEvent('first_scan_completed', { score: rubricScore.totalScore });
+    trackEvent('diagnostic_completed', { score: rubricScore.totalScore });
     saveLastReport({ companyProfile, rubricScore, observability, modelClassification, pages });
   }, [companyProfile, rubricScore, observability]); // eslint-disable-line react-hooks/exhaustive-deps
 

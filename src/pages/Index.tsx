@@ -80,6 +80,40 @@ const dimensionDefinitions: Record<string, string> = {
   "Safety Rails & Trust Surfaces": "Controls prevent surprises, show usage, enable limits.",
 };
 
+// Existing booking link already used across the app (case studies, benchmarks, methodology).
+const BOOKING_URL = "https://calendly.com/mlhperkins/30min";
+
+const lostItems = [
+  "What evidence changed a decision",
+  "What hypothesis was being tested",
+  "Why an intervention was chosen",
+  "What happened afterward",
+  "What to learn before the next decision",
+];
+
+const loopSteps = [
+  "Observe evidence",
+  "Frame the decision",
+  "Act",
+  "Measure the response",
+  "Update what we know",
+];
+
+const services = [
+  {
+    title: "AEO / AI Visibility Project",
+    price: "$2,500",
+    description:
+      "Diagnose and prioritize AI visibility and evidence gaps based on the buyer decisions they may constrain, then design and test appropriate interventions.",
+  },
+  {
+    title: "GTM Project",
+    price: "$5,000",
+    description:
+      "Address a broader GTM decision problem through evidence gathering, diagnosis, intervention design, testing, and learning.",
+  },
+];
+
 const Index = () => {
   const navigate = useNavigate();
   const { session, signOut } = useAuth();
@@ -110,6 +144,21 @@ const Index = () => {
     chatMessages
   } = useScan();
   const isLoading = status === 'scraping' || status === 'analyzing';
+  const servicesRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    const el = servicesRef.current;
+    if (!el || typeof IntersectionObserver === 'undefined') return;
+    const obs = new IntersectionObserver((entries) => {
+      if (entries.some(e => e.isIntersecting)) {
+        trackEvent('services_viewed');
+        obs.disconnect();
+      }
+    }, { threshold: 0.4 });
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, []);
+
 
   useEffect(() => {
     if (status === 'complete' && companyProfile && rubricScore && observability) {
@@ -263,7 +312,13 @@ const Index = () => {
       trackEvent('first_scan_started', { url });
     }
 
+    trackEvent('diagnostic_started', { url });
     await startScan(url);
+  };
+
+  const scrollToDiagnostic = (location: string) => {
+    trackEvent('diagnostic_cta_clicked', { location });
+    document.getElementById('url-input')?.scrollIntoView({ behavior: 'smooth' });
   };
 
   const handleAuthSubmit = async (e: React.FormEvent) => {
@@ -317,8 +372,8 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-background">
       <SEOHead
-        title="ValueTempo — AI Product Buyability Score"
-        description="The AVS Rubric scores your AI product's buyability across 8 trust dimensions buyers and AI agents use to evaluate, budget, and justify a purchase."
+        title="ValueTempo — GTM learning for AI-native B2B teams"
+        description="ValueTempo helps AI-native B2B teams turn buyer evidence, GTM decisions, and outcomes into learning. Start with a free buyability check or talk through your GTM problem."
         canonicalUrl="https://app.valuetempo.com/"
         type="website"
       />
@@ -350,6 +405,9 @@ const Index = () => {
             </Link>
           </div>
           <nav className="hidden md:flex items-center gap-6">
+            <a href="#services" className="text-sm text-foreground hover:text-primary transition-colors">
+              Services
+            </a>
             <a href="https://www.valuetempo.com/methodology" className="text-sm text-foreground hover:text-primary transition-colors">
               Methodology
             </a>
@@ -360,10 +418,7 @@ const Index = () => {
             <Button
               size="sm"
               className="bg-vt-midnight text-white hover:bg-vt-midnight/90 rounded-[20px] px-5 h-9"
-              onClick={() => {
-                const el = document.getElementById('url-input');
-                el?.scrollIntoView({ behavior: 'smooth' });
-              }}
+              onClick={() => scrollToDiagnostic('nav')}
             >
               Analyze
             </Button>
@@ -444,17 +499,30 @@ const Index = () => {
         <div className="hero-blob" aria-hidden="true" />
         <div className="container relative z-10 mx-auto px-5 md:px-10">
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center max-w-3xl mx-auto">
-            <h1 id="hero" className="text-3xl sm:text-4xl md:text-[56px] font-bold mb-4 leading-[1.15] tracking-tight">
-              <span className="block">Find the Buyer Friction</span>
-              <span className="mt-3 md:mt-4 block">
-                Slowing Your <span className="gradient-text">Growth</span>
+            <h1 id="hero" className="text-3xl sm:text-4xl md:text-[52px] font-bold mb-5 leading-[1.15] tracking-tight">
+              <span className="block">AI makes GTM execution faster.</span>
+              <span className="mt-2 md:mt-3 block">
+                Your <span className="gradient-text">learning system</span> has to keep up.
               </span>
             </h1>
 
-            <p className="text-base md:text-lg text-muted-foreground mb-8 md:mb-10">
-              AVS Rubric measures the trust infrastructure that enables buyability across 8 buyer-confidence dimensions.
+            <p className="text-base md:text-lg text-muted-foreground mb-8 max-w-2xl mx-auto">
+              ValueTempo helps AI-native B2B teams turn buyer evidence, GTM decisions, and market outcomes into learning that improves the next decision.
             </p>
 
+            <div className="flex flex-col sm:flex-row gap-3 justify-center mb-10">
+              <Button asChild size="lg" className="bg-vt-midnight text-white hover:bg-vt-midnight/90 rounded-[20px] px-7 h-12 font-semibold">
+                <a href={BOOKING_URL} target="_blank" rel="noopener noreferrer" onClick={() => trackEvent('primary_service_cta_clicked', { location: 'hero' })}>
+                  Talk through your GTM problem
+                  <ArrowRight className="w-5 h-5 ml-2" />
+                </a>
+              </Button>
+              <Button size="lg" variant="outline" className="rounded-[20px] px-7 h-12 font-semibold" onClick={() => scrollToDiagnostic('hero')}>
+                Check your buyability
+              </Button>
+            </div>
+
+            <p className="text-sm text-muted-foreground mb-3">Free buyability check — enter your website:</p>
             <div id="url-input" className="flex justify-center mb-12 scroll-mt-24">
               <URLInput onSubmit={handleSubmit} isLoading={isLoading} />
             </div>
@@ -483,12 +551,58 @@ const Index = () => {
       {/* Category Carousel */}
       <CategoryCarousel />
 
-      {/* Three-pillar features */}
-      <section className="py-16 md:py-24 bg-secondary">
+      {/* Problem */}
+      <section className="py-16 md:py-24">
         <div className="container mx-auto px-5 md:px-10">
-          <h2 className="text-2xl md:text-3xl font-bold text-center mb-3">What the analysis evaluates</h2>
+          <div className="max-w-3xl mx-auto text-center">
+            <p className="text-xs font-semibold tracking-[0.18em] uppercase text-primary mb-3">The problem</p>
+            <h2 className="text-2xl md:text-3xl font-bold mb-4">More context isn't automatically more learning</h2>
+            <p className="text-muted-foreground mb-8">
+              As people and AI agents share information and run GTM work together, execution can speed up faster than the team's learning. What often gets lost:
+            </p>
+          </div>
+          <ul className="grid sm:grid-cols-2 lg:grid-cols-5 gap-4 max-w-6xl mx-auto">
+            {lostItems.map((item) => (
+              <li key={item} className="bg-card border border-border rounded-2xl p-5 text-sm text-foreground shadow-vt-sm">
+                {item}
+              </li>
+            ))}
+          </ul>
+        </div>
+      </section>
+
+      {/* Learning loop */}
+      <section className="py-16 md:py-20 bg-secondary">
+        <div className="container mx-auto px-5 md:px-10">
+          <div className="max-w-2xl mx-auto text-center mb-10">
+            <p className="text-xs font-semibold tracking-[0.18em] uppercase text-primary mb-3">How we work</p>
+            <h2 className="text-2xl md:text-3xl font-bold mb-3">A simple learning loop</h2>
+            <p className="text-muted-foreground">Each GTM decision should leave the team knowing more for the next one.</p>
+          </div>
+          <ol className="flex flex-col md:flex-row items-stretch justify-center gap-3 md:gap-2 max-w-6xl mx-auto">
+            {loopSteps.map((step, i) => (
+              <li key={step} className="flex flex-col md:flex-row items-center gap-2 md:gap-2 flex-1">
+                <div className="w-full bg-card border border-border rounded-2xl px-4 py-5 text-center shadow-vt-sm flex-1">
+                  <span className="block text-xs font-semibold text-primary mb-1">{String(i + 1).padStart(2, '0')}</span>
+                  <span className="font-semibold text-sm">{step}</span>
+                </div>
+                {i < loopSteps.length - 1 && (
+                  <ArrowRight className="w-4 h-4 text-muted-foreground shrink-0 rotate-90 md:rotate-0" aria-hidden="true" />
+                )}
+              </li>
+            ))}
+          </ol>
+          <p className="text-center text-xs text-muted-foreground mt-6">…then the loop starts again with better evidence.</p>
+        </div>
+      </section>
+
+      {/* Three-pillar features */}
+      <section id="diagnostic" className="py-16 md:py-24">
+        <div className="container mx-auto px-5 md:px-10">
+          <p className="text-xs font-semibold tracking-[0.18em] uppercase text-primary mb-3 text-center">Free buyability diagnostic</p>
+          <h2 className="text-2xl md:text-3xl font-bold text-center mb-3">One way to start: find where buyer friction exists</h2>
           <p className="text-center text-muted-foreground max-w-2xl mx-auto mb-10">
-            Your buyability score reflects what a buyer or AI agent can verify before engaging sales.
+            The free AVS Rubric check scores what a buyer or AI agent can verify before engaging sales.
           </p>
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
             {features.map((feature, i) => {
@@ -557,26 +671,72 @@ const Index = () => {
         </div>
       </section>
 
+      {/* Services + pricing */}
+      <section id="services" ref={servicesRef} className="py-16 md:py-24 scroll-mt-24">
+        <div className="container mx-auto px-5 md:px-10">
+          <div className="text-center max-w-2xl mx-auto mb-10">
+            <p className="text-xs font-semibold tracking-[0.18em] uppercase text-primary mb-3">Working with ValueTempo</p>
+            <h2 className="text-2xl md:text-3xl font-bold mb-3">Paid help starts where diagnosis stops</h2>
+            <p className="text-muted-foreground">
+              Finding a gap is the first step. We help you decide which gap is worth acting on, which buyer decision it may be constraining, what intervention to test, and what signal would show it worked.
+            </p>
+          </div>
+          <div className="grid md:grid-cols-2 gap-6 max-w-4xl mx-auto">
+            {services.map((s, i) => (
+              <div
+                key={s.title}
+                style={{ borderTop: `3px solid ${i === 0 ? 'hsl(var(--vt-cyan))' : 'hsl(var(--vt-violet))'}` }}
+                className="bg-card border border-border rounded-3xl p-7 shadow-vt-sm flex flex-col"
+              >
+                <h3 className="font-semibold text-lg mb-1">{s.title}</h3>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Starting at <span className="text-2xl font-bold text-foreground align-middle">{s.price}</span>
+                </p>
+                <p className="text-sm text-muted-foreground leading-relaxed flex-1">{s.description}</p>
+              </div>
+            ))}
+          </div>
+          <div className="text-center mt-10">
+            <Button asChild size="lg" className="bg-vt-midnight text-white hover:bg-vt-midnight/90 rounded-[20px] px-8 h-12 font-semibold">
+              <a href={BOOKING_URL} target="_blank" rel="noopener noreferrer" onClick={() => trackEvent('primary_service_cta_clicked', { location: 'services' })}>
+                Talk through your GTM problem
+                <ArrowRight className="w-5 h-5 ml-2" />
+              </a>
+            </Button>
+            <p className="text-xs text-muted-foreground mt-3">Scope and price are confirmed after a first conversation.</p>
+          </div>
+        </div>
+      </section>
+
       {/* Dark CTA band */}
       <section className="dark-anchor py-16 md:py-20">
         <div className="container mx-auto px-5 md:px-10 text-center">
           <h2 className="text-2xl md:text-3xl font-bold mb-4 text-[hsl(var(--vt-text-on-dark))]">
-            Ready to make your AI product easier to evaluate and buy?
+            Two ways to start
           </h2>
           <p className="text-[hsl(var(--vt-text-on-dark-secondary))] mb-8 max-w-lg mx-auto">
-            Get an instant, evidence-backed analysis of where buyers may lose clarity, confidence, or budget justification.
+            Have a GTM problem? Talk with us. Want to see where buyer friction exists first? Run the free buyability check.
           </p>
-          <Button
-            size="lg"
-            className="bg-white text-vt-midnight hover:bg-white/90 rounded-[20px] px-8 h-12 font-semibold shadow-vt-sm transition-shadow hover:shadow-[0_18px_50px_-10px_hsl(var(--vt-cyan)/0.55)]"
-            onClick={() => {
-              const el = document.getElementById('url-input');
-              el?.scrollIntoView({ behavior: 'smooth' });
-            }}
-          >
-            Check Your Buyability Score
-            <ArrowRight className="w-5 h-5 ml-2" />
-          </Button>
+          <div className="flex flex-col sm:flex-row gap-3 justify-center">
+            <Button
+              asChild
+              size="lg"
+              className="bg-white text-vt-midnight hover:bg-white/90 rounded-[20px] px-8 h-12 font-semibold shadow-vt-sm transition-shadow hover:shadow-[0_18px_50px_-10px_hsl(var(--vt-cyan)/0.55)]"
+            >
+              <a href={BOOKING_URL} target="_blank" rel="noopener noreferrer" onClick={() => trackEvent('primary_service_cta_clicked', { location: 'footer_band' })}>
+                Talk through your GTM problem
+                <ArrowRight className="w-5 h-5 ml-2" />
+              </a>
+            </Button>
+            <Button
+              size="lg"
+              variant="outline"
+              className="bg-transparent border-white/40 text-white hover:bg-white/10 hover:text-white rounded-[20px] px-8 h-12 font-semibold"
+              onClick={() => scrollToDiagnostic('footer_band')}
+            >
+              Check your buyability
+            </Button>
+          </div>
         </div>
       </section>
 
