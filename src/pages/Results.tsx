@@ -62,6 +62,13 @@ export default function Results() {
     if (!companyProfile || !rubricScore || !observability) return;
     trackEvent('first_scan_completed', { score: rubricScore.totalScore });
     trackEvent('diagnostic_completed', { score: rubricScore.totalScore });
+    // Fresh scans arrive from the homepage with freshScan: true in router state;
+    // everything else (refresh, back-nav, saved report, benchmark link) is a re-view.
+    const isFresh = (location.state as { freshScan?: boolean } | null)?.freshScan === true;
+    trackEvent(isFresh ? 'diagnostic_completed_new' : 'diagnostic_report_viewed', { score: rubricScore.totalScore });
+    if (isFresh) {
+      navigate(location.pathname, { replace: true, state: { ...(location.state as object), freshScan: false } });
+    }
     saveLastReport({ companyProfile, rubricScore, observability, modelClassification, pages });
   }, [companyProfile, rubricScore, observability]); // eslint-disable-line react-hooks/exhaustive-deps
 
