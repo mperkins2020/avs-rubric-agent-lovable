@@ -502,11 +502,12 @@ const Index = () => {
         <div className="hero-blob" aria-hidden="true" />
         <div className="container relative z-10 mx-auto px-5 md:px-10">
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center max-w-3xl mx-auto">
-            <h1 id="hero" className="text-3xl sm:text-4xl md:text-[52px] font-bold mb-5 leading-[1.15] tracking-tight">
+            <h1 id="hero" className="text-3xl sm:text-4xl md:text-[52px] font-bold mb-5 tracking-tight" style={{ lineHeight: 1.15 }}>
               <span className="block">AI makes GTM execution faster.</span>
-              <span className="mt-2 md:mt-3 block">
-                Your <span className="gradient-text">learning system</span> has to keep up.
+              <span className="block">
+                Your <span className="gradient-text">learning system</span> has to
               </span>
+              <span className="block">keep up.</span>
             </h1>
 
             <p className="text-base md:text-lg text-muted-foreground mb-8 max-w-2xl mx-auto">
