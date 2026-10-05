@@ -469,6 +469,9 @@ const Index = () => {
                 </button>
               </div>
               <nav className="flex flex-col gap-1 px-3 py-4 flex-1">
+                <a href="#services" onClick={() => setMobileMenuOpen(false)} className="flex items-center px-3 py-2.5 rounded-lg text-sm text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors">
+                  Services
+                </a>
                 <a href="https://www.valuetempo.com/methodology" className="flex items-center px-3 py-2.5 rounded-lg text-sm text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors">
                   Methodology
                 </a>
