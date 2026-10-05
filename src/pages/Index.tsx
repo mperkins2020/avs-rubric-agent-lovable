@@ -40,7 +40,27 @@ const homepageFaqs = [
   {
     question: "Who is ValueTempo built for?",
     answer:
-      "ValueTempo is built for AI SaaS founders, product marketers, pricing leads, and GTM operators who need to make their product easier for buyers to understand, evaluate, trust, and buy before the first sales conversation.",
+      "ValueTempo is built for B2B GTM teams — founders, product marketers, pricing leads, and GTM operators — who want each go-to-market decision to leave them knowing more for the next one.",
+  },
+  {
+    question: "What does ValueTempo help GTM teams do?",
+    answer:
+      "ValueTempo helps teams turn buyer evidence, decisions, and market outcomes into learning. That means observing evidence, forming a hypothesis, making the decision, acting, measuring the response, and updating what the team knows.",
+  },
+  {
+    question: "How is ValueTempo different from an AI or GTM automation tool?",
+    answer:
+      "Automation tools help teams execute faster. ValueTempo focuses on what the team learns from that execution: which evidence changed a decision, what hypothesis was tested, why an intervention was chosen, and what happened afterward.",
+  },
+  {
+    question: "How does the free buyability diagnostic fit into ValueTempo's work?",
+    answer:
+      "The free diagnostic is one way to start. It uses the AVS Rubric to show where public buyer evidence is strong and where buyer friction may exist. Paid work begins when you want to decide which gap is worth acting on and how to test an intervention.",
+  },
+  {
+    question: "What happens in a ValueTempo project?",
+    answer:
+      "A project starts from a specific GTM decision problem. We gather and diagnose the evidence, prioritize the gap based on the buyer decision it may constrain, define an intervention, and agree on the signal that would show whether it worked. Final scope and price are confirmed after an initial conversation.",
   },
   {
     question: "What is buyability?",
@@ -51,21 +71,6 @@ const homepageFaqs = [
     question: "How is buyability measured?",
     answer:
       "ValueTempo uses the AVS Rubric to evaluate published buyer-facing evidence across 8 key dimensions, including product clarity, ICP and job-to-be-done, budget clarity, value unit, cost drivers, packaging, overages and risk, and safety rails.",
-  },
-  {
-    question: "Why does buyability matter for AI SaaS?",
-    answer:
-      "AI SaaS products often introduce new value units, usage patterns, pricing models, and operational risks. When buyers cannot understand those details before sales, evaluation slows down, trust weakens, and GTM teams have to explain the same commercial logic repeatedly.",
-  },
-  {
-    question: "What is the AI SaaS Buyability Benchmark?",
-    answer:
-      "The AI SaaS Buyability Benchmark is a ValueTempo report that evaluates how well AI SaaS companies publish the commercial evidence buyers need before the first sales conversation. The May 2026 edition scored 60 companies across 5 categories and 8 evidence dimensions.",
-  },
-  {
-    question: "What is a buyability score walkthrough?",
-    answer:
-      "A buyability score walkthrough is a session that identifies where a company's public buyer evidence is strong, where buyer-confidence gaps remain, and what to publish next to improve buyability.",
   },
 ];
 
@@ -93,7 +98,8 @@ const lostItems = [
 
 const loopSteps = [
   "Observe evidence",
-  "Frame the decision",
+  "Form a hypothesis",
+  "Make the decision",
   "Act",
   "Measure the response",
   "Update what we know",
@@ -104,7 +110,7 @@ const services = [
     title: "AEO / AI Visibility Project",
     price: "$2,500",
     description:
-      "Diagnose and prioritize AI visibility and evidence gaps based on the buyer decisions they may constrain, then design and test appropriate interventions.",
+      "Diagnose and prioritize AI visibility and evidence gaps based on the buyer decisions they may constrain, then define the highest-priority intervention and how to test it.",
   },
   {
     title: "GTM Project",
@@ -164,7 +170,7 @@ const Index = () => {
     if (status === 'complete' && companyProfile && rubricScore && observability) {
       saveLastReport({ companyProfile, rubricScore, observability, modelClassification, pages });
       navigate("/results", {
-        state: { companyProfile, rubricScore, observability, modelClassification, pages }
+        state: { companyProfile, rubricScore, observability, modelClassification, pages, freshScan: true }
       });
     }
   }, [status, companyProfile, rubricScore, observability, modelClassification, pages, navigate]);
@@ -372,8 +378,8 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-background">
       <SEOHead
-        title="ValueTempo — GTM learning for AI-native B2B teams"
-        description="ValueTempo helps AI-native B2B teams turn buyer evidence, GTM decisions, and outcomes into learning. Start with a free buyability check or talk through your GTM problem."
+        title="ValueTempo — GTM learning for B2B teams"
+        description="ValueTempo helps B2B GTM teams turn buyer evidence, decisions, and outcomes into learning. Start with a free buyability check or talk through your GTM problem."
         canonicalUrl="https://app.valuetempo.com/"
         type="website"
       />
@@ -511,7 +517,7 @@ const Index = () => {
             </h1>
 
             <p className="text-base md:text-lg text-muted-foreground mb-8 max-w-2xl mx-auto">
-              ValueTempo helps AI-native B2B teams turn buyer evidence, GTM decisions, and market outcomes into learning that improves the next decision.
+              ValueTempo helps B2B GTM teams turn buyer evidence, decisions, and market outcomes into learning that improves the next decision.
             </p>
 
             <div className="flex flex-col sm:flex-row gap-3 justify-center mb-10">
@@ -552,9 +558,6 @@ const Index = () => {
         </div>
       </section>
 
-      {/* Category Carousel */}
-      <CategoryCarousel />
-
       {/* Problem */}
       <section className="py-16 md:py-24">
         <div className="container mx-auto px-5 md:px-10">
@@ -565,9 +568,10 @@ const Index = () => {
               As people and AI agents share information and run GTM work together, execution can speed up faster than the team's learning. What often gets lost:
             </p>
           </div>
-          <ul className="grid sm:grid-cols-2 lg:grid-cols-5 gap-4 max-w-6xl mx-auto">
+          <ul className="max-w-2xl mx-auto divide-y divide-border border-y border-border">
             {lostItems.map((item) => (
-              <li key={item} className="bg-card border border-border rounded-2xl p-5 text-sm text-foreground shadow-vt-sm">
+              <li key={item} className="flex items-center gap-3 py-3 text-sm md:text-base text-foreground">
+                <span className="w-1.5 h-1.5 rounded-full bg-primary/60 shrink-0" aria-hidden="true" />
                 {item}
               </li>
             ))}
@@ -583,15 +587,15 @@ const Index = () => {
             <h2 className="text-2xl md:text-3xl font-bold mb-3">A simple learning loop</h2>
             <p className="text-muted-foreground">Each GTM decision should leave the team knowing more for the next one.</p>
           </div>
-          <ol className="flex flex-col md:flex-row items-stretch justify-center gap-3 md:gap-2 max-w-6xl mx-auto">
+          <ol className="flex flex-col lg:flex-row items-stretch justify-center gap-3 lg:gap-2 max-w-6xl mx-auto">
             {loopSteps.map((step, i) => (
-              <li key={step} className="flex flex-col md:flex-row items-center gap-2 md:gap-2 flex-1">
+              <li key={step} className="flex flex-col lg:flex-row items-center gap-2 flex-1">
                 <div className="w-full bg-card border border-border rounded-2xl px-4 py-5 text-center shadow-vt-sm flex-1">
                   <span className="block text-xs font-semibold text-primary mb-1">{String(i + 1).padStart(2, '0')}</span>
                   <span className="font-semibold text-sm">{step}</span>
                 </div>
                 {i < loopSteps.length - 1 && (
-                  <ArrowRight className="w-4 h-4 text-muted-foreground shrink-0 rotate-90 md:rotate-0" aria-hidden="true" />
+                  <ArrowRight className="w-4 h-4 text-muted-foreground shrink-0 rotate-90 lg:rotate-0" aria-hidden="true" />
                 )}
               </li>
             ))}
@@ -638,6 +642,9 @@ const Index = () => {
         </div>
       </section>
 
+      {/* Category Carousel (benchmark evidence) */}
+      <CategoryCarousel />
+
       {/* Report Preview */}
       <section className="py-16 md:py-24">
         <div className="container mx-auto px-5 md:px-10">
@@ -680,9 +687,9 @@ const Index = () => {
         <div className="container mx-auto px-5 md:px-10">
           <div className="text-center max-w-2xl mx-auto mb-10">
             <p className="text-xs font-semibold tracking-[0.18em] uppercase text-primary mb-3">Working with ValueTempo</p>
-            <h2 className="text-2xl md:text-3xl font-bold mb-3">Paid help starts where diagnosis stops</h2>
+            <h2 className="text-2xl md:text-3xl font-bold mb-3">Turn diagnosis into a testable GTM decision</h2>
             <p className="text-muted-foreground">
-              Finding a gap is the first step. We help you decide which gap is worth acting on, which buyer decision it may be constraining, what intervention to test, and what signal would show it worked.
+              Finding a gap is the first step. We help you decide which gap is worth acting on, which buyer decision it may be constraining, what intervention to test, and what signal would show whether it worked.
             </p>
           </div>
           <div className="grid md:grid-cols-2 gap-6 max-w-4xl mx-auto">
@@ -707,7 +714,7 @@ const Index = () => {
                 <ArrowRight className="w-5 h-5 ml-2" />
               </a>
             </Button>
-            <p className="text-xs text-muted-foreground mt-3">Scope and price are confirmed after a first conversation.</p>
+            <p className="text-xs text-muted-foreground mt-3">Final scope and price are confirmed after an initial conversation.</p>
           </div>
         </div>
       </section>
