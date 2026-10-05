@@ -86,7 +86,7 @@ const dimensionDefinitions: Record<string, string> = {
 };
 
 // Existing booking link already used across the app (case studies, benchmarks, methodology).
-const BOOKING_URL = "https://calendly.com/mlhperkins/30min";
+const BOOKING_URL = "https://calendar.app.google/sEEJpjA2CLK3RrRz8";
 
 const lostItems = [
   "What evidence changed a decision",
