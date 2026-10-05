@@ -589,13 +589,15 @@ const Index = () => {
           </div>
           <ol className="flex flex-col lg:flex-row items-stretch justify-center gap-3 lg:gap-2 max-w-6xl mx-auto">
             {loopSteps.map((step, i) => (
-              <li key={step} className="flex flex-col lg:flex-row items-center gap-2 flex-1">
-                <div className="w-full bg-card border border-border rounded-2xl px-4 py-5 text-center shadow-vt-sm flex-1">
+              <li key={step} className="flex flex-col lg:flex-row items-stretch gap-2 flex-1 min-w-0">
+                <div className="w-full bg-card border border-border rounded-2xl px-3 py-5 text-center shadow-vt-sm flex-1 flex flex-col items-center justify-center">
                   <span className="block text-xs font-semibold text-primary mb-1">{String(i + 1).padStart(2, '0')}</span>
-                  <span className="font-semibold text-sm">{step}</span>
+                  <span className="font-semibold text-sm leading-snug">{step}</span>
                 </div>
-                {i < loopSteps.length - 1 && (
-                  <ArrowRight className="w-4 h-4 text-muted-foreground shrink-0 rotate-90 lg:rotate-0" aria-hidden="true" />
+                {i < loopSteps.length - 1 ? (
+                  <ArrowRight className="w-4 h-4 text-muted-foreground shrink-0 self-center rotate-90 lg:rotate-0" aria-hidden="true" />
+                ) : (
+                  <span className="hidden lg:block w-4 shrink-0 self-center" aria-hidden="true" />
                 )}
               </li>
             ))}
