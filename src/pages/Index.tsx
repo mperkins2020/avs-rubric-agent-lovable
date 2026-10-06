@@ -611,8 +611,8 @@ const Index = () => {
         <div className="container mx-auto px-5 md:px-10">
           <p className="text-xs font-semibold tracking-[0.18em] uppercase text-primary mb-3 text-center">Free buyability diagnostic</p>
           <h2 className="text-2xl md:text-3xl font-bold text-center mb-3">One way to start: find where buyer friction exists</h2>
-          <p className="text-center text-muted-foreground max-w-2xl mx-auto mb-10">
-            The free AVS Rubric check scores what a buyer or AI agent can verify before engaging&nbsp;sales.
+          <p className="text-center text-muted-foreground max-w-2xl mx-auto mb-10 text-balance">
+            The free AVS Rubric check scores what a buyer or AI agent can verify before engaging sales.
           </p>
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
             {features.map((feature, i) => {
