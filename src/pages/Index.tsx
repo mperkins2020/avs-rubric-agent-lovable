@@ -375,26 +375,25 @@ const Index = () => {
             </Link>
           </div>
           <nav className="hidden md:flex items-center gap-6">
-            <a href="#services" className="text-sm text-foreground hover:text-primary transition-colors">
-              Services
+            <a href="https://www.valuetempo.com/" className="text-sm text-foreground hover:text-primary transition-colors">
+              ValueTempo
             </a>
-            <a href="https://www.valuetempo.com/resources/benchmarks" className="text-sm text-foreground hover:text-primary transition-colors">
+            <button
+              type="button"
+              onClick={() => scrollToDiagnostic('nav')}
+              className="text-sm text-foreground hover:text-primary transition-colors"
+            >
+              Buyability Diagnostic
+            </button>
+            <Link to="/benchmark" className="text-sm text-foreground hover:text-primary transition-colors">
               Benchmark Reports
-            </a>
+            </Link>
             <a href="https://www.valuetempo.com/methodology" className="text-sm text-foreground hover:text-primary transition-colors">
               Methodology
             </a>
             <a href="https://www.valuetempo.com/about" className="text-sm text-foreground hover:text-primary transition-colors">
-              About
+              About ValueTempo
             </a>
-            <ResourcesDropdown />
-            <Button
-              size="sm"
-              className="bg-vt-midnight text-white hover:bg-vt-midnight/90 rounded-[20px] px-5 h-9"
-              onClick={() => scrollToDiagnostic('nav')}
-            >
-              Analyze
-            </Button>
             {session ? (
               <Button variant="ghost" size="sm" onClick={signOut} className="gap-1 text-muted-foreground hover:text-foreground">
                 <LogOut className="w-4 h-4" />
