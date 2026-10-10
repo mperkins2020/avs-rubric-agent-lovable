@@ -682,38 +682,6 @@ const Index = () => {
         </div>
       </section>
 
-      {/* Dark CTA band */}
-      <section className="dark-anchor py-16 md:py-20">
-        <div className="container mx-auto px-5 md:px-10 text-center">
-          <h2 className="text-2xl md:text-3xl font-bold mb-4 text-[hsl(var(--vt-text-on-dark))]">
-            Two ways to start
-          </h2>
-          <p className="text-[hsl(var(--vt-text-on-dark-secondary))] mb-8 max-w-lg mx-auto">
-            Have a GTM problem? Talk with us. Want to see where buyer friction exists first? Run the free buyability check.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-3 justify-center">
-            <Button
-              asChild
-              size="lg"
-              className="bg-white text-vt-midnight hover:bg-white/90 rounded-[20px] px-8 h-12 font-semibold shadow-vt-sm transition-shadow hover:shadow-[0_18px_50px_-10px_hsl(var(--vt-cyan)/0.55)]"
-            >
-              <a href={BOOKING_URL} target="_blank" rel="noopener noreferrer" onClick={() => trackEvent('primary_service_cta_clicked', { location: 'footer_band' })}>
-                Talk through your GTM problem
-                <ArrowRight className="w-5 h-5 ml-2" />
-              </a>
-            </Button>
-            <Button
-              size="lg"
-              variant="outline"
-              className="bg-transparent border-white/40 text-white hover:bg-white/10 hover:text-white rounded-[20px] px-8 h-12 font-semibold"
-              onClick={() => scrollToDiagnostic('footer_band')}
-            >
-              Check your buyability
-            </Button>
-          </div>
-        </div>
-      </section>
-
       <section className="py-16 px-6 bg-background">
         <div className="max-w-3xl mx-auto">
           <h2 className="text-3xl md:text-4xl font-bold text-center text-foreground mb-10">
