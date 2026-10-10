@@ -441,19 +441,25 @@ const Index = () => {
                 </button>
               </div>
               <nav className="flex flex-col gap-1 px-3 py-4 flex-1">
-                <a href="#services" onClick={() => setMobileMenuOpen(false)} className="flex items-center px-3 py-2.5 rounded-lg text-sm text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors">
-                  Services
+                <a href="https://www.valuetempo.com/" onClick={() => setMobileMenuOpen(false)} className="flex items-center px-3 py-2.5 rounded-lg text-sm text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors">
+                  ValueTempo
                 </a>
-                <a href="https://www.valuetempo.com/resources/benchmarks" onClick={() => setMobileMenuOpen(false)} className="flex items-center px-3 py-2.5 rounded-lg text-sm text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors">
+                <button
+                  type="button"
+                  onClick={() => { setMobileMenuOpen(false); scrollToDiagnostic('nav_mobile'); }}
+                  className="flex items-center px-3 py-2.5 rounded-lg text-sm text-left text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
+                >
+                  Buyability Diagnostic
+                </button>
+                <Link to="/benchmark" onClick={() => setMobileMenuOpen(false)} className="flex items-center px-3 py-2.5 rounded-lg text-sm text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors">
                   Benchmark Reports
-                </a>
-                <a href="https://www.valuetempo.com/methodology" className="flex items-center px-3 py-2.5 rounded-lg text-sm text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors">
+                </Link>
+                <a href="https://www.valuetempo.com/methodology" onClick={() => setMobileMenuOpen(false)} className="flex items-center px-3 py-2.5 rounded-lg text-sm text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors">
                   Methodology
                 </a>
-                <a href="https://www.valuetempo.com/about" className="flex items-center px-3 py-2.5 rounded-lg text-sm text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors">
-                  About
+                <a href="https://www.valuetempo.com/about" onClick={() => setMobileMenuOpen(false)} className="flex items-center px-3 py-2.5 rounded-lg text-sm text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors">
+                  About ValueTempo
                 </a>
-                <ResourcesDropdown mobile onNavigate={() => setMobileMenuOpen(false)} />
               </nav>
               <div className="px-3 py-4 border-t border-border">
                 {session ? (
