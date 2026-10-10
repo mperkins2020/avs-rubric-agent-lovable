@@ -385,9 +385,9 @@ const Index = () => {
             >
               Buyability Diagnostic
             </button>
-            <Link to="/benchmark" className="text-sm text-foreground hover:text-primary transition-colors">
+            <a href="https://www.valuetempo.com/resources/benchmarks" className="text-sm text-foreground hover:text-primary transition-colors">
               Benchmark Reports
-            </Link>
+            </a>
             <a href="https://www.valuetempo.com/methodology" className="text-sm text-foreground hover:text-primary transition-colors">
               Methodology
             </a>
@@ -451,9 +451,9 @@ const Index = () => {
                 >
                   Buyability Diagnostic
                 </button>
-                <Link to="/benchmark" onClick={() => setMobileMenuOpen(false)} className="flex items-center px-3 py-2.5 rounded-lg text-sm text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors">
+                <a href="https://www.valuetempo.com/resources/benchmarks" onClick={() => setMobileMenuOpen(false)} className="flex items-center px-3 py-2.5 rounded-lg text-sm text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors">
                   Benchmark Reports
-                </Link>
+                </a>
                 <a href="https://www.valuetempo.com/methodology" onClick={() => setMobileMenuOpen(false)} className="flex items-center px-3 py-2.5 rounded-lg text-sm text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors">
                   Methodology
                 </a>
