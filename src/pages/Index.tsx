@@ -384,23 +384,6 @@ const Index = () => {
         type="website"
       />
 
-      {/* Announcement Bar */}
-      <Link
-        to="/ai-search-visibility-aeo-benchmark-august-2026"
-        className="block w-full bg-gradient-to-r from-vt-cyan via-vt-blue to-vt-violet text-white"
-      >
-        <div className="container mx-auto px-4 md:px-10 py-2.5 flex items-center justify-center gap-2 text-sm md:text-base flex-wrap">
-          <span className="inline-flex items-center rounded-full bg-white/20 px-3 py-1 text-sm font-semibold backdrop-blur-sm shrink-0">
-            New
-          </span>
-          <span className="font-medium text-center">
-            AI Search Visibility &amp; AEO Benchmark, August 2026 is live: 12 companies analyzed across 3 emerging layers.
-          </span>
-          <span className="font-semibold underline-offset-2 hover:underline whitespace-nowrap shrink-0">
-            Get the Executive Brief →
-          </span>
-        </div>
-      </Link>
 
       {/* Navbar */}
       <header className="sticky top-0 z-30 border-b border-border bg-white/75 backdrop-blur-md">
