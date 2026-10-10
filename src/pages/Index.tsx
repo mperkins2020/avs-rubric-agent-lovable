@@ -483,31 +483,28 @@ const Index = () => {
         <div className="hero-blob" aria-hidden="true" />
         <div className="container relative z-10 mx-auto px-5 md:px-10">
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center max-w-3xl mx-auto">
+            <p className="text-xs font-semibold tracking-[0.18em] uppercase text-primary mb-4">AVS Buyability Diagnostic</p>
             <h1 id="hero" className="text-3xl sm:text-4xl md:text-[52px] font-bold mb-5 tracking-tight" style={{ lineHeight: 1.15 }}>
-              <span className="block">AI makes GTM execution faster.</span>
-              <span className="block">
-                Your <span className="gradient-text">learning system</span> has to
-              </span>
-              <span className="block">keep up.</span>
+              <span className="block">See what <span className="gradient-text">buyers can understand</span></span>
+              <span className="block">before they talk to sales.</span>
             </h1>
 
             <p className="text-base md:text-lg text-muted-foreground mb-8 max-w-2xl mx-auto">
-              ValueTempo helps B2B GTM teams turn buyer evidence, decisions, and market outcomes into learning that improves the next decision.
+              Assess the buyer-facing evidence prospects can independently understand, verify, budget for, and justify across eight evidence dimensions.
             </p>
 
             <div className="flex flex-col sm:flex-row gap-3 justify-center mb-10">
-              <Button asChild size="lg" className="bg-vt-midnight text-white hover:bg-vt-midnight/90 rounded-[20px] px-7 h-12 font-semibold">
-                <a href={BOOKING_URL} target="_blank" rel="noopener noreferrer" onClick={() => trackEvent('primary_service_cta_clicked', { location: 'hero' })}>
-                  Talk through your GTM problem
-                  <ArrowRight className="w-5 h-5 ml-2" />
-                </a>
-              </Button>
-              <Button size="lg" variant="outline" className="rounded-[20px] px-7 h-12 font-semibold" onClick={() => scrollToDiagnostic('hero')}>
+              <Button size="lg" className="bg-vt-midnight text-white hover:bg-vt-midnight/90 rounded-[20px] px-7 h-12 font-semibold" onClick={() => scrollToDiagnostic('hero')}>
                 Check your buyability
+                <ArrowRight className="w-5 h-5 ml-2" />
+              </Button>
+              <Button asChild size="lg" variant="outline" className="rounded-[20px] px-7 h-12 font-semibold">
+                <a href="https://www.valuetempo.com/methodology" target="_blank" rel="noopener noreferrer">
+                  How the AVS Rubric works
+                </a>
               </Button>
             </div>
 
-            <p className="text-sm text-muted-foreground mb-3">Free buyability check — enter your website:</p>
             <div id="url-input" className="flex justify-center mb-12 scroll-mt-24">
               <URLInput onSubmit={handleSubmit} isLoading={isLoading} />
             </div>
@@ -533,24 +530,16 @@ const Index = () => {
         </div>
       </section>
 
-      {/* Problem */}
+      {/* Buyer evidence */}
       <section className="py-16 md:py-24">
         <div className="container mx-auto px-5 md:px-10">
           <div className="max-w-3xl mx-auto text-center">
-            <p className="text-xs font-semibold tracking-[0.18em] uppercase text-primary mb-3">The problem</p>
-            <h2 className="text-2xl md:text-3xl font-bold mb-4">More context isn't automatically more learning</h2>
-            <p className="text-muted-foreground mb-8">
-              As people and AI agents share information and run GTM work together, execution can speed up faster than the team's learning. What often gets lost:
+            <p className="text-xs font-semibold tracking-[0.18em] uppercase text-primary mb-3">Buyer evidence</p>
+            <h2 className="text-2xl md:text-3xl font-bold mb-4">Buyer evidence helps teams decide what to change, what to hold, and what to learn next.</h2>
+            <p className="text-muted-foreground">
+              The AVS Buyability Diagnostic identifies where buyer-facing evidence is strong, weak, or missing. ValueTempo places those findings alongside other GTM signals to help teams form stronger hypotheses, make clearer commercial decisions, and carry what they learn forward.
             </p>
           </div>
-          <ul className="max-w-2xl mx-auto divide-y divide-border border-y border-border">
-            {lostItems.map((item) => (
-              <li key={item} className="flex items-center gap-3 py-3 text-sm md:text-base text-foreground">
-                <span className="w-1.5 h-1.5 rounded-full bg-primary/60 shrink-0" aria-hidden="true" />
-                {item}
-              </li>
-            ))}
-          </ul>
         </div>
       </section>
 
