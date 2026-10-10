@@ -547,9 +547,9 @@ const Index = () => {
       <section className="py-16 md:py-20 bg-secondary">
         <div className="container mx-auto px-5 md:px-10">
           <div className="max-w-2xl mx-auto text-center mb-10">
-            <p className="text-xs font-semibold tracking-[0.18em] uppercase text-primary mb-3">How we work</p>
-            <h2 className="text-2xl md:text-3xl font-bold mb-3">A simple learning loop</h2>
-            <p className="text-muted-foreground">Each GTM decision should leave the team knowing more for the next one.</p>
+            <p className="text-xs font-semibold tracking-[0.18em] uppercase text-primary mb-3">How the diagnostic fits into ValueTempo</p>
+            <h2 className="text-2xl md:text-3xl font-bold mb-3">One source of evidence in a broader decision loop</h2>
+            <p className="text-muted-foreground">The AVS Buyability Diagnostic provides structured buyer-facing evidence for the broader ValueTempo decision loop.</p>
           </div>
           <ol className="flex flex-col lg:flex-row items-stretch justify-center gap-3 lg:gap-2 max-w-6xl mx-auto">
             {loopSteps.map((step, i) => (
@@ -644,43 +644,40 @@ const Index = () => {
                 ))}
               </div>
             </TooltipProvider>
+            <a
+              href="https://www.valuetempo.com/methodology"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-block mt-6 text-sm text-primary hover:underline"
+            >
+              See the full AVS methodology →
+            </a>
           </motion.div>
         </div>
       </section>
 
-      {/* Services + pricing */}
+      {/* Services bridge */}
       <section id="services" ref={servicesRef} className="py-16 md:py-24 scroll-mt-24">
         <div className="container mx-auto px-5 md:px-10">
-          <div className="text-center max-w-2xl mx-auto mb-10">
+          <div className="text-center max-w-2xl mx-auto">
             <p className="text-xs font-semibold tracking-[0.18em] uppercase text-primary mb-3">Working with ValueTempo</p>
-            <h2 className="text-2xl md:text-3xl font-bold mb-3">Turn diagnosis into a testable GTM decision</h2>
-            <p className="text-muted-foreground">
-              Finding a gap is the first step. We help you decide which gap is worth acting on, which buyer decision it may be constraining, what intervention to test, and what signal would show whether it worked.
+            <h2 className="text-2xl md:text-3xl font-bold mb-3">Need help acting on what the diagnostic finds?</h2>
+            <p className="text-muted-foreground mb-8">
+              ValueTempo helps teams turn buyer evidence and other GTM signals into a business-linked hypothesis, a clearer commercial decision, and a defined way to learn from the outcome.
             </p>
-          </div>
-          <div className="grid md:grid-cols-2 gap-6 max-w-4xl mx-auto">
-            {services.map((s, i) => (
-              <div
-                key={s.title}
-                style={{ borderTop: `3px solid ${i === 0 ? 'hsl(var(--vt-cyan))' : 'hsl(var(--vt-violet))'}` }}
-                className="bg-card border border-border rounded-3xl p-7 shadow-vt-sm flex flex-col"
-              >
-                <h3 className="font-semibold text-lg mb-1">{s.title}</h3>
-                <p className="text-sm text-muted-foreground mb-4">
-                  Starting at <span className="text-2xl font-bold text-foreground align-middle">{s.price}</span>
-                </p>
-                <p className="text-sm text-muted-foreground leading-relaxed flex-1">{s.description}</p>
-              </div>
-            ))}
-          </div>
-          <div className="text-center mt-10">
-            <Button asChild size="lg" className="bg-vt-midnight text-white hover:bg-vt-midnight/90 rounded-[20px] px-8 h-12 font-semibold">
-              <a href={BOOKING_URL} target="_blank" rel="noopener noreferrer" onClick={() => trackEvent('primary_service_cta_clicked', { location: 'services' })}>
-                Talk through your GTM problem
-                <ArrowRight className="w-5 h-5 ml-2" />
-              </a>
-            </Button>
-            <p className="text-xs text-muted-foreground mt-3">Final scope and price are confirmed after an initial conversation.</p>
+            <div className="flex flex-col sm:flex-row gap-3 justify-center">
+              <Button asChild size="lg" className="bg-vt-midnight text-white hover:bg-vt-midnight/90 rounded-[20px] px-8 h-12 font-semibold">
+                <a href="https://www.valuetempo.com/services" target="_blank" rel="noopener noreferrer">
+                  Explore ValueTempo services
+                  <ArrowRight className="w-5 h-5 ml-2" />
+                </a>
+              </Button>
+              <Button asChild size="lg" variant="outline" className="rounded-[20px] px-8 h-12 font-semibold">
+                <a href={BOOKING_URL} target="_blank" rel="noopener noreferrer" onClick={() => trackEvent('primary_service_cta_clicked', { location: 'services' })}>
+                  Talk through a GTM gap
+                </a>
+              </Button>
+            </div>
           </div>
         </div>
       </section>
