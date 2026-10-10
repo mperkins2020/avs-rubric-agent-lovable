@@ -397,6 +397,9 @@ const Index = () => {
             <a href="#services" className="text-sm text-foreground hover:text-primary transition-colors">
               Services
             </a>
+            <Link to="/benchmark" className="text-sm text-foreground hover:text-primary transition-colors">
+              Benchmark Reports
+            </Link>
             <a href="https://www.valuetempo.com/methodology" className="text-sm text-foreground hover:text-primary transition-colors">
               Methodology
             </a>
