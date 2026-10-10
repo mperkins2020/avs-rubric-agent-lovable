@@ -287,7 +287,7 @@ export function ReportPreviewCarousel() {
       className="max-w-4xl mx-auto"
     >
       <div className="text-center mb-8">
-        <h2 className="text-2xl font-bold mb-2">See what the diagnostic surfaces</h2>
+        <h2 className="text-2xl font-bold mb-2">What your diagnostic can surface</h2>
         <p className="text-sm text-muted-foreground max-w-2xl mx-auto mb-2">
           A structured view of strengths, evidence gaps, trust breakpoints, and dimension scores.
         </p>
