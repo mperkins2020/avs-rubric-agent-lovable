@@ -10,7 +10,6 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import ValueTempoLogo from "@/assets/ValueTempo_Logo_main.png";
-import { ResourcesDropdown } from "@/components/ResourcesDropdown";
 import { CategoryCarousel } from "@/components/CategoryCarousel";
 import { SEOHead } from "@/components/SEOHead";
 import {
@@ -38,39 +37,44 @@ import { FAQJsonLd } from "@/components/FAQJsonLd";
 
 const homepageFaqs = [
   {
-    question: "Who is ValueTempo built for?",
+    question: "What is the AVS Buyability Diagnostic?",
     answer:
-      "ValueTempo is built for B2B GTM teams — founders, product marketers, pricing leads, and GTM operators — who want each go-to-market decision to leave them knowing more for the next one.",
+      "The AVS Buyability Diagnostic evaluates publicly observable buyer-facing evidence to identify where prospects may struggle to understand, evaluate, budget for, or justify an offer before speaking with sales.",
   },
   {
-    question: "What does ValueTempo help GTM teams do?",
+    question: "What does it evaluate?",
     answer:
-      "ValueTempo helps teams turn buyer evidence, decisions, and market outcomes into learning. That means observing evidence, forming a hypothesis, making the decision, acting, measuring the response, and updating what the team knows.",
+      "The diagnostic evaluates eight evidence dimensions grouped across four areas: Product Clarity, Cost Predictability, Operational Trust, and Decision Readiness. Together, they provide a structured view of the evidence buyers can independently find and assess.",
   },
   {
-    question: "How is ValueTempo different from an AI or GTM automation tool?",
+    question: "What does a score mean?",
     answer:
-      "Automation tools help teams execute faster. ValueTempo focuses on what the team learns from that execution: which evidence changed a decision, what hypothesis was tested, why an intervention was chosen, and what happened afterward.",
+      "A score reflects the strength and availability of publicly observable buyer-facing evidence within the AVS Rubric. It helps show where evidence is clear, partial, or missing. It is not a rating of the product itself.",
   },
   {
-    question: "How does the free buyability diagnostic fit into ValueTempo's work?",
+    question: "What evidence does the diagnostic use?",
     answer:
-      "The free diagnostic is one way to start. It uses the AVS Rubric to show where public buyer evidence is strong and where buyer friction may exist. Paid work begins when you want to decide which gap is worth acting on and how to test an intervention.",
+      "The diagnostic evaluates publicly available commercial evidence that a buyer could reasonably encounter while researching an offer. It focuses on what buyers can independently understand and verify, rather than internal company data or claims that are not publicly supported.",
   },
   {
-    question: "What happens in a ValueTempo project?",
+    question: "Is a high score the same as product quality?",
     answer:
-      "A project starts from a specific GTM decision problem. We gather and diagnose the evidence, prioritize the gap based on the buyer decision it may constrain, define an intervention, and agree on the signal that would show whether it worked. Final scope and price are confirmed after an initial conversation.",
+      "No. AVS scores describe buyer-facing evidence maturity, not product quality, customer satisfaction, revenue performance, or market leadership. A strong product can still be difficult for buyers to evaluate if important evidence is unclear or missing.",
   },
   {
-    question: "What is buyability?",
+    question: "How should I use the findings?",
     answer:
-      "Buyability is the degree to which a buyer — human or AI agent — can independently understand, evaluate, budget for, and justify a product without engaging sales. It is the gap between buyer intent and decision-readiness. The AVS Rubric measures the trust infrastructure that enables it.",
+      "Use the findings to identify where buyer-facing evidence is strong, weak, or missing, then consider those findings alongside other GTM signals. The goal is not to maximize every score. It is to determine which evidence gaps matter to the commercial decisions you are trying to make.",
   },
   {
-    question: "How is buyability measured?",
+    question: "How does the AVS Rubric fit into ValueTempo?",
     answer:
-      "ValueTempo uses the AVS Rubric to evaluate published buyer-facing evidence across 8 key dimensions, including product clarity, ICP and job-to-be-done, budget clarity, value unit, cost drivers, packaging, overages and risk, and safety rails.",
+      "The AVS Rubric evaluates one type of GTM evidence: whether buyers can independently understand and assess an offer. ValueTempo places that evidence alongside buyer, market, field, product, marketing, pipeline, and business signals to support stronger hypotheses and clearer commercial decisions.",
+  },
+  {
+    question: "How often should I reassess?",
+    answer:
+      "Reassess when meaningful buyer-facing evidence changes, such as positioning, packaging, pricing, proof, operational information, or enterprise-readiness content. Reassessment is most useful when it can inform a real GTM decision, not simply because a fixed amount of time has passed.",
   },
 ];
 
@@ -88,36 +92,14 @@ const dimensionDefinitions: Record<string, string> = {
 // Existing booking link already used across the app (case studies, benchmarks, methodology).
 const BOOKING_URL = "https://calendar.app.google/sEEJpjA2CLK3RrRz8";
 
-const lostItems = [
-  "What evidence changed a decision",
-  "What hypothesis was being tested",
-  "Why an intervention was chosen",
-  "What happened afterward",
-  "What to learn before the next decision",
-];
-
 const loopSteps = [
-  "Observe evidence",
-  "Form a hypothesis",
-  "Make the decision",
-  "Act",
-  "Measure the response",
-  "Update what we know",
-];
-
-const services = [
-  {
-    title: "AEO / AI Visibility Project",
-    price: "$2,500",
-    description:
-      "Diagnose and prioritize AI visibility and evidence gaps based on the buyer decisions they may constrain, then define the highest-priority intervention and how to test it.",
-  },
-  {
-    title: "GTM Project",
-    price: "$5,000",
-    description:
-      "Address a broader GTM decision problem through evidence gathering, diagnosis, intervention design, testing, and learning.",
-  },
+  "Question",
+  "Evidence",
+  "Hypothesis",
+  "Decision",
+  "Action",
+  "Response",
+  "Next decision",
 ];
 
 const Index = () => {
@@ -378,8 +360,8 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-background">
       <SEOHead
-        title="ValueTempo — GTM learning for B2B teams"
-        description="ValueTempo helps B2B GTM teams turn buyer evidence, decisions, and outcomes into learning. Start with a free buyability check or talk through your GTM problem."
+        title="AVS Buyability Diagnostic | ValueTempo"
+        description="Assess the buyer-facing evidence prospects can independently understand, verify, budget for, and justify across eight evidence dimensions."
         canonicalUrl="https://app.valuetempo.com/"
         type="website"
       />
