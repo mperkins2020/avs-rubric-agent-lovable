@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { URLInput } from "@/components/URLInput";
 import { Eye, Calculator, ShieldCheck, CheckCircle2, AlertCircle, LogOut, LogIn, Menu, X } from "lucide-react";
