@@ -384,7 +384,6 @@ const Index = () => {
         type="website"
       />
 
-
       {/* Navbar */}
       <header className="sticky top-0 z-30 border-b border-border bg-white/75 backdrop-blur-md">
         <div className="container mx-auto px-5 md:px-10 h-[72px] flex items-center justify-between">
