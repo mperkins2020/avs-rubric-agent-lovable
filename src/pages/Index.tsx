@@ -470,8 +470,9 @@ const Index = () => {
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center max-w-3xl mx-auto">
             <p className="text-xs font-semibold tracking-[0.18em] uppercase text-primary mb-4">AVS Buyability Diagnostic</p>
             <h1 id="hero" className="text-3xl sm:text-4xl md:text-[52px] font-bold mb-5 tracking-tight" style={{ lineHeight: 1.15 }}>
-              <span className="block">See what <span className="gradient-text">buyers can understand</span></span>
-              <span className="block">before they talk to sales.</span>
+              <span className="block">See what <span className="gradient-text">buyers</span></span>
+              <span className="block"><span className="gradient-text">can&nbsp;understand</span></span>
+              <span className="block">before they talk to&nbsp;sales.</span>
             </h1>
 
             <p className="text-base md:text-lg text-muted-foreground mb-8 max-w-2xl mx-auto">
@@ -601,7 +602,7 @@ const Index = () => {
         <div className="container mx-auto px-5 md:px-10">
           <div className="text-center max-w-2xl mx-auto">
             <p className="text-xs font-semibold tracking-[0.18em] uppercase text-primary mb-3">Part of ValueTempo</p>
-            <h2 className="text-2xl md:text-3xl font-bold mb-3">Buyer evidence is one input into broader GTM decisions.</h2>
+            <h2 className="text-2xl md:text-3xl font-bold mb-3">Buyer evidence is one input into broader GTM&nbsp;decisions.</h2>
             <p className="text-muted-foreground mb-6">
               The AVS Buyability Diagnostic provides structured buyer-facing evidence alongside other GTM signals.
             </p>
