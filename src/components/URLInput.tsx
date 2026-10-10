@@ -76,9 +76,43 @@ interface URLInputProps {
   isLoading?: boolean;
 }
 
+const PLACEHOLDER_TEXT = "Enter your company URL...";
+
 export function URLInput({ onSubmit, isLoading = false }: URLInputProps) {
   const [url, setUrl] = useState("");
   const [error, setError] = useState("");
+  const [placeholder, setPlaceholder] = useState("");
+
+  // Subtle typewriter animation for the grey hint; stops as soon as the user types.
+  useEffect(() => {
+    if (url) {
+      setPlaceholder("");
+      return;
+    }
+    let i = 0;
+    let timeout: number;
+    let cancelled = false;
+    const tick = () => {
+      if (cancelled) return;
+      i += 1;
+      setPlaceholder(PLACEHOLDER_TEXT.slice(0, i));
+      if (i < PLACEHOLDER_TEXT.length) {
+        timeout = window.setTimeout(tick, 55);
+      } else {
+        timeout = window.setTimeout(() => {
+          if (cancelled) return;
+          i = 0;
+          setPlaceholder("");
+          timeout = window.setTimeout(tick, 400);
+        }, 3500);
+      }
+    };
+    timeout = window.setTimeout(tick, 600);
+    return () => {
+      cancelled = true;
+      clearTimeout(timeout);
+    };
+  }, [url]);
 
   const validateUrl = (input: string): boolean => {
     try {
@@ -124,7 +158,7 @@ export function URLInput({ onSubmit, isLoading = false }: URLInputProps) {
           </div>
           <Input
             type="text"
-            placeholder="Enter your product URL (e.g. lovable.dev)"
+            placeholder={placeholder}
             value={url}
             onChange={(e) => {
               setUrl(e.target.value);
@@ -169,7 +203,7 @@ export function URLInput({ onSubmit, isLoading = false }: URLInputProps) {
 
       <div className="mt-5 flex justify-center">
         <span className="inline-flex items-center gap-1.5 px-5 py-2 rounded-full border border-accent/40 bg-accent/10 text-sm font-semibold text-foreground tracking-wide shadow-sm">
-          <span className="inline-block w-2 h-2 rounded-full bg-vt-cyan animate-pulse" />
+          <span className="inline-block w-2 h-2 rounded-full bg-vt-coral animate-pulse" />
           Free · 3 analyses per week · ~2 minutes
         </span>
       </div>
