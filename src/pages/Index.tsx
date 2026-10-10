@@ -516,7 +516,7 @@ const Index = () => {
         <div className="container mx-auto px-5 md:px-10">
                     <h2 className="text-2xl md:text-3xl font-bold text-center mb-3">What the diagnostic evaluates</h2>
           <p className="text-center text-muted-foreground max-w-2xl mx-auto mb-10 text-balance">
-            The free AVS Rubric check scores what a buyer or AI agent can verify before engaging sales.
+            The diagnostic assesses the buyer-facing evidence prospects can independently understand and verify before speaking with sales.
           </p>
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
             {features.map((feature, i) => {
@@ -563,7 +563,7 @@ const Index = () => {
         <div className="container mx-auto px-5 md:px-10 text-center">
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.6 }}>
             <h2 className="text-lg font-semibold mb-3 text-muted-foreground">
-              Scored across 8 buyer-confidence dimensions
+              Scored across 8 evidence dimensions
             </h2>
             <p className="text-sm text-muted-foreground max-w-2xl mx-auto mb-6">
               The rubric maps trust infrastructure across product clarity, pricing architecture, operational controls, and enterprise readiness.
@@ -603,7 +603,7 @@ const Index = () => {
             <p className="text-xs font-semibold tracking-[0.18em] uppercase text-primary mb-3">Part of ValueTempo</p>
             <h2 className="text-2xl md:text-3xl font-bold mb-3">Buyer evidence is one input into broader GTM decisions.</h2>
             <p className="text-muted-foreground mb-6">
-              The AVS Buyability Diagnostic provides structured buyer-facing evidence that teams can consider alongside other GTM signals.
+              The AVS Buyability Diagnostic provides structured buyer-facing evidence alongside other GTM signals.
             </p>
             <a href="https://www.valuetempo.com/#how-it-works" target="_blank" rel="noopener noreferrer" className="inline-flex items-center text-sm font-semibold text-primary hover:underline">
               See how ValueTempo works
