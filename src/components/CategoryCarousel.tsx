@@ -128,7 +128,7 @@ export function CategoryCarousel() {
           viewport={{ once: true }}
           className="text-xl md:text-2xl font-bold text-center text-foreground"
         >
-          Where buyability breaks down
+          Where buyability breaks down across categories
         </motion.h2>
       </div>
 

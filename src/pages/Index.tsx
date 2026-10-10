@@ -92,15 +92,6 @@ const dimensionDefinitions: Record<string, string> = {
 // Existing booking link already used across the app (case studies, benchmarks, methodology).
 const BOOKING_URL = "https://calendar.app.google/sEEJpjA2CLK3RrRz8";
 
-const loopSteps = [
-  "Question",
-  "Evidence",
-  "Hypothesis",
-  "Decision",
-  "Action",
-  "Response",
-  "Next decision",
-];
 
 const Index = () => {
   const navigate = useNavigate();
@@ -370,14 +361,11 @@ const Index = () => {
       <header className="sticky top-0 z-30 border-b border-border bg-white/75 backdrop-blur-md">
         <div className="container mx-auto px-5 md:px-10 h-[72px] flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <Link to="/">
+            <a href="https://www.valuetempo.com/">
               <img alt="ValueTempo" className="h-8" src={ValueTempoLogo} />
-            </Link>
+            </a>
           </div>
           <nav className="hidden md:flex items-center gap-6">
-            <a href="https://www.valuetempo.com/" className="text-sm text-foreground hover:text-primary transition-colors">
-              ValueTempo
-            </a>
             <button
               type="button"
               onClick={() => scrollToDiagnostic('nav')}
@@ -441,9 +429,6 @@ const Index = () => {
                 </button>
               </div>
               <nav className="flex flex-col gap-1 px-3 py-4 flex-1">
-                <a href="https://www.valuetempo.com/" onClick={() => setMobileMenuOpen(false)} className="flex items-center px-3 py-2.5 rounded-lg text-sm text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors">
-                  ValueTempo
-                </a>
                 <button
                   type="button"
                   onClick={() => { setMobileMenuOpen(false); scrollToDiagnostic('nav_mobile'); }}
@@ -494,10 +479,6 @@ const Index = () => {
             </p>
 
             <div className="flex flex-col sm:flex-row gap-3 justify-center mb-10">
-              <Button size="lg" className="bg-vt-midnight text-white hover:bg-vt-midnight/90 rounded-[20px] px-7 h-12 font-semibold" onClick={() => scrollToDiagnostic('hero')}>
-                Check your buyability
-                <ArrowRight className="w-5 h-5 ml-2" />
-              </Button>
               <Button asChild size="lg" variant="outline" className="rounded-[20px] px-7 h-12 font-semibold">
                 <a href="https://www.valuetempo.com/methodology" target="_blank" rel="noopener noreferrer">
                   How the AVS Rubric works
@@ -530,51 +511,10 @@ const Index = () => {
         </div>
       </section>
 
-      {/* Buyer evidence */}
-      <section className="py-16 md:py-24">
-        <div className="container mx-auto px-5 md:px-10">
-          <div className="max-w-3xl mx-auto text-center">
-            <p className="text-xs font-semibold tracking-[0.18em] uppercase text-primary mb-3">Buyer evidence</p>
-            <h2 className="text-2xl md:text-3xl font-bold mb-4">Buyer evidence helps teams decide what to change, what to hold, and what to learn next.</h2>
-            <p className="text-muted-foreground">
-              The AVS Buyability Diagnostic identifies where buyer-facing evidence is strong, weak, or missing. ValueTempo places those findings alongside other GTM signals to help teams form stronger hypotheses, make clearer commercial decisions, and carry what they learn forward.
-            </p>
-          </div>
-        </div>
-      </section>
-
-      {/* Learning loop */}
-      <section className="py-16 md:py-20 bg-secondary">
-        <div className="container mx-auto px-5 md:px-10">
-          <div className="max-w-2xl mx-auto text-center mb-10">
-            <p className="text-xs font-semibold tracking-[0.18em] uppercase text-primary mb-3">How the diagnostic fits into ValueTempo</p>
-            <h2 className="text-2xl md:text-3xl font-bold mb-3">One source of evidence in a broader decision loop</h2>
-            <p className="text-muted-foreground">The AVS Buyability Diagnostic provides structured buyer-facing evidence for the broader ValueTempo decision loop.</p>
-          </div>
-          <ol className="flex flex-col lg:flex-row items-stretch justify-center gap-3 lg:gap-2 max-w-6xl mx-auto">
-            {loopSteps.map((step, i) => (
-              <li key={step} className="flex flex-col lg:flex-row items-stretch gap-2 flex-1 min-w-0">
-                <div className="w-full bg-card border border-border rounded-2xl px-3 py-5 text-center shadow-vt-sm flex-1 flex flex-col items-center justify-center">
-                  <span className="block text-xs font-semibold text-primary mb-1">{String(i + 1).padStart(2, '0')}</span>
-                  <span className="font-semibold text-sm leading-snug">{step}</span>
-                </div>
-                {i < loopSteps.length - 1 ? (
-                  <ArrowRight className="w-4 h-4 text-muted-foreground shrink-0 self-center rotate-90 lg:rotate-0" aria-hidden="true" />
-                ) : (
-                  <span className="hidden lg:block w-4 shrink-0 self-center" aria-hidden="true" />
-                )}
-              </li>
-            ))}
-          </ol>
-          <p className="text-center text-xs text-muted-foreground mt-6">…then the loop starts again with better evidence.</p>
-        </div>
-      </section>
-
       {/* Three-pillar features */}
       <section id="diagnostic" className="py-16 md:py-24">
         <div className="container mx-auto px-5 md:px-10">
-          <p className="text-xs font-semibold tracking-[0.18em] uppercase text-primary mb-3 text-center">Free buyability diagnostic</p>
-          <h2 className="text-2xl md:text-3xl font-bold text-center mb-3">One way to start: find where buyer friction exists</h2>
+                    <h2 className="text-2xl md:text-3xl font-bold text-center mb-3">What the diagnostic evaluates</h2>
           <p className="text-center text-muted-foreground max-w-2xl mx-auto mb-10 text-balance">
             The free AVS Rubric check scores what a buyer or AI agent can verify before engaging sales.
           </p>
@@ -656,14 +596,30 @@ const Index = () => {
         </div>
       </section>
 
-      {/* Services bridge */}
-      <section id="services" ref={servicesRef} className="py-16 md:py-24 scroll-mt-24">
+      {/* ValueTempo bridge */}
+      <section className="py-12 md:py-16">
         <div className="container mx-auto px-5 md:px-10">
           <div className="text-center max-w-2xl mx-auto">
-            <p className="text-xs font-semibold tracking-[0.18em] uppercase text-primary mb-3">Working with ValueTempo</p>
-            <h2 className="text-2xl md:text-3xl font-bold mb-3">Need help acting on what the diagnostic finds?</h2>
+            <p className="text-xs font-semibold tracking-[0.18em] uppercase text-primary mb-3">Part of ValueTempo</p>
+            <h2 className="text-2xl md:text-3xl font-bold mb-3">Buyer evidence is one input into broader GTM decisions.</h2>
+            <p className="text-muted-foreground mb-6">
+              The AVS Buyability Diagnostic provides structured buyer-facing evidence that teams can consider alongside other GTM signals.
+            </p>
+            <a href="https://www.valuetempo.com/#how-it-works" target="_blank" rel="noopener noreferrer" className="inline-flex items-center text-sm font-semibold text-primary hover:underline">
+              See how ValueTempo works
+              <ArrowRight className="w-4 h-4 ml-1" />
+            </a>
+          </div>
+        </div>
+      </section>
+
+      {/* Services bridge */}
+      <section id="services" ref={servicesRef} className="py-12 md:py-16 bg-secondary scroll-mt-24">
+        <div className="container mx-auto px-5 md:px-10">
+          <div className="text-center max-w-2xl mx-auto">
+                        <h2 className="text-2xl md:text-3xl font-bold mb-3">Need help acting on the findings?</h2>
             <p className="text-muted-foreground mb-8">
-              ValueTempo helps teams turn buyer evidence and other GTM signals into a business-linked hypothesis, a clearer commercial decision, and a defined way to learn from the outcome.
+              Turn buyer evidence and other GTM signals into a stronger hypothesis, a clearer commercial decision, and a defined way to learn from the outcome.
             </p>
             <div className="flex flex-col sm:flex-row gap-3 justify-center">
               <Button asChild size="lg" className="bg-vt-midnight text-white hover:bg-vt-midnight/90 rounded-[20px] px-8 h-12 font-semibold">
