@@ -6,3 +6,4 @@
 ## Completed earlier
 - [x] Oct 29 reports preserved (exports/avs_scans_2026-10-29.json + README)
 - [x] Exposed Firecrawl key identified; remediation steps handed to user
+- [ ] Re-paste new Firecrawl key into linked connection (reconnect card pending user action), then re-run test scan
