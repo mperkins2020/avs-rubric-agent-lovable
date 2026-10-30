@@ -22,8 +22,11 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+# NOTE: .env is tracked on purpose, with PUBLIC VITE_* values only (Lovable-generated). Never add secrets to it.
 .env
 .env.local
+.env.*
+!.env.example
 
 # Backups (contain PII — never commit). Keep the .example template tracked.
 tools/backup/dumps/
